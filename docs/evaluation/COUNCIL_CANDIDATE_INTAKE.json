@@ -1,0 +1,606 @@
+{
+  "schemaVersion": "council-coverage-intake-v1",
+  "description": "Forty candidate question/source pairs from the owner's local DeliberationAI documentation; no human gold labels or model evaluation.",
+  "cases": [
+    {
+      "id": "case-product-01",
+      "sourceId": "source-product",
+      "sourceRef": "repo:docs/PRODUCT.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "e43b6256e10489206b4aae77c68c1286473be605d203f2f2511b541e8d4151c9",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "minority"
+      ],
+      "question": "Konsey kaç üyeden oluşabilir ve üyeler anlaşınca bu neden kanıt sayılmaz?",
+      "sourceText": "DeliberationAI lets one owner submit a question to a council of 2–6 model members. Round 0 is independent. Later reviews may challenge and revise claims, but no model is an authority and agreement is never presented as proof."
+    },
+    {
+      "id": "case-product-02",
+      "sourceId": "source-product",
+      "sourceRef": "repo:docs/PRODUCT.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "8d1be0aa2bbf8259a8f30abcdbd8f4376befc33c440d3f9059511ea593e5d78d",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "entity"
+      ],
+      "question": "Otomatik web araması hangi sağlayıcılarda kullanılabilir; gelen bağlantılar doğrulanmış kanıt olur mu?",
+      "sourceText": "When the owner sets a member's web-search mode to automatic, native OpenAI, Anthropic, Gemini, and OpenRouter adapters include their bounded provider-native search tool. The model decides whether to use it. Provider-returned source links remain labeled citation provenance; they do not become verified evidence or enter the owner's evidence library automatically. Compatible endpoints without one stable search-tool contract keep this setting unavailable."
+    },
+    {
+      "id": "case-product-03",
+      "sourceId": "source-product",
+      "sourceRef": "repo:docs/PRODUCT.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "13b505b741281803a0bc49875e748933c82b7704859ec6cc878ba755cb8d807d",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "red_team",
+        "minority"
+      ],
+      "question": "Red-team üyesinin iddiaları analistlerin ortak görüşüne katılır mı, hangi bölümde korunur?",
+      "sourceText": "Each member has an explicit `analyst` or `red-team` council role, and every council must retain at least one analyst. Red-team members receive instructions to test assumptions, counterexamples, failure conditions, and irreversible risks without acting as a judge. Their claims are preserved in a dedicated challenge projection and excluded from analyst shared/distinct grouping. Their cross-review assessments remain labeled with the reviewer role."
+    },
+    {
+      "id": "case-product-04",
+      "sourceId": "source-product",
+      "sourceRef": "repo:docs/PRODUCT.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "da976eb6ccfcd2931f73732c0e2502e4c5d34e1acb88e2af55d14e52771d5bcd",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "negation"
+      ],
+      "question": "Yüksek riskli bir çalışmanın tamamlandı sayılması için hangi denetimler gerçekten başarılı olmalıdır?",
+      "sourceText": "The owner may select a **high-risk** profile for a run or paused local schedule. Selecting it adds a red-team member when needed and enables the available cross-review round. The server rejects high-risk work without both controls. A high-risk report is complete only when a red-team member succeeds, every successful member reviews every other successful member, no required review fails, and structured claims transfer intact into the report. Otherwise it is labeled partial or failed, with the missing controls visible. Risk selection is explicit: the application does not yet classify a question's risk automatically. Passing these controls is not factual correctness or professional approval."
+    },
+    {
+      "id": "case-architecture-01",
+      "sourceId": "source-architecture",
+      "sourceRef": "repo:docs/ARCHITECTURE.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "faf816441ee0ecad9cc6fb43dff78a12d966c6c96e5ca331e7387c488bdfe989",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "temporal",
+        "numeric"
+      ],
+      "question": "İş kuyruğa alınırken üyelerin ayarları nasıl sabitlenir ve çapraz inceleme ne zaman başlar?",
+      "sourceText": "The BFF creates a run and a pg-boss job in one PostgreSQL transaction. Before enqueue, it resolves the requested 2–6 members and stores their full configuration as a context-bound encrypted snapshot. The separate worker leases the job, records the running checkpoint, executes round 0 concurrently outside a database transaction, then optionally executes one parallel cross-review round among successful members. It commits analysis output, review output, normalized claims, provenance, the final report, and an ordered completion event together. Re-delivery observes a terminal run and does not duplicate results. Queue notifications wake the worker promptly; a one-second polling fallback handles missed notifications on this local installation."
+    },
+    {
+      "id": "case-architecture-02",
+      "sourceId": "source-architecture",
+      "sourceRef": "repo:docs/ARCHITECTURE.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "2bebed9e9828eeb1da266904d32173ec2c419218e9358f67f35d528de99b8ffb",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "negation"
+      ],
+      "question": "Önizlemeden sonra istek değişirse yürütme sınırı bunu nasıl tespit eder?",
+      "sourceText": "That shared builder also renders the exact first-round `instructionsFor` and `inputFor` strings for each member. It fingerprints version `council-v1`, member/provider settings, rendered strings and image digests; the text preview omits raw image bytes. The browser submits the fingerprint, enqueue recomputes it after freezing selected context and verified attachments, and the worker recomputes from the encrypted run snapshot before calling any provider. Enqueue returns a conflict for a changed preview; a worker mismatch becomes a failed report with `prompt_snapshot_mismatch` and no model call. Historical rows with a null fingerprint remain executable. The preview does not include provider framing or a future cross-review prompt."
+    },
+    {
+      "id": "case-architecture-03",
+      "sourceId": "source-architecture",
+      "sourceRef": "repo:docs/ARCHITECTURE.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "a1181eb4f9adf4450338164d360c27228d21ae50652613ed0677258b305b5361",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "temporal",
+        "condition"
+      ],
+      "question": "Tarayıcı olay akışı koparsa ilerleme hangi kalıcı bilgiyle yeniden yakalanır?",
+      "sourceText": "The browser primarily subscribes to `GET /api/runs/:id/stream?after=<sequence>` over Server-Sent Events. Every message contains the durable events after the supplied cursor and the current run projection; the event id is the latest committed sequence. The stream sends keepalives, closes on a terminal run, and can reconnect without relying on process memory. If the stream cannot start, the client falls back to `GET /api/runs/:id/events?after=<sequence>` cursor polling. `GET /api/runs/:id` remains the direct result lookup, and `POST /api/runs/:id/cancel` records cancellation before cancelling the queue job."
+    },
+    {
+      "id": "case-architecture-04",
+      "sourceId": "source-architecture",
+      "sourceRef": "repo:docs/ARCHITECTURE.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "2bb1e30d29622f7821cc290d4168884bad4fcea36ed6ed342a7c4b9c7ff6bea3",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "entity",
+        "numeric"
+      ],
+      "question": "Yapılandırılmış iddiaların rapora aktarımı hangi kimlik ve alanlar üzerinden denetlenir?",
+      "sourceText": "The domain builds a claim-transfer audit from validated member `parsed.claims` and all report occurrences. It detects missing, duplicate, unexpected, and field-altered occurrences; read-time hydration recomputes it for historical reports. `PATCH /api/runs/:id/claims/:claimId/scope` and `POST|DELETE /api/runs/:id/claim-relations` validate owner-authored scope and pairwise relation input, then rewrite the encrypted report in a locked run transaction with a content-free event. These post-run records do not modify model outputs, claim evidence state, or synthesis coverage. No provider call or database migration is required."
+    },
+    {
+      "id": "case-data-model-01",
+      "sourceId": "source-data-model",
+      "sourceRef": "repo:docs/DATA_MODEL.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "57342fd8044fa32ae14ce3c283d306096f2d4e47db069668208046bd784fef8b",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "temporal",
+        "negation"
+      ],
+      "question": "Eski çalışmalarda istem parmak izi neden boş olabilir; yeni çalışmalarda hangi bilgiler dondurulur?",
+      "sourceText": "- `runs.prompt_version` and `runs.prompt_fingerprint` record the first-round prompt contract and its SHA-256 digest. Migration `0022_elite_nextwave.sql` defaults historical versions to `council-v1` and leaves their fingerprint null; new runs always freeze both values. The digest covers rendered member strings and request settings, not raw image bytes. Full rendered prompt text stays transient in preflight and is reconstructed from encrypted run context at execution; it is not written as a new plaintext column."
+    },
+    {
+      "id": "case-data-model-02",
+      "sourceId": "source-data-model",
+      "sourceRef": "repo:docs/DATA_MODEL.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "06b389abf4fd2b332ae09fbbaca7cf533d4ca3c625ea20352b9aa5a076b3343c",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "entity"
+      ],
+      "question": "Geçersiz sağlayıcı çıktısı hangi işlem kaydında saklanabilir ve ayrıştırılmış çıktı ne olur?",
+      "sourceText": "- `provider_operations` records each provider/model/member/round attempt, exact request fingerprint, outcome certainty, operator resolution, remote response id, usage, encrypted successful result, and encrypted normalized citation metadata. A known parse failure may store encrypted raw text with null parsed output so restart replay preserves the failure detail. `(run, member, round, attempt)` is unique so analysis and review receipts cannot collide and retry authorization never overwrites ambiguous history."
+    },
+    {
+      "id": "case-data-model-03",
+      "sourceId": "source-data-model",
+      "sourceRef": "repo:docs/DATA_MODEL.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "3683605a416e6f961e619046131b52bc26712164f74814a064b0a3ef6f884893",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "temporal",
+        "condition"
+      ],
+      "question": "Bir kanıt kaynağında hangi alanlar sonradan değiştirilemez, hangileri inceleme durumudur?",
+      "sourceText": "- `evidence_sources` stores owner-scoped claim links; encrypted title, URL, note, and immutable excerpt fields; optional publication date; immutable server capture time; explicit support/contradiction/context relation; content-review status; freshness-review status; and freshness decision time. It retains both the database claim id and stable report-local claim id. Legacy rows may have no excerpt, while every new row requires one."
+    },
+    {
+      "id": "case-data-model-04",
+      "sourceId": "source-data-model",
+      "sourceRef": "repo:docs/DATA_MODEL.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "e2bada540a3051ff8d3cc59d99998025c85e458e521f828afb699d450bf4ffb5",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "temporal"
+      ],
+      "question": "Çalışma oluşturma ile pg-boss işinin kaydı birbirinden kopabilir mi; veri modeli neyi garanti eder?",
+      "sourceText": "- pg-boss tables share the same PostgreSQL database so run creation and job enqueue commit atomically."
+    },
+    {
+      "id": "case-orchestration-01",
+      "sourceId": "source-orchestration",
+      "sourceRef": "repo:docs/ORCHESTRATION.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "b12ce89682db8c312915eb55856cb9bb25a3412152bd9c8ffe77292f7e2e8c44",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "temporal"
+      ],
+      "question": "İlk turda üyeler birbirinin çıktısını görür mü ve kaç ek çapraz inceleme turu vardır?",
+      "sourceText": "The current pipeline has an independent round 0 with 2–6 members followed by zero or one bounded cross-review round. Before enqueue, the application resolves the request into an explicit member list and freezes the question, member configuration, and review-round limit. The worker runs every configured member concurrently with no access to another member’s output, then builds shared and distinct claim groups deterministically."
+    },
+    {
+      "id": "case-orchestration-02",
+      "sourceId": "source-orchestration",
+      "sourceRef": "repo:docs/ORCHESTRATION.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "5201c7c1920eafc8642feeaf59b6790a72624bfe7e5339943ac2b93fd185cff3",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "negation"
+      ],
+      "question": "Çapraz incelemeye hangi üyeler katılır ve inceleyici kendi yanıtını ya da ham metni görür mü?",
+      "sourceText": "If review is enabled and at least two members succeed, every successful member reviews all other successful members in one parallel call. Reviewers receive validated summaries and claims, never their own output or peer raw text. A review must assess every supplied peer and may only target supplied peers. Each assessment records `support`, `qualify`, or `challenge`. No review result modifies or deletes round-0 claims."
+    },
+    {
+      "id": "case-orchestration-03",
+      "sourceId": "source-orchestration",
+      "sourceRef": "repo:docs/ORCHESTRATION.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "17fc927baa854259b250b9fd0c462bdadc0b74e4aeff40e8418b3e75a6ea0fcf",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "minority"
+      ],
+      "question": "Kısmi tamamlanma hangi başarısızlıkta oluşur ve aynı modelin iki koltuğu bağımsız uzlaşı sayılır mı?",
+      "sourceText": "A report is `completed` when at least two members succeed and every requested review succeeds, `partially_completed` when at least one member succeeds but an analysis/review fails or fewer than two members succeed, and `failed` when none succeeds. Shared analyst claims require matching normalized claim text from at least two distinct selected model identities; separate seats, connections or reasoning levels for one model count once. Compatible gateway organization prefixes are ignored for this check. Fake demonstrations use model plus perspective identity. Repeated same-model claims remain fully visible in the distinct ledger. This does not prove independence across differently named aliases or verify truth. Review stances and shared grouping are presentation facts, not truth scores."
+    },
+    {
+      "id": "case-orchestration-04",
+      "sourceId": "source-orchestration",
+      "sourceRef": "repo:docs/ORCHESTRATION.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "30f6bcf773aafe840ab0c9e6f6eb41fe5358561dd310a910305c9e6c73a3fb0b",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "minority"
+      ],
+      "question": "İddia aktarımı denetimi hangi kayıpları bulur ve kaynak metinden tüm önemli iddiaların çıkarıldığını kanıtlar mı?",
+      "sourceText": "After grouping, the domain compares every validated member claim to all analyst and red-team report occurrences by stable occurrence id, member/role, kind, statement and quote. Missing, duplicate, unexpected or altered occurrences make the transfer audit incomplete; older encrypted reports are checked again when read. This checks structured-output transfer only, not whether a model extracted every relevant fact from the original input. The owner may then annotate a claim's scope or explain a pairwise support, contradiction, qualification or different-scope relation. These notes never trigger an automatic evidence decision, regrouping or provider request."
+    },
+    {
+      "id": "case-prompts-01",
+      "sourceId": "source-prompts",
+      "sourceRef": "repo:docs/PROMPTS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "a13dcf2bd04e53ca77fa1781374174b72a88c001e2bbeb4a82beace5c114adcd",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "entity"
+      ],
+      "question": "Sağlayıcılara gönderilen ortak talimat üyelerden nasıl bir çıktı ve belirsizlik beyanı ister?",
+      "sourceText": "All remote adapters use the same short system/developer instruction requiring independent analysis, a concise summary, separable claims, quoted support from the member’s own answer, honest uncertainty, and no invented sources. The member's owner-selected role text is appended as that member's analysis focus in both rounds; it is not the fake-mode perspective enum. OpenAI and Gemini request schema-constrained output. Compatible endpoints use the connection's JSON Schema, JSON object, or prompt-only mode; Anthropic currently uses the prompt contract. Every adapter validates the result with the shared Zod `ProviderOutput` schema. Prompt text never contains credentials and is not logged."
+    },
+    {
+      "id": "case-prompts-02",
+      "sourceId": "source-prompts",
+      "sourceRef": "repo:docs/PROMPTS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "2c6420bf1e76331599295cbb6fee686585adb94124b802ebea86fb4d045ef7a6",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "condition"
+      ],
+      "question": "PDF içindeki komutlar sistem talimatının yerini alabilir mi ve PDF metni kimlere gönderilir?",
+      "sourceText": "Round 0 labels extracted PDF text as user-supplied, untrusted document data. Page markers support traceability but do not establish evidence or permit instructions inside the PDF to override the council prompt. The selected PDF text appears in the same frozen input only for attachment-consenting members. Round 1 excludes documents and image bytes."
+    },
+    {
+      "id": "case-prompts-03",
+      "sourceId": "source-prompts",
+      "sourceRef": "repo:docs/PROMPTS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "2f3c889dd3a73a14decedf19fabb52d4fe65ce0f476ff2cdd8d8fd56350e033d",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "minority"
+      ],
+      "question": "Çapraz inceleme talimatı çoğunluğu hakikat sayar mı; her eş için hangi kararlar istenir?",
+      "sourceText": "Round 1 uses a separate cross-review instruction. It states that the model is reviewing peers, prohibits majority-as-truth and invented sources, requires one or more assessments for every supplied peer, and requires exact target ids plus `support`, `qualify`, or `challenge`. The input contains the original frozen question and peers' validated summaries/claims. It excludes the reviewer's own result and every raw response."
+    },
+    {
+      "id": "case-prompts-04",
+      "sourceId": "source-prompts",
+      "sourceRef": "repo:docs/PROMPTS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "b086d93b48bbcd9a86f293e333650d202b6146d598e78377c59bf92aedf04566",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "temporal",
+        "negation"
+      ],
+      "question": "Önceki çalışmadan seçilen bellek metni yeni görevde doğrulanmış gerçek veya talimat sayılır mı?",
+      "sourceText": "When the owner selected shared-memory entries, both rounds receive only their frozen content, evidence state, and analyst/red-team source type. The prompt labels them as user-selected historical context whose truth and freshness are not guaranteed, explicitly says they are not instructions, and forbids silently treating them as facts. No memory is sent when the selection is empty."
+    },
+    {
+      "id": "case-providers-01",
+      "sourceId": "source-providers",
+      "sourceRef": "repo:docs/PROVIDERS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "df0c39c987368fbae9e7299f1c4a40cca6b738474eae5e42004f7795ab0521db",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "entity",
+        "condition"
+      ],
+      "question": "DeepSeek ve Qwen için uyumlu uç nokta adresi nasıl belirleniyor; yerel sunucular anahtarsız olabilir mi?",
+      "sourceText": "The compatible adapter requires an explicit base URL. Presets only fill editable defaults; they do not lock a service to a URL or model. DeepSeek uses the official `https://api.deepseek.com` default and current `deepseek-flash` example while remaining on the generic compatible boundary. Qwen keeps the URL empty because Model Studio endpoints are region and workspace specific. Ollama, vLLM, and local LiteLLM connections may omit an API key. Cloud presets require one."
+    },
+    {
+      "id": "case-providers-02",
+      "sourceId": "source-providers",
+      "sourceRef": "repo:docs/PROVIDERS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "a08581fc9fd0bd3ce40242daf759b6e44dd5f575eee68660df2cc2c67b1372ee",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "negation"
+      ],
+      "question": "GPT-5 Pro için max düşünme seviyesi varsayılabilir mi; seviye göreve göre değiştirilebilir mi?",
+      "sourceText": "Capability differs by model and provider. The selection belongs to the member snapshot and can change on every task. The application does not invent a model catalog or claim that every level is supported. In particular, the API model `gpt-5-pro` accepts only `high`; its `Pro` name does not mean that a `max` effort value exists. Models whose API documentation includes `max`, such as `gpt-5.6-sol`, may receive that value. The UI prevents the known `gpt-5-pro`/`max` mismatch; any other unsupported selection remains a known provider rejection."
+    },
+    {
+      "id": "case-providers-03",
+      "sourceId": "source-providers",
+      "sourceRef": "repo:docs/PROVIDERS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "09aa6cf4da51fda8230d54a40d906853c5c51c730e21d72ad83c4129cc830c35",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "negation"
+      ],
+      "question": "Otomatik web araması açılınca her API modeli sınırsız internet erişimi kazanır mı?",
+      "sourceText": "Every member snapshot has an explicit `off` or `auto` web-search mode. `auto` does not mean that every API model already has unrestricted internet access. The adapter adds the provider's native search tool to the request, and the model decides whether the task needs it:"
+    },
+    {
+      "id": "case-providers-04",
+      "sourceId": "source-providers",
+      "sourceRef": "repo:docs/PROVIDERS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "3cecd7307506523ed8ca7b3a9113a789d4c100464950302b9935adcb40eb480a",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "condition",
+        "negation"
+      ],
+      "question": "PDF ve görseller hangi turda, hangi üyelerle paylaşılır; taranmış PDF nasıl ele alınır?",
+      "sourceText": "Task images remain native image content in round 0. A selected PDF is parsed locally into selectable, page-marked text and enters the normalized user input as untrusted document context for each member whose attachment switch is on. This works across the native and compatible text adapters without relying on each provider's PDF-upload API. Non-consenting members and cross-review receive neither image bytes nor PDF text. Scanned PDFs without selectable text are rejected; no OCR or provider-native PDF processing is implied."
+    },
+    {
+      "id": "case-security-01",
+      "sourceId": "source-security",
+      "sourceRef": "repo:docs/SECURITY.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "06e7378209ddecd643ce4ff8ff77016ac3b9c58e58f44f9881f66ef76c28adf2",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "entity",
+        "condition"
+      ],
+      "question": "Which sensitive fields are encrypted before PostgreSQL, and what prevents ciphertext from being moved between records?",
+      "sourceText": "`DATA_ENCRYPTION_KEY` is a 32-byte local master key. AES-256-GCM envelopes use a random 96-bit IV and context-specific authenticated data so ciphertext cannot be moved between records or fields without detection. Questions, run member snapshots, council-template members, reports, raw and parsed outputs, claim statements, quotes, provider results, provider-returned citation URLs/titles, and API keys are encrypted before they reach PostgreSQL. Hashes, state names, template names, provider/model identifiers, member counts, timestamps, token counts, and queue metadata remain searchable plaintext."
+    },
+    {
+      "id": "case-security-02",
+      "sourceId": "source-security",
+      "sourceRef": "repo:docs/SECURITY.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "1ac3445a794cb88e870cb8aac5036be2b5d9136b669fc0a24089be615e8e66a5",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "negation",
+        "minority"
+      ],
+      "question": "What information may cross from one provider to another during peer review, and what stays excluded?",
+      "sourceText": "Cross-review minimizes lateral disclosure between providers. It shares only validated structured summaries and claims from successful round-0 members. It excludes raw response text, credentials, operation metadata, and the reviewer's own output. Review artifacts are encrypted under the same content controls as analysis artifacts."
+    },
+    {
+      "id": "case-security-03",
+      "sourceId": "source-security",
+      "sourceRef": "repo:docs/SECURITY.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "5206882768fddf3a90c7390414fd3494e68052e3448e0f80e83476385833574b",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "condition",
+        "entity"
+      ],
+      "question": "Which URL and DNS checks prevent the application's research fetch from reaching private targets?",
+      "sourceText": "Application-managed retrieval has its own same-origin command and [ADR-0018](adr/0018-application-managed-retrieval.md) network boundary. Only HTTP(S) ports 80/443 are allowed. Embedded credentials, localhost, every non-public DNS answer, private/link-local/reserved/documentation/metadata ranges and unsafe redirect hops are rejected. A validated IP is pinned into the actual connection to close the DNS-check/use gap. There are no automatic redirects or retries; the request has a 10-second deadline, 16 KiB header limit and 1 MiB body limit. HTML/plain text is decoded and executable/decorative markup is discarded. PDFs are parsed only from the bounded byte snapshot with rendering disabled, a 100-page cap and a separate ten-second deadline. All formats retain at most 64,000 characters. Requested/final URLs, title and content are encrypted; the digest and size are non-secret metadata. Each claim is capped at five captures."
+    },
+    {
+      "id": "case-security-04",
+      "sourceId": "source-security",
+      "sourceRef": "repo:docs/SECURITY.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "cfb54d10b172506b78df5be457c1b40c20afbe73bc75ca1af544ff43c0001ad0",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "numeric",
+        "condition"
+      ],
+      "question": "What are the file-count and size limits for attachments, and how is PDF text checked before storage?",
+      "sourceText": "Task attachments are untrusted model input. The browser and server allow JPEG, PNG, WebP, GIF and selectable-text PDF, with at most six files, 2 MiB per image, 5 MiB per PDF and 12 MiB in total. Each digest and declared file signature is checked before encrypted persistence. PDF text is extracted locally with a 100-page, 64,000-character and ten-second limit; the server repeats extraction at enqueue and rejects a mismatch with the browser's preview text. Image-only PDFs are rejected because OCR is not enabled. A member receives image bytes or extracted PDF text only when the owner enables that member's task-level attachment switch. Attachment content is labeled untrusted, cannot authorize retrieval, is excluded from cross-review and is never written to ordinary logs. The preflight token estimate sends the question, image dimensions and extracted PDF text only to the loopback application route; it makes no provider call and persists no preview. It is explicitly approximate because providers tokenize images and structured requests differently."
+    },
+    {
+      "id": "case-operations-01",
+      "sourceId": "source-operations",
+      "sourceRef": "repo:docs/OPERATIONS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "add18959147b93bf8b078fa54b3db534285a9e10a72f591ce115ef48a205e65d",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "temporal",
+        "condition"
+      ],
+      "question": "If the web and worker processes stop, what happens to PostgreSQL jobs when they start again?",
+      "sourceText": "`pnpm dev` starts the Next.js BFF and the pg-boss worker together. Stopping those processes does not stop PostgreSQL or remove queued jobs. Restarting them resumes queued work from the database."
+    },
+    {
+      "id": "case-operations-02",
+      "sourceId": "source-operations",
+      "sourceRef": "repo:docs/OPERATIONS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "50ffe932b7e393eab179d15586afaf1c65e6ab22337d88a57ef9dd61594ee27b",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "numeric",
+        "negation"
+      ],
+      "question": "Does the pre-submit token preview consume provider tokens, and where would exact billed usage come from?",
+      "sourceText": "The web server listens on `127.0.0.1:3000`. Before submitting a question, the UI shows an approximate first-round token count including selected context and opted-in images. This preview is computed locally and does not spend provider tokens; compare actual usage from a completed provider operation if exact billing is needed."
+    },
+    {
+      "id": "case-operations-03",
+      "sourceId": "source-operations",
+      "sourceRef": "repo:docs/OPERATIONS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "0be92840069d72d620e5a406f7f3a73469c2de706c2ee68ecb90cddceff211f2",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "temporal",
+        "condition"
+      ],
+      "question": "When are local schedules first eligible to run, and what happens to an overdue occurrence after a worker restart?",
+      "sourceText": "Local schedules are daily or weekly and always start paused. Activation authorizes future runs using the frozen question/member configuration. The worker checks at startup and every 30 seconds; stopping `pnpm dev` prevents execution, and starting it later queues an overdue active occurrence. Pause or delete schedules before changing provider credentials or model availability."
+    },
+    {
+      "id": "case-operations-04",
+      "sourceId": "source-operations",
+      "sourceRef": "repo:docs/OPERATIONS.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "4f541e1103ad5213f6e6eec6d47a53825467f8c80b9452c9338386c49ab6c496",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "condition",
+        "temporal"
+      ],
+      "question": "Why must the database and local environment file be backed up together before changing the encryption key?",
+      "sourceText": "`pnpm db:encrypt-existing` encrypts legacy plaintext rows and is safe to rerun. `pnpm db:prune` deletes terminal runs older than `RUN_RETENTION_DAYS` and relies on cascading foreign keys. Back up both the database and `.env.local` together: replacing `DATA_ENCRYPTION_KEY` after data has been encrypted makes that data unreadable until a key-rotation workflow is implemented."
+    },
+    {
+      "id": "case-testing-01",
+      "sourceId": "source-testing",
+      "sourceRef": "repo:docs/TESTING.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "2a0ef80fb94beea018b5976d97217502b68b89d3f979b4b79e0899c51ebe7a50",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "negation",
+        "condition"
+      ],
+      "question": "What do perfect predictions on the frozen fixture establish about real-world model accuracy?",
+      "sourceText": "The offline evaluation tests additionally cover corpus/schema versions, Turkish-first fixture composition, document-level split isolation, exact evidence-span integrity, complete and normalized prediction sets, semantic `insufficient_evidence` versus operational `not_assessed`, confusion/safety/calibration metrics, critical false-support reporting, immutability, and repeatable paired document-clustered intervals. Perfect fixture predictions validate arithmetic only and are never reported as model accuracy."
+    },
+    {
+      "id": "case-testing-02",
+      "sourceId": "source-testing",
+      "sourceRef": "repo:docs/TESTING.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "f9271972362b828998c69d1975f5a0886b3562e47da9647db81670cea0cad89e",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "numeric",
+        "negation"
+      ],
+      "question": "Do the council coverage unit cases validate real extraction recall or only calculation and report binding?",
+      "sourceText": "DA-049/DA-050 provide five offline council-coverage tests for exact source offsets, document-split isolation, complete human judgments, report-derived occurrence ids, mismatched run rejection, tampered claim-ledger rejection, conservative recall bounds and critical missing/uncertain/unassessed counts. The tiny synthetic examples test the calculator and report binding, not model claim-extraction accuracy. The separate real 40-case bilingual corpus and opt-in council runs remain open."
+    },
+    {
+      "id": "case-testing-03",
+      "sourceId": "source-testing",
+      "sourceRef": "repo:docs/TESTING.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "4b0577b02b062de3a932609234eb142713eebe91aacd3d6ebc19e233afd14a6d",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "entity",
+        "negation"
+      ],
+      "question": "Can the labeling-gate tests prove that reviewers were independent humans?",
+      "sourceText": "DA-052 adds three offline labeling-gate tests for source-text fingerprints, reviewer/adjudicator separation, exact span validation, complete review-claim accounting, explained disagreements and source-reference split leakage. The fixtures use synthetic people and source text; passing them does not establish independent human review or a representative corpus."
+    },
+    {
+      "id": "case-testing-04",
+      "sourceId": "source-testing",
+      "sourceRef": "repo:docs/TESTING.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "7ab4c05b35df9d3ab214777a5a827ca0ce69bb3a24b2da64c3f5e810f3af5640",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "condition",
+        "temporal"
+      ],
+      "question": "When are live provider tests run, and can they incur cost in ordinary checks?",
+      "sourceText": "Live provider tests remain manual and opt-in. They require an explicitly configured local credential and model, may incur provider cost, and never run in ordinary checks."
+    },
+    {
+      "id": "case-roadmap-01",
+      "sourceId": "source-roadmap",
+      "sourceRef": "repo:docs/ROADMAP.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "62d1c22bedecf41b5c9461c0fafbd91e02a5a85ef61fda0592c243acb744a7cc",
+      "split": "held_out",
+      "language": "mixed",
+      "riskTags": [
+        "temporal",
+        "entity"
+      ],
+      "question": "Local foundation kapsamında PostgreSQL ve provider connection işleri tamamlandı mı?",
+      "sourceText": "1. **Delivered local foundation:** persistent repository, TypeScript workspace, PostgreSQL/pg-boss worker, durable fake-provider council, cancellation/replay, encryption, local provider connections and opt-in live adapter smoke tests."
+    },
+    {
+      "id": "case-roadmap-02",
+      "sourceId": "source-roadmap",
+      "sourceRef": "repo:docs/ROADMAP.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "44d77725082c5eb503d87f5b79ba000366a24dc19f345a580c8f3039921ad236",
+      "split": "held_out",
+      "language": "mixed",
+      "riskTags": [
+        "red_team",
+        "minority"
+      ],
+      "question": "Council slices içinde red-team ve claim transfer audit hangi kapsamda teslim edildi?",
+      "sourceText": "2. **Delivered council slices:** 2–6 members, one optional cross-review round, independent red-team members, deterministic claim grouping, exact structured-claim transfer audit, owner scope/relation/evidence/coverage annotations and bounded selected-claim memory."
+    },
+    {
+      "id": "case-roadmap-03",
+      "sourceId": "source-roadmap",
+      "sourceRef": "repo:docs/ROADMAP.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "3aefe203a56a6fa62baa0992cfdb75aad3327d369ec4a149d9289690e661a40a",
+      "split": "held_out",
+      "language": "mixed",
+      "riskTags": [
+        "condition",
+        "negation"
+      ],
+      "question": "Research/tools slices içinde PDF ve MCP var mı; local demo mode hâlâ kullanıcıya sunuluyor mu?",
+      "sourceText": "3. **Delivered research and tools slices:** provider-native search where supported, owner-initiated safe web/PDF/browser capture, bounded image and selectable-text PDF task attachments, explicit loopback MCP results and paused-by-default schedules. The owner-facing council now requires saved connections rather than offering local demo mode."
+    },
+    {
+      "id": "case-roadmap-04",
+      "sourceId": "source-roadmap",
+      "sourceRef": "repo:docs/ROADMAP.md",
+      "capturedAt": "2026-09-26T11:14:03.583Z",
+      "sourceSha256": "51db5183e64ec301380e4757f2fcc6c37f95c78d491f351579778e44d15969ed",
+      "split": "held_out",
+      "language": "mixed",
+      "riskTags": [
+        "numeric",
+        "condition"
+      ],
+      "question": "Remaining gates listesinde ek review rounds ve semantic contradiction hâlâ açık mı?",
+      "sourceText": "4. **Remaining original-plan gates:** prompt optimization and automatic/conservative risk classification, 2–3 additional review rounds and self-revision, semantic contradiction and source-level extraction/coverage checks, final synthesis checks, hard usage/cost budgets, conversation/compaction/branches/export, broader evaluation and operational hardening. Same-model seat inflation was addressed in DA-042, mixed objection classifications in DA-044, exact structured-output transfer in DA-045, declared high-risk control enforcement in DA-046, first-round prompt preview/version checking in DA-047, and malformed-response preservation in DA-048. DA-049 provides a source-level recall calculator, DA-050 binds judgments to audited occurrences, DA-051 loads persisted reports, and DA-052 provides the dual-review/adjudication gate; real gold labels, source verification and model measurements remain open. Model alias equivalence remains uncertain."
+    }
+  ]
+}

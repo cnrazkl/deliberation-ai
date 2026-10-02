@@ -1,0 +1,18 @@
+{
+  "name": "@deliberation-ai/retrieval",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.3",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.3.289",
+    "playwright": "1.63.0"
+  }
+}

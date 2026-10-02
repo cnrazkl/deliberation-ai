@@ -1,0 +1,2 @@
+ALTER TABLE "runs" DROP CONSTRAINT "runs_attachment_count_range";--> statement-breakpoint
+ALTER TABLE "runs" ADD CONSTRAINT "runs_attachment_count_range" CHECK ("runs"."attachment_count" between 0 and 6);

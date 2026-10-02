@@ -1,0 +1,19 @@
+{
+  "name": "@deliberation-ai/providers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deliberation-ai/contracts": "workspace:*",
+    "@deliberation-ai/evaluation": "workspace:*",
+    "openai": "^7.15.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

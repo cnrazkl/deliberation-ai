@@ -1,0 +1,783 @@
+{
+  "schemaVersion": "external-council-suite-v1",
+  "description": "40 implementer-selected external-domain candidate questions; 26 Turkish, 10 English, 4 mixed. US agency excerpts with attributed source conflict. Not independent gold or population-representative sampling. Source language is English; question/answer language is recorded separately.",
+  "sources": [
+    {
+      "id": "pluto",
+      "documentId": "pluto",
+      "family": "pluto",
+      "domain": "astronomy",
+      "title": "Pluto Facts",
+      "url": "https://science.nasa.gov/dwarf-planets/pluto/facts/",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": null,
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Discovered in 1930, Pluto was long considered our solar system's ninth planet. But after the discovery of similar worlds deeper in the Kuiper Belt, Pluto was reclassified as a dwarf planet in 2006 by the International Astronomical Union.",
+      "sha256": "f1e54185082e6f30e222afc6cbfb3b83fd8ecf894994b14f87bf77ef389ec781"
+    },
+    {
+      "id": "planet-x",
+      "documentId": "planet-x",
+      "family": "pluto",
+      "domain": "astronomy",
+      "title": "Hypothetical Planet X",
+      "url": "https://science.nasa.gov/solar-system/planet-x/",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": "2025-03-12",
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Pluto was considered the ninth major planet in our solar system until the definition of “planet” was changed by the International Astronomical Union (IAU) in 2016. This new definition reclassified Pluto as a dwarf planet.",
+      "sha256": "00602856308b9c1abfa91fbd57f55cc32d58c8d7ada233b35a43ce2c8334bbdc"
+    },
+    {
+      "id": "sun",
+      "documentId": "sun",
+      "family": "solar-rotation",
+      "domain": "astronomy",
+      "title": "Our Sun: Facts",
+      "url": "https://science.nasa.gov/sun/facts/",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": null,
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Measuring a “day” on the Sun is complicated. The Sun is made of super-hot, electrically charged gas called plasma. This plasma rotates at different speeds on different parts of the Sun. At its equator, the Sun completes one rotation in 25 Earth days. At its poles, the Sun rotates once on its axis every 36 Earth days.\nThe part of the Sun we see from Earth – the part we call the surface – is the photosphere. The Sun doesn’t actually have a solid surface because it’s a ball of plasma.",
+      "sha256": "e08d12be1d2d2565eff1937186d6189f939f83a3f6aafdc17e48c43bb46dffa7"
+    },
+    {
+      "id": "earthquake",
+      "documentId": "earthquake",
+      "family": "earthquake-prediction",
+      "domain": "earth-science",
+      "title": "Can you predict earthquakes?",
+      "url": "https://www.usgs.gov/faqs/can-you-predict-earthquakes",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": null,
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "No. Neither the USGS nor any other scientists have ever predicted a major earthquake. We do not know how, and we do not expect to know how any time in the foreseeable future. USGS scientists can only calculate the probability that a significant earthquake will occur in a specific area within a certain number of years.\nAn earthquake prediction must define 3 elements: 1) the date and time, 2) the location, and 3) the magnitude.",
+      "sha256": "3e35380c67e646d2167166a3720665ceb19636e75977ae80a4003424efd469f6"
+    },
+    {
+      "id": "volcano",
+      "documentId": "volcano",
+      "family": "volcano-forecast",
+      "domain": "earth-science",
+      "title": "How can we tell when a volcano will erupt?",
+      "url": "https://www.usgs.gov/faqs/how-can-we-tell-when-a-volcano-will-erupt",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": null,
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Most volcanoes provide warnings before an eruption. Magmatic eruptions involve the rise of magma toward the surface, which normally generates detectable earthquakes. It can also deform the ground surface and cause anomalous heat flow or changes in the temperature and chemistry of the groundwater and spring waters. Steam-blast eruptions, however, can occur with little or no warning as superheated water flashes to steam.\nThese precursors do not indicate the type or scale of an expected eruption (that information is best obtained by mapping previous eruptions). Precursors can continue for weeks, months, or even years before eruptive activity begins, or they can subside at any time and not be followed by an eruption.",
+      "sha256": "56ef9280810b1ae2a067441edd4baa91745e25bcd0a81dafb9fd5c7d34d499ae"
+    },
+    {
+      "id": "hurricane",
+      "documentId": "hurricane",
+      "family": "hurricane-alert",
+      "domain": "weather-ocean",
+      "title": "Hurricane watch and warning",
+      "url": "https://oceanservice.noaa.gov/facts/watch-warning.html",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": "2026-09-23",
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Hurricane warnings indicate that hurricane conditions (sustained winds of 74 mph or higher) are expected somewhere within the specified area. Because hurricane preparedness activities become difficult once winds reach tropical storm force (sustained winds of 39 to 73 mph), the hurricane warning is issued 36 hours in advance of the anticipated onset of tropical-storm-force winds to allow for important preparation.\nA hurricane watch means that hurricane conditions (sustained winds of 74 mph or higher) are possible within the specified area. A hurricane watch is issued 48 hours in advance of the anticipated onset of tropical-storm-force winds in an area.",
+      "sha256": "a9de31ce02e87559ef246ee10ef27c902374a105ba3a384e94b94e2a0a1c4087"
+    },
+    {
+      "id": "tides",
+      "documentId": "tides",
+      "family": "tidal-range",
+      "domain": "weather-ocean",
+      "title": "What are tides?",
+      "url": "https://oceanservice.noaa.gov/facts/tides.html",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": "2026-09-23",
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Tides are very long-period waves that move through the ocean in response to the forces exerted by the moon and sun. Tides originate in the ocean and progress toward the coastlines where they appear as the regular rise and fall of the sea surface.\nWhen the highest part, or crest, of the wave reaches a particular location, high tide occurs; low tide corresponds to the lowest part of the wave, or its trough. The difference in height between the high tide and the low tide is called the tidal range.",
+      "sha256": "e6ba897f53f6333593427d85b234665aaee24657870b6f4c68d22a52ea43d954"
+    },
+    {
+      "id": "antibiotics",
+      "documentId": "antibiotics",
+      "family": "antibiotic-scope",
+      "domain": "health",
+      "title": "Healthy Habits: Antibiotic Do's and Don'ts",
+      "url": "https://www.cdc.gov/antibiotic-use/about/",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": "2025-09-23",
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Some infections caused by bacteria can still get better without antibiotics. You DO NOT need antibiotics for some common bacterial infections, including many sinus infections and some ear infections.\nAntibiotics DO NOT work on viruses.\nTaking antibiotics when you do not need them will not help you, and their side effects can still cause harm. Talk to a healthcare professional about the best treatment for you when you are sick. Never pressure a healthcare professional to prescribe an antibiotic.",
+      "sha256": "a99a0d5ec2f6a598c2af093f8c7c83527bfc3da0aa14f061264e8d5054b45e18"
+    },
+    {
+      "id": "co",
+      "documentId": "co",
+      "family": "generator-safety",
+      "domain": "health",
+      "title": "Carbon Monoxide Poisoning Basics",
+      "url": "https://www.cdc.gov/carbon-monoxide/about/index.html",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": "2026-01-12",
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Carbon monoxide (CO) is an odorless, colorless gas that kills without warning.\nNever use a generator inside your home or garage, even if doors and windows are open.\nOnly use generators outside, more than 20 feet away from any windows, doors, and vents.\nWhen using a generator, use a battery-powered or battery backup CO detector in your home.",
+      "sha256": "a9db041f6b1ac0452be946a627ccac17d429628acf34d718c5e47b2389840e3e"
+    },
+    {
+      "id": "si",
+      "documentId": "si",
+      "family": "si-units",
+      "domain": "measurement",
+      "title": "Definitions of SI Base Units",
+      "url": "https://www.nist.gov/si-redefinition/definitions-si-base-units",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": null,
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "The second is defined by taking the fixed numerical value of the cesium frequency ∆νCs, the unperturbed ground-state hyperfine transition frequency of the cesium-133 atom, to be 9,192,631,770 when expressed in the unit Hz, which is equal to s−1.\nThe meter is defined by taking the fixed numerical value of the speed of light in vacuum c to be 299,792,458 when expressed in the unit m s−1, where the second is defined in terms of ∆νCs.",
+      "sha256": "51c9c05638d758c1f7ba190cb8c26854b61ec42980356cb5306bb7d35940ad79"
+    },
+    {
+      "id": "interest",
+      "documentId": "interest",
+      "family": "compound-interest",
+      "domain": "finance",
+      "title": "How does compound interest work?",
+      "url": "https://www.consumerfinance.gov/ask-cfpb/how-does-compound-interest-work-en-1683/",
+      "capturedAt": "2026-09-27T11:21:44.166Z",
+      "publishedAt": "2023-10-19",
+      "usage": "Short US federal agency text excerpt; public-domain government information. Logos, images, third-party quotations and endorsement excluded.",
+      "text": "Compound interest is when you earn interest on the money you’ve saved and on the interest you earn along the way.\nAmount you start with: $1,000. How much you earn: 5 percent. How often you calculate interest: Once a year. Amount after the first year: $1,050. Amount after the second year: $1,102.50.",
+      "sha256": "08ff80c7ffe1cc4143dc69dbf0272b6476e4b9c8011b8f708d2c1d38b6bdd99e"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case-external-pluto-1",
+      "sourceIds": [
+        "pluto",
+        "planet-x"
+      ],
+      "family": "pluto",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "source_conflict",
+        "temporal",
+        "numeric",
+        "minority"
+      ],
+      "question": "İki kaynağa göre Plüton'un yeniden sınıflandırıldığı tarih nedir? Uyuşmazlığı kaynak atıflarıyla koru; tek tarihi kesinleştirme."
+    },
+    {
+      "id": "case-external-pluto-2",
+      "sourceIds": [
+        "pluto",
+        "planet-x"
+      ],
+      "family": "pluto",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "source_conflict",
+        "temporal",
+        "numeric",
+        "minority"
+      ],
+      "question": "Bir özet yalnız 2016 yazarsa hangi karşı kanıtı kaybeder? Her iki belgedeki iddiayı ayrı belirt."
+    },
+    {
+      "id": "case-external-pluto-3",
+      "sourceIds": [
+        "pluto",
+        "planet-x"
+      ],
+      "family": "pluto",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "source_conflict",
+        "temporal",
+        "numeric",
+        "minority"
+      ],
+      "question": "What do these sources agree on, and where do their dates disagree? Preserve both attributions."
+    },
+    {
+      "id": "case-external-pluto-4",
+      "sourceIds": [
+        "pluto",
+        "planet-x"
+      ],
+      "family": "pluto",
+      "split": "held_out",
+      "language": "mixed",
+      "riskTags": [
+        "source_conflict",
+        "temporal",
+        "numeric",
+        "minority"
+      ],
+      "question": "Pluto reclassification: tarih ve sınıflandırma iddialarını ayır; source conflict açık kalsın."
+    },
+    {
+      "id": "case-external-sun-1",
+      "sourceIds": [
+        "sun"
+      ],
+      "family": "solar-rotation",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "condition",
+        "entity",
+        "negation"
+      ],
+      "question": "Güneşin dönüş süresi neden tek sayıyla anlatılamaz? Ekvator ve kutup koşullarını açıkla."
+    },
+    {
+      "id": "case-external-sun-2",
+      "sourceIds": [
+        "sun"
+      ],
+      "family": "solar-rotation",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "condition",
+        "entity",
+        "negation"
+      ],
+      "question": "Güneşin görünür yüzeyi katı mıdır ve adı nedir? Kaynaktaki olumsuzlamayı koru."
+    },
+    {
+      "id": "case-external-sun-3",
+      "sourceIds": [
+        "sun"
+      ],
+      "family": "solar-rotation",
+      "split": "development",
+      "language": "en",
+      "riskTags": [
+        "numeric",
+        "condition",
+        "entity",
+        "negation"
+      ],
+      "question": "Are 25 and 36 Earth days contradictory rotation estimates? Explain their scopes from the source."
+    },
+    {
+      "id": "case-external-sun-4",
+      "sourceIds": [
+        "sun"
+      ],
+      "family": "solar-rotation",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "condition",
+        "entity",
+        "negation"
+      ],
+      "question": "Güneşin tamamı 25 günde döner ifadesini kaynak sınırlarıyla düzelt; iki süreyi de belirt."
+    },
+    {
+      "id": "case-external-earthquake-1",
+      "sourceIds": [
+        "earthquake"
+      ],
+      "family": "earthquake-prediction",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "temporal",
+        "condition",
+        "red_team"
+      ],
+      "question": "Kaynağa göre kesin deprem tahmini ile olasılık hesabı arasındaki fark nedir?"
+    },
+    {
+      "id": "case-external-earthquake-2",
+      "sourceIds": [
+        "earthquake"
+      ],
+      "family": "earthquake-prediction",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "temporal",
+        "condition",
+        "red_team"
+      ],
+      "question": "Belirli bir bölgede yıllar içindeki deprem olasılığı yarının kesin saatini verir mi? Kaynağa göre değerlendir."
+    },
+    {
+      "id": "case-external-earthquake-3",
+      "sourceIds": [
+        "earthquake"
+      ],
+      "family": "earthquake-prediction",
+      "split": "development",
+      "language": "en",
+      "riskTags": [
+        "negation",
+        "temporal",
+        "condition",
+        "red_team"
+      ],
+      "question": "Which three elements must an earthquake prediction define, and what can USGS calculate?"
+    },
+    {
+      "id": "case-external-earthquake-4",
+      "sourceIds": [
+        "earthquake"
+      ],
+      "family": "earthquake-prediction",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "temporal",
+        "condition",
+        "red_team"
+      ],
+      "question": "Birisi kesin deprem tahmini yaptığını söylüyor. Kaynaktan hareketle bu iddiaya itirazı ve ölçütleri açıkla."
+    },
+    {
+      "id": "case-external-volcano-1",
+      "sourceIds": [
+        "volcano"
+      ],
+      "family": "volcano-forecast",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "condition",
+        "temporal",
+        "red_team"
+      ],
+      "question": "Her volkanik patlamanın mutlaka önceden uyarı vereceği söylenebilir mi? İstisnayı koru."
+    },
+    {
+      "id": "case-external-volcano-2",
+      "sourceIds": [
+        "volcano"
+      ],
+      "family": "volcano-forecast",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "condition",
+        "temporal",
+        "red_team"
+      ],
+      "question": "Öncü belirtilerin sürmesi kesin patlama zamanı veya ölçeği verir mi? Belirsizliği açıklayınız."
+    },
+    {
+      "id": "case-external-volcano-3",
+      "sourceIds": [
+        "volcano"
+      ],
+      "family": "volcano-forecast",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "negation",
+        "condition",
+        "temporal",
+        "red_team"
+      ],
+      "question": "What warning differences does the excerpt describe for magmatic and steam-blast eruptions?"
+    },
+    {
+      "id": "case-external-volcano-4",
+      "sourceIds": [
+        "volcano"
+      ],
+      "family": "volcano-forecast",
+      "split": "held_out",
+      "language": "mixed",
+      "riskTags": [
+        "negation",
+        "condition",
+        "temporal",
+        "red_team"
+      ],
+      "question": "Volcano precursors: belirtiler weeks veya years sürerse kesinlik artar mı? Kaynaktaki sınırı koru."
+    },
+    {
+      "id": "case-external-hurricane-1",
+      "sourceIds": [
+        "hurricane"
+      ],
+      "family": "hurricane-alert",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "temporal",
+        "condition",
+        "entity"
+      ],
+      "question": "Watch ile warning arasındaki olasılık ve zaman farklarını rüzgâr eşikleriyle açıkla."
+    },
+    {
+      "id": "case-external-hurricane-2",
+      "sourceIds": [
+        "hurricane"
+      ],
+      "family": "hurricane-alert",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "temporal",
+        "condition",
+        "entity"
+      ],
+      "question": "36 ve 48 saat hangi rüzgârın başlamasına göredir? Yanlış eşik kullanımını önle."
+    },
+    {
+      "id": "case-external-hurricane-3",
+      "sourceIds": [
+        "hurricane"
+      ],
+      "family": "hurricane-alert",
+      "split": "development",
+      "language": "en",
+      "riskTags": [
+        "numeric",
+        "temporal",
+        "condition",
+        "entity"
+      ],
+      "question": "Compare hurricane watches and warnings without exchanging possible and expected or their lead times."
+    },
+    {
+      "id": "case-external-hurricane-4",
+      "sourceIds": [
+        "hurricane"
+      ],
+      "family": "hurricane-alert",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "temporal",
+        "condition",
+        "entity"
+      ],
+      "question": "Kasırga uyarısını 48 saat ve watch durumunu 36 saat olarak özetlemek kaynağa uygun mu? Düzelt."
+    },
+    {
+      "id": "case-external-tides-1",
+      "sourceIds": [
+        "tides"
+      ],
+      "family": "tidal-range",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "entity",
+        "condition",
+        "numeric"
+      ],
+      "question": "Gelgit aralığı nedir; yüksek ve alçak su hangi dalga kısımlarına karşılık gelir?"
+    },
+    {
+      "id": "case-external-tides-2",
+      "sourceIds": [
+        "tides"
+      ],
+      "family": "tidal-range",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "entity",
+        "condition",
+        "numeric"
+      ],
+      "question": "Gelgitlerin nedeni yalnız Ay mıdır? Kaynağın saydığı etkenleri ve kıyıda görülen sonucu açıkla."
+    },
+    {
+      "id": "case-external-tides-3",
+      "sourceIds": [
+        "tides"
+      ],
+      "family": "tidal-range",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "entity",
+        "condition",
+        "numeric"
+      ],
+      "question": "Define tidal range and distinguish the crest and trough without inventing a numerical range."
+    },
+    {
+      "id": "case-external-tides-4",
+      "sourceIds": [
+        "tides"
+      ],
+      "family": "tidal-range",
+      "split": "held_out",
+      "language": "mixed",
+      "riskTags": [
+        "entity",
+        "condition",
+        "numeric"
+      ],
+      "question": "Tidal range bir süre mi yükseklik farkı mı? Kaynaktaki high tide ve low tide tanımlarını kullan."
+    },
+    {
+      "id": "case-external-antibiotics-1",
+      "sourceIds": [
+        "antibiotics"
+      ],
+      "family": "antibiotic-scope",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "condition",
+        "minority",
+        "red_team"
+      ],
+      "question": "Antibiyotikler virüsler ve tüm bakteriyel enfeksiyonlar için gerekli midir? İstisnaları koru."
+    },
+    {
+      "id": "case-external-antibiotics-2",
+      "sourceIds": [
+        "antibiotics"
+      ],
+      "family": "antibiotic-scope",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "condition",
+        "minority",
+        "red_team"
+      ],
+      "question": "Gereksiz antibiyotiğin zararsız olduğu iddiasını kaynağa göre değerlendir."
+    },
+    {
+      "id": "case-external-antibiotics-3",
+      "sourceIds": [
+        "antibiotics"
+      ],
+      "family": "antibiotic-scope",
+      "split": "development",
+      "language": "en",
+      "riskTags": [
+        "negation",
+        "condition",
+        "minority",
+        "red_team"
+      ],
+      "question": "Preserve both the bacterial-infection exceptions and the statement about viruses in a short summary."
+    },
+    {
+      "id": "case-external-antibiotics-4",
+      "sourceIds": [
+        "antibiotics"
+      ],
+      "family": "antibiotic-scope",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "condition",
+        "minority",
+        "red_team"
+      ],
+      "question": "Çoğunluk tüm bakteriyel enfeksiyonlara antibiyotik gerekir diyorsa kaynakta hangi karşı örnekler var?"
+    },
+    {
+      "id": "case-external-co-1",
+      "sourceIds": [
+        "co"
+      ],
+      "family": "generator-safety",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "numeric",
+        "condition",
+        "red_team"
+      ],
+      "question": "Pencereleri açık garajda jeneratör kullanılabilir mi? Dışarıdaki mesafe ve dedektör koşulunu koru."
+    },
+    {
+      "id": "case-external-co-2",
+      "sourceIds": [
+        "co"
+      ],
+      "family": "generator-safety",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "negation",
+        "numeric",
+        "condition",
+        "red_team"
+      ],
+      "question": "Karbonmonoksit kokusuzsa tehlikesiz midir? Kaynaktaki korunma koşullarını özetle."
+    },
+    {
+      "id": "case-external-co-3",
+      "sourceIds": [
+        "co"
+      ],
+      "family": "generator-safety",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "negation",
+        "numeric",
+        "condition",
+        "red_team"
+      ],
+      "question": "What does the source require for generator placement and CO detection? Preserve the strict distance wording."
+    },
+    {
+      "id": "case-external-co-4",
+      "sourceIds": [
+        "co"
+      ],
+      "family": "generator-safety",
+      "split": "held_out",
+      "language": "mixed",
+      "riskTags": [
+        "negation",
+        "numeric",
+        "condition",
+        "red_team"
+      ],
+      "question": "Generator safety: tam 20 feet yeterli denebilir mi? More than koşulunu ve garaj yasağını koru."
+    },
+    {
+      "id": "case-external-si-1",
+      "sourceIds": [
+        "si"
+      ],
+      "family": "si-units",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "entity",
+        "condition"
+      ],
+      "question": "Saniye ve metre hangi fiziksel niceliklerle tanımlanır? Sayıları ve birimleri karıştırmadan yaz."
+    },
+    {
+      "id": "case-external-si-2",
+      "sourceIds": [
+        "si"
+      ],
+      "family": "si-units",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "entity",
+        "condition"
+      ],
+      "question": "Işık hızı değerindeki vakum koşulu neden özette korunmalı? Kaynağın verdiği tanımı aktar."
+    },
+    {
+      "id": "case-external-si-3",
+      "sourceIds": [
+        "si"
+      ],
+      "family": "si-units",
+      "split": "development",
+      "language": "en",
+      "riskTags": [
+        "numeric",
+        "entity",
+        "condition"
+      ],
+      "question": "Distinguish the cesium frequency from the speed of light, preserving every digit and unit."
+    },
+    {
+      "id": "case-external-si-4",
+      "sourceIds": [
+        "si"
+      ],
+      "family": "si-units",
+      "split": "development",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "entity",
+        "condition"
+      ],
+      "question": "Saniyenin tanımındaki atom hangisidir, metre saniyeye nasıl bağlıdır? Kaynağa bağlı kal."
+    },
+    {
+      "id": "case-external-interest-1",
+      "sourceIds": [
+        "interest"
+      ],
+      "family": "compound-interest",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "temporal",
+        "condition"
+      ],
+      "question": "Örnekte birinci ve ikinci yıl bakiyeleri neden farklı artar? Anapara, oran ve sıklığı belirt."
+    },
+    {
+      "id": "case-external-interest-2",
+      "sourceIds": [
+        "interest"
+      ],
+      "family": "compound-interest",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "temporal",
+        "condition"
+      ],
+      "question": "Bu örnek aylık bileşik faiz hesabı mıdır? Dönem koşulunu ve ikinci yıl tutarını koru."
+    },
+    {
+      "id": "case-external-interest-3",
+      "sourceIds": [
+        "interest"
+      ],
+      "family": "compound-interest",
+      "split": "held_out",
+      "language": "en",
+      "riskTags": [
+        "numeric",
+        "temporal",
+        "condition"
+      ],
+      "question": "Summarize the example's starting principal, annual rate, compounding frequency and both year-end amounts."
+    },
+    {
+      "id": "case-external-interest-4",
+      "sourceIds": [
+        "interest"
+      ],
+      "family": "compound-interest",
+      "split": "held_out",
+      "language": "tr",
+      "riskTags": [
+        "numeric",
+        "temporal",
+        "condition"
+      ],
+      "question": "İkinci yıl sonunu 1100 dolar yazmak kaynağa uygun mu? Faizin faizini açıklayarak değerlendir."
+    }
+  ]
+}

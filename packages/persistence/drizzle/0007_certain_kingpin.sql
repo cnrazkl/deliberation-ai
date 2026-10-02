@@ -1,0 +1,1 @@
+ALTER TABLE "model_runs" ADD COLUMN "council_role" text DEFAULT 'analyst' NOT NULL;

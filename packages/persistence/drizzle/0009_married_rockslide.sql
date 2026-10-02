@@ -1,0 +1,2 @@
+ALTER TABLE "claims" ADD COLUMN "synthesis_coverage" text DEFAULT 'unresolved' NOT NULL;--> statement-breakpoint
+ALTER TABLE "claims" ADD CONSTRAINT "claims_synthesis_coverage_valid" CHECK ("claims"."synthesis_coverage" in ('included', 'omitted', 'unresolved'));

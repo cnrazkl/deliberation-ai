@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "risk_assessment_ciphertext" text;

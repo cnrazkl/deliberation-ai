@@ -1,0 +1,1 @@
+ALTER TABLE "provider_operations" ADD COLUMN "result_metadata_ciphertext" text;

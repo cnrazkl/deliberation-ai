@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+
+# Exact reviewed synthetic test values, not real credentials.
+[[allowlists]]
+description = "Offline idempotency fixture and synthetic provider key"
+regexTarget = "secret"
+regexes = ['''^operation-123$''', '''^sk-test-secondary-never-sent-1234567890$''']

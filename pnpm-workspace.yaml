@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+
+overrides:
+  "@esbuild-kit/core-utils>esbuild": "0.25.12"
+
+minimumReleaseAgeExclude:
+  - pg-boss@12.33.0
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true

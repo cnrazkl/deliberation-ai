@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "continuation_archive_ciphertext" text;

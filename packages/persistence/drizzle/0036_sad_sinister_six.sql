@@ -1,0 +1,2 @@
+ALTER TABLE "provider_billing_records" ADD COLUMN "remote_identity_fingerprint" text NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "provider_billing_records_owner_remote_uq" ON "provider_billing_records" USING btree ("owner_id","remote_identity_fingerprint");

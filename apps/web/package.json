@@ -1,0 +1,38 @@
+{
+  "name": "@deliberation-ai/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deliberation-ai/application": "workspace:*",
+    "@deliberation-ai/contracts": "workspace:*",
+    "@deliberation-ai/domain": "workspace:*",
+    "@deliberation-ai/evaluation": "workspace:*",
+    "@deliberation-ai/persistence": "workspace:*",
+    "@deliberation-ai/providers": "workspace:*",
+    "@deliberation-ai/retrieval": "workspace:*",
+    "@deliberation-ai/tools": "workspace:*",
+    "js-tiktoken": "1.0.21",
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

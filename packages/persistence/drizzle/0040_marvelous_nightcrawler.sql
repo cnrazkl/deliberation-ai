@@ -1,0 +1,1 @@
+ALTER TABLE "runs" ADD COLUMN "continuation_context_ciphertext" text;

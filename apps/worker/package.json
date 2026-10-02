@@ -1,0 +1,21 @@
+{
+  "name": "@deliberation-ai/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deliberation-ai/application": "workspace:*",
+    "@deliberation-ai/persistence": "workspace:*",
+    "@deliberation-ai/providers": "workspace:*",
+    "pg-boss": "12.33.0"
+  },
+  "devDependencies": {
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}

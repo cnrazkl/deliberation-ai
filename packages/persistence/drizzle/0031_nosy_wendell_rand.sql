@@ -1,0 +1,2 @@
+ALTER TABLE "local_schedules" ADD COLUMN "self_revision_enabled" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "runs" ADD COLUMN "self_revision_enabled" boolean DEFAULT false NOT NULL;

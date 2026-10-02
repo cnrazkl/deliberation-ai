@@ -1,0 +1,1 @@
+ALTER TABLE "preflight_drafts" ADD CONSTRAINT "preflight_drafts_run_id_runs_id_fk" FOREIGN KEY ("run_id") REFERENCES "public"."runs"("id") ON DELETE set null ON UPDATE no action;
