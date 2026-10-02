@@ -1,5 +1,7 @@
 # Prompt contracts
 
+**DA-099:** `private-text-v1` still renders the same source/system/owner/reply text. Responses sends that ordered text as `input`, reconstructed assistant turns labelled final. Commentary, tool/refusal content and visible reasoning are refused; opaque reasoning state is excluded from future context. No council/private instruction text is changed. [Translation](PRIVATE_BRANCHES.md#da-099-native-openai-responses).
+
 **DA-097 private-text-v1:** the exact reviewed ordered input includes a fixed private-role system instruction, source question/perspective, copied selected reply, saved owner messages and successful private replies. Omitted peers/reviews/attachments/original continuation context remain unavailable. Fresh risk checks use the actual rendered input and original source floor. These messages never alter canonical council prompts or claims.
 
 DA-091 adds `run-continuation-v2` manual compacted history without changing `council-v1` instructions. User-written summary, preserved source question/provenance and replaced-section digests are shown in the exact rendered member input. The notice identifies missing report/minority/raw detail and rejects semantic-equivalence or authority claims. Review rounds receive the same compacted context. Private original text is not rendered or counted as provider input, even in full-context descendants. `run-continuation-v1` rendering stays compatible. [Contract](CONVERSATION_COMPACTION.md).

@@ -9,34 +9,59 @@ const anthropicReplySchema = z.object({
   content: z.array(z.object({ type: z.literal("text"), text: z.string().max(16_384) })).min(1),
   stop_reason: z.enum(["end_turn", "max_tokens"]),
 });
+const openaiItemStatus = z.enum(["completed", "incomplete"]);
+const openaiReplySchema = z.object({
+  object: z.literal("response"), status: z.enum(["completed", "incomplete"]),
+  error: z.null().optional(),
+  incomplete_details: z.object({ reason: z.literal("max_output_tokens") }).nullable().optional(),
+  output: z.array(z.discriminatedUnion("type", [
+    z.object({ type: z.literal("message"), role: z.literal("assistant"), status: openaiItemStatus,
+      phase: z.literal("final_answer").nullable().optional(),
+      content: z.array(z.object({ type: z.literal("output_text"), text: z.string().max(16_384),
+        annotations: z.array(z.never()).max(0).optional() })).min(1) }),
+    // Default reasoning can produce an opaque envelope. Never promote it to
+    // visible text or replay it as provider-managed continuation state.
+    z.object({ type: z.literal("reasoning"), summary: z.array(z.never()).max(0),
+      content: z.array(z.never()).max(0).optional(), encrypted_content: z.string().max(131_072).nullable().optional(),
+      status: openaiItemStatus.optional() }),
+  ])).min(1),
+}).superRefine((reply, ctx) => {
+  if (reply.status === "incomplete" ? !reply.incomplete_details : Boolean(reply.incomplete_details)) ctx.addIssue({ code: "custom", message: "Invalid completion boundary" });
+  if (reply.status === "completed" && reply.output.some((item) => item.status === "incomplete")) ctx.addIssue({ code: "custom", message: "Unfinished output item" });
+});
 
 /** Separate plain-text boundary; council schemas/prompts are never reused. */
 export async function generatePrivateText(request: PrivateDeliveryRequest, options: {
-  provider?: "openai-compatible" | "anthropic"; baseUrl: string; apiKey: string; endpointPreset: string; operationKey: string; fetch?: typeof fetch; timeoutMs?: number;
+  provider?: "openai-compatible" | "anthropic" | "openai"; baseUrl: string; apiKey: string; endpointPreset: string; operationKey: string; fetch?: typeof fetch; timeoutMs?: number;
 }): Promise<PrivateDeliveryResult> {
   const input = privateDeliveryRequestSchema.parse(request);
   if (!options.operationKey) throw new NormalizedProviderError("İşlem kimliği gerekli.", "missing_operation_id", "known", false);
   const provider = options.provider ?? "openai-compatible";
-  if (provider !== "openai-compatible" && provider !== "anthropic") {
+  if (provider !== "openai-compatible" && provider !== "anthropic" && provider !== "openai") {
     throw new NormalizedProviderError("Özel gönderim sağlayıcısı desteklenmiyor.", "unsupported_private_provider", "known", false);
   }
   const anthropic = provider === "anthropic";
+  const responses = provider === "openai";
   const [system, ...messages] = input.messages;
   // Refuse translation that would drop/reorder an instruction or continue an
   // assistant prefill. Consecutive owner turns remain separate, in exact order.
-  if (anthropic && (system?.role !== "system" || messages.some((item) => item.role === "system") ||
+  if ((anthropic || responses) && (system?.role !== "system" || messages.some((item) => item.role === "system") ||
     messages[0]?.role !== "user" || messages.at(-1)?.role !== "user")) {
     throw new NormalizedProviderError("Özel mesaj sırası geçersiz.", "invalid_private_messages", "known", false);
   }
-  const body = anthropic
+  const body = responses
+    ? { model: input.model, input: input.messages.map((item) => item.role === "assistant" ? { ...item, phase: "final_answer" } : item),
+      max_output_tokens: input.maxOutputTokens, store: false, background: false, stream: false,
+      truncation: "disabled", text: { format: { type: "text" } } }
+    : anthropic
     ? { model: input.model, system: system!.content, messages, max_tokens: input.maxOutputTokens }
     : { model: input.model, messages: input.messages,
       ...(options.endpointPreset === "openrouter" ? { max_completion_tokens: input.maxOutputTokens } : { max_tokens: input.maxOutputTokens }) };
-  const label = anthropic ? "Private Anthropic" : "Private compatible";
+  const label = responses ? "Private OpenAI" : anthropic ? "Private Anthropic" : "Private compatible";
   let value: unknown;
   try {
     value = await withProviderNetworkDeadline(async (signal) => {
-      const response = await (options.fetch ?? fetch)(`${options.baseUrl.replace(/\/$/, "")}${anthropic ? "/v1/messages" : "/chat/completions"}`, {
+      const response = await (options.fetch ?? fetch)(`${options.baseUrl.replace(/\/$/, "")}${responses ? "/responses" : anthropic ? "/v1/messages" : "/chat/completions"}`, {
         method: "POST", redirect: "error", signal,
         headers: { "content-type": "application/json", "idempotency-key": options.operationKey,
           ...(anthropic ? { "x-api-key": options.apiKey, "anthropic-version": "2023-06-01" }
@@ -62,6 +87,7 @@ export async function generatePrivateText(request: PrivateDeliveryRequest, optio
     throw providerNetworkError(label);
   }
   if (anthropic) return normalizeAnthropicReply(value, input.model);
+  if (responses) return normalizeOpenAIReply(value, input.model);
   const json = value as { id?: unknown; model?: unknown; choices?: Array<{ finish_reason?: string; message?: { content?: unknown; tool_calls?: unknown } }>; usage?: unknown } | null;
   const choice = json?.choices?.[0]; const raw = choice?.message?.content;
   const usage = extractTokenUsage("openai-compatible", json?.usage);
@@ -90,6 +116,30 @@ function normalizeAnthropicReply(value: unknown, requestedModel: string): Privat
   if (!native.success || !parsed.success) throw new NormalizedProviderError(
     "Özel metin yanıtı geçersiz veya çok büyük.", "invalid_private_response", "known", false, undefined,
     { provider: "anthropic", model, remoteResponseId: remoteResponseId ?? "", ...usage },
+  );
+  return parsed.data;
+}
+
+function normalizeOpenAIReply(value: unknown, requestedModel: string): PrivateDeliveryResult {
+  const json = value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown> : {};
+  const usage = extractTokenUsage("openai", json.usage);
+  const model = typeof json.model === "string" ? json.model : requestedModel;
+  const remoteResponseId = typeof json.id === "string" ? json.id : null;
+  const metadata = { provider: "openai", model, remoteResponseId: remoteResponseId ?? "", ...usage };
+  if (json.status === "queued" || json.status === "in_progress") throw new NormalizedProviderError(
+    "Uzaktaki işlem henüz tamamlanmadı.", "private_remote_pending", "unknown", false, undefined, metadata,
+  );
+  const native = openaiReplySchema.safeParse(value);
+  const text = native.success ? native.data.output.flatMap((item) => item.type === "message" ? item.content.map((part) => part.text) : []).join("") : undefined;
+  const parsed = privateDeliveryResultSchema.safeParse({
+    text, model, remoteResponseId, inputTokens: usage.inputTokens ?? null, outputTokens: usage.outputTokens ?? null,
+    tokenDetails: usage.tokenDetails, finishReason: native.success && native.data.status === "incomplete" ? "length" : "stop",
+  });
+  if (!native.success || !parsed.success) throw new NormalizedProviderError(
+    "Özel metin yanıtı geçersiz, boş veya çok büyük.",
+    native.success && native.data.status === "incomplete" && !text ? "private_output_limit_without_text" : "invalid_private_response",
+    "known", false, undefined, metadata,
   );
   return parsed.data;
 }

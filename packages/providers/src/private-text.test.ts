@@ -41,6 +41,96 @@ const anthropicReply = { type: "message", role: "assistant", id: "offline-claude
   content: [{ type: "text", text: "Private " }, { type: "text", text: "answer" }], stop_reason: "end_turn",
   usage: { input_tokens: 11, output_tokens: 4, cache_read_input_tokens: 7, cache_creation_input_tokens: 2 } };
 
+const openaiOptions = { ...options, provider: "openai" as const, baseUrl: "https://api.openai.com/v1", apiKey: "offline-key" };
+const openaiMessage = { type: "message", role: "assistant", status: "completed", phase: "final_answer",
+  content: [{ type: "output_text", text: "Private ", annotations: [] }, { type: "output_text", text: "answer", annotations: [] }] };
+const openaiReply = { object: "response", id: "offline-openai-reply", model: "offline-openai", status: "completed", error: null, incomplete_details: null,
+  output: [{ type: "reasoning", summary: [], content: [], encrypted_content: "opaque-fixture-state" }, openaiMessage],
+  usage: { input_tokens: 21, output_tokens: 8, total_tokens: 29, input_tokens_details: { cached_tokens: 6 }, output_tokens_details: { reasoning_tokens: 3 } } };
+
+test("OpenAI sends exact stateless turns with final assistant phases, no storage/automatic truncation and native inclusive usage", async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(openaiReply));
+  const result = await generatePrivateText(input, { ...openaiOptions, fetch });
+  expect(result).toMatchObject({ text: "Private answer", remoteResponseId: "offline-openai-reply", finishReason: "stop", inputTokens: 21, outputTokens: 8,
+    tokenDetails: { inputTokenKind: "inclusive", outputTokenKind: "inclusive", totalTokens: 29, cachedInputTokens: 6, reasoningTokens: 3 } });
+  expect(JSON.stringify(result)).not.toContain("opaque-fixture-state");
+  const [url, init] = fetch.mock.calls[0]!;
+  expect(url).toBe("https://api.openai.com/v1/responses");
+  expect(init!.redirect).toBe("error");
+  expect(init!.headers).toEqual({ "content-type": "application/json", "idempotency-key": "offline-intent", authorization: "Bearer offline-key" });
+  expect(JSON.parse(init!.body as string)).toEqual({ model: input.model,
+    input: input.messages.map((item) => item.role === "assistant" ? { ...item, phase: "final_answer" } : item),
+    max_output_tokens: 1_024, store: false, background: false, stream: false, truncation: "disabled", text: { format: { type: "text" } } });
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+test("OpenAI preserves ordered message text, marks output-cap truncation and keeps absent usage unknown", async () => {
+  const result = await generatePrivateText(input, { ...openaiOptions, fetch: vi.fn().mockResolvedValue(Response.json({ ...openaiReply, usage: {},
+    status: "incomplete", incomplete_details: { reason: "max_output_tokens" }, output: [openaiMessage, { ...openaiMessage, status: "incomplete",
+      content: [{ type: "output_text", text: " — partial", annotations: [] }] }] })) });
+  expect(result).toMatchObject({ text: "Private answer — partial", finishReason: "length", inputTokens: null, outputTokens: null });
+  expect(result.tokenDetails?.reasoningTokens).toBeUndefined();
+  const error = await generatePrivateText(input, { ...openaiOptions, fetch: vi.fn().mockResolvedValue(Response.json({ ...openaiReply,
+    status: "incomplete", incomplete_details: { reason: "max_output_tokens" }, output: [openaiReply.output[0]] })) }).catch((e: unknown) => e);
+  expect(error).toMatchObject({ code: "private_output_limit_without_text", outcome: "known", metadata: { inputTokens: 21, outputTokens: 8 } });
+});
+
+test("OpenAI refuses tools/refusals/commentary/visible reasoning, mismatched statuses and malformed or excessive text without leaking raw content", async () => {
+  const invalid = [null, [], { ...openaiReply, output: [] }, { ...openaiReply, output_text: "Do not trust the SDK shortcut", output: undefined },
+    { ...openaiReply, error: { message: "private-error-key" } },
+    { ...openaiReply, status: "failed" }, { ...openaiReply, status: "cancelled" },
+    { ...openaiReply, status: "incomplete", incomplete_details: { reason: "content_filter" } },
+    { ...openaiReply, status: "incomplete" },
+    ...["function_call", "web_search_call", "future_item"].map((type) => ({ ...openaiReply, output: [openaiMessage, { type, text: "private-error-key" }] })),
+    ...[{ phase: "commentary" }, { status: "in_progress" }, { status: "incomplete" }, { role: "user" },
+      { content: [{ type: "refusal", refusal: "private-error-key" }] },
+      { content: [{ type: "output_text", text: "private-error-key", annotations: [{ type: "url_citation" }] }] },
+      { content: [{ type: "output_text", text: "x".repeat(16_385) }] },
+    ].map((change) => ({ ...openaiReply, output: [{ ...openaiMessage, ...change }] })),
+    { ...openaiReply, output: [openaiMessage, { type: "reasoning", summary: [{ type: "summary_text", text: "private-error-key" }] }] },
+    { ...openaiReply, output: [openaiMessage, { type: "reasoning", summary: [], content: [{ type: "reasoning_text", text: "private-error-key" }] }] },
+  ];
+  for (const response of invalid) {
+    const error = await generatePrivateText(input, { ...openaiOptions, fetch: vi.fn().mockResolvedValue(Response.json(response)) }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: "invalid_private_response", outcome: "known" });
+    if (response && !Array.isArray(response)) expect(error).toMatchObject({ metadata: { provider: "openai", inputTokens: 21, outputTokens: 8 } });
+    expect(JSON.stringify(error)).not.toMatch(/private-error-key|metadata|offline-key|xxxxxxxx/);
+  }
+});
+
+test("OpenAI remote queued/in-progress receipts stay unknown with observed usage and no follow-up fetch", async () => {
+  for (const status of ["queued", "in_progress"]) {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ ...openaiReply, status }));
+    await expect(generatePrivateText(input, { ...openaiOptions, fetch })).rejects.toMatchObject({ code: "private_remote_pending", outcome: "unknown", retryable: false,
+      metadata: { remoteResponseId: "offline-openai-reply", inputTokens: 21 } });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  }
+});
+
+test("OpenAI refuses reordered native instructions, assistant prefills and changed caps before fetch", async () => {
+  const fetch = vi.fn();
+  for (const request of [{ ...input, messages: input.messages.slice(1) },
+    { ...input, messages: [...input.messages, { role: "system" as const, content: "Later instruction" }, { role: "user" as const, content: "Question" }] },
+    { ...input, messages: [...input.messages, { role: "assistant" as const, content: "Prefill" }] }, { ...input, maxOutputTokens: 2_000 }]) {
+    await expect(generatePrivateText(request as PrivateDeliveryRequest, { ...openaiOptions, fetch })).rejects.toThrow();
+  }
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test("OpenAI HTTP/body limits and deadlines never retry or expose provider error content", async () => {
+  for (const response of [new Response("private-error-key", { status: 401 }), new Response("bad-json"), new Response("x".repeat(131_073))]) {
+    const fetch = vi.fn().mockResolvedValue(response);
+    const error = await generatePrivateText(input, { ...openaiOptions, fetch }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(NormalizedProviderError);
+    expect(JSON.stringify(error)).not.toContain("private-error-key");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  }
+  for (const fetch of [vi.fn().mockRejectedValue(new Error("offline-key")), vi.fn(() => new Promise<Response>(() => {}))]) {
+    await expect(generatePrivateText(input, { ...openaiOptions, fetch, timeoutMs: 5 })).rejects.toMatchObject({ outcome: "unknown", retryable: false });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  }
+});
+
 test("Anthropic translates only the leading system turn, preserves text/order and normalizes additive cache usage", async () => {
   const messages = [...input.messages, { role: "user" as const, content: "Second owner draft, without an invented reply" }];
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(anthropicReply));

@@ -1,8 +1,39 @@
 # Current state
 
-Updated: 2 October 2026 (DA-098 native Anthropic private delivery accepted in the primary local application)
+Updated: 2 October 2026 (DA-099 native OpenAI Responses private delivery accepted in the primary local application)
 
-## Verified increment — DA-098 native Claude/Anthropic private delivery
+## Verified increment — DA-099 native OpenAI Responses private delivery
+
+Matching owned OpenAI source connections now support reviewed private text with default
+reasoning/search off. Text/order/model are frozen; reconstructed assistant turns are
+labelled final. Requests explicitly disable response storage, background execution,
+streaming and automatic truncation. Tools/council schemas/remote continuation IDs remain
+excluded. Bounded output validation refuses unsupported/refusal/commentary/visible
+reasoning content. Opaque reasoning envelopes are not persisted/exported/resent.
+
+Output-cap partial text displays truncation; no-visible-text failure keeps observed
+usage and a specific warning. Queued/in-progress responses become unknown without
+polling/resubmission and block edits/forks until acknowledged closure. Inclusive
+cache/reasoning counters are labelled as subsets; review warns that reasoning shares
+the 1,024-token cap. Existing permanent slots, receipts, forks, exports and schema remain.
+
+Passed 266 offline unit tests, 155 isolated PostgreSQL tests, all 23 browser flows,
+type checks, zero-warning lint, separate-output production build and dependency audit.
+The archive test populated both OpenAI and Anthropic receipts, restored to a disposable
+database, authenticated/decrypted the bodies and matched stored ciphertext. Temporary
+archives/databases were removed. Browser tests use loopback HTTP and the real worker:
+lost-response intent replay, reviewed second follow-up, no-text failure with usage,
+remote-pending blockade/acknowledged closure and copied-receipt forks. No paid/cloud
+model call, owner-history pruning, JEV activation or application migration occurred.
+[Acceptance](DA099_ACCEPTANCE.md).
+
+The next bounded provider increment is native Gemini private delivery. Broader settings,
+reasoning-state continuation, remote receipt retrieval, in-flight cancellation, private
+erasure/copies, council accounting and input/tool/money controls remain open. Local
+verification does not attest model/cloud quality or complete billing/deletion gates.
+Earlier blocked cache cleanup remains separate and unresolved.
+
+## Previous verified increment — DA-098 native Claude/Anthropic private delivery
 
 Reviewed private delivery now also admits matching owned Anthropic source connections
 with default reasoning and search off. The leading system instruction is translated

@@ -5,7 +5,7 @@ import type { PrivateBranchView, PrivateDeliveryPreview } from "@deliberation-ai
 
 const reasons: Record<PrivateDeliveryPreview["blocks"][number], string> = {
   no_message: "Önce mesaj taslağını dala kaydedin.", already_requested: "Son mesaj için bir gönderim kaydı zaten var. Yeni bir mesaj kaydedebilirsiniz.",
-  pending: "Bekleyen veya sonucu belirsiz bir işlem var.", unsupported_provider: "Özel gönderim OpenAI-compatible ve Claude/Anthropic kaynak bağlantılarını destekliyor; kaynak sağlayıcı eşleşmeli.",
+  pending: "Bekleyen veya sonucu belirsiz bir işlem var.", unsupported_provider: "Özel gönderim OpenAI Responses, OpenAI-compatible ve Claude/Anthropic kaynak bağlantılarını destekliyor; kaynak sağlayıcı eşleşmeli.",
   unsupported_settings: "Reasoning varsayılan ve web araması kapalı olmalı; kaynak ayarlar değiştirilmez.",
   missing_connection: "Kaynak bağlantı artık mevcut değil.", high_risk: "Yüksek riskli özel gönderim bu kapsamda desteklenmiyor; konseyi kullanın.",
   capacity: "Dalın istek veya içerik kapasitesi doldu. Bu bir parasal bütçe değildir.",
@@ -63,6 +63,8 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
         {operation.result.finishReason === "length" && <p>Yanıt çıktı sınırına ulaştı; tamamlanmış yanıt olduğu varsayılmaz.</p>}</>}
       <small>Girdi tokenı: {operation.usage?.inputTokens ?? operation.result?.inputTokens ?? "bilinmiyor"}{(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.inputTokenKind === "uncached" ? " (önbellek hariç)" : ""} · Çıktı tokenı: {operation.usage?.outputTokens ?? operation.result?.outputTokens ?? "bilinmiyor"}</small>
       {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.inputTokenKind === "uncached" && <small> · Önbellekten okunan token: {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.cachedInputTokens ?? "bilinmiyor"} · Önbelleğe yazılan token: {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.cacheWriteInputTokens ?? "bilinmiyor"}. Bunlar sağlayıcının bildirdiği ayrı sayaçlardır; fatura tutarı değildir.</small>}
+      {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.inputTokenKind === "inclusive" && <small> · Girdi sayacına dahil önbellek tokenı: {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.cachedInputTokens ?? "bilinmiyor"} · Çıktı sayacına dahil reasoning tokenı: {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.reasoningTokens ?? "bilinmiyor"}. Bu sayaçlar toplama tekrar eklenmez; fatura tutarı değildir.</small>}
+      {operation.errorCode === "private_output_limit_without_text" && <p>Çıktı sınırı görünür yanıt oluşmadan doldu. Sağlayıcı reasoning tokenı kullanmış ve ücretlendirmiş olabilir; otomatik tekrar yapılmaz.</p>}
       {operation.errorCode && <p>Hata kodu: {operation.errorCode}</p>}
       {operation.originBranchId === branch.id && operation.status === "prepared" && <button type="button" disabled={disabled || busy} onClick={() => void act("cancel", operation.id)}>Kuyruktaki gönderimi iptal et</button>}
       {operation.originBranchId === branch.id && ["prepared", "submitted"].includes(operation.status) && <button type="button" disabled={disabled || busy} onClick={() => void act("recover", operation.id)}>İşlem durumunu kurtar</button>}
@@ -76,6 +78,7 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
     {preview && <section aria-label="Özel gönderim önizlemesi">
       <p>{preview.connectionLabel ?? "Bağlantı yok"} · {preview.provider} · {preview.input.model} · En fazla 1 çağrı / 1024 çıktı tokenı · Kalan dal isteği: {preview.remainingBranchRequests}</p>
       <p>Diğer üyeler, incelemeler, özgün ekler ve önceki konsey bağlamı gönderilmez. Bu sınırlar parasal bütçe veya token kullanım tahmini değildir.</p>
+      {preview.provider === "openai" && <p>1024 çıktı sınırına reasoning tokenları da dahildir; görünür yanıt oluşmadan sınır dolabilir. Bu gönderim kayıtlı metin geçmişini kullanır; sağlayıcının reasoning geçmişi taşınmaz.</p>}
       <details><summary>Modele gönderilecek tam içerik</summary><pre>{JSON.stringify(preview.input.messages, null, 2)}</pre></details>
       {preview.blocks.map((reason) => <p key={reason}>{reasons[reason]}</p>)}
       <label><input type="checkbox" disabled={!preview.eligible || disabled || busy} checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} />Gönderilecek içeriği, seçili bağlantıyı ve sınırları inceledim.</label>

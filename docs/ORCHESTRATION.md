@@ -1,5 +1,7 @@
 # Orchestration
 
+**DA-099:** private worker target selection also supports native Responses. Existing input/settings/provider/connection checks precede one submitted request. Remote queued/in-progress output maps to unknown without polling/retrieval; output-cap no-text results fail with usage. Permanent slots, session fencing, queued cancellation and explicit unknown closure remain unchanged. No council state or automatic repair changes.
+
 **DA-098:** the private worker also selects native Anthropic translation from the validated matching connection provider. Claim rechecks supported settings/provider/endpoint fingerprints before persisting submission. Compatible/native paths share permanent slots, output cap, session fencing and submitted-to-unknown recovery; no council path or automatic retry is added.
 
 **DA-097:** private-text-delivery uses a separate job and session branch lock. Frozen reviewed input and claim-time connection/risk checks precede durable submitted state and one network attempt. A restarted submitted receipt becomes outcome_unknown; terminal receipts replay without an adapter call. Only prepared work can be cancelled. Unknown closure requires acknowledgement; future work requires a new message/review/intent. No council orchestration state is changed.

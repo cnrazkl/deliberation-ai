@@ -1,5 +1,7 @@
 # Data model
 
+**DA-099:** Responses uses existing private result/usage/status fields for text/truncation, inclusive cache/reasoning counts, known no-text failures and unknown remote-pending receipts. Opaque provider reasoning envelopes never enter encrypted bodies/exports. Versions, tables and ciphertext inventory remain unchanged; no migration or old-body rewrite. Populated OpenAI and Anthropic receipts enter the same disposable restore audit.
+
 **DA-098:** native Anthropic replies use existing private result/usage fields, including uncached-input/cache conventions and truncation. Provider identity remains in the frozen seed and connection fingerprint. No table, ciphertext column, migration or old-body rewrite is added. Existing export/fork/restore validation covers these receipts.
 
 **DA-097:** existing authenticated private branch bodies optionally add deliveryVersion and bounded deliveries with immutable request/origin/message/connection fingerprints, status/timestamps, normalized result and nullable observed usage. Legacy draft bodies remain valid. No schema migration or additional ciphertext column is introduced. Fork copies retain original receipt origins; successful/failed/unknown/cancelled records never enter council provider_operations or billing totals.

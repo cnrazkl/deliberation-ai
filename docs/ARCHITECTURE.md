@@ -1,5 +1,7 @@
 # Architecture
 
+**DA-099:** the private text boundary adds bounded Responses translation and discriminated output validation. Matching connection targets resolve the OpenAI default base URL under existing checks. Worker storage keeps normalized reply/usage only; opaque reasoning state is excluded from persistence/future requests. Pending remote responses map to durable unknown outcomes without retrieval/retries. No council adapter, schema or prompt-text change. [Contract](PRIVATE_BRANCHES.md#da-099-native-openai-responses).
+
 **DA-098:** the private text boundary translates reviewed input to native Anthropic Messages. Persistence admits matching supported providers and resolves the native default endpoint under claim checks; the worker passes only the validated target and frozen request. Bounded HTTP/error handling and normalized private results/usage are shared with compatible delivery. No council adapter, prompt, ledger or schema changes. [Contract](PRIVATE_BRANCHES.md#da-098-native-claudeanthropic).
 
 **DA-097 private delivery:** owned preview-bound API calls atomically append an encrypted private receipt and separate queue job. A session advisory lock spans network work; persisted submission prevents restart resubmission. Claim-time shared connection locks bind the loaded revision. A plain-text adapter returns normalized reply/usage; UI polling never dispatches. Forks bind delivery versions and retain copied origins. No council ledger, migration or plaintext column changes. [ADR-0027](adr/0027-reviewed-private-delivery.md).

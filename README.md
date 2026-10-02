@@ -2,6 +2,8 @@
 
 DeliberationAI is a provider-independent multi-model council that preserves disagreements and provenance instead of treating agreement as truth.
 
+DA-099 adds reviewed native OpenAI Responses private replies, alongside Claude/Anthropic and compatible endpoints. Stateless text, bounded output/status validation, inclusive usage and unknown-outcome controls are verified locally. Gemini, broader settings and live/model-quality acceptance remain open. No migration or paid call is added. [Workflow](docs/PRIVATE_BRANCHES.md), [acceptance](docs/DA099_ACCEPTANCE.md).
+
 DA-098 extends reviewed private delivery to native Claude/Anthropic source members, preserving exact input review, durable intent/unknown handling and bounded output. Native uncached-input/cache counters and truncated replies are visible. No migration or paid-provider call is needed for local acceptance. Native OpenAI/Gemini, broader settings and private erasure remain open. [Workflow](docs/PRIVATE_BRANCHES.md), [acceptance](docs/DA098_ACCEPTANCE.md).
 
 DA-097 adds reviewed private delivery to an OpenAI-compatible source model, with exact input preview, permanent bounded request slots, durable unknown-outcome handling and observed usage. Saved drafts stay idle until explicit reviewed send. Other providers/settings, private-content deletion and council billing integration remain open. DA-096 supplies encrypted branches through migration `0044`; DA-097 adds no migration. [Workflow](docs/PRIVATE_BRANCHES.md), [acceptance](docs/DA097_ACCEPTANCE.md).

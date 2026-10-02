@@ -1,5 +1,7 @@
 # Product
 
+**DA-099:** reviewed private replies now also support native OpenAI Responses with default reasoning and search off. Reviewed text history, provider matching and durable intent controls remain in force. Inclusive cache/reasoning counters, truncation and metered-but-textless failure are explicit; remote pending work stays unknown until acknowledged closure. Gemini, other settings, private erasure and live/model-quality acceptance remain open. [Workflow](PRIVATE_BRANCHES.md#da-099-native-openai-responses).
+
 **DA-098:** reviewed private send/reply also supports Claude/Anthropic source members with default reasoning and search off. Exact input, provider matching and durable intent controls remain in force. Truncated replies are visible; native uncached-input and cache counters are labelled separately. Native OpenAI/Gemini, other settings and private erasure remain open. [Workflow](PRIVATE_BRANCHES.md).
 
 **DA-097:** saved private owner messages can be explicitly reviewed and sent to a supported OpenAI-compatible source model. Exact input/connection review, conservative risk blocking, bounded permanent request slots, durable unknown outcomes and observed usage remain separate from council authority/billing. Opening/saving drafts stays idle. Other providers/settings and private-content deletion remain open. [Workflow](PRIVATE_BRANCHES.md).

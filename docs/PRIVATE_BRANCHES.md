@@ -1,6 +1,6 @@
-# Selected-member private branches — DA-096 / DA-097 / DA-098
+# Selected-member private branches — DA-096 / DA-097 / DA-098 / DA-099
 
-DA-096 supplies encrypted draft storage and branch management. DA-097 adds explicit reviewed one-model delivery for OpenAI-compatible source members; DA-098 extends it to native Claude/Anthropic. Both require default reasoning and web search off. Saving/opening/refreshing a draft still makes no provider call. Council execution and selected-member reruns are unchanged. Other provider/settings combinations remain unsupported.
+DA-096 supplies encrypted draft storage and branch management. DA-097 adds reviewed one-model delivery for OpenAI-compatible source members; DA-098 adds native Claude/Anthropic and DA-099 adds native OpenAI Responses. All require default reasoning and web search off. Saving/opening/refreshing a draft still makes no provider call. Council execution and selected-member reruns are unchanged. Gemini and other settings remain unsupported.
 
 ## Owner workflow
 
@@ -56,7 +56,7 @@ The exhaustive backup audit includes `conversation_private_branches.body_ciphert
 
 ## Remaining scope
 
-Native OpenAI Responses/Gemini and broader reasoning/search support, in-flight cancellation, message/private-body deletion, council accounting integration, authoritative billing and input/tool/money budgets remain open. Selective/semantic compaction and real-provider/human accuracy acceptance remain unverified.
+Native Gemini and broader reasoning/search support, in-flight cancellation, message/private-body deletion, council accounting integration, authoritative billing and input/tool/money budgets remain open. Selective/semantic compaction and real-provider/human accuracy acceptance remain unverified.
 
 ## DA-097 reviewed private delivery
 
@@ -123,3 +123,42 @@ attest cloud access, model compatibility or answer quality. [Acceptance](DA098_A
 
 Mapping follows the [official Messages API](https://platform.claude.com/docs/en/api/messages/create)
 and [stop-reason guide](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons), checked 2 October 2026.
+
+## DA-099 native OpenAI Responses
+
+Matching owned OpenAI source connections use `/responses` after their base URL,
+defaulting to `https://api.openai.com/v1` when no explicit URL is saved. Provider/endpoint/
+revision and source settings remain review/claim guards. Selected model, message text
+and order stay unchanged. Archived assistant replies are marked `phase: final_answer`;
+source replies are reconstructed private context, not replay of an original provider
+conversation. New output with a commentary phase is refused.
+
+The request explicitly sets `store: false`, `background: false`, `stream: false`,
+`truncation: disabled`, plain-text format and `max_output_tokens: 1024`. No effort override,
+tools, council schema, previous-response/conversation ID, retrieval or automatic retry
+is added. Disabling response storage is not a zero-retention/account-policy guarantee.
+This is reviewed text-history continuation, not provider-managed reasoning continuation.
+
+Only completed or output-cap-incomplete responses with valid terminal assistant text
+messages enter the transcript. Text blocks are concatenated in order. Tool/refusal/
+unknown items, visible reasoning summaries/content, nonempty annotations, inconsistent
+statuses and excessive/malformed text fail with valid observed usage kept. Opaque
+reasoning envelopes with empty summary/content may accompany text but are not stored,
+exported or resent. Their presence alone is not a visible answer.
+
+Output-cap incomplete text displays truncation; no visible text produces a failed
+receipt and a specific warning, without repair/resubmission. Returned queued/in-progress
+responses stay unknown and block edits/forks until acknowledged closure. Remote
+completion/retrieval is not implemented. Cache-input and reasoning-output counters are
+subsets of input/output counts; UI labels them as included, never adding them again.
+Missing counts remain unknown. Review warns that the output cap includes reasoning
+and can fill before visible text appears. Existing receipt/slot/storage/fork/export/
+backup controls apply, without migration or billing integration. Gemini is next.
+[Acceptance](DA099_ACCEPTANCE.md).
+
+Checked against official OpenAI documentation on 2 October 2026:
+[Responses create](https://developers.openai.com/api/reference/cli/resources/responses/methods/create),
+[reasoning limits and usage](https://developers.openai.com/api/docs/guides/reasoning),
+[response item structure](https://developers.openai.com/api/docs/guides/migrate-to-responses).
+Input roles/assistant phases and opaque envelope fields also match installed OpenAI
+7.15 SDK type definitions; no SDK migration or cloud compatibility claim is made.
