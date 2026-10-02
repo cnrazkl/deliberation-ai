@@ -1,8 +1,33 @@
 # Current state
 
-Updated: 2 October 2026 (DA-097 reviewed private delivery accepted in the primary local application)
+Updated: 2 October 2026 (DA-098 native Anthropic private delivery accepted in the primary local application)
 
-## Verified increment — DA-097 reviewed private delivery
+## Verified increment — DA-098 native Claude/Anthropic private delivery
+
+Reviewed private delivery now also admits matching owned Anthropic source connections
+with default reasoning and search off. The leading system instruction is translated
+verbatim to the native field; later messages keep their order/text. The shared bounded
+HTTP path accepts text-only native replies and marks truncation. Unsupported blocks,
+stops/settings and provider/endpoint drift fail closed; network interruption stays
+unknown without automatic retry. Claude uncached-input/cache counters are labelled
+separately. Existing encrypted receipts/forks/exports remain compatible; no migration.
+
+Passed 260 offline unit tests, 154 isolated PostgreSQL tests, all 22 browser flows,
+type checks, zero-warning lint, production build in `.next-verify` and dependency audit.
+After adding a populated native-receipt restore case, the entire 154-test database
+suite passed again. That case authenticated/decrypted the restored body and matched
+its ciphertext; temporary restore/archive/test databases were removed. Browser checks
+used only loopback endpoints with the real worker, including lost enqueue-response
+retry and a second native follow-up carrying the prior reply. No paid/cloud model call,
+JEV activation, owner-history pruning or application migration occurred. [Acceptance](DA098_ACCEPTANCE.md).
+
+The next bounded provider task is native OpenAI Responses private delivery, then Gemini.
+Reasoning/search, in-flight cancellation, private erasure/copies, council billing and
+input/tool/money limits remain open. Local tests do not attest cloud/model quality.
+Current web/database/worker diagnostics are ready with one worker and zero council
+backlog/unresolved attempts/active schedules. Earlier blocked cache cleanup remains open.
+
+## Previous verified increment — DA-097 reviewed private delivery
 
 Saved owner messages can now be explicitly reviewed and sent to the selected supported
 OpenAI-compatible source model. The exact ordered input, connection/model, exclusions and

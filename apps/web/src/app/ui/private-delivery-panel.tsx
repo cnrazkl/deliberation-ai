@@ -5,7 +5,7 @@ import type { PrivateBranchView, PrivateDeliveryPreview } from "@deliberation-ai
 
 const reasons: Record<PrivateDeliveryPreview["blocks"][number], string> = {
   no_message: "Önce mesaj taslağını dala kaydedin.", already_requested: "Son mesaj için bir gönderim kaydı zaten var. Yeni bir mesaj kaydedebilirsiniz.",
-  pending: "Bekleyen veya sonucu belirsiz bir işlem var.", unsupported_provider: "Bu ilk kapsam yalnız OpenAI-compatible bağlantıları destekliyor.",
+  pending: "Bekleyen veya sonucu belirsiz bir işlem var.", unsupported_provider: "Özel gönderim OpenAI-compatible ve Claude/Anthropic kaynak bağlantılarını destekliyor; kaynak sağlayıcı eşleşmeli.",
   unsupported_settings: "Reasoning varsayılan ve web araması kapalı olmalı; kaynak ayarlar değiştirilmez.",
   missing_connection: "Kaynak bağlantı artık mevcut değil.", high_risk: "Yüksek riskli özel gönderim bu kapsamda desteklenmiyor; konseyi kullanın.",
   capacity: "Dalın istek veya içerik kapasitesi doldu. Bu bir parasal bütçe değildir.",
@@ -61,7 +61,8 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
       <details><summary>Gönderilen mesaj ve bağlam</summary><pre>{JSON.stringify(operation.request.messages, null, 2)}</pre></details>
       {operation.result && <><strong>Model yanıtı</strong><pre>{operation.result.text}</pre>
         {operation.result.finishReason === "length" && <p>Yanıt çıktı sınırına ulaştı; tamamlanmış yanıt olduğu varsayılmaz.</p>}</>}
-      <small>Girdi tokenı: {operation.usage?.inputTokens ?? operation.result?.inputTokens ?? "bilinmiyor"} · Çıktı tokenı: {operation.usage?.outputTokens ?? operation.result?.outputTokens ?? "bilinmiyor"}</small>
+      <small>Girdi tokenı: {operation.usage?.inputTokens ?? operation.result?.inputTokens ?? "bilinmiyor"}{(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.inputTokenKind === "uncached" ? " (önbellek hariç)" : ""} · Çıktı tokenı: {operation.usage?.outputTokens ?? operation.result?.outputTokens ?? "bilinmiyor"}</small>
+      {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.inputTokenKind === "uncached" && <small> · Önbellekten okunan token: {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.cachedInputTokens ?? "bilinmiyor"} · Önbelleğe yazılan token: {(operation.usage?.tokenDetails ?? operation.result?.tokenDetails)?.cacheWriteInputTokens ?? "bilinmiyor"}. Bunlar sağlayıcının bildirdiği ayrı sayaçlardır; fatura tutarı değildir.</small>}
       {operation.errorCode && <p>Hata kodu: {operation.errorCode}</p>}
       {operation.originBranchId === branch.id && operation.status === "prepared" && <button type="button" disabled={disabled || busy} onClick={() => void act("cancel", operation.id)}>Kuyruktaki gönderimi iptal et</button>}
       {operation.originBranchId === branch.id && ["prepared", "submitted"].includes(operation.status) && <button type="button" disabled={disabled || busy} onClick={() => void act("recover", operation.id)}>İşlem durumunu kurtar</button>}
@@ -73,7 +74,7 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
     </article>)}
     <button type="button" disabled={disabled || busy} onClick={() => void act("preview")}>Gönderimi incele</button>
     {preview && <section aria-label="Özel gönderim önizlemesi">
-      <p>{preview.connectionLabel ?? "Bağlantı yok"} · {preview.input.model} · En fazla 1 çağrı / 1024 çıktı tokenı · Kalan dal isteği: {preview.remainingBranchRequests}</p>
+      <p>{preview.connectionLabel ?? "Bağlantı yok"} · {preview.provider} · {preview.input.model} · En fazla 1 çağrı / 1024 çıktı tokenı · Kalan dal isteği: {preview.remainingBranchRequests}</p>
       <p>Diğer üyeler, incelemeler, özgün ekler ve önceki konsey bağlamı gönderilmez. Bu sınırlar parasal bütçe veya token kullanım tahmini değildir.</p>
       <details><summary>Modele gönderilecek tam içerik</summary><pre>{JSON.stringify(preview.input.messages, null, 2)}</pre></details>
       {preview.blocks.map((reason) => <p key={reason}>{reasons[reason]}</p>)}

@@ -1,5 +1,7 @@
 # Original PLAN.md versus the running local application
 
+**2 October 2026, DA-098:** native Claude/Anthropic shares reviewed private delivery, with exact stateless turn translation, native usage labels and fail-closed response handling. Native OpenAI/Gemini and expanded settings remain absent; full private chat, billing, erasure and cloud/model-quality gates stay open. Historical DA-097-only provider statements below are superseded by this narrower extension. [Contract](PRIVATE_BRANCHES.md).
+
 **2 October 2026, DA-097:** supported OpenAI-compatible private send/reply, exact reviewed input, connection/risk checks, durable private receipts/unknown handling, permanent branch request slots and observed usage advance the private-conversation gate. Other providers/settings, private erasure/copies, shared accounting and monetary enforcement remain partial. Older table statements about absent private aggregates/library are historical and superseded by DA-093–097. [Acceptance](DA097_ACCEPTANCE.md).
 
 **2 October 2026, DA-096:** encrypted immutable owner drafts, preview-bound reply seeds, reviewed prefix forks, source-retention survival and explicit exports advance private message/branch management. Actual single-model sending/replies, dispatch/receipt/risk controls and private-body/backup/export deletion remain open. The broad conversation gate stays partial. [Scope](PRIVATE_BRANCHES.md).

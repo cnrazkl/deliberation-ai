@@ -32,16 +32,18 @@ afterEach(async () => {
 });
 afterAll(async () => { await closeBoss(); await closeDatabase(); });
 async function fixture({ owner = LOCAL_OWNER_ID, question = "Compare database query syntax", text = "Explain the selected viewpoint", provider = "openai-compatible",
-  reasoningLevel = "default", selectedText = "Selected copied answer" }: {
+  reasoningLevel = "default", selectedText = "Selected copied answer", connectionProvider = provider === "fake" ? "openai-compatible" : provider,
+  baseUrl = provider === "anthropic" ? null : "http://127.0.0.1:9/v1", webSearchMode = "off" }: {
   owner?: string; question?: string; text?: string; provider?: CouncilMemberConfig["provider"]; reasoningLevel?: CouncilMemberConfig["reasoningLevel"]; selectedText?: string;
+  connectionProvider?: CouncilMemberConfig["provider"]; baseUrl?: string | null; webSearchMode?: CouncilMemberConfig["webSearchMode"];
 } = {}) {
   const id = randomUUID(); const conversationId = randomUUID(); const connectionId = randomUUID();
   ids.push(conversationId); connections.push(connectionId); sources.push(id);
-  await getDatabase().insert(providerConnections).values({ id: connectionId, ownerId: owner, provider: "openai-compatible", label: `Private offline ${connectionId}`,
-    defaultModel: "offline-private", baseUrl: "http://127.0.0.1:9/v1", secretCiphertext: encryptText("", `provider-connection:${connectionId}:secret`) });
+  await getDatabase().insert(providerConnections).values({ id: connectionId, ownerId: owner, provider: connectionProvider, label: `Private offline ${connectionId}`,
+    defaultModel: "offline-private", baseUrl, secretCiphertext: encryptText("", `provider-connection:${connectionId}:secret`) });
   const members: CouncilMemberConfig[] = [
     { id: "private-selected", label: "Selected", role: "Independent perspective", provider, model: "offline-private", connectionId,
-      councilRole: "analyst", reasoningLevel, webSearchMode: "off", ...(provider === "fake" ? { perspective: "risk" as const } : {}) },
+      councilRole: "analyst", reasoningLevel, webSearchMode, ...(provider === "fake" ? { perspective: "risk" as const } : {}) },
     { id: "private-peer", label: "Peer", role: "Peer", provider: "fake", model: "offline-peer", perspective: "evidence", councilRole: "analyst", reasoningLevel: "default", webSearchMode: "off" },
   ];
   const report = buildCouncilReport(members.map((member) => ({ memberId: member.id, label: member.label, councilRole: member.councilRole,
@@ -116,6 +118,63 @@ test("connection drift after enqueue rejects before network invocation", async (
   expect(calls).toBe(0);
   expect((await loadPrivateBranch(id))!.body.deliveries![0]).toMatchObject({ status: "failed", submittedAt: null, errorCode: "connection_or_risk_changed" });
 });
+
+test("Anthropic default/custom targets freeze reviewed input, replay once and preserve native usage through export and forks", async () => {
+  for (const baseUrl of [null, "http://127.0.0.1:9"]) {
+    const f = await fixture({ provider: "anthropic", baseUrl }); const id = f.branch!.id;
+    const preview = (await previewPrivateDelivery(id))!;
+    expect(preview).toMatchObject({ eligible: true, provider: "anthropic", maximumProviderCalls: 1 });
+    expect((await loadPrivateBranch(id))!.body.deliveries).toBeUndefined();
+    const intent = { requestId: randomUUID(), fingerprint: preview.fingerprint };
+    const operation = (await enqueuePrivateDelivery(id, intent))!;
+    const result: PrivateDeliveryResult = { ...reply, finishReason: "length",
+      tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "uncached", outputTokenKind: "inclusive", cachedInputTokens: 9, cacheWriteInputTokens: 3 } };
+    let calls = 0;
+    const execute: Parameters<typeof executePrivateDelivery>[2] = async (op, target) => {
+      calls++;
+      expect(op.request).toEqual(preview.input);
+      expect(target).toMatchObject({ provider: "anthropic", baseUrl: baseUrl ?? "https://api.anthropic.com" });
+      return { result };
+    };
+    await executePrivateDelivery(id, operation.operationId, execute);
+    await executePrivateDelivery(id, operation.operationId, execute);
+    expect(await enqueuePrivateDelivery(id, intent)).toEqual(operation);
+    expect(calls).toBe(1);
+    const branch = (await loadPrivateBranch(id))!;
+    expect(branch.body.deliveries![0]).toMatchObject({ status: "succeeded", usage: { inputTokens: 17, tokenDetails: { inputTokenKind: "uncached", cachedInputTokens: 9 } } });
+    expect((await exportPrivateBranch(id))!.branch.body.deliveries![0]!.result).toEqual(result);
+    const fork = (await createPrivateBranch({ action: "fork", parentBranchId: id, expectedRevision: branch.revision,
+      expectedDeliveryVersion: branch.body.deliveryVersion ?? 0, requestId: randomUUID() }))!;
+    await appendPrivateDraft(fork.id, { requestId: randomUUID(), expectedRevision: 1, text: "Follow up after copied Claude reply" });
+    const next = (await previewPrivateDelivery(fork.id))!;
+    expect(next).toMatchObject({ eligible: true, remainingBranchRequests: 8, provider: "anthropic" });
+    expect(next.input.messages.at(-2)).toEqual({ role: "assistant", content: result.text });
+    const [stored] = await getDatabase().select().from(branches).where(eq(branches.id, id));
+    expect(JSON.stringify(stored)).not.toContain(result.text);
+  }
+});
+
+test("native eligibility fails closed on provider mismatch/search/reasoning and claim-time provider drift", async () => {
+  for (const options of [{ provider: "openai" as const }, { provider: "google" as const },
+    { provider: "anthropic" as const, connectionProvider: "openai-compatible" as const },
+    { provider: "openai-compatible" as const, connectionProvider: "anthropic" as const },
+    { provider: "anthropic" as const, reasoningLevel: "high" as const },
+    { provider: "anthropic" as const, webSearchMode: "auto" as const }]) {
+    const f = await fixture(options);
+    expect((await previewPrivateDelivery(f.branch!.id))!.eligible).toBe(false);
+    await expect(send(f.branch!.id)).rejects.toBeInstanceOf(PrivateDeliveryBlockedError);
+  }
+  const f = await fixture({ provider: "anthropic" }); const id = f.branch!.id;
+  const old = (await previewPrivateDelivery(id))!;
+  await getDatabase().update(providerConnections).set({ baseUrl: "http://127.0.0.1:9" }).where(eq(providerConnections.id, f.connectionId));
+  await expect(enqueuePrivateDelivery(id, { requestId: randomUUID(), fingerprint: old.fingerprint })).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  const operation = (await send(id))!;
+  await getDatabase().update(providerConnections).set({ provider: "openai-compatible" }).where(eq(providerConnections.id, f.connectionId));
+  let calls = 0;
+  await executePrivateDelivery(id, operation.operationId, async () => { calls++; return { result: reply }; });
+  expect(calls).toBe(0);
+  expect((await loadPrivateBranch(id))!.body.deliveries![0]).toMatchObject({ status: "failed", submittedAt: null, errorCode: "connection_or_risk_changed" });
+});
 test("interrupted submission recovers as unknown, blocks editing/forks and requires explicit discard without resending", async () => {
   const f = await fixture(); const id = f.branch!.id; const op = (await send(id))!;
   await getDatabase().transaction(async (tx) => {
@@ -181,12 +240,13 @@ test("completed replies fork with provenance, survive source deletion and enter 
   const client = new Client({ connectionString: process.env.DATABASE_URL }); await client.connect();
   try { expect((await auditRestoredEncryption(client)).decryptedValues).toBeGreaterThan(0); } finally { await client.end(); }
 });
-test("a populated private receipt survives an actual disposable archive restore", async () => {
+test("a populated native private receipt survives an actual disposable archive restore", async () => {
   const url = new URL(process.env.DATABASE_URL!);
   // Never dump/restore the real owner's database from an ordinary test run.
   if (!/^\/da_it_[a-f0-9]+$/.test(url.pathname) || url.hostname !== "127.0.0.1") throw new Error("Requires isolated integration database");
-  const f = await fixture(); const id = f.branch!.id; const op = (await send(id))!;
-  await executePrivateDelivery(id, op.operationId, async () => ({ result: reply }));
+  const f = await fixture({ provider: "anthropic" }); const id = f.branch!.id; const op = (await send(id))!;
+  await executePrivateDelivery(id, op.operationId, async () => ({ result: { ...reply,
+    tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "uncached", outputTokenKind: "inclusive", cachedInputTokens: 9, cacheWriteInputTokens: 3 } } }));
   const directory = await mkdtemp(join(tmpdir(), "da-private-restore-"));
   const name = `da_private_restore_${randomUUID().replaceAll("-", "")}`;
   const localRoot = join(process.env.LOCALAPPDATA!, "DeliberationAI");

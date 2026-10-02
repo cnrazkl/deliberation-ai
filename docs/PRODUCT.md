@@ -1,5 +1,7 @@
 # Product
 
+**DA-098:** reviewed private send/reply also supports Claude/Anthropic source members with default reasoning and search off. Exact input, provider matching and durable intent controls remain in force. Truncated replies are visible; native uncached-input and cache counters are labelled separately. Native OpenAI/Gemini, other settings and private erasure remain open. [Workflow](PRIVATE_BRANCHES.md).
+
 **DA-097:** saved private owner messages can be explicitly reviewed and sent to a supported OpenAI-compatible source model. Exact input/connection review, conservative risk blocking, bounded permanent request slots, durable unknown outcomes and observed usage remain separate from council authority/billing. Opening/saving drafts stays idle. Other providers/settings and private-content deletion remain open. [Workflow](PRIVATE_BRANCHES.md).
 
 **DA-096 draft foundation:** a saved successful member reply can seed an owner-reviewed private branch. Owner message drafts are encrypted and immutable; forks copy a saved prefix and progress separately. Branches reopen through **Kayıtlı konuşmalar** after source retention and enter explicit plaintext exports. Drafts are not sent to a model. Actual private chat and private-body/copy deletion remain open. [Workflow](PRIVATE_BRANCHES.md).

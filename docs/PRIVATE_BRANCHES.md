@@ -1,6 +1,6 @@
-# Selected-member private branches — DA-096 / DA-097
+# Selected-member private branches — DA-096 / DA-097 / DA-098
 
-DA-096 supplies encrypted draft storage and branch management. DA-097 adds explicit reviewed one-model delivery for OpenAI-compatible source members with default reasoning and web search off. Saving/opening/refreshing a draft still makes no provider call. Council execution and selected-member reruns are unchanged. Other provider/settings combinations remain unsupported by this increment.
+DA-096 supplies encrypted draft storage and branch management. DA-097 adds explicit reviewed one-model delivery for OpenAI-compatible source members; DA-098 extends it to native Claude/Anthropic. Both require default reasoning and web search off. Saving/opening/refreshing a draft still makes no provider call. Council execution and selected-member reruns are unchanged. Other provider/settings combinations remain unsupported.
 
 ## Owner workflow
 
@@ -56,7 +56,7 @@ The exhaustive backup audit includes `conversation_private_branches.body_ciphert
 
 ## Remaining scope
 
-Broader native-provider/reasoning/search support, in-flight cancellation, message/private-body deletion, council accounting integration, authoritative billing and input/tool/money budgets remain open. Selective/semantic compaction and real-provider/human accuracy acceptance remain unverified.
+Native OpenAI Responses/Gemini and broader reasoning/search support, in-flight cancellation, message/private-body deletion, council accounting integration, authoritative billing and input/tool/money budgets remain open. Selective/semantic compaction and real-provider/human accuracy acceptance remain unverified.
 
 ## DA-097 reviewed private delivery
 
@@ -91,3 +91,35 @@ GET/POST/PATCH `/api/private-branches/:id/deliveries` is owner-scoped, no-store 
 byte-bounded, with same-origin mutations. Plaintext exports include private request,
 result and usage without credentials. Existing backups authenticate the extended body;
 old bodies with no delivery fields remain readable. No migration is added.
+
+## DA-098 native Claude/Anthropic
+
+The owned source connection must match the frozen member provider. A native connection
+without an explicit base URL uses `https://api.anthropic.com`; an explicit base URL is
+the root before `/v1/messages`. Compatible connections still require a base URL. Review
+shows provider, connection label, model and full ordered input; provider/endpoint/revision
+drift invalidates review and fails claimed work before a network call.
+
+The leading system turn maps verbatim to top-level `system`; remaining user/assistant
+messages keep their order and text. Consecutive owner drafts stay separate in the
+request, although the service can combine consecutive roles internally. Mid-history
+system instructions and assistant prefills are refused. No thinking, effort, search,
+tools, council JSON schema, automatic repair or network retry is requested. Existing
+1,024-token output, byte/time/storage and receipt controls apply. The intent header
+does not certify remote deduplication.
+
+Only assistant text-block messages ending in `end_turn` or `max_tokens` are accepted.
+Text blocks are concatenated without altering text; `max_tokens` displays truncation.
+Tool/thinking/unknown blocks, refusal stops and malformed/oversized results fail;
+valid observed usage remains on failed receipts without retaining failed raw text.
+Interrupted network work stays unknown and is never automatically resubmitted.
+
+Claude `input_tokens` are labelled **önbellek hariç**. Cache-read/cache-write counts are
+shown separately when returned and as unknown when absent. These native counters enter
+existing encrypted private results/usage, forks, JSON exports and backup auditing;
+they are not invoice amounts or council billing records. No migration, new credential,
+provider-managed history or old-body rewrite is needed. Local verification does not
+attest cloud access, model compatibility or answer quality. [Acceptance](DA098_ACCEPTANCE.md).
+
+Mapping follows the [official Messages API](https://platform.claude.com/docs/en/api/messages/create)
+and [stop-reason guide](https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons), checked 2 October 2026.

@@ -1,8 +1,9 @@
 # Tasks
 
-DA-097 completes bounded reviewed OpenAI-compatible private dispatch/replies after
-DA-096. [Local acceptance](DA097_ACCEPTANCE.md) does not complete multi-provider private
-chat, private-content erasure, council billing integration or monetary enforcement.
+DA-098 extends DA-097 reviewed private dispatch/replies to native Claude/Anthropic.
+[Local acceptance](DA098_ACCEPTANCE.md) does not complete all-provider private chat,
+private-content erasure, council billing integration or monetary enforcement. Next:
+native OpenAI Responses private delivery, then Gemini, under the same reviewed boundary.
 
 Status: DA-097's bounded private delivery has passed local acceptance; the broad private chat/deletion/monetary gates remain partial. [The 1 October repository audit](REPO_AUDIT_2026_10_01.md) records DA-081 checks; [DA-082](PROVIDER_PRICING.md) adds token estimates, [DA-083](PROVIDER_BILLING.md) billing evidence, [DA-084](BILLING_CORRECTIONS.md) corrections, [DA-085](BILLING_STATEMENTS.md) statement inspection, [DA-086](BILLING_STATEMENT_HISTORY.md) durable statement history, [DA-087](BILLING_REALLOCATION.md) identity reallocation, [DA-088](BILLING_ACCOUNT.md) account invoice inspection and [DA-089](BILLING_PAYMENT.md) local payment-evidence inspection. [DA-090](CONVERSATION_CONTINUATION.md) adds explicit frozen report continuation; [DA-091](CONVERSATION_COMPACTION.md) adds reviewed manual compaction with private original archives. The original broad PLAN.md acceptance gates are not complete. See [the full gap audit](PLAN_GAP_AUDIT.md). TypeSafe/JEV remains excluded by the owner.
 
@@ -71,7 +72,8 @@ The original complete quality gate remains open. DA-074 performs mechanical chec
 - [x] DA-095: preview and explicitly delete one empty owned conversation identity/membership snapshot after body/reference/index/ownership/schema checks; preserve backups/exports and reject stale confirmation. Destructive acceptance uses generated fixtures only. [Policy](CONVERSATION_DELETION.md), [checks](DA095_ACCEPTANCE.md).
 - [x] DA-096 draft foundation: preserve a reviewed selected-member reply in a separate encrypted private branch; append immutable owner drafts, fork reviewed prefixes, reopen after source retention, export private content explicitly and register its deletion/backup dependency. No model send or reply is fabricated. [Scope](PRIVATE_BRANCHES.md), [acceptance](DA096_ACCEPTANCE.md).
 - [x] DA-097: deliver reviewed plain-text private replies for supported OpenAI-compatible source members; freeze input, recheck risk/connection, deduplicate intent, fence worker replay, retain unknown outcomes and nullable usage, and bind reply-aware forks. Eight permanent branch requests and 1,024 output tokens per request are local limits only. [Acceptance](DA097_ACCEPTANCE.md).
-- [ ] Extend native-provider/settings support and council accounting integration, then complete message/retained/private-body and backup/export deletion policy. DA-096 supplies draft storage, DA-097 bounded private delivery and DA-095 empty metadata deletion. Semantic compaction fidelity and real-provider acceptance remain unverified.
+- [x] DA-098: extend reviewed private delivery to native Claude/Anthropic; preserve text/order, source/connection matching and durable single-intent controls, normalize bounded text/truncation and native uncached/cache usage, and verify populated native receipt restore plus real-worker loopback browser flows. [Acceptance](DA098_ACCEPTANCE.md).
+- [ ] Extend native OpenAI Responses/Gemini and broader settings support and council accounting integration, then complete message/retained/private-body and backup/export deletion policy. DA-096 supplies draft storage, DA-097 compatible delivery, DA-098 native Anthropic delivery and DA-095 empty metadata deletion. Semantic compaction fidelity and real-provider acceptance remain unverified.
 
 ### Group 5 — operational evaluation
 

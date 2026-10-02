@@ -1,5 +1,7 @@
 # Roadmap
 
+DA-098 extends reviewed private replies to native Claude/Anthropic with explicit cache conventions. The next bounded provider increment is native OpenAI Responses, followed by Gemini; reasoning/search expansion and private-content deletion remain separate work. Full private chat, billing, erasure and semantic/live gates stay partial. [Scope](PRIVATE_BRANCHES.md).
+
 DA-097 delivers reviewed bounded OpenAI-compatible private replies after the DA-096 draft foundation. Other native providers/settings, private-content/copy deletion, shared billing and broader semantic/live gates remain open. The older paragraphs below describe their historical increment scope. [Current acceptance](DA097_ACCEPTANCE.md).
 
 DA-089 delivers local read-only payment/refund evidence inspection against current invoice snapshots, exact amounts and source/duplicate/allocation/date checks. Provider/bank authenticity and actual payment acceptance remain open before the settled-cost gate; hard input/tool/money reservations and conversation work remain pending. [Scope](BILLING_PAYMENT.md).

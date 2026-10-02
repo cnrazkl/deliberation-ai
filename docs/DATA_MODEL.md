@@ -1,5 +1,7 @@
 # Data model
 
+**DA-098:** native Anthropic replies use existing private result/usage fields, including uncached-input/cache conventions and truncation. Provider identity remains in the frozen seed and connection fingerprint. No table, ciphertext column, migration or old-body rewrite is added. Existing export/fork/restore validation covers these receipts.
+
 **DA-097:** existing authenticated private branch bodies optionally add deliveryVersion and bounded deliveries with immutable request/origin/message/connection fingerprints, status/timestamps, normalized result and nullable observed usage. Legacy draft bodies remain valid. No schema migration or additional ciphertext column is introduced. Fork copies retain original receipt origins; successful/failed/unknown/cancelled records never enter council provider_operations or billing totals.
 
 **DA-096:** migration `0044_vengeful_anita_blake.sql` adds `conversation_private_branches`: owner/conversation/source/member/parent metadata, owner-unique creation request UUID/hash, revision/message count, timestamps and authenticated `body_ciphertext`. The full selected-member seed and immutable owner drafts live only in the encrypted body. Conversation deletion is restricted; source/parent links do not cascade. Forks retain copied message origins and reviewed parent prefixes. [Bounds and backup contract](PRIVATE_BRANCHES.md).

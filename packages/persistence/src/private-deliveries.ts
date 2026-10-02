@@ -15,6 +15,12 @@ import { boundedPrivateBody, privateDeliveryPending, readPrivateBranch, writePri
 
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 type Connection = typeof providerConnections.$inferSelect;
+function supportedProvider(provider: string): provider is "openai-compatible" | "anthropic" {
+  return provider === "openai-compatible" || provider === "anthropic";
+}
+function privateBaseUrl(target: Connection) {
+  return target.baseUrl || (target.provider === "anthropic" ? "https://api.anthropic.com" : null);
+}
 export function privateConnectionFingerprint(connection: Connection) {
   return hash({ id: connection.id, revision: connection.revision, provider: connection.provider, baseUrl: connection.baseUrl,
     endpointPreset: connection.endpointPreset, reasoningProtocol: connection.reasoningProtocol });
@@ -37,9 +43,9 @@ async function preview(tx: ConversationTransaction, id: string, lock = false) {
   if (!message) blocks.push("no_message");
   if (message && deliveries.some((item) => item.messageId === message.id)) blocks.push("already_requested");
   if (privateDeliveryPending(body)) blocks.push("pending");
-  if (member.provider !== "openai-compatible" || (target && target.provider !== "openai-compatible")) blocks.push("unsupported_provider");
+  if (!supportedProvider(member.provider) || (target && target.provider !== member.provider)) blocks.push("unsupported_provider");
   if (member.reasoningLevel !== "default" || member.webSearchMode !== "off") blocks.push("unsupported_settings");
-  if (!target?.baseUrl) blocks.push("missing_connection");
+  if (!target || !privateBaseUrl(target)) blocks.push("missing_connection");
   if (risk.effectiveProfile === "high") blocks.push("high_risk");
   const used = deliveries.filter((item) => item.originBranchId === id).length;
   // Reserve enough encrypted-body plaintext capacity for a maximally escaped
@@ -50,7 +56,7 @@ async function preview(tx: ConversationTransaction, id: string, lock = false) {
   const connectionFingerprint = target ? privateConnectionFingerprint(target) : null;
   const fingerprint = hash({ id, revision: branch.value.revision, deliveryVersion: body.deliveryVersion ?? 0, bodyHash: hash(body), connectionFingerprint, input });
   return { branchId: id, fingerprint, eligible: blocks.length === 0, blocks, input, risk,
-    connectionId: target?.id ?? null, connectionFingerprint, connectionLabel: target?.label ?? null,
+    provider: member.provider, connectionId: target?.id ?? null, connectionFingerprint, connectionLabel: target?.label ?? null,
     maximumProviderCalls: 1 as const, maxOutputTokens: 1_024 as const, remainingBranchRequests: Math.max(0, 8 - used), inputBytes };
 }
 export async function previewPrivateDelivery(id: string) {
@@ -108,7 +114,7 @@ export async function controlPrivateDelivery(id: string, input: { operationId: s
   });
 }
 export type PrivateDeliveryExecutionResult = { result: PrivateDeliveryResult } | { errorCode: string; outcome: "known" | "unknown"; usage?: PrivateDeliveryUsage };
-export type PrivateDeliveryExecutor = (operation: PrivateDelivery, target: { apiKey: string; baseUrl: string; endpointPreset: string }, branchId: string) => Promise<PrivateDeliveryExecutionResult>;
+export type PrivateDeliveryExecutor = (operation: PrivateDelivery, target: { provider: "openai-compatible" | "anthropic"; apiKey: string; baseUrl: string; endpointPreset: string }, branchId: string) => Promise<PrivateDeliveryExecutionResult>;
 export async function executePrivateDelivery(id: string, operationId: string, execute: PrivateDeliveryExecutor) {
   // A session lock spans network work without holding a transaction. Lost
   // sessions cannot authorize another submission of an already submitted id.
@@ -131,7 +137,9 @@ export async function executePrivateDelivery(id: string, operationId: string, ex
         await writePrivateDeliveryBody(tx, id, changed(current.value.body, deliveries)); return undefined;
       }
       const target = await connection(tx, operation.connectionId, true);
-      if (!target?.baseUrl || privateConnectionFingerprint(target) !== operation.connectionFingerprint ||
+      const member = current.value.body.seed.member;
+      if (!target || !supportedProvider(target.provider) || target.provider !== member.provider || !privateBaseUrl(target) ||
+        member.reasoningLevel !== "default" || member.webSearchMode !== "off" || privateConnectionFingerprint(target) !== operation.connectionFingerprint ||
         assessPrivateDelivery(current.value.body, operation.request).effectiveProfile === "high") {
         operation.status = "failed"; operation.errorCode = "connection_or_risk_changed"; operation.finishedAt = new Date().toISOString();
         await writePrivateDeliveryBody(tx, id, changed(current.value.body, deliveries)); return undefined;
@@ -139,7 +147,7 @@ export async function executePrivateDelivery(id: string, operationId: string, ex
       const apiKey = decryptText(target.secretCiphertext, `provider-connection:${target.id}:secret`);
       operation.status = "submitted"; operation.submittedAt = new Date().toISOString();
       await writePrivateDeliveryBody(tx, id, changed(current.value.body, deliveries));
-      return { operation, target: { apiKey, baseUrl: target.baseUrl, endpointPreset: target.endpointPreset } };
+      return { operation, target: { provider: target.provider, apiKey, baseUrl: privateBaseUrl(target)!, endpointPreset: target.endpointPreset } };
     });
     if (!claimed) return;
     let result: PrivateDeliveryExecutionResult;

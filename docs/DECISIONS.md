@@ -1,5 +1,7 @@
 # Decisions
 
+DA-098 extends [ADR-0027](adr/0027-reviewed-private-delivery.md) to native Claude/Anthropic without changing request/result versions or council orchestration. Preserve reviewed stateless turn text/order, accept only bounded text replies and expose native cache conventions. Other native adapters/settings, cloud acceptance and erasure remain separate increments.
+
 DA-097 accepts ADR-0027: separate preview-bound private delivery, durable no-blind-retry receipts, bounded local request/output capacity and no promotion into council authority or billing. Supported compatible settings only; broader providers, live acceptance and content erasure remain separate.
 
 DA-096 accepts [ADR-0026: selected-member private drafts](adr/0026-selected-member-private-drafts.md): a separate encrypted owner-draft aggregate, source-bound reply seed, immutable versioned messages and copied-prefix forks retain provenance without creating model responses or weakening council invariants. Private content blocks metadata deletion and enters explicit exports/backup verification. Actual single-model dispatch and private-content deletion remain open.

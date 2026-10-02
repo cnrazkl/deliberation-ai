@@ -1,5 +1,7 @@
 # Orchestration
 
+**DA-098:** the private worker also selects native Anthropic translation from the validated matching connection provider. Claim rechecks supported settings/provider/endpoint fingerprints before persisting submission. Compatible/native paths share permanent slots, output cap, session fencing and submitted-to-unknown recovery; no council path or automatic retry is added.
+
 **DA-097:** private-text-delivery uses a separate job and session branch lock. Frozen reviewed input and claim-time connection/risk checks precede durable submitted state and one network attempt. A restarted submitted receipt becomes outcome_unknown; terminal receipts replay without an adapter call. Only prepared work can be cancelled. Unknown closure requires acknowledgement; future work requires a new message/review/intent. No council orchestration state is changed.
 
 DA-093 acquires the owned conversation lock before enqueue source-row/idempotency locks. A new independent run creates a conversation; continuation/rerun children inherit the immediate source's membership before queue commit. Ungrouped legacy sources reject creation atomically until indexing. Enqueue replay preserves identity; worker input/receipts remain unchanged. Read-only viewing/exporting triggers no job. [Flow](CONVERSATIONS.md).
