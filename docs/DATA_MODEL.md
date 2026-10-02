@@ -1,5 +1,7 @@
 # Data model
 
+**DA-100:** existing encrypted private receipt/result/usage fields also retain Gemini text, truncation, candidate-output and separate thought/total/cache counters. Missing counts stay unavailable; failed textless cap receipts preserve observed usage, and unfinished remote output stays unknown. Thought signatures never enter bodies/exports/forks. No table/version/migration or old-body rewrite; populated Gemini receipts join the disposable archive restore audit.
+
 **DA-099:** Responses uses existing private result/usage/status fields for text/truncation, inclusive cache/reasoning counts, known no-text failures and unknown remote-pending receipts. Opaque provider reasoning envelopes never enter encrypted bodies/exports. Versions, tables and ciphertext inventory remain unchanged; no migration or old-body rewrite. Populated OpenAI and Anthropic receipts enter the same disposable restore audit.
 
 **DA-098:** native Anthropic replies use existing private result/usage fields, including uncached-input/cache conventions and truncation. Provider identity remains in the frozen seed and connection fingerprint. No table, ciphertext column, migration or old-body rewrite is added. Existing export/fork/restore validation covers these receipts.

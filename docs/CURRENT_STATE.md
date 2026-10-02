@@ -1,8 +1,41 @@
 # Current state
 
-Updated: 2 October 2026 (DA-099 native OpenAI Responses private delivery accepted in the primary local application)
+Updated: 2 October 2026 (DA-100 native Gemini private delivery accepted in the primary local application)
 
-## Verified increment — DA-099 native OpenAI Responses private delivery
+## Verified increment — DA-100 native Gemini generateContent private delivery
+
+Matching owned Google source connections now support reviewed private text with default
+reasoning/search off. Exact model/message text/order is frozen; the leading instruction
+maps to systemInstruction and later text to user/model contents. One plain-text candidate
+and the existing 1,024-token cap are requested with header-only credentials, no tools,
+thinking override, council schema or provider state. Strict response validation refuses
+thought/tool/media/unknown parts, safety blocks, multiple candidates and excessive text.
+Opaque signatures do not enter saved/exported/resent history; reasoning continuity is
+not reconstructed. Candidate-output and separate thought/cache/total counts are labelled
+without inventing missing values or invoice cost. Partial caps display truncation;
+textless caps retain failed usage, and unfinished candidates remain unknown without
+polling/retry. Existing receipts, permanent slots, locks, forks and schema are unchanged.
+
+Passed 272 offline unit tests, 156 isolated PostgreSQL tests and all 24 browser flows
+in the final full run, with type checks, zero-warning lint, separate-output production
+build and dependency audit. Populated Gemini/Responses/Anthropic receipts survived
+actual disposable pg_dump/pg_restore, encryption authentication and ciphertext comparison.
+Temporary databases/archives were removed. Browser tests use loopback fixtures and the
+real worker for intent replay, reply history, textless usage, unknown closure and forks.
+The first full browser run had one existing deletion-test textarea mismatch; its focused
+repeat passed, then the test was synchronized to an API-loaded card before editing and
+the final full run passed. This does not prove all cold-load races are prevented.
+No paid/cloud call, owner-history pruning, JEV activation or application migration ran.
+[Acceptance](DA100_ACCEPTANCE.md).
+
+Next: explicit private-branch deletion policy and reviewed implementation, covering
+copied descendants, pending/unknown receipts, retained usage and backup/export limits.
+Use generated fixtures; no real owner data deletion is authorized by local acceptance.
+Richer settings, provider-managed continuity/Interactions, accounting and semantic/live
+acceptance remain separate. Earlier blocked cache cleanup remains unresolved. Earlier
+provider-next/absence statements describe historical scope.
+
+## Previous verified increment — DA-099 native OpenAI Responses private delivery
 
 Matching owned OpenAI source connections now support reviewed private text with default
 reasoning/search off. Text/order/model are frozen; reconstructed assistant turns are

@@ -33,7 +33,7 @@ afterEach(async () => {
 afterAll(async () => { await closeBoss(); await closeDatabase(); });
 async function fixture({ owner = LOCAL_OWNER_ID, question = "Compare database query syntax", text = "Explain the selected viewpoint", provider = "openai-compatible",
   reasoningLevel = "default", selectedText = "Selected copied answer", connectionProvider = provider === "fake" ? "openai-compatible" : provider,
-  baseUrl = provider === "anthropic" || provider === "openai" ? null : "http://127.0.0.1:9/v1", webSearchMode = "off" }: {
+  baseUrl = provider === "anthropic" || provider === "openai" || provider === "google" ? null : "http://127.0.0.1:9/v1", webSearchMode = "off" }: {
   owner?: string; question?: string; text?: string; provider?: CouncilMemberConfig["provider"]; reasoningLevel?: CouncilMemberConfig["reasoningLevel"]; selectedText?: string;
   connectionProvider?: CouncilMemberConfig["provider"]; baseUrl?: string | null; webSearchMode?: CouncilMemberConfig["webSearchMode"];
 } = {}) {
@@ -119,8 +119,8 @@ test("connection drift after enqueue rejects before network invocation", async (
   expect((await loadPrivateBranch(id))!.body.deliveries![0]).toMatchObject({ status: "failed", submittedAt: null, errorCode: "connection_or_risk_changed" });
 });
 
-test.each(["anthropic", "openai"] as const)("%s default/custom targets freeze reviewed input, replay once and preserve native usage through export and forks", async (provider) => {
-  for (const baseUrl of [null, provider === "anthropic" ? "http://127.0.0.1:9" : "http://127.0.0.1:9/v1"]) {
+test.each(["anthropic", "openai", "google"] as const)("%s default/custom targets freeze reviewed input, replay once and preserve native usage through export and forks", async (provider) => {
+  for (const baseUrl of [null, provider === "anthropic" ? "http://127.0.0.1:9" : provider === "google" ? "http://127.0.0.1:9/v1beta" : "http://127.0.0.1:9/v1"]) {
     const f = await fixture({ provider, baseUrl }); const id = f.branch!.id;
     const preview = (await previewPrivateDelivery(id))!;
     expect(preview).toMatchObject({ eligible: true, provider, maximumProviderCalls: 1 });
@@ -128,13 +128,13 @@ test.each(["anthropic", "openai"] as const)("%s default/custom targets freeze re
     const intent = { requestId: randomUUID(), fingerprint: preview.fingerprint };
     const operation = (await enqueuePrivateDelivery(id, intent))!;
     const result: PrivateDeliveryResult = { ...reply, finishReason: "length",
-      tokenDetails: { version: "provider-token-details-v1", inputTokenKind: provider === "anthropic" ? "uncached" : "inclusive", outputTokenKind: "inclusive", cachedInputTokens: 9,
+      tokenDetails: { version: "provider-token-details-v1", inputTokenKind: provider === "anthropic" ? "uncached" : "inclusive", outputTokenKind: provider === "google" ? "candidates" : "inclusive", cachedInputTokens: 9,
         ...(provider === "anthropic" ? { cacheWriteInputTokens: 3 } : { reasoningTokens: 3 }) } };
     let calls = 0;
     const execute: Parameters<typeof executePrivateDelivery>[2] = async (op, target) => {
       calls++;
       expect(op.request).toEqual(preview.input);
-      expect(target).toMatchObject({ provider, baseUrl: baseUrl ?? (provider === "anthropic" ? "https://api.anthropic.com" : "https://api.openai.com/v1") });
+      expect(target).toMatchObject({ provider, baseUrl: baseUrl ?? (provider === "anthropic" ? "https://api.anthropic.com" : provider === "google" ? "https://generativelanguage.googleapis.com/v1beta" : "https://api.openai.com/v1") });
       return { result };
     };
     await executePrivateDelivery(id, operation.operationId, execute);
@@ -156,7 +156,10 @@ test.each(["anthropic", "openai"] as const)("%s default/custom targets freeze re
 });
 
 test("native eligibility fails closed on provider mismatch/search/reasoning and claim-time provider drift", async () => {
-  for (const options of [{ provider: "google" as const },
+  for (const options of [{ provider: "google" as const, connectionProvider: "openai" as const },
+    { provider: "google" as const, reasoningLevel: "high" as const },
+    { provider: "google" as const, webSearchMode: "auto" as const },
+    { provider: "google" as const, text: "Which medication dose is appropriate?" },
     { provider: "anthropic" as const, connectionProvider: "openai-compatible" as const },
     { provider: "openai-compatible" as const, connectionProvider: "anthropic" as const },
     { provider: "anthropic" as const, reasoningLevel: "high" as const },
@@ -170,7 +173,7 @@ test("native eligibility fails closed on provider mismatch/search/reasoning and 
     expect((await previewPrivateDelivery(f.branch!.id))!.eligible).toBe(false);
     await expect(send(f.branch!.id)).rejects.toBeInstanceOf(PrivateDeliveryBlockedError);
   }
-  for (const provider of ["anthropic", "openai"] as const) {
+  for (const provider of ["anthropic", "openai", "google"] as const) {
   const f = await fixture({ provider }); const id = f.branch!.id;
   const old = (await previewPrivateDelivery(id))!;
   await getDatabase().update(providerConnections).set({ baseUrl: "http://127.0.0.1:9" }).where(eq(providerConnections.id, f.connectionId));
@@ -259,6 +262,9 @@ test("a populated native private receipt survives an actual disposable archive r
   await executePrivateDelivery(nativeId, (await send(nativeId))!.operationId, async () => ({ result: { ...reply,
     tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "inclusive", outputTokenKind: "inclusive", cachedInputTokens: 9, reasoningTokens: 3 } } }));
   const directory = await mkdtemp(join(tmpdir(), "da-private-restore-"));
+  const google = await fixture({ provider: "google" }); const googleId = google.branch!.id;
+  await executePrivateDelivery(googleId, (await send(googleId))!.operationId, async () => ({ result: { ...reply,
+    tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "inclusive", outputTokenKind: "candidates", cachedInputTokens: 9, reasoningTokens: 3, totalTokens: 25 } } }));
   const name = `da_private_restore_${randomUUID().replaceAll("-", "")}`;
   const localRoot = join(process.env.LOCALAPPDATA!, "DeliberationAI");
   const adminFile = await readFile(join(localRoot, "postgres-admin.local"), "utf8");
@@ -283,6 +289,8 @@ test("a populated native private receipt survives an actual disposable archive r
       expect(value.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, id)))[0]!.bodyCiphertext);
       const nativeValue = await reader.query<{ body_ciphertext: string }>("select body_ciphertext from conversation_private_branches where id = $1", [nativeId]);
       expect(nativeValue.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, nativeId)))[0]!.bodyCiphertext);
+      const googleValue = await reader.query<{ body_ciphertext: string }>("select body_ciphertext from conversation_private_branches where id = $1", [googleId]);
+      expect(googleValue.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, googleId)))[0]!.bodyCiphertext);
     } finally { await reader.end(); }
   } finally {
     if (created) await admin.query(`drop database "${name}" with (force)`);

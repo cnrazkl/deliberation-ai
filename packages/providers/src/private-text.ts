@@ -10,6 +10,22 @@ const anthropicReplySchema = z.object({
   stop_reason: z.enum(["end_turn", "max_tokens"]),
 });
 const openaiItemStatus = z.enum(["completed", "incomplete"]);
+const geminiReplySchema = z.object({
+  error: z.null().optional(),
+  promptFeedback: z.object({ blockReason: z.literal("BLOCK_REASON_UNSPECIFIED").optional(),
+    safetyRatings: z.array(z.object({ blocked: z.literal(false).optional() })).optional() }).optional(),
+  candidates: z.array(z.object({
+    finishReason: z.enum(["STOP", "MAX_TOKENS"]),
+    content: z.object({ role: z.literal("model"), parts: z.array(z.object({
+      text: z.string().max(16_384), thought: z.literal(false).optional(),
+      // Opaque state is accepted only on a plain text part and never retained.
+      thoughtSignature: z.string().max(131_072).optional(),
+    }).strict()) }).optional(),
+    safetyRatings: z.array(z.object({ blocked: z.literal(false).optional() })).optional(),
+    groundingMetadata: z.never().optional(), urlContextMetadata: z.never().optional(),
+    groundingAttributions: z.array(z.never()).max(0).optional(),
+  })).length(1),
+});
 const openaiReplySchema = z.object({
   object: z.literal("response"), status: z.enum(["completed", "incomplete"]),
   error: z.null().optional(),
@@ -32,24 +48,29 @@ const openaiReplySchema = z.object({
 
 /** Separate plain-text boundary; council schemas/prompts are never reused. */
 export async function generatePrivateText(request: PrivateDeliveryRequest, options: {
-  provider?: "openai-compatible" | "anthropic" | "openai"; baseUrl: string; apiKey: string; endpointPreset: string; operationKey: string; fetch?: typeof fetch; timeoutMs?: number;
+  provider?: "openai-compatible" | "anthropic" | "openai" | "google"; baseUrl: string; apiKey: string; endpointPreset: string; operationKey: string; fetch?: typeof fetch; timeoutMs?: number;
 }): Promise<PrivateDeliveryResult> {
   const input = privateDeliveryRequestSchema.parse(request);
   if (!options.operationKey) throw new NormalizedProviderError("İşlem kimliği gerekli.", "missing_operation_id", "known", false);
   const provider = options.provider ?? "openai-compatible";
-  if (provider !== "openai-compatible" && provider !== "anthropic" && provider !== "openai") {
+  if (provider !== "openai-compatible" && provider !== "anthropic" && provider !== "openai" && provider !== "google") {
     throw new NormalizedProviderError("Özel gönderim sağlayıcısı desteklenmiyor.", "unsupported_private_provider", "known", false);
   }
   const anthropic = provider === "anthropic";
   const responses = provider === "openai";
+  const gemini = provider === "google";
   const [system, ...messages] = input.messages;
   // Refuse translation that would drop/reorder an instruction or continue an
   // assistant prefill. Consecutive owner turns remain separate, in exact order.
-  if ((anthropic || responses) && (system?.role !== "system" || messages.some((item) => item.role === "system") ||
+  if ((anthropic || responses || gemini) && (system?.role !== "system" || messages.some((item) => item.role === "system") ||
     messages[0]?.role !== "user" || messages.at(-1)?.role !== "user")) {
     throw new NormalizedProviderError("Özel mesaj sırası geçersiz.", "invalid_private_messages", "known", false);
   }
-  const body = responses
+  const body = gemini
+    ? { systemInstruction: { parts: [{ text: system!.content }] },
+      contents: messages.map((item) => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] })),
+      generationConfig: { candidateCount: 1, maxOutputTokens: input.maxOutputTokens, responseMimeType: "text/plain" } }
+    : responses
     ? { model: input.model, input: input.messages.map((item) => item.role === "assistant" ? { ...item, phase: "final_answer" } : item),
       max_output_tokens: input.maxOutputTokens, store: false, background: false, stream: false,
       truncation: "disabled", text: { format: { type: "text" } } }
@@ -57,14 +78,15 @@ export async function generatePrivateText(request: PrivateDeliveryRequest, optio
     ? { model: input.model, system: system!.content, messages, max_tokens: input.maxOutputTokens }
     : { model: input.model, messages: input.messages,
       ...(options.endpointPreset === "openrouter" ? { max_completion_tokens: input.maxOutputTokens } : { max_tokens: input.maxOutputTokens }) };
-  const label = responses ? "Private OpenAI" : anthropic ? "Private Anthropic" : "Private compatible";
+  const label = gemini ? "Private Gemini" : responses ? "Private OpenAI" : anthropic ? "Private Anthropic" : "Private compatible";
   let value: unknown;
   try {
     value = await withProviderNetworkDeadline(async (signal) => {
-      const response = await (options.fetch ?? fetch)(`${options.baseUrl.replace(/\/$/, "")}${responses ? "/responses" : anthropic ? "/v1/messages" : "/chat/completions"}`, {
+      const response = await (options.fetch ?? fetch)(`${options.baseUrl.replace(/\/$/, "")}${gemini ? `/models/${encodeURIComponent(input.model)}:generateContent` : responses ? "/responses" : anthropic ? "/v1/messages" : "/chat/completions"}`, {
         method: "POST", redirect: "error", signal,
         headers: { "content-type": "application/json", "idempotency-key": options.operationKey,
-          ...(anthropic ? { "x-api-key": options.apiKey, "anthropic-version": "2023-06-01" }
+          ...(gemini ? { "x-goog-api-key": options.apiKey, "x-goog-request-id": options.operationKey }
+            : anthropic ? { "x-api-key": options.apiKey, "anthropic-version": "2023-06-01" }
             : options.apiKey ? { authorization: `Bearer ${options.apiKey}` } : {}) },
         body: JSON.stringify(body),
       });
@@ -88,6 +110,7 @@ export async function generatePrivateText(request: PrivateDeliveryRequest, optio
   }
   if (anthropic) return normalizeAnthropicReply(value, input.model);
   if (responses) return normalizeOpenAIReply(value, input.model);
+  if (gemini) return normalizeGeminiReply(value, input.model);
   const json = value as { id?: unknown; model?: unknown; choices?: Array<{ finish_reason?: string; message?: { content?: unknown; tool_calls?: unknown } }>; usage?: unknown } | null;
   const choice = json?.choices?.[0]; const raw = choice?.message?.content;
   const usage = extractTokenUsage("openai-compatible", json?.usage);
@@ -98,6 +121,32 @@ export async function generatePrivateText(request: PrivateDeliveryRequest, optio
     provider: "openai-compatible", model: typeof json?.model === "string" ? json.model : input.model,
     remoteResponseId: typeof json?.id === "string" ? json.id : "", ...usage,
   });
+  return parsed.data;
+}
+
+function normalizeGeminiReply(value: unknown, requestedModel: string): PrivateDeliveryResult {
+  const json = value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown> : {};
+  const usage = extractTokenUsage("google", json.usageMetadata);
+  const model = typeof json.modelVersion === "string" ? json.modelVersion : requestedModel;
+  const remoteResponseId = typeof json.responseId === "string" ? json.responseId : null;
+  const metadata = { provider: "google", model, remoteResponseId: remoteResponseId ?? "", ...usage };
+  const candidates = json.candidates;
+  if (Array.isArray(candidates) && candidates.length === 1 && candidates[0] && typeof candidates[0] === "object" &&
+    (candidates[0].finishReason === undefined || candidates[0].finishReason === "FINISH_REASON_UNSPECIFIED")) {
+    throw new NormalizedProviderError("Uzaktaki işlem henüz tamamlanmadı.", "private_remote_pending", "unknown", false, undefined, metadata);
+  }
+  const native = geminiReplySchema.safeParse(value);
+  const candidate = native.success ? native.data.candidates[0] : undefined;
+  const text = candidate?.content?.parts.map((part) => part.text).join("");
+  const parsed = privateDeliveryResultSchema.safeParse({ text, model, remoteResponseId,
+    inputTokens: usage.inputTokens ?? null, outputTokens: usage.outputTokens ?? null,
+    tokenDetails: usage.tokenDetails, finishReason: candidate?.finishReason === "MAX_TOKENS" ? "length" : "stop" });
+  if (!native.success || !parsed.success) throw new NormalizedProviderError(
+    "Özel metin yanıtı geçersiz, boş veya çok büyük.",
+    native.success && candidate?.finishReason === "MAX_TOKENS" && !text ? "private_output_limit_without_text" : "invalid_private_response",
+    "known", false, undefined, metadata,
+  );
   return parsed.data;
 }
 

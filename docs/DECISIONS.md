@@ -1,5 +1,7 @@
 # Decisions
 
+DA-100 extends [ADR-0027](adr/0027-reviewed-private-delivery.md) to reviewed native Gemini generateContent text. Reuse existing versions/locks/allowances, refuse unsupported output and keep candidate/thought conventions distinct. Drop opaque signatures from reconstructed history, preserve unfinished uncertainty and add no blind resend. Richer settings, provider-managed continuity, erasure and live acceptance remain separate; earlier provider-absence notes describe historical increments.
+
 DA-099 extends [ADR-0027](adr/0027-reviewed-private-delivery.md) to native Responses with stateless reviewed text, existing private versions and separate council state. Validate output boundaries, exclude opaque reasoning from retained history, expose inclusive counts and preserve remote-pending uncertainty. Gemini, richer continuation/settings and live acceptance remain separate.
 
 DA-098 extends [ADR-0027](adr/0027-reviewed-private-delivery.md) to native Claude/Anthropic without changing request/result versions or council orchestration. Preserve reviewed stateless turn text/order, accept only bounded text replies and expose native cache conventions. Other native adapters/settings, cloud acceptance and erasure remain separate increments.

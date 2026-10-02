@@ -7,19 +7,26 @@ import type { CouncilMemberConfig } from "@deliberation-ai/contracts";
 import { closeDatabase, getDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, conversations, conversationRuns, runs, providerConnections,
   conversationPrivateBranches as branches, type PrivateBranchView } from "@deliberation-ai/persistence";
 
-for (const provider of ["openai-compatible", "anthropic", "openai"] as const) {
+for (const provider of ["openai-compatible", "anthropic", "openai", "google"] as const) {
 test(`${provider} reviewed private delivery survives a lost enqueue response, returns a local worker reply and forks its transcript`, async ({ page, request }) => {
   test.setTimeout(60_000);
   await expect.poll(async () => (await (await request.get("/api/local-diagnostics")).json()).readyWorkers, { timeout: 15_000 }).toBeGreaterThan(0);
   const sourceId = randomUUID(); const conversationId = randomUUID(); const connectionId = randomUUID(); let calls = 0;
   const received: { url: string | undefined; headers: Record<string, string | string[] | undefined>; body: { model: string; system?: string;
-    messages?: { role: string; content: string }[]; input?: { role: string; content: string; phase?: string }[]; max_tokens?: number; max_output_tokens?: number } }[] = [];
+    messages?: { role: string; content: string }[]; input?: { role: string; content: string; phase?: string }[]; max_tokens?: number; max_output_tokens?: number;
+    contents?: { role: string; parts: { text: string }[] }[]; systemInstruction?: { parts: { text: string }[] }; generationConfig?: { maxOutputTokens: number } } }[] = [];
   const server = createServer(async (req, res) => {
     let content = ""; for await (const part of req) content += part;
     const body = JSON.parse(content); calls++;
     received.push({ url: req.url, headers: req.headers, body });
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(provider === "openai"
+    res.end(JSON.stringify(provider === "google"
+      ? { responseId: `offline-private-${calls}`, modelVersion: "offline-private",
+        candidates: [{ ...(calls === 4 ? {} : { finishReason: calls === 1 || calls === 3 ? "MAX_TOKENS" : "STOP" }),
+          ...(calls === 3 ? {} : { content: { role: "model", parts: [{ text: "A local fixture answer " }, { text: "about SQL joins", thoughtSignature: "opaque-browser-fixture-state" }] } }) }],
+        usageMetadata: calls === 4 ? null : calls === 3 ? { promptTokenCount: 41, candidatesTokenCount: 0, thoughtsTokenCount: 1_024, totalTokenCount: 1_065 }
+          : { promptTokenCount: 31, candidatesTokenCount: 7, cachedContentTokenCount: 12, thoughtsTokenCount: 3, totalTokenCount: 41 } }
+      : provider === "openai"
       ? { object: "response", id: `offline-private-${calls}`, model: "offline-private", error: null,
         status: calls === 4 ? "queued" : calls === 1 || calls === 3 ? "incomplete" : "completed",
         incomplete_details: calls === 1 || calls === 3 ? { reason: "max_output_tokens" } : null,
@@ -46,7 +53,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     rawText: "Source SQL viewpoint", parsed: { summary: m.label, claims: [{ statement: "SQL join consideration", kind: "shared" as const, quote: "SQL join consideration" }] }, citations: [] })), []);
   try {
     await getDatabase().insert(providerConnections).values({ id: connectionId, ownerId: LOCAL_OWNER_ID, provider, label: `Private fixture ${sourceId}`,
-      defaultModel: "offline-private", baseUrl: `http://127.0.0.1:${address.port}${provider === "anthropic" ? "" : "/v1"}`,
+      defaultModel: "offline-private", baseUrl: `http://127.0.0.1:${address.port}${provider === "anthropic" ? "" : provider === "google" ? "/v1beta" : "/v1"}`,
       secretCiphertext: encryptText(provider === "openai-compatible" ? "" : "offline-browser-key", `provider-connection:${connectionId}:secret`) });
     await getDatabase().insert(runs).values({ id: sourceId, ownerId: LOCAL_OWNER_ID, idempotencyKey: randomUUID(), requestHash: "private-browser-fixture", snapshotId: randomUUID(),
       question: "[encrypted]", questionCiphertext: encryptText(`SQL private workflow ${sourceId}`, `run:${sourceId}:question`), membersCiphertext: encryptJson(members, `run:${sourceId}:members`),
@@ -70,6 +77,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await expect(preview).toContainText("En fazla 1 çağrı");
     await expect(preview).toContainText(provider);
     if (provider === "openai") await expect(preview).toContainText("1024 çıktı sınırına reasoning tokenları da dahildir");
+    if (provider === "google") await expect(preview).toContainText("düşünce imzaları");
     expect(calls).toBe(0);
     await expect(preview.getByRole("button", { name: "Kaydedilmiş mesajı modele gönder" })).toBeDisabled();
     const [root] = await getDatabase().select().from(branches).where(eq(branches.conversationId, conversationId));
@@ -88,11 +96,25 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await expect(panel).toContainText("A local fixture answer about SQL joins", { timeout: 30_000 });
     await expect(panel).toContainText("Girdi tokenı: 31");
     expect(calls).toBe(1);
-    expect(received[0]!.url).toBe(provider === "anthropic" ? "/v1/messages" : provider === "openai" ? "/v1/responses" : "/v1/chat/completions");
-    expect(provider === "openai" ? received[0]!.body.max_output_tokens : received[0]!.body.max_tokens).toBe(1_024);
-    expect((received[0]!.body.input ?? received[0]!.body.messages)!.at(-1)!.content).toBe("Explain SQL joins in this private follow-up");
+    expect(received[0]!.url).toBe(provider === "anthropic" ? "/v1/messages" : provider === "openai" ? "/v1/responses" : provider === "google" ? "/v1beta/models/offline-private:generateContent" : "/v1/chat/completions");
+    expect(provider === "google" ? received[0]!.body.generationConfig!.maxOutputTokens : provider === "openai" ? received[0]!.body.max_output_tokens : received[0]!.body.max_tokens).toBe(1_024);
+    expect(provider === "google" ? received[0]!.body.contents!.at(-1)!.parts[0]!.text : (received[0]!.body.input ?? received[0]!.body.messages)!.at(-1)!.content).toBe("Explain SQL joins in this private follow-up");
     const value = await (await request.get(`/api/private-branches/${root!.id}`)).json() as PrivateBranchView;
     expect(value.body.deliveries).toHaveLength(1);
+    if (provider === "google") {
+      const sent = value.body.deliveries![0]!.request;
+      expect(received[0]!.body).toEqual({ systemInstruction: { parts: [{ text: sent.messages[0]!.content }] },
+        contents: sent.messages.slice(1).map((item) => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] })),
+        generationConfig: { candidateCount: 1, maxOutputTokens: 1_024, responseMimeType: "text/plain" } });
+      expect(received[0]!.headers["x-goog-api-key"]).toBe("offline-browser-key");
+      expect(received[0]!.headers["x-goog-request-id"]).toBeTruthy();
+      expect(received[0]!.headers.authorization).toBeUndefined();
+      expect(JSON.stringify(value)).not.toContain("opaque-browser-fixture-state");
+      await expect(panel).toContainText("Girdi sayacına dahil önbellek tokenı: 12");
+      await expect(panel).toContainText("Ayrı düşünce tokenı: 3");
+      await expect(panel).toContainText("Sağlayıcının bildirdiği toplam: 41");
+      await expect(panel).not.toContainText("Çıktı sayacına dahil reasoning tokenı");
+    }
     if (provider === "anthropic") {
       const sent = value.body.deliveries![0]!.request;
       expect(received[0]!.body).toEqual({ model: sent.model, system: sent.messages[0]!.content, messages: sent.messages.slice(1), max_tokens: 1_024 });
@@ -124,12 +146,16 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
       await expect(panel.getByRole("article", { name: "Özel gönderim kaydı" })).toHaveCount(2);
       await expect.poll(async () => (await (await request.get(`/api/private-branches/${root!.id}`)).json()).body.deliveries[1].status).toBe("succeeded");
       expect(calls).toBe(2);
-      expect((received[1]!.body.input ?? received[1]!.body.messages)!.slice(-2)).toEqual([
+      if (provider === "google") expect(received[1]!.body.contents!.slice(-2)).toEqual([
+        { role: "model", parts: [{ text: "A local fixture answer about SQL joins" }] },
+        { role: "user", parts: [{ text: "Explain a second SQL follow-up" }] },
+      ]);
+      else expect((received[1]!.body.input ?? received[1]!.body.messages)!.slice(-2)).toEqual([
         { role: "assistant", content: "A local fixture answer about SQL joins", ...(provider === "openai" ? { phase: "final_answer" } : {}) },
         { role: "user", content: "Explain a second SQL follow-up" },
       ]);
     }
-    if (provider === "openai") {
+    if (provider === "openai" || provider === "google") {
       for (const [message, expectedStatus] of [["Explain an output-limited SQL reply", "failed"], ["Explain a remotely pending SQL reply", "outcome_unknown"]] as const) {
         await panel.getByLabel("Özel mesaj taslağı").fill(message);
         await panel.getByRole("button", { name: "Taslağı dala kaydet" }).click();
@@ -150,7 +176,8 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
       await expect(pending).toContainText("Belirsiz kayıt kapatıldı");
       expect(calls).toBe(4);
       const saved = await (await request.get(`/api/private-branches/${root!.id}`)).json() as PrivateBranchView;
-      expect(saved.body.deliveries![2]).toMatchObject({ result: null, usage: { inputTokens: 41, outputTokens: 1_024 } });
+      expect(saved.body.deliveries![2]).toMatchObject({ result: null, usage: { inputTokens: 41, outputTokens: provider === "google" ? 0 : 1_024 } });
+      if (provider === "google") expect(saved.body.deliveries![2]!.usage!.tokenDetails).toMatchObject({ reasoningTokens: 1_024, totalTokens: 1_065, outputTokenKind: "candidates" });
       expect(saved.body.deliveries![3]).toMatchObject({ result: null, usage: { inputTokens: null, outputTokens: null } });
       expect(JSON.stringify(received[3]!.body)).not.toContain("opaque-browser-fixture-state");
     }
@@ -159,7 +186,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await expect(panel.getByLabel("Özel mesaj taslağı")).toHaveValue("Preserve this unsaved follow-up");
     await expect(panel).toContainText("önceki daldan kopya");
     expect((await getDatabase().select().from(branches).where(eq(branches.conversationId, conversationId)))).toHaveLength(2);
-    expect(calls).toBe(provider === "openai" ? 4 : provider === "anthropic" ? 2 : 1);
+    expect(calls).toBe(provider === "openai" || provider === "google" ? 4 : provider === "anthropic" ? 2 : 1);
   } finally {
     await getDatabase().delete(branches).where(eq(branches.conversationId, conversationId));
     await getDatabase().delete(conversationRuns).where(eq(conversationRuns.conversationId, conversationId));

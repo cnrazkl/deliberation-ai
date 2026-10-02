@@ -15,11 +15,11 @@ import { boundedPrivateBody, privateDeliveryPending, readPrivateBranch, writePri
 
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 type Connection = typeof providerConnections.$inferSelect;
-function supportedProvider(provider: string): provider is "openai-compatible" | "anthropic" | "openai" {
-  return provider === "openai-compatible" || provider === "anthropic" || provider === "openai";
+function supportedProvider(provider: string): provider is "openai-compatible" | "anthropic" | "openai" | "google" {
+  return provider === "openai-compatible" || provider === "anthropic" || provider === "openai" || provider === "google";
 }
 function privateBaseUrl(target: Connection) {
-  return target.baseUrl || (target.provider === "anthropic" ? "https://api.anthropic.com" : target.provider === "openai" ? "https://api.openai.com/v1" : null);
+  return target.baseUrl || (target.provider === "anthropic" ? "https://api.anthropic.com" : target.provider === "openai" ? "https://api.openai.com/v1" : target.provider === "google" ? "https://generativelanguage.googleapis.com/v1beta" : null);
 }
 export function privateConnectionFingerprint(connection: Connection) {
   return hash({ id: connection.id, revision: connection.revision, provider: connection.provider, baseUrl: connection.baseUrl,
@@ -114,7 +114,7 @@ export async function controlPrivateDelivery(id: string, input: { operationId: s
   });
 }
 export type PrivateDeliveryExecutionResult = { result: PrivateDeliveryResult } | { errorCode: string; outcome: "known" | "unknown"; usage?: PrivateDeliveryUsage };
-export type PrivateDeliveryExecutor = (operation: PrivateDelivery, target: { provider: "openai-compatible" | "anthropic" | "openai"; apiKey: string; baseUrl: string; endpointPreset: string }, branchId: string) => Promise<PrivateDeliveryExecutionResult>;
+export type PrivateDeliveryExecutor = (operation: PrivateDelivery, target: { provider: "openai-compatible" | "anthropic" | "openai" | "google"; apiKey: string; baseUrl: string; endpointPreset: string }, branchId: string) => Promise<PrivateDeliveryExecutionResult>;
 export async function executePrivateDelivery(id: string, operationId: string, execute: PrivateDeliveryExecutor) {
   // A session lock spans network work without holding a transaction. Lost
   // sessions cannot authorize another submission of an already submitted id.

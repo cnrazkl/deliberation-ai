@@ -32,9 +32,12 @@ test("reviews deletion of generated empty metadata, rejects invalid confirmation
     expect((await request.post("/api/conversations/" + foreign + "/deletion", { data: { ...body, conversationId: foreign } })).status()).toBe(404);
     expect((await request.get("/api/conversations/invalid/deletion")).status()).toBe(404);
     await page.goto("/");
-    await page.getByLabel("Sorunuz", { exact: true }).fill("Silme önizlemesinde korunacak soru taslağı");
     const library = page.getByRole("region", { name: "Kayıtlı konuşmalar", exact: true });
     const card = library.locator('[data-conversation-id="' + target + '"]');
+    // The API-loaded fixture card establishes client readiness before editing
+    // the server-rendered controlled textarea during a cold development load.
+    await expect(card.getByRole("button", { name: "Kayıt silmeyi incele" })).toBeVisible();
+    await page.getByLabel("Sorunuz", { exact: true }).fill("Silme önizlemesinde korunacak soru taslağı");
     await card.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
     const panel = page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi", exact: true });
     await expect(panel).toContainText("1 konuşma kaydı ve 1 üyelik bağlantısı");

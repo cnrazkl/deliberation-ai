@@ -5,6 +5,96 @@ import type { PrivateDeliveryRequest } from "@deliberation-ai/contracts";
 const input: PrivateDeliveryRequest = { version: "private-text-v1", model: "offline-model", maxOutputTokens: 1_024,
   messages: [{ role: "system", content: "Private reply" }, { role: "user", content: "Source" }, { role: "assistant", content: "Selected reply" }, { role: "user", content: "Follow-up" }] };
 const options = { baseUrl: "https://example.test/v1", apiKey: "not-sent", endpointPreset: "custom", operationKey: "offline-intent" };
+const googleOptions = { ...options, provider: "google" as const, baseUrl: "https://generativelanguage.googleapis.com/v1beta", apiKey: "offline-key" };
+const googleCandidate = { content: { role: "model", parts: [{ text: "Private " }, { text: "answer", thought: false, thoughtSignature: "opaque-fixture-state" }] }, finishReason: "STOP" };
+const googleReply = { modelVersion: "offline-gemini", responseId: "offline-google-reply", candidates: [googleCandidate],
+  usageMetadata: { promptTokenCount: 21, candidatesTokenCount: 8, cachedContentTokenCount: 6, thoughtsTokenCount: 3, totalTokenCount: 32 } };
+
+test("Gemini sends exact stateless text/order and header credentials, preserves candidate/thought conventions and drops opaque state", async () => {
+  const messages = [...input.messages, { role: "user" as const, content: "Another owner draft" }];
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(googleReply));
+  const result = await generatePrivateText({ ...input, messages }, { ...googleOptions, fetch });
+  expect(result).toMatchObject({ text: "Private answer", model: "offline-gemini", remoteResponseId: "offline-google-reply", finishReason: "stop", inputTokens: 21, outputTokens: 8,
+    tokenDetails: { inputTokenKind: "inclusive", outputTokenKind: "candidates", cachedInputTokens: 6, reasoningTokens: 3, totalTokens: 32 } });
+  expect(JSON.stringify(result)).not.toContain("opaque-fixture-state");
+  const [url, init] = fetch.mock.calls[0]!;
+  expect(url).toBe("https://generativelanguage.googleapis.com/v1beta/models/offline-model:generateContent");
+  expect(init!.redirect).toBe("error");
+  expect(init!.headers).toEqual({ "content-type": "application/json", "idempotency-key": "offline-intent", "x-goog-request-id": "offline-intent", "x-goog-api-key": "offline-key" });
+  expect(JSON.parse(init!.body as string)).toEqual({ systemInstruction: { parts: [{ text: messages[0]!.content }] },
+    contents: messages.slice(1).map((item) => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] })),
+    generationConfig: { candidateCount: 1, maxOutputTokens: 1_024, responseMimeType: "text/plain" } });
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+test("Gemini marks partial output caps, retains missing counts as unknown and records cap-without-text usage", async () => {
+  const result = await generatePrivateText(input, { ...googleOptions, fetch: vi.fn().mockResolvedValue(Response.json({ ...googleReply,
+    usageMetadata: { promptTokenCount: -1 }, candidates: [{ ...googleCandidate, finishReason: "MAX_TOKENS" }] })) });
+  expect(result).toMatchObject({ text: "Private answer", finishReason: "length", inputTokens: null, outputTokens: null });
+  expect(result.tokenDetails?.reasoningTokens).toBeUndefined();
+  for (const content of [undefined, { role: "model", parts: [] }, { role: "model", parts: [{ text: "" }] }]) {
+    await expect(generatePrivateText(input, { ...googleOptions, fetch: vi.fn().mockResolvedValue(Response.json({ ...googleReply,
+      candidates: [{ finishReason: "MAX_TOKENS", content }] })) })).rejects.toMatchObject({ code: "private_output_limit_without_text", outcome: "known",
+      metadata: { provider: "google", inputTokens: 21, outputTokens: 8 } });
+  }
+});
+
+test("Gemini rejects thought/tool/media/unknown parts, blocked safety, multiple candidates and excessive joined text without content leaks", async () => {
+  const invalid = [null, [], { ...googleReply, candidates: [] }, { ...googleReply, candidates: [googleCandidate, googleCandidate] },
+    { ...googleReply, error: { message: "private-error-key" } }, { ...googleReply, promptFeedback: { blockReason: "SAFETY" } },
+    { ...googleReply, promptFeedback: { safetyRatings: [{ blocked: true }] } },
+    ...[{ groundingMetadata: {} }, { urlContextMetadata: {} }, { groundingAttributions: [{}] }].map((extra) => ({ ...googleReply, candidates: [{ ...googleCandidate, ...extra }] })),
+    ...["SAFETY", "RECITATION", "OTHER", "MALFORMED_FUNCTION_CALL"].map((finishReason) => ({ ...googleReply, candidates: [{ ...googleCandidate, finishReason }] })),
+    ...[{ thought: true }, { functionCall: {} }, { inlineData: {} }, { fileData: {} }, { executableCode: {} }, { toolCall: {} }, { futurePart: true }]
+      .map((extra) => ({ ...googleReply, candidates: [{ ...googleCandidate, content: { role: "model", parts: [{ text: "private-error-key", ...extra }] } }] })),
+    { ...googleReply, candidates: [{ ...googleCandidate, safetyRatings: [{ blocked: true }] }] },
+    { ...googleReply, candidates: [{ ...googleCandidate, content: { role: "user", parts: [{ text: "private-error-key" }] } }] },
+    { ...googleReply, candidates: [{ ...googleCandidate, content: { role: "model", parts: [{ text: "x".repeat(8_193) }, { text: "y".repeat(8_192) }] } }] },
+    { ...googleReply, candidates: [{ finishReason: "STOP" }] },
+  ];
+  for (const value of invalid) {
+    const error = await generatePrivateText(input, { ...googleOptions, fetch: vi.fn().mockResolvedValue(Response.json(value)) }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: "invalid_private_response", outcome: "known" });
+    if (value && !Array.isArray(value)) expect(error).toMatchObject({ metadata: { provider: "google", inputTokens: 21, outputTokens: 8 } });
+    expect(JSON.stringify(error)).not.toMatch(/private-error-key|opaque-fixture-state|metadata|offline-key|xxxxxxxx/);
+  }
+});
+
+test("Gemini unfinished candidate stays unknown without polling or retry", async () => {
+  for (const finishReason of [undefined, "FINISH_REASON_UNSPECIFIED"]) {
+    const fetch = vi.fn().mockResolvedValue(Response.json({ ...googleReply, candidates: [{ ...googleCandidate, finishReason }] }));
+    await expect(generatePrivateText(input, { ...googleOptions, fetch })).rejects.toMatchObject({ code: "private_remote_pending", outcome: "unknown", retryable: false,
+      metadata: { inputTokens: 21, outputTokens: 8 } });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  }
+});
+
+test("Gemini validates native instruction/order/prefill/cap before fetch and encodes the exact model segment", async () => {
+  const fetch = vi.fn();
+  for (const request of [{ ...input, messages: input.messages.slice(1) },
+    { ...input, messages: [...input.messages, { role: "system" as const, content: "Later instruction" }, { role: "user" as const, content: "Question" }] },
+    { ...input, messages: [...input.messages, { role: "assistant" as const, content: "Prefill" }] }, { ...input, maxOutputTokens: 2_000 }]) {
+    await expect(generatePrivateText(request as PrivateDeliveryRequest, { ...googleOptions, fetch })).rejects.toThrow();
+  }
+  expect(fetch).not.toHaveBeenCalled();
+  fetch.mockResolvedValue(Response.json(googleReply));
+  await generatePrivateText({ ...input, model: "exact/model?name" }, { ...googleOptions, fetch });
+  expect(fetch.mock.calls[0]![0]).toBe("https://generativelanguage.googleapis.com/v1beta/models/exact%2Fmodel%3Fname:generateContent");
+});
+
+test("Gemini HTTP/body/deadline failures are bounded, secret-free and never retried", async () => {
+  for (const response of [new Response("private-error-key", { status: 401 }), new Response("bad-json"), new Response("x".repeat(131_073))]) {
+    const fetch = vi.fn().mockResolvedValue(response);
+    const error = await generatePrivateText(input, { ...googleOptions, fetch }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(NormalizedProviderError);
+    expect(JSON.stringify(error)).not.toContain("private-error-key");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  }
+  for (const fetch of [vi.fn().mockRejectedValue(new Error("offline-key")), vi.fn(() => new Promise<Response>(() => {}))]) {
+    await expect(generatePrivateText(input, { ...googleOptions, fetch, timeoutMs: 5 })).rejects.toMatchObject({ outcome: "unknown", retryable: false });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  }
+});
 test("sends bounded plain text with a stable intent, no tools and OpenRouter cap translation", async () => {
   for (const endpointPreset of ["custom", "openrouter"]) {
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json({ id: "reply-one", model: "observed-model",
@@ -177,7 +267,7 @@ test("Anthropic rejects instruction reordering, assistant prefill, unsupported p
   ];
   const fetch = vi.fn();
   for (const request of invalid) await expect(generatePrivateText(request as PrivateDeliveryRequest, { ...anthropicOptions, fetch })).rejects.toThrow();
-  await expect(generatePrivateText(input, { ...anthropicOptions, provider: "google" as "anthropic", fetch })).rejects.toMatchObject({ code: "unsupported_private_provider" });
+  await expect(generatePrivateText(input, { ...anthropicOptions, provider: "unsupported" as "anthropic", fetch })).rejects.toMatchObject({ code: "unsupported_private_provider" });
   expect(fetch).not.toHaveBeenCalled();
 });
 

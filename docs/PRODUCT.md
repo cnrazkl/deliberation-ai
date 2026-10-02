@@ -1,5 +1,7 @@
 # Product
 
+**DA-100:** reviewed native Gemini private text is available for matching source connections with default reasoning/search off. The owner reviews the same saved text/order before one durable submission. Candidate-output, separate thought tokens and reported total retain native conventions; textless cap failures and unfinished candidates never trigger automatic resend. Thought signatures are excluded from retained text history. Broader settings, erasure/accounting and real-cloud/model acceptance remain open; earlier provider-absence notes are historical. [Workflow](PRIVATE_BRANCHES.md#da-100-native-gemini-generatecontent).
+
 **DA-099:** reviewed private replies now also support native OpenAI Responses with default reasoning and search off. Reviewed text history, provider matching and durable intent controls remain in force. Inclusive cache/reasoning counters, truncation and metered-but-textless failure are explicit; remote pending work stays unknown until acknowledged closure. Gemini, other settings, private erasure and live/model-quality acceptance remain open. [Workflow](PRIVATE_BRANCHES.md#da-099-native-openai-responses).
 
 **DA-098:** reviewed private send/reply also supports Claude/Anthropic source members with default reasoning and search off. Exact input, provider matching and durable intent controls remain in force. Truncated replies are visible; native uncached-input and cache counters are labelled separately. Native OpenAI/Gemini, other settings and private erasure remain open. [Workflow](PRIVATE_BRANCHES.md).

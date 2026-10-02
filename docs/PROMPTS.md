@@ -1,5 +1,7 @@
 # Prompt contracts
 
+**DA-100:** `private-text-v1` instruction and rendered seed/owner/reply text are unchanged. Gemini translates only the leading system text to `systemInstruction`; later roles become user/model with exact text/order and no invented reply. No schema/tool/search/thinking prompt is added. Opaque signatures and visible thoughts do not enter future input; this is reconstructed text history, not provider-managed reasoning continuity. [Translation](PRIVATE_BRANCHES.md#da-100-native-gemini-generatecontent).
+
 **DA-099:** `private-text-v1` still renders the same source/system/owner/reply text. Responses sends that ordered text as `input`, reconstructed assistant turns labelled final. Commentary, tool/refusal content and visible reasoning are refused; opaque reasoning state is excluded from future context. No council/private instruction text is changed. [Translation](PRIVATE_BRANCHES.md#da-099-native-openai-responses).
 
 **DA-097 private-text-v1:** the exact reviewed ordered input includes a fixed private-role system instruction, source question/perspective, copied selected reply, saved owner messages and successful private replies. Omitted peers/reviews/attachments/original continuation context remain unavailable. Fresh risk checks use the actual rendered input and original source floor. These messages never alter canonical council prompts or claims.

@@ -1,6 +1,6 @@
 # ADR-0027: reviewed bounded private delivery
 
-Status: accepted for local OpenAI-compatible delivery, DA-098 native Anthropic and DA-099 native OpenAI Responses extensions, 2 October 2026.
+Status: accepted for local OpenAI-compatible delivery, DA-098 native Anthropic, DA-099 native OpenAI Responses and DA-100 native Gemini extensions, 2 October 2026.
 
 Extend the DA-096 encrypted private aggregate rather than feed private messages into
 canonical council state. Freeze actual plain-text messages in an owned preview-bound
@@ -32,3 +32,13 @@ validate all output items and preserve unknown pending outcomes without retrieva
 retry. Exclude opaque reasoning state from saved/future context; visible reasoning is
 unsupported. Explain that output caps include reasoning and expose native counters as
 inclusive subsets. Gemini and richer settings/continuation remain separate increments.
+
+DA-100 extends the boundary to Gemini generateContent using exact stateless user/model
+text and a separate leading systemInstruction. Request one text candidate with the
+existing cap, no tools or thinking override; validate STOP/MAX_TOKENS and strict text
+parts. Opaque signatures are discarded, not replayed or represented as reasoning
+continuity. Candidate-output, thought and total counters retain native meanings.
+Unfinished candidates stay unknown; textless cap failures retain observed usage without
+resubmission. No schema/council/receipt-version change; richer settings, Interactions,
+private erasure/accounting and cloud/model-quality acceptance remain open. Earlier
+provider absence/next statements record historical scope.

@@ -1,9 +1,10 @@
 # Tasks
 
-DA-099 adds native OpenAI Responses after DA-098 native Anthropic and DA-097 compatible
-private delivery. [Local acceptance](DA099_ACCEPTANCE.md) does not complete all-provider
-private chat, erasure, billing or monetary enforcement. Next: native Gemini private
-delivery under the same reviewed boundary.
+DA-100 adds native Gemini generateContent after Responses, Anthropic and compatible
+private delivery. [Local acceptance](DA100_ACCEPTANCE.md) covers default reasoning/search
+off only; richer settings, erasure, accounting and cloud/model-quality gates remain open.
+Next: explicit private-branch deletion policy and reviewed implementation, with copies,
+pending/unknown receipts and backup/export limits defined; generated fixtures only.
 
 Status: DA-097's bounded private delivery has passed local acceptance; the broad private chat/deletion/monetary gates remain partial. [The 1 October repository audit](REPO_AUDIT_2026_10_01.md) records DA-081 checks; [DA-082](PROVIDER_PRICING.md) adds token estimates, [DA-083](PROVIDER_BILLING.md) billing evidence, [DA-084](BILLING_CORRECTIONS.md) corrections, [DA-085](BILLING_STATEMENTS.md) statement inspection, [DA-086](BILLING_STATEMENT_HISTORY.md) durable statement history, [DA-087](BILLING_REALLOCATION.md) identity reallocation, [DA-088](BILLING_ACCOUNT.md) account invoice inspection and [DA-089](BILLING_PAYMENT.md) local payment-evidence inspection. [DA-090](CONVERSATION_CONTINUATION.md) adds explicit frozen report continuation; [DA-091](CONVERSATION_COMPACTION.md) adds reviewed manual compaction with private original archives. The original broad PLAN.md acceptance gates are not complete. See [the full gap audit](PLAN_GAP_AUDIT.md). TypeSafe/JEV remains excluded by the owner.
 
@@ -74,7 +75,8 @@ The original complete quality gate remains open. DA-074 performs mechanical chec
 - [x] DA-097: deliver reviewed plain-text private replies for supported OpenAI-compatible source members; freeze input, recheck risk/connection, deduplicate intent, fence worker replay, retain unknown outcomes and nullable usage, and bind reply-aware forks. Eight permanent branch requests and 1,024 output tokens per request are local limits only. [Acceptance](DA097_ACCEPTANCE.md).
 - [x] DA-098: extend reviewed private delivery to native Claude/Anthropic; preserve text/order, source/connection matching and durable single-intent controls, normalize bounded text/truncation and native uncached/cache usage, and verify populated native receipt restore plus real-worker loopback browser flows. [Acceptance](DA098_ACCEPTANCE.md).
 - [x] DA-099: add reviewed native OpenAI Responses private delivery with exact stateless text/final assistant phases, bounded discriminated output validation, inclusive usage, explicit truncation/no-text handling and remote-pending uncertainty. Verify both native receipt restores and real-worker browser failure/unknown/fork paths without paid calls. [Acceptance](DA099_ACCEPTANCE.md).
-- [ ] Extend native Gemini and broader settings support and council accounting integration, then complete message/retained/private-body and backup/export deletion policy. DA-096 supplies drafts, DA-097 compatible delivery, DA-098 Anthropic delivery, DA-099 OpenAI delivery and DA-095 empty metadata deletion. Semantic compaction fidelity and real-provider acceptance remain unverified.
+- [x] DA-100: add reviewed native Gemini generateContent private text, header-only credentials, exact user/model translation, bounded text-only validation, separate candidate/thought/total usage, textless cap failure and unfinished uncertainty. Verify populated three-native receipt restore and real-worker loopback browser paths. [Acceptance](DA100_ACCEPTANCE.md).
+- [ ] Define and implement reviewed private-branch deletion with copied-descendant and pending/unknown receipt guards and explicit retained-usage/backup/export limits. Broader settings, council accounting integration, retained-body/message deletion, semantic fidelity and real-provider acceptance remain open. DA-095 deletes empty conversation metadata only.
 
 ### Group 5 — operational evaluation
 

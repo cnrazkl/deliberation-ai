@@ -1,5 +1,7 @@
 # Roadmap
 
+DA-100 completes the bounded native Gemini private provider increment with default reasoning/search off, alongside Responses/Anthropic/compatible delivery. Next: define and implement reviewed deletion of a private branch, including copied descendants, pending/unknown receipts, retained usage, exports and backups; test only generated fixtures. Richer settings, provider-managed continuity, accounting and semantic/live gates remain separate. Earlier provider-next statements are historical. [Scope](PRIVATE_BRANCHES.md#da-100-native-gemini-generatecontent).
+
 DA-099 adds reviewed native Responses private delivery. Gemini is the next bounded provider increment. Reasoning/search expansion, provider-managed reasoning continuation, remote receipt retrieval, in-flight cancellation, erasure/copies, accounting and semantic/live gates remain separate work. [Scope](PRIVATE_BRANCHES.md).
 
 DA-098 extends reviewed private replies to native Claude/Anthropic with explicit cache conventions. The next bounded provider increment is native OpenAI Responses, followed by Gemini; reasoning/search expansion and private-content deletion remain separate work. Full private chat, billing, erasure and semantic/live gates stay partial. [Scope](PRIVATE_BRANCHES.md).

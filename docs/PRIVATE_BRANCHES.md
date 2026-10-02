@@ -1,6 +1,6 @@
-# Selected-member private branches — DA-096 / DA-097 / DA-098 / DA-099
+# Selected-member private branches — DA-096 / DA-097 / DA-098 / DA-099 / DA-100
 
-DA-096 supplies encrypted draft storage and branch management. DA-097 adds reviewed one-model delivery for OpenAI-compatible source members; DA-098 adds native Claude/Anthropic and DA-099 adds native OpenAI Responses. All require default reasoning and web search off. Saving/opening/refreshing a draft still makes no provider call. Council execution and selected-member reruns are unchanged. Gemini and other settings remain unsupported.
+DA-096 supplies encrypted draft storage and branch management. DA-097 adds reviewed one-model delivery for OpenAI-compatible source members; DA-098 adds native Claude/Anthropic, DA-099 native OpenAI Responses and DA-100 native Gemini generateContent. All require default reasoning and web search off. Saving/opening/refreshing a draft still makes no provider call. Council execution and selected-member reruns are unchanged. Other settings remain unsupported; earlier increment-next statements are historical.
 
 ## Owner workflow
 
@@ -162,3 +162,43 @@ Checked against official OpenAI documentation on 2 October 2026:
 [response item structure](https://developers.openai.com/api/docs/guides/migrate-to-responses).
 Input roles/assistant phases and opaque envelope fields also match installed OpenAI
 7.15 SDK type definitions; no SDK migration or cloud compatibility claim is made.
+
+## DA-100 native Gemini generateContent
+
+Matching owned Google source connections use `/models/<encoded-exact-model>:generateContent`
+after the saved base URL, defaulting to `https://generativelanguage.googleapis.com/v1beta`.
+Provider/revision/endpoint/settings/risk guards apply at preview and claim. Credentials
+use `x-goog-api-key`, never URL query parameters or bearer translation. Intent/request
+headers are correlation, not a provider-side deduplication guarantee.
+
+Leading system text becomes `systemInstruction.parts`; later exact message text/order
+becomes `contents` user/model text parts. Consecutive owner drafts remain separate.
+Request one candidate, `responseMimeType=text/plain` and `maxOutputTokens=1024` without
+tools, attachments, cachedContent, thinking overrides, council schema or remote state.
+Default thinking can consume the cap before visible output. This is reconstructed
+text-only history; source/provider reasoning continuity is not restored. Thought
+signatures attached to plain text may be received but are discarded, never stored,
+exported or resent. No model-quality effect is claimed.
+
+Exactly one model candidate with STOP or MAX_TOKENS may supply bounded plain text.
+Parts reject visible thoughts, tools, media and unknown fields; prompt/candidate safety
+blocks, unsupported stops, malformed/multiple candidates and excessive joined text fail.
+MAX_TOKENS text displays truncation; an absent/empty visible answer creates a specific
+failed receipt with observed usage retained. Missing/unspecified finish reason stays
+unknown without remote polling, retrieval or resubmission. Existing receipt fencing,
+permanent slots, queued cancellation and acknowledged unknown closure apply unchanged.
+
+Prompt count includes cached input; candidate-output excludes separately reported
+thought tokens. UI labels both conventions and displays the reported total without
+inventing missing counts, summing subsets twice or claiming invoice cost/budget. Existing
+encrypted bodies, reply-aware forks, exports and backup audits retain normalized text/
+usage only. No migration or rewrite of existing bodies is needed.
+
+Native local provider coverage is complete for this restricted private text boundary;
+Interactions, expanded settings/continuity, accounting, erasure/copies and real-cloud
+acceptance remain open. Next is reviewed private-branch deletion policy/implementation;
+no owner history is deleted by DA-100. [Acceptance](DA100_ACCEPTANCE.md).
+
+Mapping checked 2 October 2026 against official [generateContent API](https://ai.google.dev/api/generate-content)
+and [generateContent thinking/signature and output-limit guidance](https://ai.google.dev/gemini-api/docs/generate-content/thinking).
+The existing council generateContent path is retained; no Interactions migration is claimed.
