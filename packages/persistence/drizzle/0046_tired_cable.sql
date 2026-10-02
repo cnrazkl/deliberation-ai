@@ -1,0 +1,2 @@
+ALTER TABLE "private_branch_deletions" ADD COLUMN "request_id" uuid NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "private_branch_deletions_owner_request_uq" ON "private_branch_deletions" USING btree ("owner_id","request_id");

@@ -18,10 +18,13 @@ import { createPrivateBranch, previewPrivateBranchSeed, appendPrivateDraft, load
 import { enqueuePrivateDelivery, previewPrivateDelivery, controlPrivateDelivery, executePrivateDelivery, PrivateDeliveryBlockedError } from "./private-deliveries";
 import { exportConversation } from "./conversations";
 import { auditRestoredEncryption } from "../scripts/backup-encryption-audit";
+import { previewPrivateBranchDeletion, deletePrivateBranch } from "./private-branch-deletion";
+import { privateBranchDeletions } from "./schema";
 
 const ids: string[] = []; const connections: string[] = []; const sources: string[] = [];
 afterEach(async () => {
   if (ids.length) {
+    await getDatabase().delete(privateBranchDeletions).where(inArray(privateBranchDeletions.conversationId, ids));
     await getDatabase().delete(branches).where(inArray(branches.conversationId, ids));
     await getDatabase().delete(conversationRuns).where(inArray(conversationRuns.conversationId, ids));
     await getDatabase().delete(conversations).where(inArray(conversations.id, ids));
@@ -265,6 +268,7 @@ test("a populated native private receipt survives an actual disposable archive r
   const google = await fixture({ provider: "google" }); const googleId = google.branch!.id;
   await executePrivateDelivery(googleId, (await send(googleId))!.operationId, async () => ({ result: { ...reply,
     tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "inclusive", outputTokenKind: "candidates", cachedInputTokens: 9, reasoningTokens: 3, totalTokens: 25 } } }));
+  await deletePrivateBranch(googleId, (await previewPrivateBranchDeletion(googleId))!.fingerprint!);
   const name = `da_private_restore_${randomUUID().replaceAll("-", "")}`;
   const localRoot = join(process.env.LOCALAPPDATA!, "DeliberationAI");
   const adminFile = await readFile(join(localRoot, "postgres-admin.local"), "utf8");
@@ -289,8 +293,9 @@ test("a populated native private receipt survives an actual disposable archive r
       expect(value.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, id)))[0]!.bodyCiphertext);
       const nativeValue = await reader.query<{ body_ciphertext: string }>("select body_ciphertext from conversation_private_branches where id = $1", [nativeId]);
       expect(nativeValue.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, nativeId)))[0]!.bodyCiphertext);
-      const googleValue = await reader.query<{ body_ciphertext: string }>("select body_ciphertext from conversation_private_branches where id = $1", [googleId]);
-      expect(googleValue.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, googleId)))[0]!.bodyCiphertext);
+      const googleValue = await reader.query<{ audit_ciphertext: string }>("select audit_ciphertext from private_branch_deletions where id = $1", [googleId]);
+      expect(googleValue.rows[0]!.audit_ciphertext).toBe((await getDatabase().select().from(privateBranchDeletions).where(eq(privateBranchDeletions.id, googleId)))[0]!.auditCiphertext);
+      expect((await reader.query("select 1 from conversation_private_branches where id = $1", [googleId])).rowCount).toBe(0);
     } finally { await reader.end(); }
   } finally {
     if (created) await admin.query(`drop database "${name}" with (force)`);

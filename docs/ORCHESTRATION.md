@@ -1,5 +1,7 @@
 # Orchestration
 
+**DA-101:** reviewed private deletion takes the conversation owner lock, tries the same private-worker advisory lease without waiting, then locks/rechecks branch and audit tables. Prepared/submitted/unknown work blocks removal, and an active worker still blocks after acknowledged discard. Terminal queue identity jobs may remain until queue expiry; a stale worker finds no branch and performs no provider request. There is no remote cancellation, automatic retry or new council dispatch behavior. [Contract](PRIVATE_BRANCH_DELETION.md).
+
 **DA-100:** private worker targets also admit matching Google source connections with default reasoning/search off. Frozen input and claim-time provider/endpoint/risk checks precede one submitted generateContent attempt. Missing/unspecified finish reason stays unknown; cap-without-text fails with usage. Shared intent replay, permanent slots, locks, queued cancellation and acknowledged unknown closure remain unchanged. No provider polling, repair/retry or council state changes.
 
 **DA-099:** private worker target selection also supports native Responses. Existing input/settings/provider/connection checks precede one submitted request. Remote queued/in-progress output maps to unknown without polling/retrieval; output-cap no-text results fail with usage. Permanent slots, session fencing, queued cancellation and explicit unknown closure remain unchanged. No council state or automatic repair changes.

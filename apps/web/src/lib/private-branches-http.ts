@@ -7,7 +7,7 @@ export function privateBranchOrigin(request: Request) {
   const response = rejectCrossOriginMutation(request);
   response?.headers.set("Cache-Control", "no-store"); return response;
 }
-export async function privateBranchRequest<T>(request: Request, schema: z.ZodType<T>): Promise<{ data: T } | { response: Response }> {
+export async function privateBranchRequest<T>(request: Request, schema: z.ZodType<T>, maxBytes = 65_536): Promise<{ data: T } | { response: Response }> {
   const reader = request.body?.getReader();
   if (!reader) return { response: privateBranchJson({ error: "İstek geçersiz." }, 422) };
   const chunks: Uint8Array[] = []; let size = 0;
@@ -15,7 +15,7 @@ export async function privateBranchRequest<T>(request: Request, schema: z.ZodTyp
     for (;;) {
       const chunk = await reader.read(); if (chunk.done) break;
       size += chunk.value.byteLength;
-      if (size > 65_536) { await reader.cancel(); return { response: privateBranchJson({ error: "İstek çok büyük." }, 413) }; }
+      if (size > maxBytes) { await reader.cancel(); return { response: privateBranchJson({ error: "İstek çok büyük." }, 413) }; }
       chunks.push(chunk.value);
     }
     const parsed = schema.safeParse(JSON.parse(Buffer.concat(chunks).toString("utf8")));

@@ -190,6 +190,21 @@ export const privateDeliverySchema = z.object({
   usage: privateDeliveryUsageSchema.nullable().optional(),
 }).strict();
 export type PrivateDelivery = z.infer<typeof privateDeliverySchema>;
+export const privateBranchDeletionAuditSchema = z.object({
+  version: z.literal("private-branch-deletion-audit-v1"), branchId: z.string().uuid(), conversationId: z.string().uuid(),
+  creationRequestId: z.string().uuid(),
+  sourceRunId: z.string().uuid(), parentBranchId: z.string().uuid().nullable(), deletedAt: z.string().datetime(),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/), messageCount: z.number().int().min(0).max(64),
+  receipts: z.array(z.object({
+    operationId: z.string().uuid(), originBranchId: z.string().uuid(), connectionId: z.string().uuid(),
+    status: z.enum(["succeeded", "failed", "cancelled", "discarded"]),
+    createdAt: z.string().datetime(), submittedAt: z.string().datetime().nullable(), finishedAt: z.string().datetime().nullable(),
+    usage: privateDeliveryUsageSchema.nullable(),
+  }).strict()).max(16),
+}).strict();
+export type PrivateBranchDeletionAudit = z.infer<typeof privateBranchDeletionAuditSchema>;
+export const deletePrivateBranchSchema = z.object({ branchId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  confirmContentDeletion: z.literal(true), acknowledgeRetainedMetadata: z.literal(true) }).strict();
 export const sendPrivateDeliverySchema = z.object({ requestId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
 export const controlPrivateDeliverySchema = z.object({ operationId: z.string().uuid(), action: z.enum(["cancel", "recover", "discard_unknown"]),
   acknowledgeUnknown: z.boolean().optional() }).strict();

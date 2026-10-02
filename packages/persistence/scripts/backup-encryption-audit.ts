@@ -1,6 +1,7 @@
 import type { Client } from "pg";
 import { decryptText } from "../src/crypto";
 import { decodePrivateBranchBody } from "../src/private-branches";
+import { decodePrivateBranchDeletion } from "../src/private-branch-deletion";
 
 type EncryptedField = readonly [column: string, contextSuffix: string, format: "text" | "json"];
 interface EncryptedTable {
@@ -15,6 +16,8 @@ interface EncryptedTable {
 // Keep this inventory exhaustive. A new ciphertext column must have an explicit
 // authenticated context here before another archive can be published.
 const encryptedTables: readonly EncryptedTable[] = [
+  { table: "private_branch_deletions", keys: ["id"], contextPrefix: "private-branch-deletion", fields: [["audit_ciphertext", "audit", "json"]], optional: true,
+    metadata: [["conversation_id", "conversationId"], ["deleted_at", "deletedAt"], ["request_id", "requestId"]] },
   { table: "conversation_private_branches", keys: ["id"], contextPrefix: "private-branch", fields: [["body_ciphertext", "body", "json"]], optional: true,
     metadata: [["conversation_id", "conversationId"], ["source_run_id", "sourceRunId"], ["source_member_id", "sourceMemberId"],
       ["parent_branch_id", "parentBranchId"], ["revision", "revision"], ["message_count", "messageCount"]] },
@@ -124,6 +127,8 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
           try {
             const plaintext = decryptText(ciphertext, suffix ? `${contextBase}:${suffix}` : contextBase);
             if (format === "json") JSON.parse(plaintext);
+            if (descriptor.table === "private_branch_deletions") decodePrivateBranchDeletion({ id: key[0]!, conversationId: row.conversationId!,
+              requestId: row.requestId!, deletedAt: new Date(row.deletedAt!), auditCiphertext: ciphertext });
             if (descriptor.table === "conversation_private_branches") decodePrivateBranchBody({
               id: key[0]!, conversationId: row.conversationId!, sourceRunId: row.sourceRunId!, sourceMemberId: row.sourceMemberId!,
               parentBranchId: row.parentBranchId ?? null, revision: Number(row.revision), messageCount: Number(row.messageCount), bodyCiphertext: ciphertext,

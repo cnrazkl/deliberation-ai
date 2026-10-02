@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CreatePrivateBranch, AppendPrivateDraft, PrivateBranchSeed } from "@deliberation-ai/contracts";
 import type { PrivateBranchSummary, PrivateBranchView } from "@deliberation-ai/persistence";
 import { PrivateDeliveryPanel } from "./private-delivery-panel";
+import { PrivateBranchDeletionPanel } from "./private-branch-deletion-panel";
 
 async function jsonRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...options, cache: "no-store" });
@@ -30,6 +31,8 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(Boolean(initialBranch));
   const [refresh, setRefresh] = useState(0);
+  const [deletionId, setDeletionId] = useState<string | null>(null);
+  const [preservedDraft, setPreservedDraft] = useState("");
   const alive = useRef(true); const working = useRef(false);
   const readGeneration = useRef(0);
   const drafts = useRef(new Map<string, string>());
@@ -61,13 +64,13 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
   }, [branch]);
   function reload() { ++readGeneration.current; setLoading(true); setDetailLoading(Boolean(selectedId)); setError(null); setRefresh((value) => value + 1); }
   function select(id: string) {
-    if (working.current || selectedId === id) return;
+    if (working.current || deletionId || selectedId === id) return;
     if (selectedId) drafts.current.set(selectedId, text);
     ++readGeneration.current; setSelectedId(id); setBranch(null); setText(drafts.current.get(id) ?? ""); setDetailLoading(true); setError(null); intent.current = null;
     setRefresh((value) => value + 1);
   }
   async function mutate(action: "append" | "fork") {
-    if (!branch || working.current || loading || detailLoading) return;
+    if (!branch || deletionId || working.current || loading || detailLoading) return;
     working.current = true; setBusy(true); setError(null);
     const key = JSON.stringify([action, branch.id, action === "append" ? text : [branch.revision, branch.body.deliveryVersion ?? 0]]);
     if (intent.current?.key !== key) intent.current = { key, body: action === "append" ?
@@ -95,16 +98,17 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
   }
   return <section className="settings-card" aria-label="Özel dal taslakları">
     <div className="config-heading"><strong>Özel dal taslakları</strong>
-      <button type="button" className="secondary-button" disabled={busy || loading} onClick={reload}>Dalları yenile</button>
-      <button type="button" className="secondary-button" disabled={busy} onClick={onClose}>Özel dalları kapat</button>
+      <button type="button" className="secondary-button" disabled={busy || loading || Boolean(deletionId)} onClick={reload}>Dalları yenile</button>
+      <button type="button" className="secondary-button" disabled={busy || Boolean(deletionId)} onClick={onClose}>Özel dalları kapat</button>
     </div>
     <p className="section-hint">Burada seçilen üyenin ilk yanıtı ve sizin mesaj taslaklarınız saklanır. Taslaklar modele gönderilmez; göndermek için ayrıca önizlemeyi inceleyip onaylayın. Konsey sorusu ve raporu değişmez.</p>
     {error && <p role="alert" className="error">{error}</p>}
+    {preservedDraft && <label>Silinen dalın kaydedilmemiş taslağı<textarea readOnly value={preservedDraft} /></label>}
     {loading ? <p>Dallar yükleniyor…</p> : <div className="run-history-list">
       {items.length === 0 && <p>Henüz özel dal yok. Kaydedilmiş bir raporun model ayrıntılarından dal açabilirsiniz.</p>}
       {items.map((item) => <article key={item.id} data-private-branch-id={item.id}>
         <small>{item.sourceMemberId} · {item.messageCount} taslak · {new Date(item.createdAt).toLocaleString("tr-TR")}{item.parentBranchId ? " · çatallanmış dal" : ""}</small>
-        <button type="button" className="secondary-button" disabled={busy || detailLoading} onClick={() => select(item.id)}>{selectedId === item.id ? "Açık özel dal" : "Özel dalı aç"}</button>
+        <button type="button" className="secondary-button" disabled={busy || detailLoading || Boolean(deletionId)} onClick={() => select(item.id)}>{selectedId === item.id ? "Açık özel dal" : "Özel dalı aç"}</button>
       </article>)}
     </div>}
     {detailLoading && <p>Dal yükleniyor…</p>}
@@ -116,15 +120,22 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
         {branch.body.seed.reusedFromRunId && <small>İlk yanıtın önceki kaynağı: {branch.body.seed.reusedFromRunId}</small>}
       </details>
       {branch.body.messages.map((message) => <article key={message.id}><strong>Sizin taslağınız{message.originBranchId !== branch.id ? " · önceki daldan kopya" : ""}</strong><pre>{message.text}</pre></article>)}
-      <label>Özel mesaj taslağı<textarea value={text} maxLength={8_000} disabled={busy} onChange={(event) => setText(event.target.value)} /></label>
+      <label>Özel mesaj taslağı<textarea value={text} maxLength={8_000} disabled={busy || Boolean(deletionId)} onChange={(event) => setText(event.target.value)} /></label>
       <div className="config-heading">
-        <button type="button" className="secondary-button" disabled={busy || loading || !text.trim() || branch.messageCount >= 64 || branch.body.deliveries?.some((item) => ["prepared", "submitted", "outcome_unknown"].includes(item.status))} onClick={() => void mutate("append")}>Taslağı dala kaydet</button>
-        <button type="button" className="secondary-button" disabled={busy || loading || branch.body.deliveries?.some((item) => ["prepared", "submitted", "outcome_unknown"].includes(item.status))} onClick={() => void mutate("fork")}>Bu noktadan yeni özel dal aç</button>
-        <button type="button" className="secondary-button" disabled={busy} onClick={() => void download()}>Özel dalı indir (JSON)</button>
+        <button type="button" className="secondary-button" disabled={busy || Boolean(deletionId) || loading || !text.trim() || branch.messageCount >= 64 || branch.body.deliveries?.some((item) => ["prepared", "submitted", "outcome_unknown"].includes(item.status))} onClick={() => void mutate("append")}>Taslağı dala kaydet</button>
+        <button type="button" className="secondary-button" disabled={busy || Boolean(deletionId) || loading || branch.body.deliveries?.some((item) => ["prepared", "submitted", "outcome_unknown"].includes(item.status))} onClick={() => void mutate("fork")}>Bu noktadan yeni özel dal aç</button>
+        <button type="button" className="secondary-button" disabled={busy || Boolean(deletionId)} onClick={() => void download()}>Özel dalı indir (JSON)</button>
+        <button type="button" disabled={busy || loading || Boolean(deletionId)} onClick={() => setDeletionId(branch.id)}>Dal içeriğini silmeyi incele</button>
       </div>
-      <PrivateDeliveryPanel key={`${branch.id}:${branch.revision}:${branch.body.deliveryVersion ?? 0}`} branch={branch} disabled={busy || loading || detailLoading}
+      <PrivateDeliveryPanel key={`${branch.id}:${branch.revision}:${branch.body.deliveryVersion ?? 0}`} branch={branch} disabled={busy || Boolean(deletionId) || loading || detailLoading}
         onChanged={reload} onBusy={(value) => { working.current = value; setBusy(value); }} />
-      <p className="section-hint">İndirme ve konuşma dışa aktarımı özel taslakları okunabilir metin olarak içerir. Kaynak çalışma silinse de bu kopya saklanır. Özel dal içeriğini silme henüz desteklenmiyor.</p>
+      {deletionId && <PrivateBranchDeletionPanel key={deletionId} branchId={deletionId} onCancel={() => setDeletionId(null)}
+        onBusy={(value) => { working.current = value; setBusy(value); }} onDeleted={() => {
+          setPreservedDraft((previous) => [previous, text].filter(Boolean).join("\n\n")); drafts.current.delete(deletionId);
+          intent.current = null; ++readGeneration.current; setDeletionId(null); setSelectedId(null); setBranch(null); setText("");
+          setLoading(true); setDetailLoading(false); setRefresh((value) => value + 1);
+        }} />}
+      <p className="section-hint">İndirme ve konuşma dışa aktarımı özel taslakları okunabilir metin olarak içerir. Dal içeriği ayrı onayla silinebilir; kullanım kayıtları, kaynak rapor ve dış kopyalar korunur.</p>
     </div>}
   </section>;
 }

@@ -67,6 +67,15 @@ export const conversationPrivateBranches = pgTable("conversation_private_branche
   check("private_branches_parent_valid", sql`${table.parentBranchId} is null or ${table.parentBranchId} <> ${table.id}`),
 ]);
 
+// Content-free deletion/usage evidence survives branch and conversation removal.
+// Logical identities only: no cascade or foreign key to deleted content.
+export const privateBranchDeletions = pgTable("private_branch_deletions", {
+  id: uuid("id").primaryKey(), ownerId: text("owner_id").notNull(), conversationId: uuid("conversation_id").notNull(),
+  requestId: uuid("request_id").notNull(),
+  auditCiphertext: text("audit_ciphertext").notNull(), deletedAt: timestamp("deleted_at", { withTimezone: true }).notNull(),
+}, (table) => [index("private_branch_deletions_owner_conversation_idx").on(table.ownerId, table.conversationId, table.id),
+  uniqueIndex("private_branch_deletions_owner_request_uq").on(table.ownerId, table.requestId)]);
+
 export const runs = pgTable(
   "runs",
   {

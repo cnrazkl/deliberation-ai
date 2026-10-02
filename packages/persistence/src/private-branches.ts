@@ -7,7 +7,7 @@ import type { CouncilReport } from "@deliberation-ai/domain";
 import { getDatabase } from "./database";
 import { decryptJson, decryptText, encryptJson } from "./crypto";
 import { LOCAL_OWNER_ID } from "./owner";
-import { conversationPrivateBranches as branches, conversations, conversationRuns, runs } from "./schema";
+import { conversationPrivateBranches as branches, conversations, conversationRuns, runs, privateBranchDeletions } from "./schema";
 import { ConversationIntegrityError, ConversationPendingError, ConversationSizeError,
   lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
 
@@ -116,6 +116,9 @@ export async function createPrivateBranch(input: CreatePrivateBranch): Promise<P
       if (existing.requestHash !== hash(request)) throw new PrivateBranchConflictError();
       return (await readPrivateBranch(tx, existing.id, true))?.value;
     }
+    const [deleted] = await tx.select({ id: privateBranchDeletions.id }).from(privateBranchDeletions)
+      .where(and(eq(privateBranchDeletions.ownerId, LOCAL_OWNER_ID), eq(privateBranchDeletions.requestId, request.requestId))).limit(1);
+    if (deleted) throw new PrivateBranchConflictError();
     let conversationId: string; let body: PrivateBranchBody; let parentBranchId: string | null = null;
     if (request.action === "create") {
       const preview = await seedSnapshot(tx, request.sourceRunId, request.memberId, true);

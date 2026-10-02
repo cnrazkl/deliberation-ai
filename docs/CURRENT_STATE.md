@@ -1,8 +1,36 @@
 # Current state
 
-Updated: 2 October 2026 (DA-100 native Gemini private delivery accepted in the primary local application)
+Updated: 2 October 2026 (DA-101 reviewed private branch content deletion accepted in the primary local application)
 
-## Verified increment — DA-100 native Gemini generateContent private delivery
+## Verified increment — DA-101 reviewed private branch content deletion
+
+One owned private leaf branch can be removed after a read-only preview and explicit
+state-bound confirmation. Copies, pending/unknown receipts, worker execution, schema
+drift, unreadable provenance or inspection/capacity limits block deletion. The stored
+seed, messages and delivery text are removed atomically with an encrypted content-free
+usage/provenance audit. Source reports and other branches remain. Lost confirmations
+can be manually replayed; original create/fork intent IDs cannot resurrect deleted
+content. Cancelling keeps the draft; confirmation preserves unsaved text separately
+within the current page. External archives/downloads remain independent copies.
+
+Additive migrations 0045/0046 were applied locally. The audit has logical identifiers
+without cascading FKs, survives later empty conversation metadata deletion, enters
+conversation export and exhaustive encrypted backup validation, and does not imply
+refunded usage or forensic/complete account erasure.
+
+Passed 272 offline unit tests, 162 isolated PostgreSQL tests and all 25 browser flows,
+type checks, zero-warning lint, separate-output production build and dependency audit.
+Populated deletion audit survived actual disposable archive restore with authenticated
+decryption and ciphertext equality. No paid/cloud call or real owner content deletion
+ran. [Policy](PRIVATE_BRANCH_DELETION.md), [acceptance](DA101_ACCEPTANCE.md).
+
+Next: define reviewed retained run-body deletion beyond age-based retention, including
+copied archives, unresolved receipts, accounting and metadata consequences. Generated
+fixtures remain the destructive verification target. Broad original-plan gates stay
+partial. Earlier blocked cache cleanup remains unresolved. Earlier next-task and
+deletion-absence statements below describe historical increments.
+
+## Previous verified increment — DA-100 native Gemini generateContent private delivery
 
 Matching owned Google source connections now support reviewed private text with default
 reasoning/search off. Exact model/message text/order is frozen; the leading instruction

@@ -1,4 +1,6 @@
-# Selected-member private branches — DA-096 / DA-097 / DA-098 / DA-099 / DA-100
+# Selected-member private branches — DA-096 / DA-097 / DA-098 / DA-099 / DA-100 / DA-101
+
+**DA-101:** reviewed leaf-first content deletion is now available with copy/pending/worker/schema guards, retained encrypted usage/provenance and replay protection. Old create/fork request IDs cannot restore removed content; external backups/exports retain their copies. [Deletion contract](PRIVATE_BRANCH_DELETION.md), [acceptance](DA101_ACCEPTANCE.md). Increment-specific next-task statements below are historical.
 
 DA-096 supplies encrypted draft storage and branch management. DA-097 adds reviewed one-model delivery for OpenAI-compatible source members; DA-098 adds native Claude/Anthropic, DA-099 native OpenAI Responses and DA-100 native Gemini generateContent. All require default reasoning and web search off. Saving/opening/refreshing a draft still makes no provider call. Council execution and selected-member reruns are unchanged. Other settings remain unsupported; earlier increment-next statements are historical.
 
@@ -25,7 +27,7 @@ Other members, cross-reviews, original continuation input/private archives, atta
 
 Migration `0044_vengeful_anita_blake.sql` creates `conversation_private_branches`. Owner, source/member/conversation/parent IDs, counts, creation request identity/hash and timestamps are metadata. The complete question/reply/member settings/messages are encrypted with authenticated context `private-branch:<id>:body`. No credential or plaintext body column exists.
 
-The conversation FK restricts identity deletion. Source/parent IDs have no cascading FK: frozen copies survive source retention and can describe unavailable boundaries. Parent deletion is not implemented. Branch reads validate encrypted conversation/source/member/parent identity, counts, unique message IDs and revision/copy provenance against the row. Foreign ownership drift fails instead of producing an apparently complete export.
+The conversation FK restricts identity deletion. Source/parent IDs have no cascading FK: frozen copies survive source retention and can describe unavailable boundaries. DA-101 blocks parent removal while copies survive; each copy requires separate reviewed deletion first. Branch reads validate encrypted conversation/source/member/parent identity, counts, unique message IDs and revision/copy provenance against the row. Foreign ownership drift fails instead of producing an apparently complete export.
 
 Writers use the existing conversation owner lock before source/branch row locks. Root creation share-locks the owned source and rechecks the preview. Fork creation locks the owned parent and requires the reviewed revision. Appends lock the owned branch, check expected revision and append atomically. Lock waits are bounded to 5 seconds.
 
@@ -50,13 +52,13 @@ Existing `deliberationai-conversation-export-v1` adds `privateBranches` in the s
 
 Private content is retained by default outside run-retention cascades. DA-095 explicitly registers this table/FK and returns `private_branches` when any branch remains, even with zero owner messages because its seed contains content. Foreign branches block identity deletion too; private source references from other conversations also block removal. Undeclared columns/dependencies/triggers still fail closed.
 
-Message editing/deletion, private branch deletion, retained-conversation erasure, secure erasure and backup/export file deletion are not implemented. Deleting the original run does not erase branch copies. Backups/downloads remain independent copies that can restore content. No real owner content is deleted during acceptance.
+DA-101 removes one reviewed private branch's stored content and retains content-free encrypted usage/provenance and replay evidence. Partial message editing/deletion, retained-conversation erasure, secure erasure and backup/export file deletion are not implemented. Deleting the original run does not erase branch copies. Backups/downloads remain independent copies that can restore content. No real owner content is deleted during acceptance.
 
 The exhaustive backup audit includes `conversation_private_branches.body_ciphertext` with authenticated decryption and body/row identity/count/revision checks. Restore verifies conversation/source membership and any present parent's ownership/source identity and reports branch counts. Archives predating the whole new table remain readable; a present table with missing/undeclared ciphertext columns fails closed. Populated disposable-restore evidence is recorded in [acceptance](DA096_ACCEPTANCE.md).
 
 ## Remaining scope
 
-Native Gemini and broader reasoning/search support, in-flight cancellation, message/private-body deletion, council accounting integration, authoritative billing and input/tool/money budgets remain open. Selective/semantic compaction and real-provider/human accuracy acceptance remain unverified.
+Broader reasoning/search support, in-flight cancellation, partial message removal, cascading copy/backup erasure, council accounting integration, authoritative billing and input/tool/money budgets remain open. Native Gemini and reviewed leaf deletion are accepted within DA-100/101's bounded scope. Selective/semantic compaction and real-provider/human accuracy acceptance remain unverified.
 
 ## DA-097 reviewed private delivery
 

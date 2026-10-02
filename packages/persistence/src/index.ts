@@ -32,4 +32,5 @@ export * from "./preflight-drafts";
 export * from "./schema";
 export * from "./conversation-deletion";
 export * from "./private-branches";
+export * from "./private-branch-deletion";
 export * from "./private-deliveries";

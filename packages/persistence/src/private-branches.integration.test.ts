@@ -2,12 +2,15 @@ import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, expect, test } from "vitest";
 import { Client } from "pg";
 import { eq, inArray, sql } from "drizzle-orm";
-import { buildCouncilReport } from "@deliberation-ai/domain";
+import { buildCouncilReport, renderPrivateDelivery } from "@deliberation-ai/domain";
 import { privateBranchBodySchema, type CouncilMemberConfig, type PrivateBranchBody } from "@deliberation-ai/contracts";
 import { closeDatabase, getDatabase } from "./database";
 import { LOCAL_OWNER_ID } from "./owner";
 import { encryptJson, encryptText } from "./crypto";
-import { conversationPrivateBranches as branches, conversations, conversationRuns, runs } from "./schema";
+import { conversationPrivateBranches as branches, conversations, conversationRuns, runs, privateBranchDeletions } from "./schema";
+import { previewPrivateBranchDeletion, deletePrivateBranch, loadPrivateBranchDeletion, PrivateBranchDeletionBlockedError, PrivateBranchDeletionStaleError } from "./private-branch-deletion";
+import { writePrivateDeliveryBody } from "./private-branches";
+import { executePrivateDelivery } from "./private-deliveries";
 import { appendPrivateDraft, createPrivateBranch, exportPrivateBranch, listPrivateBranches, loadPrivateBranch,
   previewPrivateBranchSeed, PrivateBranchConflictError, PrivateBranchSourceError } from "./private-branches";
 import { ConversationIntegrityError, ConversationSizeError } from "./conversation-membership";
@@ -19,6 +22,7 @@ import { auditRestoredEncryption } from "../scripts/backup-encryption-audit";
 const conversationIds: string[] = []; const runIds: string[] = [];
 afterEach(async () => {
   if (conversationIds.length) {
+    await getDatabase().delete(privateBranchDeletions).where(inArray(privateBranchDeletions.conversationId, conversationIds));
     await getDatabase().delete(branches).where(inArray(branches.conversationId, conversationIds));
     await getDatabase().delete(conversationRuns).where(inArray(conversationRuns.conversationId, conversationIds));
     await getDatabase().delete(conversations).where(inArray(conversations.id, conversationIds));
@@ -50,6 +54,128 @@ async function root() {
   return { ...saved, preview: preview!, input, branch: (await createPrivateBranch(input))! };
 }
 const draft = (expectedRevision: number, text = "Private owner draft") => ({ requestId: randomUUID(), expectedRevision, text });
+
+test("reviewed private deletion is read-only until confirmation, binds changed content and replays one content-free audit", async () => {
+  const f = await root(); const id = f.branch.id;
+  const first = (await previewPrivateBranchDeletion(id))!;
+  expect(first).toMatchObject({ eligible: true, messageCount: 0, receiptCount: 0 });
+  expect(await loadPrivateBranchDeletion(id)).toBeUndefined();
+  const branch = (await appendPrivateDraft(id, draft(1)))!;
+  await expect(deletePrivateBranch(id, first.fingerprint!)).rejects.toBeInstanceOf(PrivateBranchDeletionStaleError);
+  expect(await loadPrivateBranch(id)).toEqual(branch);
+  const preview = (await previewPrivateBranchDeletion(id))!;
+  const [a, b] = await Promise.all([deletePrivateBranch(id, preview.fingerprint!), deletePrivateBranch(id, preview.fingerprint!)]);
+  expect(a).toEqual(b); expect(await loadPrivateBranch(id)).toBeUndefined();
+  expect(await exportPrivateBranch(id)).toBeUndefined(); expect(await listPrivateBranches(f.conversationId)).toEqual([]);
+  expect(await loadPrivateBranchDeletion(id)).toEqual(a);
+  await expect(createPrivateBranch(f.input)).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  await expect(deletePrivateBranch(id, "a".repeat(64))).rejects.toBeInstanceOf(PrivateBranchDeletionStaleError);
+  const exported = (await exportConversation(f.conversationId))!;
+  expect(exported.privateBranches).toEqual([]); expect(exported.privateBranchDeletions).toEqual([a]);
+  expect(JSON.stringify(a)).not.toMatch(/Private owner draft|selected raw|Private source question|request|result/);
+  expect((await getDatabase().select().from(runs).where(eq(runs.id, f.id)))[0]!.stateVersion).toBe(1);
+});
+
+test("private deletion preserves terminal usage and copied origins, blocks parents and allows reviewed leaf-first removal", async () => {
+  const f = await root(); const id = f.branch.id;
+  const parent = (await appendPrivateDraft(id, draft(1)))!;
+  const result = { text: "Private terminal reply must disappear", model: "offline-model", remoteResponseId: "offline-receipt",
+    inputTokens: 20, outputTokens: 5, tokenDetails: null, finishReason: "stop" as const };
+  const operation = { id: randomUUID(), originBranchId: id, messageId: parent.body.messages[0]!.id, fingerprint: "a".repeat(64),
+    connectionId: randomUUID(), connectionFingerprint: "b".repeat(64), request: renderPrivateDelivery(parent.body), status: "succeeded" as const,
+    result, usage: { model: result.model, remoteResponseId: result.remoteResponseId, inputTokens: 20, outputTokens: 5, tokenDetails: null },
+    errorCode: null, createdAt: new Date().toISOString(), submittedAt: new Date().toISOString(), finishedAt: new Date().toISOString() };
+  await getDatabase().transaction((tx) => writePrivateDeliveryBody(tx, id, { ...parent.body, deliveries: [operation], deliveryVersion: 1 }));
+  const child = (await createPrivateBranch({ action: "fork", parentBranchId: id, expectedRevision: 2, expectedDeliveryVersion: 1, requestId: randomUUID() }))!;
+  const blocked = (await previewPrivateBranchDeletion(id))!;
+  expect(blocked).toMatchObject({ eligible: false, copiedBranchIds: [child.id], fingerprint: null });
+  await expect(deletePrivateBranch(id, "a".repeat(64))).rejects.toBeInstanceOf(PrivateBranchDeletionBlockedError);
+  const childPreview = (await previewPrivateBranchDeletion(child.id))!;
+  expect(childPreview.ownReceiptCount).toBe(0);
+  const copiedAudit = (await deletePrivateBranch(child.id, childPreview.fingerprint!))!;
+  expect(copiedAudit.receipts[0]).toMatchObject({ originBranchId: id, usage: { inputTokens: 20, outputTokens: 5 } });
+  const final = (await previewPrivateBranchDeletion(id))!;
+  const audit = (await deletePrivateBranch(id, final.fingerprint!))!;
+  expect(audit.receipts[0]).toMatchObject({ status: "succeeded", originBranchId: id, usage: { inputTokens: 20 } });
+  expect(JSON.stringify(audit)).not.toContain(result.text);
+  let calls = 0; await executePrivateDelivery(id, operation.id, async () => { calls++; return { result }; }); expect(calls).toBe(0);
+  // No restrictive FK from retained usage to removed conversation identity.
+  await getDatabase().delete(runs).where(eq(runs.id, f.id));
+  const metadata = (await previewConversationDeletion(f.conversationId))!; expect(metadata.eligible).toBe(true);
+  await deleteEmptyConversation(f.conversationId, metadata.fingerprint!);
+  expect(await loadPrivateBranchDeletion(id)).toEqual(audit);
+});
+
+test("private deletion refuses unresolved receipts and an active worker lease, including acknowledged unknown closure", async () => {
+  const f = await root(); const id = f.branch.id; const branch = (await appendPrivateDraft(id, draft(1)))!;
+  const operation = { id: randomUUID(), originBranchId: id, messageId: branch.body.messages[0]!.id, fingerprint: "a".repeat(64),
+    connectionId: randomUUID(), connectionFingerprint: "b".repeat(64), request: renderPrivateDelivery(branch.body), result: null, errorCode: null,
+    createdAt: new Date().toISOString(), submittedAt: new Date().toISOString(), finishedAt: null };
+  for (const status of ["prepared", "submitted", "outcome_unknown"] as const) {
+    await getDatabase().transaction((tx) => writePrivateDeliveryBody(tx, id, { ...branch.body, deliveries: [{ ...operation, status }] }));
+    expect((await previewPrivateBranchDeletion(id))!.blockedReasons).toContain("pending_delivery");
+    await expect(deletePrivateBranch(id, "a".repeat(64))).rejects.toBeInstanceOf(PrivateBranchDeletionBlockedError);
+    expect(await loadPrivateBranchDeletion(id)).toBeUndefined();
+  }
+  await getDatabase().transaction((tx) => writePrivateDeliveryBody(tx, id, { ...branch.body, deliveries: [{ ...operation, status: "discarded" }] }));
+  const preview = (await previewPrivateBranchDeletion(id))!;
+  const client = new Client({ connectionString: process.env.DATABASE_URL }); await client.connect();
+  try {
+    await client.query("select pg_advisory_lock(hashtext($1), hashtext($2))", ["private-delivery-v1", id]);
+    await expect(deletePrivateBranch(id, preview.fingerprint!)).rejects.toBeInstanceOf(PrivateBranchDeletionBlockedError);
+    expect(await loadPrivateBranch(id)).toBeDefined();
+  } finally { await client.end(); }
+  const audit = (await deletePrivateBranch(id, preview.fingerprint!))!;
+  expect(audit.receipts[0]).toMatchObject({ status: "discarded", usage: null });
+});
+
+test("private deletion finds detached copied origins and foreign children without exposing foreign identities", async () => {
+  const f = await root(); const parent = (await appendPrivateDraft(f.branch.id, draft(1)))!;
+  const child = (await createPrivateBranch({ action: "fork", parentBranchId: parent.id, expectedRevision: 2, requestId: randomUUID() }))!;
+  const detachedParent = randomUUID();
+  await getDatabase().update(branches).set({ parentBranchId: detachedParent,
+    bodyCiphertext: encryptJson({ ...child.body, forkedFrom: { ...child.body.forkedFrom!, branchId: detachedParent } }, `private-branch:${child.id}:body`) }).where(eq(branches.id, child.id));
+  expect((await previewPrivateBranchDeletion(parent.id))!.copiedBranchIds).toEqual([child.id]);
+  await getDatabase().update(branches).set({ ownerId: "foreign-copy", parentBranchId: parent.id }).where(eq(branches.id, child.id));
+  const preview = (await previewPrivateBranchDeletion(parent.id))!;
+  expect(preview.blockedReasons).toContain("copied_branches"); expect(preview.copiedBranchIds).toEqual([]);
+  expect(await previewPrivateBranchDeletion(child.id)).toBeUndefined();
+  expect(await deletePrivateBranch(child.id, "a".repeat(64))).toBeUndefined();
+});
+
+test("private deletion fails closed on changed columns, incoming cascading dependencies and custom triggers", async () => {
+  const f = await root(); const id = f.branch.id;
+  const check = async () => {
+    expect((await previewPrivateBranchDeletion(id))!.blockedReasons).toContain("schema_changed");
+    await expect(deletePrivateBranch(id, "a".repeat(64))).rejects.toBeInstanceOf(PrivateBranchDeletionBlockedError);
+    expect(await loadPrivateBranchDeletion(id)).toBeUndefined();
+  };
+  await getDatabase().execute(sql`alter table conversation_private_branches add column fixture_unknown text`);
+  try { await check(); } finally { await getDatabase().execute(sql`alter table conversation_private_branches drop column fixture_unknown`); }
+  await getDatabase().execute(sql`create table fixture_private_dependency (branch_id uuid references conversation_private_branches(id) on delete cascade)`);
+  try { await check(); } finally { await getDatabase().execute(sql`drop table fixture_private_dependency`); }
+  await getDatabase().execute(sql`create function fixture_private_trigger() returns trigger language plpgsql as $$ begin return old; end $$`);
+  await getDatabase().execute(sql`create trigger fixture_private_delete before delete on conversation_private_branches for each row execute function fixture_private_trigger()`);
+  try { await check(); } finally {
+    await getDatabase().execute(sql`drop trigger fixture_private_delete on conversation_private_branches`);
+    await getDatabase().execute(sql`drop function fixture_private_trigger()`);
+  }
+  expect((await previewPrivateBranchDeletion(id))!.eligible).toBe(true);
+});
+
+test("private deletion closes the boundary on unreadable copied bodies and bounded inspection overflow", async () => {
+  const f = await root(); const other = await root();
+  await getDatabase().update(branches).set({ bodyCiphertext: "invalid-envelope" }).where(eq(branches.id, other.branch.id));
+  await expect(previewPrivateBranchDeletion(f.branch.id)).rejects.toThrow();
+  await getDatabase().delete(branches).where(eq(branches.id, other.branch.id));
+  const rows = Array.from({ length: 1_000 }, () => {
+    const id = randomUUID(); return { id, ownerId: LOCAL_OWNER_ID, conversationId: f.conversationId, sourceRunId: f.id, sourceMemberId: "private-one",
+      requestId: randomUUID(), requestHash: "bounded-private-fixture", bodyCiphertext: encryptJson(f.branch.body, `private-branch:${id}:body`) };
+  });
+  await getDatabase().insert(branches).values(rows);
+  expect((await previewPrivateBranchDeletion(f.branch.id))!.blockedReasons).toContain("inspection_limit");
+  await expect(deletePrivateBranch(f.branch.id, "a".repeat(64))).rejects.toBeInstanceOf(PrivateBranchDeletionBlockedError);
+});
 
 test("freezes only the selected reply and explicit provenance, encrypts owner drafts and exports no credentials or peer content", async () => {
   const value = await root();

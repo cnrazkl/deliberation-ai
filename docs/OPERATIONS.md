@@ -1,5 +1,7 @@
 # Local operations
 
+DA-101 rollout: apply `pnpm db:migrate` for additive 0045/0046 before using private deletion and restart any processes still running old code. Both migrations were applied in the primary local installation during acceptance; neither deletes rows. The retained audit's encrypted field joins disposable backup restore validation. Content deletion is an explicit reviewed UI/API operation, never an automatic retention sweep. Real owner history was not deleted; destructive acceptance uses generated fixtures. Restoring an older archive can restore deleted content. [Policy and limits](PRIVATE_BRANCH_DELETION.md).
+
 To validate a production build while the local development server is in use, set `DELIBERATION_VERIFY_BUILD=1` only for the build command. It writes `.next-verify/`, leaving the ordinary `.next/` development output in place. For example in PowerShell: `$env:DELIBERATION_VERIFY_BUILD = '1'; pnpm build; Remove-Item Env:DELIBERATION_VERIFY_BUILD`. Do not set this flag on the normal development process. This is a verification output, not a deployment or automatic-start service.
 
 DA-093 rollout: apply `pnpm db:migrate`, restart old app/worker processes, then run `pnpm db:conversations:index`. It completes branch indexing and atomically groups owned legacy runs; pending runs keep conversation views/exports unavailable. Limits and legacy missing-bridge semantics are explicit in [the conversation procedure](CONVERSATIONS.md). Backup includes the two metadata tables, while encrypted-field inventory remains unchanged.

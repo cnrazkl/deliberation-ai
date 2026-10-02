@@ -1,10 +1,11 @@
 # Tasks
 
-DA-100 adds native Gemini generateContent after Responses, Anthropic and compatible
-private delivery. [Local acceptance](DA100_ACCEPTANCE.md) covers default reasoning/search
-off only; richer settings, erasure, accounting and cloud/model-quality gates remain open.
-Next: explicit private-branch deletion policy and reviewed implementation, with copies,
-pending/unknown receipts and backup/export limits defined; generated fixtures only.
+DA-101 adds reviewed private leaf content deletion with copy/pending/worker/schema guards,
+retained encrypted usage/provenance and replay protection. [Local acceptance](DA101_ACCEPTANCE.md)
+covers generated fixtures only. Full conversation/account erasure, external copies,
+richer provider settings, accounting and cloud/model-quality gates remain open.
+Next: define and implement reviewed retained run-body deletion beyond age-based pruning,
+with copied archives, unresolved receipts, accounting and metadata consequences explicit.
 
 Status: DA-097's bounded private delivery has passed local acceptance; the broad private chat/deletion/monetary gates remain partial. [The 1 October repository audit](REPO_AUDIT_2026_10_01.md) records DA-081 checks; [DA-082](PROVIDER_PRICING.md) adds token estimates, [DA-083](PROVIDER_BILLING.md) billing evidence, [DA-084](BILLING_CORRECTIONS.md) corrections, [DA-085](BILLING_STATEMENTS.md) statement inspection, [DA-086](BILLING_STATEMENT_HISTORY.md) durable statement history, [DA-087](BILLING_REALLOCATION.md) identity reallocation, [DA-088](BILLING_ACCOUNT.md) account invoice inspection and [DA-089](BILLING_PAYMENT.md) local payment-evidence inspection. [DA-090](CONVERSATION_CONTINUATION.md) adds explicit frozen report continuation; [DA-091](CONVERSATION_COMPACTION.md) adds reviewed manual compaction with private original archives. The original broad PLAN.md acceptance gates are not complete. See [the full gap audit](PLAN_GAP_AUDIT.md). TypeSafe/JEV remains excluded by the owner.
 
@@ -76,7 +77,8 @@ The original complete quality gate remains open. DA-074 performs mechanical chec
 - [x] DA-098: extend reviewed private delivery to native Claude/Anthropic; preserve text/order, source/connection matching and durable single-intent controls, normalize bounded text/truncation and native uncached/cache usage, and verify populated native receipt restore plus real-worker loopback browser flows. [Acceptance](DA098_ACCEPTANCE.md).
 - [x] DA-099: add reviewed native OpenAI Responses private delivery with exact stateless text/final assistant phases, bounded discriminated output validation, inclusive usage, explicit truncation/no-text handling and remote-pending uncertainty. Verify both native receipt restores and real-worker browser failure/unknown/fork paths without paid calls. [Acceptance](DA099_ACCEPTANCE.md).
 - [x] DA-100: add reviewed native Gemini generateContent private text, header-only credentials, exact user/model translation, bounded text-only validation, separate candidate/thought/total usage, textless cap failure and unfinished uncertainty. Verify populated three-native receipt restore and real-worker loopback browser paths. [Acceptance](DA100_ACCEPTANCE.md).
-- [ ] Define and implement reviewed private-branch deletion with copied-descendant and pending/unknown receipt guards and explicit retained-usage/backup/export limits. Broader settings, council accounting integration, retained-body/message deletion, semantic fidelity and real-provider acceptance remain open. DA-095 deletes empty conversation metadata only.
+- [x] DA-101: implement reviewed leaf-first private content deletion with copied-provenance, pending/unknown/worker/schema guards, retained encrypted usage and original intent replay protection; verify lost-response replay and populated audit restore. [Acceptance](DA101_ACCEPTANCE.md).
+- [ ] Define reviewed retained run-body deletion beyond age-based pruning. Broader settings, council accounting integration, partial message removal, cascading copy/backup/export erasure, semantic fidelity and real-provider acceptance remain open. DA-095 deletes empty conversation metadata only.
 
 ### Group 5 — operational evaluation
 
