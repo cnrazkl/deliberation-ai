@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 const queueState = vi.hoisted(() => ({
   starts: 0,
   queueCreates: 0,
+  queueNames: [] as string[],
   stops: 0,
   failFirstQueueCreate: true,
 }));
@@ -15,12 +16,13 @@ vi.mock("pg-boss", () => ({
       queueState.starts += 1;
     }
 
-    async createQueue(): Promise<void> {
+    async createQueue(name: string): Promise<void> {
       queueState.queueCreates += 1;
       if (queueState.failFirstQueueCreate) {
         queueState.failFirstQueueCreate = false;
         throw new Error("temporary queue registration failure");
       }
+      queueState.queueNames.push(name);
     }
 
     async stop(): Promise<void> {
@@ -49,5 +51,5 @@ test("retries queue startup after a transient registration failure", async () =>
   const recovered = await getBoss();
   expect(await getBoss()).toBe(recovered);
   expect(queueState.starts).toBe(2);
-  expect(queueState.queueCreates).toBe(3);
+  expect(queueState.queueNames).toEqual(["run-fake-council", "run-decision-assessment", "private-text-delivery"]);
 });

@@ -1,5 +1,7 @@
 # Decisions
 
+DA-097 accepts ADR-0027: separate preview-bound private delivery, durable no-blind-retry receipts, bounded local request/output capacity and no promotion into council authority or billing. Supported compatible settings only; broader providers, live acceptance and content erasure remain separate.
+
 DA-096 accepts [ADR-0026: selected-member private drafts](adr/0026-selected-member-private-drafts.md): a separate encrypted owner-draft aggregate, source-bound reply seed, immutable versioned messages and copied-prefix forks retain provenance without creating model responses or weakening council invariants. Private content blocks metadata deletion and enters explicit exports/backup verification. Actual single-model dispatch and private-content deletion remain open.
 
 DA-095 accepts [ADR-0025: reviewed empty conversation metadata deletion](adr/0025-empty-conversation-metadata-deletion.md): retain metadata by default, remove one reviewed identity only after all body rows/references are absent, reject changed/oversized/foreign/schema-drifted targets and preserve independent backup/export copies. Available conversations and future model-private messages require separate deletion policy.

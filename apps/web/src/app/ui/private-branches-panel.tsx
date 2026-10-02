@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CreatePrivateBranch, AppendPrivateDraft, PrivateBranchSeed } from "@deliberation-ai/contracts";
 import type { PrivateBranchSummary, PrivateBranchView } from "@deliberation-ai/persistence";
+import { PrivateDeliveryPanel } from "./private-delivery-panel";
 
 async function jsonRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...options, cache: "no-store" });
@@ -53,6 +54,11 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
       .finally(() => { if (!controller.signal.aborted && generation === readGeneration.current) setDetailLoading(false); });
     return () => controller.abort();
   }, [selectedId, refresh]);
+  useEffect(() => {
+    if (!branch?.body.deliveries?.some((item) => ["prepared", "submitted"].includes(item.status))) return;
+    const timer = window.setInterval(() => { if (!working.current) setRefresh((value) => value + 1); }, 2_000);
+    return () => window.clearInterval(timer);
+  }, [branch]);
   function reload() { ++readGeneration.current; setLoading(true); setDetailLoading(Boolean(selectedId)); setError(null); setRefresh((value) => value + 1); }
   function select(id: string) {
     if (working.current || selectedId === id) return;
@@ -63,10 +69,10 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
   async function mutate(action: "append" | "fork") {
     if (!branch || working.current || loading || detailLoading) return;
     working.current = true; setBusy(true); setError(null);
-    const key = JSON.stringify([action, branch.id, action === "append" ? text : branch.revision]);
+    const key = JSON.stringify([action, branch.id, action === "append" ? text : [branch.revision, branch.body.deliveryVersion ?? 0]]);
     if (intent.current?.key !== key) intent.current = { key, body: action === "append" ?
       { requestId: crypto.randomUUID(), expectedRevision: branch.revision, text } :
-      { action: "fork", requestId: crypto.randomUUID(), parentBranchId: branch.id, expectedRevision: branch.revision } };
+      { action: "fork", requestId: crypto.randomUUID(), parentBranchId: branch.id, expectedRevision: branch.revision, expectedDeliveryVersion: branch.body.deliveryVersion ?? 0 } };
     try {
       const value = await jsonRequest<PrivateBranchView>(action === "append" ? `/api/private-branches/${branch.id}/messages` : "/api/private-branches", post(intent.current.body));
       if (!alive.current) return;
@@ -92,7 +98,7 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
       <button type="button" className="secondary-button" disabled={busy || loading} onClick={reload}>Dalları yenile</button>
       <button type="button" className="secondary-button" disabled={busy} onClick={onClose}>Özel dalları kapat</button>
     </div>
-    <p className="section-hint">Burada seçilen üyenin ilk yanıtı ve sizin mesaj taslaklarınız saklanır. Taslaklar modele gönderilmez; yeni model yanıtı üretilmez. Konsey sorusu ve raporu değişmez.</p>
+    <p className="section-hint">Burada seçilen üyenin ilk yanıtı ve sizin mesaj taslaklarınız saklanır. Taslaklar modele gönderilmez; göndermek için ayrıca önizlemeyi inceleyip onaylayın. Konsey sorusu ve raporu değişmez.</p>
     {error && <p role="alert" className="error">{error}</p>}
     {loading ? <p>Dallar yükleniyor…</p> : <div className="run-history-list">
       {items.length === 0 && <p>Henüz özel dal yok. Kaydedilmiş bir raporun model ayrıntılarından dal açabilirsiniz.</p>}
@@ -112,10 +118,12 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
       {branch.body.messages.map((message) => <article key={message.id}><strong>Sizin taslağınız{message.originBranchId !== branch.id ? " · önceki daldan kopya" : ""}</strong><pre>{message.text}</pre></article>)}
       <label>Özel mesaj taslağı<textarea value={text} maxLength={8_000} disabled={busy} onChange={(event) => setText(event.target.value)} /></label>
       <div className="config-heading">
-        <button type="button" className="secondary-button" disabled={busy || loading || !text.trim() || branch.messageCount >= 64} onClick={() => void mutate("append")}>Taslağı dala kaydet</button>
-        <button type="button" className="secondary-button" disabled={busy || loading} onClick={() => void mutate("fork")}>Bu noktadan yeni özel dal aç</button>
+        <button type="button" className="secondary-button" disabled={busy || loading || !text.trim() || branch.messageCount >= 64 || branch.body.deliveries?.some((item) => ["prepared", "submitted", "outcome_unknown"].includes(item.status))} onClick={() => void mutate("append")}>Taslağı dala kaydet</button>
+        <button type="button" className="secondary-button" disabled={busy || loading || branch.body.deliveries?.some((item) => ["prepared", "submitted", "outcome_unknown"].includes(item.status))} onClick={() => void mutate("fork")}>Bu noktadan yeni özel dal aç</button>
         <button type="button" className="secondary-button" disabled={busy} onClick={() => void download()}>Özel dalı indir (JSON)</button>
       </div>
+      <PrivateDeliveryPanel key={`${branch.id}:${branch.revision}:${branch.body.deliveryVersion ?? 0}`} branch={branch} disabled={busy || loading || detailLoading}
+        onChanged={reload} onBusy={(value) => { working.current = value; setBusy(value); }} />
       <p className="section-hint">İndirme ve konuşma dışa aktarımı özel taslakları okunabilir metin olarak içerir. Kaynak çalışma silinse de bu kopya saklanır. Özel dal içeriğini silme henüz desteklenmiyor.</p>
     </div>}
   </section>;

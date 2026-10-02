@@ -1,5 +1,7 @@
 # Roadmap
 
+DA-097 delivers reviewed bounded OpenAI-compatible private replies after the DA-096 draft foundation. Other native providers/settings, private-content/copy deletion, shared billing and broader semantic/live gates remain open. The older paragraphs below describe their historical increment scope. [Current acceptance](DA097_ACCEPTANCE.md).
+
 DA-089 delivers local read-only payment/refund evidence inspection against current invoice snapshots, exact amounts and source/duplicate/allocation/date checks. Provider/bank authenticity and actual payment acceptance remain open before the settled-cost gate; hard input/tool/money reservations and conversation work remain pending. [Scope](BILLING_PAYMENT.md).
 
 DA-088 delivers read-only multi-connection invoice inspection with current statement-version binding, shared-charge separation and account-wide duplicate checks. It is local technical reconciliation; provider-authoritative account/invoice/payment evidence and real-account acceptance remain open before the settled-cost gate and hard input/tool/money reservations. [Scope](BILLING_ACCOUNT.md).

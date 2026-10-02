@@ -1,0 +1,218 @@
+import { randomUUID } from "node:crypto";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { afterAll, afterEach, expect, test } from "vitest";
+import { Client } from "pg";
+import { eq, inArray, sql } from "drizzle-orm";
+import type { CouncilMemberConfig, PrivateDeliveryResult } from "@deliberation-ai/contracts";
+import { buildCouncilReport } from "@deliberation-ai/domain";
+import { closeDatabase, getDatabase } from "./database";
+import { closeBoss } from "./queue";
+import { encryptJson, encryptText } from "./crypto";
+import { LOCAL_OWNER_ID } from "./owner";
+import { runs, conversations, conversationRuns, conversationPrivateBranches as branches, providerConnections } from "./schema";
+import { createPrivateBranch, previewPrivateBranchSeed, appendPrivateDraft, loadPrivateBranch, exportPrivateBranch,
+  PrivateBranchConflictError, writePrivateDeliveryBody, readPrivateBranch } from "./private-branches";
+import { enqueuePrivateDelivery, previewPrivateDelivery, controlPrivateDelivery, executePrivateDelivery, PrivateDeliveryBlockedError } from "./private-deliveries";
+import { exportConversation } from "./conversations";
+import { auditRestoredEncryption } from "../scripts/backup-encryption-audit";
+
+const ids: string[] = []; const connections: string[] = []; const sources: string[] = [];
+afterEach(async () => {
+  if (ids.length) {
+    await getDatabase().delete(branches).where(inArray(branches.conversationId, ids));
+    await getDatabase().delete(conversationRuns).where(inArray(conversationRuns.conversationId, ids));
+    await getDatabase().delete(conversations).where(inArray(conversations.id, ids));
+  }
+  if (sources.length) await getDatabase().delete(runs).where(inArray(runs.id, sources));
+  if (connections.length) await getDatabase().delete(providerConnections).where(inArray(providerConnections.id, connections));
+  ids.length = 0; connections.length = 0; sources.length = 0;
+});
+afterAll(async () => { await closeBoss(); await closeDatabase(); });
+async function fixture({ owner = LOCAL_OWNER_ID, question = "Compare database query syntax", text = "Explain the selected viewpoint", provider = "openai-compatible",
+  reasoningLevel = "default", selectedText = "Selected copied answer" }: {
+  owner?: string; question?: string; text?: string; provider?: CouncilMemberConfig["provider"]; reasoningLevel?: CouncilMemberConfig["reasoningLevel"]; selectedText?: string;
+} = {}) {
+  const id = randomUUID(); const conversationId = randomUUID(); const connectionId = randomUUID();
+  ids.push(conversationId); connections.push(connectionId); sources.push(id);
+  await getDatabase().insert(providerConnections).values({ id: connectionId, ownerId: owner, provider: "openai-compatible", label: `Private offline ${connectionId}`,
+    defaultModel: "offline-private", baseUrl: "http://127.0.0.1:9/v1", secretCiphertext: encryptText("", `provider-connection:${connectionId}:secret`) });
+  const members: CouncilMemberConfig[] = [
+    { id: "private-selected", label: "Selected", role: "Independent perspective", provider, model: "offline-private", connectionId,
+      councilRole: "analyst", reasoningLevel, webSearchMode: "off", ...(provider === "fake" ? { perspective: "risk" as const } : {}) },
+    { id: "private-peer", label: "Peer", role: "Peer", provider: "fake", model: "offline-peer", perspective: "evidence", councilRole: "analyst", reasoningLevel: "default", webSearchMode: "off" },
+  ];
+  const report = buildCouncilReport(members.map((member) => ({ memberId: member.id, label: member.label, councilRole: member.councilRole,
+    rawText: member.id === "private-selected" ? selectedText : "EXCLUDED PEER", parsed: { summary: member.label,
+      claims: [{ statement: member.label, kind: "shared" as const, quote: member.label }] }, citations: [] })), []);
+  await getDatabase().insert(runs).values({ id, ownerId: owner, idempotencyKey: randomUUID(), requestHash: "private-delivery-fixture", snapshotId: randomUUID(),
+    question: "[encrypted]", questionCiphertext: encryptText(question, `run:${id}:question`), membersCiphertext: encryptJson(members, `run:${id}:members`),
+    reportCiphertext: encryptJson(report, `run:${id}:report`), status: "completed", branchIndexVersion: 1, branchKind: "independent", finishedAt: new Date() });
+  await getDatabase().insert(conversations).values({ id: conversationId, ownerId: owner, anchorRunId: id, origin: "native" });
+  await getDatabase().insert(conversationRuns).values({ ownerId: owner, conversationId, runId: id, kind: "independent", createdAt: sql`(select created_at from runs where id = ${id}::uuid)` });
+  const seed = await previewPrivateBranchSeed(id, "private-selected");
+  if (!seed) return { id, conversationId, connectionId, branch: undefined };
+  const branch = await createPrivateBranch({ action: "create", sourceRunId: id, memberId: "private-selected", expectedSeedSha256: seed.sha256, requestId: randomUUID() });
+  return { id, conversationId, connectionId, branch: (await appendPrivateDraft(branch!.id, { requestId: randomUUID(), expectedRevision: 1, text }))! };
+}
+const reply: PrivateDeliveryResult = { text: "Private generated answer", model: "offline-private", remoteResponseId: "offline-response",
+  inputTokens: 17, outputTokens: 5, tokenDetails: null, finishReason: "stop" };
+async function send(id: string) {
+  const preview = (await previewPrivateDelivery(id))!;
+  return enqueuePrivateDelivery(id, { requestId: randomUUID(), fingerprint: preview.fingerprint });
+}
+test("preview is read-only, exact input is frozen, concurrent intents deduplicate and success replays without a second executor", async () => {
+  const f = await fixture(); const id = f.branch!.id;
+  const preview = (await previewPrivateDelivery(id))!;
+  expect(preview).toMatchObject({ eligible: true, maxOutputTokens: 1_024, maximumProviderCalls: 1 });
+  expect(JSON.stringify(preview)).not.toContain("EXCLUDED PEER");
+  expect((await loadPrivateBranch(id))!.body.deliveries).toBeUndefined();
+  const intent = { requestId: randomUUID(), fingerprint: preview.fingerprint };
+  const [a, b] = await Promise.all([enqueuePrivateDelivery(id, intent), enqueuePrivateDelivery(id, intent)]);
+  expect(a).toEqual(b);
+  let calls = 0;
+  const execute = async () => { calls++; return { result: reply }; };
+  await executePrivateDelivery(id, a!.operationId, execute);
+  await executePrivateDelivery(id, a!.operationId, execute);
+  expect(calls).toBe(1);
+  expect((await loadPrivateBranch(id))!.body.deliveries).toHaveLength(1);
+  expect((await loadPrivateBranch(id))!.body.deliveries![0]).toMatchObject({ status: "succeeded", usage: { inputTokens: 17, outputTokens: 5 } });
+  expect(await enqueuePrivateDelivery(id, intent)).toEqual(a);
+  const [stored] = await getDatabase().select().from(branches).where(eq(branches.id, id));
+  expect(JSON.stringify(stored)).not.toMatch(/Explain the selected|Private generated/);
+  expect((await getDatabase().select().from(runs).where(eq(runs.id, f.id)))[0]!.stateVersion).toBe(1);
+});
+test("stale preview, foreign access, unsupported members and high-risk context never dispatch", async () => {
+  const f = await fixture(); const id = f.branch!.id; const old = (await previewPrivateDelivery(id))!;
+  await appendPrivateDraft(id, { requestId: randomUUID(), expectedRevision: 2, text: "Changed owner message" });
+  await expect(enqueuePrivateDelivery(id, { requestId: randomUUID(), fingerprint: old.fingerprint })).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  await getDatabase().update(providerConnections).set({ revision: 2 }).where(eq(providerConnections.id, f.connectionId));
+  const risk = await fixture({ text: "Which medication dose is appropriate?" });
+  expect((await previewPrivateDelivery(risk.branch!.id))!.blocks).toContain("high_risk");
+  await expect(send(risk.branch!.id)).rejects.toBeInstanceOf(PrivateDeliveryBlockedError);
+  const fake = await fixture({ provider: "fake" });
+  expect((await previewPrivateDelivery(fake.branch!.id))!.blocks).toContain("unsupported_provider");
+  const unsupported = await fixture({ reasoningLevel: "high" });
+  expect((await previewPrivateDelivery(unsupported.branch!.id))!.blocks).toContain("unsupported_settings");
+  await expect(send(unsupported.branch!.id)).rejects.toBeInstanceOf(PrivateDeliveryBlockedError);
+  const oversized = await fixture({ selectedText: "é".repeat(33_000) });
+  expect((await previewPrivateDelivery(oversized.branch!.id))!.blocks).toContain("capacity");
+  await expect(send(oversized.branch!.id)).rejects.toBeInstanceOf(PrivateDeliveryBlockedError);
+  await getDatabase().delete(providerConnections).where(eq(providerConnections.id, f.connectionId));
+  expect((await previewPrivateDelivery(id))!.blocks).toContain("missing_connection");
+  const foreign = await fixture({ owner: "other-owner" });
+  expect(foreign.branch).toBeUndefined();
+  await getDatabase().update(branches).set({ ownerId: "other-owner" }).where(eq(branches.id, id));
+  expect(await previewPrivateDelivery(id)).toBeUndefined();
+  expect(await enqueuePrivateDelivery(id, { requestId: randomUUID(), fingerprint: old.fingerprint })).toBeUndefined();
+});
+test("connection drift after enqueue rejects before network invocation", async () => {
+  const f = await fixture(); const id = f.branch!.id; const operation = (await send(id))!;
+  await getDatabase().update(providerConnections).set({ revision: 2 }).where(eq(providerConnections.id, f.connectionId));
+  let calls = 0;
+  await executePrivateDelivery(id, operation.operationId, async () => { calls++; return { result: reply }; });
+  expect(calls).toBe(0);
+  expect((await loadPrivateBranch(id))!.body.deliveries![0]).toMatchObject({ status: "failed", submittedAt: null, errorCode: "connection_or_risk_changed" });
+});
+test("interrupted submission recovers as unknown, blocks editing/forks and requires explicit discard without resending", async () => {
+  const f = await fixture(); const id = f.branch!.id; const op = (await send(id))!;
+  await getDatabase().transaction(async (tx) => {
+    const current = (await readPrivateBranch(tx, id, true))!; const body = current.value.body;
+    body.deliveries![0]!.status = "submitted"; body.deliveries![0]!.submittedAt = new Date().toISOString();
+    await writePrivateDeliveryBody(tx, id, body);
+  });
+  let calls = 0;
+  await executePrivateDelivery(id, op.operationId, async () => { calls++; return { result: reply }; });
+  expect(calls).toBe(0);
+  expect((await loadPrivateBranch(id))!.body.deliveries![0]!.status).toBe("outcome_unknown");
+  await expect(appendPrivateDraft(id, { requestId: randomUUID(), expectedRevision: 2, text: "Another question" })).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  await expect(controlPrivateDelivery(id, { operationId: op.operationId, action: "discard_unknown" })).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  await controlPrivateDelivery(id, { operationId: op.operationId, action: "discard_unknown", acknowledgeUnknown: true });
+  await executePrivateDelivery(id, op.operationId, async () => { calls++; return { result: reply }; });
+  expect(calls).toBe(0);
+  await appendPrivateDraft(id, { requestId: randomUUID(), expectedRevision: 2, text: "Explicit new owner message" });
+  expect((await previewPrivateDelivery(id))!.eligible).toBe(true);
+});
+test("overlapping execution is fenced and queued cancellation performs no dispatch", async () => {
+  const f = await fixture(); const id = f.branch!.id; const op = (await send(id))!;
+  let enter!: () => void; let release!: () => void;
+  const entered = new Promise<void>((resolve) => { enter = resolve; }); const barrier = new Promise<void>((resolve) => { release = resolve; });
+  const first = executePrivateDelivery(id, op.operationId, async () => { enter(); await barrier; return { result: reply }; });
+  await entered;
+  try {
+    await expect(executePrivateDelivery(id, op.operationId, async () => { throw new Error("Must not dispatch"); })).rejects.toThrow("already active");
+    await expect(controlPrivateDelivery(id, { operationId: op.operationId, action: "cancel" })).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  } finally { release(); await first; }
+  await appendPrivateDraft(id, { requestId: randomUUID(), expectedRevision: 2, text: "New message" });
+  const next = (await send(id))!;
+  await controlPrivateDelivery(id, { operationId: next.operationId, action: "cancel" });
+  let calls = 0; await executePrivateDelivery(id, next.operationId, async () => { calls++; return { result: reply }; });
+  expect(calls).toBe(0);
+});
+test("cancelled attempts never refund branch allowance and failed-output usage survives", async () => {
+  const f = await fixture(); const id = f.branch!.id;
+  for (let i = 0; i < 8; i++) {
+    if (i) await appendPrivateDraft(id, { requestId: randomUUID(), expectedRevision: i + 1, text: `Explicit message ${i}` });
+    const op = (await send(id))!;
+    if (i === 0) await executePrivateDelivery(id, op.operationId, async () => ({ outcome: "known", errorCode: "invalid_private_response", usage: {
+      model: reply.model, remoteResponseId: reply.remoteResponseId, inputTokens: 17, outputTokens: 5, tokenDetails: null } }));
+    else await controlPrivateDelivery(id, { operationId: op.operationId, action: "cancel" });
+  }
+  await appendPrivateDraft(id, { requestId: randomUUID(), expectedRevision: 9, text: "Over allowance" });
+  expect((await previewPrivateDelivery(id))!.blocks).toContain("capacity");
+  await expect(send(id)).rejects.toBeInstanceOf(PrivateDeliveryBlockedError);
+  expect((await loadPrivateBranch(id))!.body.deliveries![0]!.usage!.inputTokens).toBe(17);
+});
+test("completed replies fork with provenance, survive source deletion and enter bounded export/encryption audit", async () => {
+  const f = await fixture(); const id = f.branch!.id; const op = (await send(id))!;
+  await executePrivateDelivery(id, op.operationId, async () => ({ result: reply }));
+  const parent = (await loadPrivateBranch(id))!;
+  await expect(createPrivateBranch({ action: "fork", parentBranchId: id, expectedRevision: 2, requestId: randomUUID() })).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  const child = (await createPrivateBranch({ action: "fork", parentBranchId: id, expectedRevision: 2,
+    expectedDeliveryVersion: parent.body.deliveryVersion!, requestId: randomUUID() }))!;
+  expect(child.body.deliveries![0]!.originBranchId).toBe(id);
+  await appendPrivateDraft(child.id, { requestId: randomUUID(), expectedRevision: 1, text: "Child-specific follow-up" });
+  expect(JSON.stringify((await previewPrivateDelivery(child.id))!.input)).toContain(reply.text);
+  await getDatabase().delete(runs).where(eq(runs.id, f.id));
+  expect(JSON.stringify(await exportPrivateBranch(child.id))).toContain(reply.text);
+  expect((await exportConversation(f.conversationId))!.privateBranches).toHaveLength(2);
+  const client = new Client({ connectionString: process.env.DATABASE_URL }); await client.connect();
+  try { expect((await auditRestoredEncryption(client)).decryptedValues).toBeGreaterThan(0); } finally { await client.end(); }
+});
+test("a populated private receipt survives an actual disposable archive restore", async () => {
+  const url = new URL(process.env.DATABASE_URL!);
+  // Never dump/restore the real owner's database from an ordinary test run.
+  if (!/^\/da_it_[a-f0-9]+$/.test(url.pathname) || url.hostname !== "127.0.0.1") throw new Error("Requires isolated integration database");
+  const f = await fixture(); const id = f.branch!.id; const op = (await send(id))!;
+  await executePrivateDelivery(id, op.operationId, async () => ({ result: reply }));
+  const directory = await mkdtemp(join(tmpdir(), "da-private-restore-"));
+  const name = `da_private_restore_${randomUUID().replaceAll("-", "")}`;
+  const localRoot = join(process.env.LOCALAPPDATA!, "DeliberationAI");
+  const adminFile = await readFile(join(localRoot, "postgres-admin.local"), "utf8");
+  const password = adminFile.split(/\r?\n/).find((line) => line.startsWith("POSTGRES_SUPERUSER_PASSWORD="))?.slice("POSTGRES_SUPERUSER_PASSWORD=".length);
+  if (!password) throw new Error("Local administrator unavailable");
+  const adminUrl = new URL(url); adminUrl.pathname = "/postgres"; adminUrl.username = "postgres"; adminUrl.password = password;
+  const admin = new Client({ connectionString: adminUrl.toString() }); let created = false;
+  await admin.connect();
+  try {
+    await admin.query(`create database "${name}" owner deliberation template template0`); created = true;
+    const env = { ...process.env, PGHOST: url.hostname, PGPORT: url.port, PGUSER: decodeURIComponent(url.username), PGPASSWORD: decodeURIComponent(url.password) };
+    const bin = join(localRoot, "postgresql-18.6", "pgsql", "bin"); const archive = join(directory, "private.dump");
+    const dump = spawnSync(join(bin, "pg_dump.exe"), ["--format=custom", "--file", archive, "--dbname", url.pathname.slice(1)], { env, encoding: "utf8" });
+    if (dump.status !== 0) throw new Error("Fixture archive failed");
+    const restored = spawnSync(join(bin, "pg_restore.exe"), ["--exit-on-error", "--no-owner", "--dbname", name, archive], { env, encoding: "utf8" });
+    if (restored.status !== 0) throw new Error("Fixture restore failed");
+    const restoredUrl = new URL(url); restoredUrl.pathname = `/${name}`;
+    const reader = new Client({ connectionString: restoredUrl.toString() }); await reader.connect();
+    try {
+      expect((await auditRestoredEncryption(reader)).decryptedValues).toBeGreaterThan(0);
+      const value = await reader.query<{ body_ciphertext: string }>("select body_ciphertext from conversation_private_branches where id = $1", [id]);
+      expect(value.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, id)))[0]!.bodyCiphertext);
+    } finally { await reader.end(); }
+  } finally {
+    if (created) await admin.query(`drop database "${name}" with (force)`);
+    await admin.end(); await rm(directory, { recursive: true, force: true });
+  }
+}, 30_000);

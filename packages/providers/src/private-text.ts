@@ -43,6 +43,9 @@ export async function generatePrivateText(request: PrivateDeliveryRequest, optio
   const parsed = privateDeliveryResultSchema.safeParse({ text: raw, model: typeof json?.model === "string" ? json.model : input.model,
     remoteResponseId: typeof json?.id === "string" ? json.id : null, inputTokens: usage.inputTokens ?? null, outputTokens: usage.outputTokens ?? null,
     tokenDetails: usage.tokenDetails ?? null, finishReason: choice?.finish_reason === "stop" || choice?.finish_reason === "length" ? choice.finish_reason : "other" });
-  if (!parsed.success || choice?.message?.tool_calls) throw new NormalizedProviderError("Özel metin yanıtı geçersiz veya çok büyük.", "invalid_private_response", "known", false);
+  if (!parsed.success || choice?.message?.tool_calls) throw new NormalizedProviderError("Özel metin yanıtı geçersiz veya çok büyük.", "invalid_private_response", "known", false, undefined, {
+    provider: "openai-compatible", model: typeof json?.model === "string" ? json.model : input.model,
+    remoteResponseId: typeof json?.id === "string" ? json.id : "", ...usage,
+  });
   return parsed.data;
 }

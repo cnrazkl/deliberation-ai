@@ -167,6 +167,12 @@ export const privateDeliveryRequestSchema = z.object({
   maxOutputTokens: z.literal(1_024),
 }).strict();
 export type PrivateDeliveryRequest = z.infer<typeof privateDeliveryRequestSchema>;
+export const privateDeliveryUsageSchema = z.object({
+  model: z.string().min(1).max(256), remoteResponseId: z.string().max(256).nullable(),
+  inputTokens: z.number().int().min(0).max(2_147_483_647).nullable(), outputTokens: z.number().int().min(0).max(2_147_483_647).nullable(),
+  tokenDetails: providerTokenDetailsSchema.nullable(),
+}).strict();
+export type PrivateDeliveryUsage = z.infer<typeof privateDeliveryUsageSchema>;
 export const privateDeliveryResultSchema = z.object({
   finishReason: z.enum(["stop", "length", "other"]).optional(),
   text: z.string().min(1).max(16_384), model: z.string().min(1).max(256), remoteResponseId: z.string().max(256).nullable(),
@@ -181,6 +187,7 @@ export const privateDeliverySchema = z.object({
   request: privateDeliveryRequestSchema,
   createdAt: z.string().datetime(), submittedAt: z.string().datetime().nullable(), finishedAt: z.string().datetime().nullable(),
   errorCode: z.string().max(100).nullable(), result: privateDeliveryResultSchema.nullable(),
+  usage: privateDeliveryUsageSchema.nullable().optional(),
 }).strict();
 export type PrivateDelivery = z.infer<typeof privateDeliverySchema>;
 export const sendPrivateDeliverySchema = z.object({ requestId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict();

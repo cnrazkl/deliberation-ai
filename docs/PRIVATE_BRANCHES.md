@@ -1,6 +1,6 @@
-# Selected-member private draft branches — DA-096
+# Selected-member private branches — DA-096 / DA-097
 
-DA-096 supplies storage and management for model-private conversation preparation. The UI exposes **drafts**, with no send button, provider call, queued model work or fabricated assistant reply. Actual one-model messaging remains a subsequent increment with its own reviewed input, risk/limits, adapter and durable receipt boundary. Council execution and selected-member reruns are unchanged.
+DA-096 supplies encrypted draft storage and branch management. DA-097 adds explicit reviewed one-model delivery for OpenAI-compatible source members with default reasoning and web search off. Saving/opening/refreshing a draft still makes no provider call. Council execution and selected-member reruns are unchanged. Other provider/settings combinations remain unsupported by this increment.
 
 ## Owner workflow
 
@@ -17,7 +17,7 @@ The council question, model selections and source report are preserved. The init
 
 `selected-member-private-seed-v1` freezes conversation/run identity, source state version, prompt version/fingerprint, original risk profile, selected member configuration, source question, exact round-0 raw response and `reusedFromRunId` when that response was copied by a member rerun. The preview SHA-256 binds the complete seed including conversation identity. The server constructs it; callers cannot inject seed bodies or credentials.
 
-Other members, cross-reviews, original continuation input/private archives, attachments, memory/tool/evidence records and provider receipts are excluded. The source question alone can be incomplete without those inputs. This is an archived selected reply, not reconstruction of the provider's original conversation or proof of accuracy. The original risk profile is provenance, not a fresh assessment of later draft text. A future send path must review actual delivery scope and risk anew.
+Other members, cross-reviews, original continuation input/private archives, attachments, memory/tool/evidence records and council provider receipts are excluded. The source question alone can be incomplete without those inputs. This is an archived selected reply, not reconstruction of the provider's original conversation or proof of accuracy. DA-097 assesses actual rendered input anew with the original risk floor and refuses high-risk private delivery.
 
 `private-branch-drafts-v1` accepts only `owner-draft` messages. They retain UUID, original text, creation time, origin branch UUID and accepted revision. Forks freeze parent UUID/revision/message count and retain copied message origins. A child starts a fresh revision at 1; only its own appends increment that revision. No model/chair authority is introduced.
 
@@ -56,4 +56,38 @@ The exhaustive backup audit includes `conversation_private_branches.body_ciphert
 
 ## Remaining scope
 
-Actual one-model sending/replies, prompt/context preview, new-input risk/connection drift, durable receipts/unknown outcomes, call/output reservations, usage/billing integration, cancellation and message/private-body deletion remain open. Selective/semantic compaction and real-provider/human accuracy acceptance remain unverified.
+Broader native-provider/reasoning/search support, in-flight cancellation, message/private-body deletion, council accounting integration, authoritative billing and input/tool/money budgets remain open. Selective/semantic compaction and real-provider/human accuracy acceptance remain unverified.
+
+## DA-097 reviewed private delivery
+
+Save the owner message, choose **Gönderimi incele**, inspect the full ordered messages,
+connection/model and exclusions, check the review box and choose **Kaydedilmiş mesajı
+modele gönder**. The preview is read-only. Branch/input/connection drift rejects the
+fingerprint; the worker rechecks connection revision and risk before submission.
+Generated replies remain private content and never become canonical council claims.
+
+One intent atomically appends an encrypted receipt and pg-boss job. Exact retries reuse
+that intent after HTTP response loss. A session advisory lock fences overlapping workers;
+a durable submitted receipt cannot be automatically resubmitted after restart. Pending
+receipts are polled; replies, truncation, normalized errors and nullable observed usage
+are displayed. Invalid-output responses retain observed usage when available. Missing
+usage stays unknown. These receipts do not enter council-run price/billing totals.
+
+An origin branch admits eight permanent request slots, including cancelled/failed/unknown
+and discarded requests. Forks copy provenance and receive their own origin allowance.
+One request is capped at 1,024 output tokens, 64 KiB input, 128 KiB response and 16,384
+reply characters. Pre-enqueue capacity reservation protects the 512 KiB encrypted-body
+plaintext limit. A branch holds at most 16 own/copied receipts. These are local limits,
+not input-token accounting or a monetary spending guarantee.
+
+Only queued work can be cancelled. **İşlem durumunu kurtar** asks the worker to check the
+existing intent; it cannot authorize resubmission. Interrupted submitted work becomes
+`outcome_unknown`. Explicit acknowledgement can close that record as discarded without
+undoing a provider charge. A new message and fresh review are needed for another request.
+Editing/forking is blocked while prepared/submitted/unknown work remains. Fork approval
+binds both draft revision and delivery version and preserves completed reply provenance.
+
+GET/POST/PATCH `/api/private-branches/:id/deliveries` is owner-scoped, no-store and
+byte-bounded, with same-origin mutations. Plaintext exports include private request,
+result and usage without credentials. Existing backups authenticate the extended body;
+old bodies with no delivery fields remain readable. No migration is added.

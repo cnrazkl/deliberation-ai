@@ -1,8 +1,29 @@
 # Current state
 
-Updated: 2 October 2026 (DA-096 private draft foundation accepted in the primary local application)
+Updated: 2 October 2026 (DA-097 reviewed private delivery accepted in the primary local application)
 
-## Verified increment — DA-096 private draft foundation
+## Verified increment — DA-097 reviewed private delivery
+
+Saved owner messages can now be explicitly reviewed and sent to the selected supported
+OpenAI-compatible source model. The exact ordered input, connection/model, exclusions and
+local limits are visible before send. High-risk input and unsupported providers/settings
+are blocked. Encrypted durable receipts, intent idempotency and worker session locks
+prevent blind restart resubmission. Queued cancellation, recovery checks and acknowledged
+unknown closure preserve history. Replies/nullable observed usage and reply-aware forks
+remain private and separate from council claims/billing. No migration is added.
+
+Passed 255 unit tests, 152 isolated PostgreSQL tests, all 21 browser flows, type checks,
+zero-warning lint and separate-output build. A generated populated archive was restored
+and its private receipt authenticated; temporary database/archive were removed. The
+browser used one loopback fixture call with a lost-response retry, not a paid provider.
+See [acceptance](DA097_ACCEPTANCE.md) and [workflow](PRIVATE_BRANCHES.md).
+
+Next conversation work is broader private-provider support or an explicitly reviewed
+private-content deletion boundary. Native settings, council billing, monetary limits,
+semantic/live accuracy and backup/export erasure remain open. Web/worker are ready again.
+Requested .next cleanup remains blocked by shell deletion policy; no cache was removed.
+
+## Previous verified increment — DA-096 private draft foundation
 
 A saved successful member's first-round raw reply can now seed a reviewed private draft branch. The seed preserves source question/configuration/risk/prompt/version provenance and excludes other members, reviews, original delivered history, attachments and credentials. Owner drafts are encrypted, immutable and version-checked; exact create/fork/message retries do not duplicate records. Prefix forks retain copied message origins and progress independently. The council question/model choices/source report remain intact. The UI explicitly labels drafts and offers no model send or generated response. [Contract](PRIVATE_BRANCHES.md), [ADR-0026](adr/0026-selected-member-private-drafts.md).
 

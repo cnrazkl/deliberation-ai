@@ -1,5 +1,7 @@
 # Orchestration
 
+**DA-097:** private-text-delivery uses a separate job and session branch lock. Frozen reviewed input and claim-time connection/risk checks precede durable submitted state and one network attempt. A restarted submitted receipt becomes outcome_unknown; terminal receipts replay without an adapter call. Only prepared work can be cancelled. Unknown closure requires acknowledgement; future work requires a new message/review/intent. No council orchestration state is changed.
+
 DA-093 acquires the owned conversation lock before enqueue source-row/idempotency locks. A new independent run creates a conversation; continuation/rerun children inherit the immediate source's membership before queue commit. Ungrouped legacy sources reject creation atomically until indexing. Enqueue replay preserves identity; worker input/receipts remain unchanged. Read-only viewing/exporting triggers no job. [Flow](CONVERSATIONS.md).
 
 DA-092 adds no provider work. New-question enqueue writes continuation source/kind beside encrypted history; selected-member enqueue uses the immediate rerun source instead of inherited history. Replay preserves the existing link. Navigation opens saved details through the established history loader, preserving drafts. A separate bounded legacy indexing command changes only derived metadata. [Flow](RUN_BRANCHES.md).

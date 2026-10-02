@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@deliberation-ai/contracts": "workspace:*",
     "@deliberation-ai/application": "workspace:*",
     "@deliberation-ai/persistence": "workspace:*",
     "@deliberation-ai/providers": "workspace:*",

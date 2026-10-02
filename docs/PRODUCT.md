@@ -1,5 +1,7 @@
 # Product
 
+**DA-097:** saved private owner messages can be explicitly reviewed and sent to a supported OpenAI-compatible source model. Exact input/connection review, conservative risk blocking, bounded permanent request slots, durable unknown outcomes and observed usage remain separate from council authority/billing. Opening/saving drafts stays idle. Other providers/settings and private-content deletion remain open. [Workflow](PRIVATE_BRANCHES.md).
+
 **DA-096 draft foundation:** a saved successful member reply can seed an owner-reviewed private branch. Owner message drafts are encrypted and immutable; forks copy a saved prefix and progress separately. Branches reopen through **Kayıtlı konuşmalar** after source retention and enter explicit plaintext exports. Drafts are not sent to a model. Actual private chat and private-body/copy deletion remain open. [Workflow](PRIVATE_BRANCHES.md).
 
 **DA-095:** metadata-only entries in **Kayıtlı konuşmalar** offer **Kayıt silmeyi incele**. The owner sees the exact identity and membership count, reviews which backup/export copies remain, and separately confirms deletion. Retained bodies, source references, ownership/indexing problems and changed snapshots block removal. Preview/cancel preserves the draft and sends no generation. This does not delete available conversations or model-private messages. [Policy](CONVERSATION_DELETION.md).

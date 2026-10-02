@@ -1,5 +1,7 @@
 # Data model
 
+**DA-097:** existing authenticated private branch bodies optionally add deliveryVersion and bounded deliveries with immutable request/origin/message/connection fingerprints, status/timestamps, normalized result and nullable observed usage. Legacy draft bodies remain valid. No schema migration or additional ciphertext column is introduced. Fork copies retain original receipt origins; successful/failed/unknown/cancelled records never enter council provider_operations or billing totals.
+
 **DA-096:** migration `0044_vengeful_anita_blake.sql` adds `conversation_private_branches`: owner/conversation/source/member/parent metadata, owner-unique creation request UUID/hash, revision/message count, timestamps and authenticated `body_ciphertext`. The full selected-member seed and immutable owner drafts live only in the encrypted body. Conversation deletion is restricted; source/parent links do not cascade. Forks retain copied message origins and reviewed parent prefixes. [Bounds and backup contract](PRIVATE_BRANCHES.md).
 
 DA-095 changes no schema or ciphertext inventory. Metadata remains by default; explicit reviewed deletion may remove one empty owned conversation and its memberships when all body rows and retained incoming references are absent. No cascade is added. Future message/branch storage must extend the policy before deletion can include those entities. Existing backup/export copies are independent and may restore old metadata. [Policy](CONVERSATION_DELETION.md).

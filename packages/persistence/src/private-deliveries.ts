@@ -3,7 +3,7 @@ import { Client } from "pg";
 import { and, eq, sql } from "drizzle-orm";
 import { fromDrizzle } from "pg-boss";
 import { privateDeliveryResultSchema, sendPrivateDeliverySchema, controlPrivateDeliverySchema,
-  type PrivateBranchBody, type PrivateDelivery, type PrivateDeliveryResult } from "@deliberation-ai/contracts";
+  privateDeliveryUsageSchema, type PrivateBranchBody, type PrivateDelivery, type PrivateDeliveryResult, type PrivateDeliveryUsage } from "@deliberation-ai/contracts";
 import { renderPrivateDelivery, assessPrivateDelivery } from "@deliberation-ai/domain";
 import { getDatabase } from "./database";
 import { decryptText } from "./crypto";
@@ -21,16 +21,17 @@ export function privateConnectionFingerprint(connection: Connection) {
 }
 export type PrivateDeliveryBlock = "no_message" | "already_requested" | "pending" | "unsupported_provider" | "unsupported_settings" | "missing_connection" | "high_risk" | "capacity";
 export class PrivateDeliveryBlockedError extends Error {}
-async function connection(tx: ConversationTransaction, id: string | undefined) {
+async function connection(tx: ConversationTransaction, id: string | undefined, lock = false) {
   if (!id) return undefined;
-  const [value] = await tx.select().from(providerConnections).where(and(eq(providerConnections.id, id), eq(providerConnections.ownerId, LOCAL_OWNER_ID))).limit(1);
+  const query = tx.select().from(providerConnections).where(and(eq(providerConnections.id, id), eq(providerConnections.ownerId, LOCAL_OWNER_ID))).limit(1);
+  const [value] = await (lock ? query.for("share") : query);
   return value;
 }
 async function preview(tx: ConversationTransaction, id: string, lock = false) {
   const branch = await readPrivateBranch(tx, id, lock); if (!branch) return undefined;
   const body = branch.value.body; const deliveries = body.deliveries ?? []; const member = body.seed.member;
   const input = renderPrivateDelivery(body); const risk = assessPrivateDelivery(body, input);
-  const target = await connection(tx, member.connectionId);
+  const target = await connection(tx, member.connectionId, lock);
   const blocks: PrivateDeliveryBlock[] = [];
   const message = body.messages.at(-1);
   if (!message) blocks.push("no_message");
@@ -55,12 +56,14 @@ async function preview(tx: ConversationTransaction, id: string, lock = false) {
 export async function previewPrivateDelivery(id: string) {
   return getDatabase().transaction((tx) => preview(tx, id), { isolationLevel: "repeatable read", accessMode: "read only" });
 }
+export type PrivateDeliveryPreview = NonNullable<Awaited<ReturnType<typeof previewPrivateDelivery>>>;
 function changed(body: PrivateBranchBody, deliveries: PrivateDelivery[]): PrivateBranchBody {
   return boundedPrivateBody({ ...body, deliveries, deliveryVersion: (body.deliveryVersion ?? 0) + 1 });
 }
 export async function enqueuePrivateDelivery(id: string, input: { requestId: string; fingerprint: string }) {
   const request = sendPrivateDeliverySchema.parse(input); const boss = await getBoss();
   return getDatabase().transaction(async (tx) => {
+    await tx.execute(sql`set local lock_timeout = '5s'`);
     await lockConversationMembership(tx);
     const current = await readPrivateBranch(tx, id, true); if (!current) return undefined;
     const existing = (current.value.body.deliveries ?? []).find((item) => item.id === request.requestId);
@@ -68,7 +71,7 @@ export async function enqueuePrivateDelivery(id: string, input: { requestId: str
       if (existing.originBranchId !== id || existing.fingerprint !== request.fingerprint) throw new PrivateBranchConflictError();
       return { operationId: existing.id };
     }
-    const value = (await preview(tx, id))!;
+    const value = (await preview(tx, id, true))!;
     if (value.fingerprint !== request.fingerprint) throw new PrivateBranchConflictError();
     if (!value.eligible) throw new PrivateDeliveryBlockedError();
     const operation: PrivateDelivery = { id: request.requestId, originBranchId: id, messageId: current.value.body.messages.at(-1)!.id,
@@ -82,9 +85,10 @@ export async function enqueuePrivateDelivery(id: string, input: { requestId: str
     return { operationId: operation.id };
   });
 }
-export async function controlPrivateDelivery(id: string, input: { operationId: string; action: "cancel" | "recover" | "discard_unknown"; acknowledgeUnknown?: boolean }) {
+export async function controlPrivateDelivery(id: string, input: { operationId: string; action: "cancel" | "recover" | "discard_unknown"; acknowledgeUnknown?: boolean | undefined }) {
   const request = controlPrivateDeliverySchema.parse(input); const boss = await getBoss();
   return getDatabase().transaction(async (tx) => {
+    await tx.execute(sql`set local lock_timeout = '5s'`);
     await lockConversationMembership(tx);
     const current = await readPrivateBranch(tx, id, true); if (!current) return undefined;
     const deliveries = current.value.body.deliveries ?? [];
@@ -103,7 +107,7 @@ export async function controlPrivateDelivery(id: string, input: { operationId: s
     return { status: operation.status };
   });
 }
-export type PrivateDeliveryExecutionResult = { result: PrivateDeliveryResult } | { errorCode: string; outcome: "known" | "unknown" };
+export type PrivateDeliveryExecutionResult = { result: PrivateDeliveryResult } | { errorCode: string; outcome: "known" | "unknown"; usage?: PrivateDeliveryUsage };
 export type PrivateDeliveryExecutor = (operation: PrivateDelivery, target: { apiKey: string; baseUrl: string; endpointPreset: string }, branchId: string) => Promise<PrivateDeliveryExecutionResult>;
 export async function executePrivateDelivery(id: string, operationId: string, execute: PrivateDeliveryExecutor) {
   // A session lock spans network work without holding a transaction. Lost
@@ -126,7 +130,7 @@ export async function executePrivateDelivery(id: string, operationId: string, ex
         operation.status = "outcome_unknown"; operation.errorCode = "interrupted_submission"; operation.finishedAt = new Date().toISOString();
         await writePrivateDeliveryBody(tx, id, changed(current.value.body, deliveries)); return undefined;
       }
-      const target = await connection(tx, operation.connectionId);
+      const target = await connection(tx, operation.connectionId, true);
       if (!target?.baseUrl || privateConnectionFingerprint(target) !== operation.connectionFingerprint ||
         assessPrivateDelivery(current.value.body, operation.request).effectiveProfile === "high") {
         operation.status = "failed"; operation.errorCode = "connection_or_risk_changed"; operation.finishedAt = new Date().toISOString();
@@ -151,8 +155,15 @@ export async function executePrivateDelivery(id: string, operationId: string, ex
       const operation = deliveries.find((item) => item.id === operationId && item.originBranchId === id);
       if (!operation || !["submitted", "outcome_unknown"].includes(operation.status)) return;
       operation.finishedAt = new Date().toISOString();
-      if ("result" in result) { operation.status = "succeeded"; operation.result = result.result; operation.errorCode = null; }
-      else { operation.status = result.outcome === "unknown" ? "outcome_unknown" : "failed"; operation.errorCode = /^[a-z0-9_]{1,100}$/.test(result.errorCode) ? result.errorCode : "provider_failure"; }
+      if ("result" in result) {
+        operation.status = "succeeded"; operation.result = result.result; operation.errorCode = null;
+        const { model, remoteResponseId, inputTokens, outputTokens, tokenDetails } = result.result;
+        operation.usage = { model, remoteResponseId, inputTokens, outputTokens, tokenDetails };
+      } else {
+        operation.status = result.outcome === "unknown" ? "outcome_unknown" : "failed";
+        operation.errorCode = /^[a-z0-9_]{1,100}$/.test(result.errorCode) ? result.errorCode : "provider_failure";
+        operation.usage = result.usage ? privateDeliveryUsageSchema.parse(result.usage) : null;
+      }
       await writePrivateDeliveryBody(tx, id, changed(current.value.body, deliveries));
     });
   } finally {

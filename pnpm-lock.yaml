@@ -105,6 +105,9 @@ importers:
       '@deliberation-ai/application':
         specifier: workspace:*
         version: link:../../packages/application
+      '@deliberation-ai/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@deliberation-ai/persistence':
         specifier: workspace:*
         version: link:../../packages/persistence

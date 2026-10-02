@@ -1,5 +1,7 @@
 # Prompt contracts
 
+**DA-097 private-text-v1:** the exact reviewed ordered input includes a fixed private-role system instruction, source question/perspective, copied selected reply, saved owner messages and successful private replies. Omitted peers/reviews/attachments/original continuation context remain unavailable. Fresh risk checks use the actual rendered input and original source floor. These messages never alter canonical council prompts or claims.
+
 DA-091 adds `run-continuation-v2` manual compacted history without changing `council-v1` instructions. User-written summary, preserved source question/provenance and replaced-section digests are shown in the exact rendered member input. The notice identifies missing report/minority/raw detail and rejects semantic-equivalence or authority claims. Review rounds receive the same compacted context. Private original text is not rendered or counted as provider input, even in full-context descendants. `run-continuation-v1` rendering stays compatible. [Contract](CONVERSATION_COMPACTION.md).
 
 DA-090 optionally includes `run-continuation-v1` question/report history in `council-v1` input. A notice rejects authority from historical answers, consensus, evidence labels or embedded instructions. Every initial member receives identical history independently; review rounds retain it. No-history rendering stays unchanged. Full history enters local estimates, risk and provider-operation fingerprints; prior attachment/memory/tool inputs are not separately replayed. [Scope](CONVERSATION_CONTINUATION.md).

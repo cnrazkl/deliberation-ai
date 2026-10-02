@@ -2,7 +2,7 @@
 
 DeliberationAI is a provider-independent multi-model council that preserves disagreements and provenance instead of treating agreement as truth.
 
-DA-096 adds selected-member private draft branches: inspect a copied reply, save owner drafts, fork a prefix and reopen/export after source retention. Drafts are encrypted locally and not sent to a model. Actual private chat and content deletion remain open. Apply migration `0044` with `pnpm db:migrate`. [Workflow](docs/PRIVATE_BRANCHES.md).
+DA-097 adds reviewed private delivery to an OpenAI-compatible source model, with exact input preview, permanent bounded request slots, durable unknown-outcome handling and observed usage. Saved drafts stay idle until explicit reviewed send. Other providers/settings, private-content deletion and council billing integration remain open. DA-096 supplies encrypted branches through migration `0044`; DA-097 adds no migration. [Workflow](docs/PRIVATE_BRANCHES.md), [acceptance](docs/DA097_ACCEPTANCE.md).
 
 DA-095 adds reviewed deletion of empty conversation metadata through the saved-conversation library. Preview/cancel writes nothing; confirmed deletion removes only one owned identity and its retained memberships after body/reference/schema checks. Backups and exports remain separate copies. [Policy and checks](docs/CONVERSATION_DELETION.md).
 

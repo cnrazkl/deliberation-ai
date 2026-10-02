@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ConversationIntegrityError, ConversationPendingError, ConversationSizeError, PrivateBranchConflictError, PrivateBranchSourceError } from "@deliberation-ai/persistence";
+import { ConversationIntegrityError, ConversationPendingError, ConversationSizeError, PrivateBranchConflictError, PrivateBranchSourceError, PrivateDeliveryBlockedError } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "./request-security";
 export const privateBranchUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const privateBranchJson = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -24,6 +24,7 @@ export async function privateBranchRequest<T>(request: Request, schema: z.ZodTyp
   finally { reader.releaseLock(); }
 }
 export function privateBranchError(error: unknown) {
+  if (error instanceof PrivateDeliveryBlockedError) return privateBranchJson({ error: "Bu gönderim destek, risk veya kapasite sınırları nedeniyle engellendi. Önizlemeyi yenileyin." }, 422);
   if (error instanceof PrivateBranchConflictError) return privateBranchJson({ error: "Kaynak veya dal değişti. Güncel kaydı inceleyip tekrar deneyin." }, 409);
   if (error instanceof PrivateBranchSourceError) return privateBranchJson({ error: "Tamamlanmış ve okunabilir bir ilk yanıt gerekli." }, 409);
   if (error instanceof ConversationPendingError) return privateBranchJson({ error: "Konuşma indeksinin tamamlanması gerekiyor." }, 503);
