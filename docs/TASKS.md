@@ -10,6 +10,13 @@ DA-102's bounded run-body deletion remains functionally verified; broader privac
 
 Status: DA-097's bounded private delivery has passed local acceptance; the broad private chat/deletion/monetary gates remain partial. [The 1 October repository audit](REPO_AUDIT_2026_10_01.md) records DA-081 checks; [DA-082](PROVIDER_PRICING.md) adds token estimates, [DA-083](PROVIDER_BILLING.md) billing evidence, [DA-084](BILLING_CORRECTIONS.md) corrections, [DA-085](BILLING_STATEMENTS.md) statement inspection, [DA-086](BILLING_STATEMENT_HISTORY.md) durable statement history, [DA-087](BILLING_REALLOCATION.md) identity reallocation, [DA-088](BILLING_ACCOUNT.md) account invoice inspection and [DA-089](BILLING_PAYMENT.md) local payment-evidence inspection. [DA-090](CONVERSATION_CONTINUATION.md) adds explicit frozen report continuation; [DA-091](CONVERSATION_COMPACTION.md) adds reviewed manual compaction with private original archives. The original broad PLAN.md acceptance gates are not complete. See [the full gap audit](PLAN_GAP_AUDIT.md). TypeSafe/JEV remains excluded by the owner.
 
+## Owner-requested UI increments — DA-105 and DA-106
+
+- [x] DA-105: checked connection catalogs appear in a selectable dropdown; each completed check replaces its options. Selection opens an explicit default-model edit draft; saving does not change existing council member models. Catalog revision invalidation and member suggestions are preserved.
+- [x] DA-106: the shared connection editor opens inside the selected connection card, with one active form, cancellation, empty credential fields and responsive layout. Creation remains below the cards when no edit is active.
+
+Inserted ahead of DA-104 at the owner's request. Verified with focused loopback-only browser acceptance (refresh, selection, save, cancellation, switching cards, mobile width), workspace type checks, zero-warning lint and separate-output production build. No schema change or paid model call.
+
 ## Active sequence
 
 The remaining original-plan work is grouped in [the audit's suggested order](PLAN_GAP_AUDIT.md): correctness, preflight/risk, bounded deliberation/synthesis, usage/conversation, and operational evaluation. These groups have not been marked complete or silently discarded.

@@ -737,6 +737,7 @@ export function CouncilWorkbench() {
       return;
     }
     const remaining = connections.filter((item) => item.id !== connectionId);
+    if (editingConnectionId === connectionId) cancelConnectionEdit();
     setConnections(remaining);
     setCatalogChecks((current) => {
       const next = { ...current };
@@ -1390,6 +1391,171 @@ export function CouncilWorkbench() {
     },
   );
 
+  const connectionForm = (
+    <form className="connection-form" onSubmit={saveConnection}>
+      <label>
+        Sağlayıcı ailesi
+        <select
+          aria-label="Sağlayıcı ailesi"
+          value={connectionProvider}
+          disabled={Boolean(editingConnectionId)}
+          onChange={(event) => {
+            const provider = event.target.value as RemoteProvider;
+            setConnectionProvider(provider);
+            setEndpointPreset("custom");
+            setBaseUrl("");
+            setReasoningProtocol(
+              provider === "openai"
+                ? "openai"
+                : provider === "anthropic"
+                  ? "anthropic"
+                  : provider === "google"
+                    ? "gemini-level"
+                    : "none",
+            );
+            setStructuredOutputMode(
+              provider === "anthropic" ? "prompt-only" : provider === "openai-compatible" ? "json-object" : "json-schema",
+            );
+          }}
+        >
+          {Object.entries(providerLabels).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+      </label>
+      {connectionProvider === "openai-compatible" ? (
+        <label>
+          Uç nokta türü
+          <select
+            aria-label="Uç nokta türü"
+            value={endpointPreset}
+            onChange={(event) => {
+              const preset = event.target.value as EndpointPreset;
+              const settings = endpointPresets[preset];
+              setEndpointPreset(preset);
+              setBaseUrl(settings.baseUrl);
+              setReasoningProtocol(settings.reasoningProtocol);
+              setStructuredOutputMode(settings.structuredOutputMode);
+            }}
+          >
+            {Object.entries(endpointPresets).map(([value, settings]) => (
+              <option key={value} value={value}>{settings.label}</option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <p className="connection-form-guide">
+        {connectionGuide.guide} Model örneği: <code>{connectionGuide.modelExample}</code>
+      </p>
+      <label>
+        Bağlantı adı
+        <input
+          type="text"
+          value={connectionLabel}
+          maxLength={80}
+          placeholder="Örn. Kişisel OpenAI"
+          onChange={(event) => setConnectionLabel(event.target.value)}
+          required
+        />
+      </label>
+      <label>
+        API anahtarı
+        <input
+          type="password"
+          value={apiKey}
+          autoComplete="off"
+          onChange={(event) => setApiKey(event.target.value)}
+          required={
+            !editingConnectionId &&
+            !(
+              connectionProvider === "openai-compatible" &&
+              ["ollama", "vllm", "litellm"].includes(endpointPreset)
+            )
+          }
+          placeholder={
+            editingConnectionId
+              ? "Değiştirmeyecekseniz boş bırakın"
+              : connectionProvider === "openai-compatible" &&
+                  ["ollama", "vllm", "litellm"].includes(endpointPreset)
+                ? "Yerel uç noktada isteğe bağlı"
+                : "Sağlayıcının API anahtarı"
+          }
+        />
+      </label>
+      <label>
+        Başlangıç modeli (görev sırasında değiştirilebilir)
+        <input
+          type="text"
+          value={model}
+          placeholder={connectionGuide.modelExample}
+          onChange={(event) => setModel(event.target.value)}
+          required
+        />
+      </label>
+      {(connectionProvider === "openai-compatible" || baseUrl) ? (
+        <label>
+          Temel URL
+          <input
+            type="url"
+            aria-label="Temel URL"
+            value={baseUrl}
+            placeholder={endpointPreset === "qwen" ? "Bölgenize ait Model Studio uyumlu URL" : "https://…/v1"}
+            onChange={(event) => setBaseUrl(event.target.value)}
+            required={connectionProvider === "openai-compatible"}
+          />
+        </label>
+      ) : null}
+      <label>
+        Düşünme parametresi
+        <select
+          aria-label="Düşünme parametresi"
+          value={reasoningProtocol}
+          onChange={(event) => setReasoningProtocol(event.target.value as ReasoningProtocol)}
+        >
+          <option value="none">Gönderme</option>
+          {connectionProvider === "openai" || connectionProvider === "openai-compatible" ? (
+            <option value="openai">reasoning_effort</option>
+          ) : null}
+          {connectionProvider === "anthropic" ? (
+            <option value="anthropic">Anthropic effort</option>
+          ) : null}
+          {connectionProvider === "google" ? (
+            <>
+              <option value="gemini-level">Gemini thinkingLevel</option>
+              <option value="gemini-budget">Gemini thinkingBudget</option>
+            </>
+          ) : null}
+        </select>
+      </label>
+      <label>
+        Yapılandırılmış çıktı
+        <select
+          aria-label="Yapılandırılmış çıktı"
+          value={structuredOutputMode}
+          onChange={(event) => setStructuredOutputMode(event.target.value as StructuredOutputMode)}
+        >
+          <option value="json-schema">JSON Schema</option>
+          <option value="json-object">JSON nesnesi</option>
+          <option value="prompt-only">Yalnız istem sözleşmesi</option>
+        </select>
+      </label>
+      <div className="connection-form-actions">
+        <button disabled={savingConnection || Boolean(checkingConnectionId)} type="submit">
+          {savingConnection
+            ? "Kaydediliyor…"
+            : editingConnectionId
+              ? "Bağlantıyı güncelle"
+              : "Yeni bağlantıyı şifrele"}
+        </button>
+        {editingConnectionId ? (
+          <button className="secondary-button" type="button" disabled={savingConnection} onClick={cancelConnectionEdit}>
+            Düzenlemeyi iptal et
+          </button>
+        ) : null}
+      </div>
+    </form>
+  );
+
   return (
     <section className="workspace" aria-label="Konsey çalışma alanı">
       <details className="settings-card">
@@ -1407,224 +1573,88 @@ export function CouncilWorkbench() {
               ).length;
               const catalog = catalogChecks[connection.id];
               return (
-                <div className="connection-status" key={connection.id}>
-                  <div>
-                    <span className={`connection-usage ${useCount > 0 ? "active" : "idle"}`}>
-                      {useCount > 0 ? `Bu görevde ${useCount} üye` : "Hazırda · bu görevde kullanılmıyor"}
-                    </span>
-                    <strong>{connection.label}</strong>
-                    <small>
-                      {providerLabels[connection.provider]} · varsayılan {connection.defaultModel} · {endpointPresets[connection.endpointPreset].label}
-                    </small>
-                    <small>
-                      {connection.baseUrl ? `${connection.baseUrl} · ` : ""}
-                      düşünme protokolü: {connection.reasoningProtocol === "none" ? "kapalı" : connection.reasoningProtocol}
-                    </small>
-                    {catalog ? (
-                      <small role="status">
-                        {catalog.status === "available"
-                          ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."} ${catalog.models.includes(connection.defaultModel) ? "Başlangıç modeli listede." : catalog.truncated ? "Başlangıç modeli görünen bölümde yok." : "Başlangıç modeli listede yok."}`
-                          : catalog.status === "auth_failed"
-                            ? "Katalog isteği kimlik/yetki hatasıyla reddedildi."
-                            : catalog.status === "unsupported"
-                              ? "Bu uç noktada model listeleme desteklenmiyor veya yanıt biçimi bilinmiyor."
-                              : "Model listesine erişilemedi. Uç nokta, ağ ve sunucu durumunu kontrol edin."}
+                <article className="connection-card" key={connection.id} aria-label={`${connection.label} sağlayıcı bağlantısı`}>
+                  <div className="connection-status">
+                    <div>
+                      <span className={`connection-usage ${useCount > 0 ? "active" : "idle"}`}>
+                        {useCount > 0 ? `Bu görevde ${useCount} üye` : "Hazırda · bu görevde kullanılmıyor"}
+                      </span>
+                      <strong>{connection.label}</strong>
+                      <small>
+                        {providerLabels[connection.provider]} · varsayılan {connection.defaultModel} · {endpointPresets[connection.endpointPreset].label}
                       </small>
-                    ) : null}
-                    {catalog?.checkedAt ? (
-                      <small>Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small>
-                    ) : null}
-                    {catalog?.status === "available" && catalog.models.length > 0 ? (
-                      <>
-                        <datalist id={`connection-models-${connection.id}`}>
-                          {catalog.models.map((modelId) => <option key={modelId} value={modelId} />)}
-                        </datalist>
-                        <small>Listelenen kimlikler, bu bağlantıyı kullanan üyelerin model alanında önerilir.</small>
-                      </>
-                    ) : null}
+                      <small>
+                        {connection.baseUrl ? `${connection.baseUrl} · ` : ""}
+                        düşünme protokolü: {connection.reasoningProtocol === "none" ? "kapalı" : connection.reasoningProtocol}
+                      </small>
+                      {catalog ? (
+                        <small role="status">
+                          {catalog.status === "available"
+                            ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."} ${catalog.models.includes(connection.defaultModel) ? "Başlangıç modeli listede." : catalog.truncated ? "Başlangıç modeli görünen bölümde yok." : "Başlangıç modeli listede yok."}`
+                            : catalog.status === "auth_failed"
+                              ? "Katalog isteği kimlik/yetki hatasıyla reddedildi."
+                              : catalog.status === "unsupported"
+                                ? "Bu uç noktada model listeleme desteklenmiyor veya yanıt biçimi bilinmiyor."
+                                : "Model listesine erişilemedi. Uç nokta, ağ ve sunucu durumunu kontrol edin."}
+                        </small>
+                      ) : null}
+                      {catalog?.checkedAt ? (
+                        <small>Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small>
+                      ) : null}
+                      {catalog?.status === "available" && catalog.models.length > 0 ? (
+                        <>
+                          <datalist id={`connection-models-${connection.id}`}>
+                            {catalog.models.map((modelId) => <option key={modelId} value={modelId} />)}
+                          </datalist>
+                          <label className="connection-model-picker">
+                            Kontrol edilen modeller
+                            <select
+                              aria-label={`${connection.label} katalog modeli`}
+                              disabled={savingConnection || Boolean(checkingConnectionId)}
+                              value={catalog.models.includes(editingConnectionId === connection.id ? model : connection.defaultModel) ? (editingConnectionId === connection.id ? model : connection.defaultModel) : ""}
+                              onChange={(event) => {
+                                if (!event.target.value) return;
+                                if (editingConnectionId !== connection.id) editConnection(connection);
+                                setModel(event.target.value);
+                              }}
+                            >
+                              <option value="" disabled>Başlangıç modeli seçin</option>
+                              {catalog.models.map((modelId) => <option key={modelId} value={modelId}>{modelId}</option>)}
+                            </select>
+                          </label>
+                          <small>Seçimi “Bağlantıyı güncelle” ile kaydedin. Mevcut üyelerin modelleri değişmez; listedeki kimlikler üye model alanlarında da önerilir.</small>
+                        </>
+                      ) : null}
+                    </div>
+                    <div className="connection-actions">
+                      <button className="secondary-button" type="button" disabled={savingConnection || Boolean(checkingConnectionId)} onClick={() => void checkConnectionModels(connection.id)}>
+                        {checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}
+                      </button>
+                      <button className="secondary-button" type="button" disabled={savingConnection} aria-expanded={editingConnectionId === connection.id} aria-controls={`connection-editor-${connection.id}`} onClick={() => { if (editingConnectionId !== connection.id) editConnection(connection); }}>
+                        Düzenle
+                      </button>
+                      <button
+                        className="secondary-button danger-button"
+                        type="button"
+                        disabled={savingConnection || Boolean(checkingConnectionId)}
+                        onClick={() => void removeConnection(connection.id)}
+                      >
+                        Bağlantıyı kaldır
+                      </button>
+                    </div>
                   </div>
-                  <div className="connection-actions">
-                    <button className="secondary-button" type="button" disabled={Boolean(checkingConnectionId)} onClick={() => void checkConnectionModels(connection.id)}>
-                      {checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}
-                    </button>
-                    <button className="secondary-button" type="button" onClick={() => editConnection(connection)}>
-                      Düzenle
-                    </button>
-                    <button
-                      className="secondary-button danger-button"
-                      type="button"
-                      onClick={() => void removeConnection(connection.id)}
-                    >
-                      Bağlantıyı kaldır
-                    </button>
-                  </div>
-                </div>
+                  {editingConnectionId === connection.id ? (
+                    <section className="connection-editor" id={`connection-editor-${connection.id}`} aria-label={`${connection.label} bağlantısını düzenle`}>
+                      <h3>Bağlantıyı düzenle · {connection.label}</h3>
+                      {connectionForm}
+                    </section>
+                  ) : null}
+                </article>
               );
             })}
           </div>
         ) : <p className="hint">Görev çalıştırmak için önce bir sağlayıcı bağlantısı ekleyin.</p>}
-        <form className="connection-form" onSubmit={saveConnection}>
-          <label>
-            Sağlayıcı ailesi
-            <select
-              aria-label="Sağlayıcı ailesi"
-              value={connectionProvider}
-              disabled={Boolean(editingConnectionId)}
-              onChange={(event) => {
-                const provider = event.target.value as RemoteProvider;
-                setConnectionProvider(provider);
-                setEndpointPreset("custom");
-                setBaseUrl("");
-                setReasoningProtocol(
-                  provider === "openai"
-                    ? "openai"
-                    : provider === "anthropic"
-                      ? "anthropic"
-                      : provider === "google"
-                        ? "gemini-level"
-                        : "none",
-                );
-                setStructuredOutputMode(
-                  provider === "anthropic" ? "prompt-only" : provider === "openai-compatible" ? "json-object" : "json-schema",
-                );
-              }}
-            >
-              {Object.entries(providerLabels).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
-          {connectionProvider === "openai-compatible" ? (
-            <label>
-              Uç nokta türü
-              <select
-                aria-label="Uç nokta türü"
-                value={endpointPreset}
-                onChange={(event) => {
-                  const preset = event.target.value as EndpointPreset;
-                  const settings = endpointPresets[preset];
-                  setEndpointPreset(preset);
-                  setBaseUrl(settings.baseUrl);
-                  setReasoningProtocol(settings.reasoningProtocol);
-                  setStructuredOutputMode(settings.structuredOutputMode);
-                }}
-              >
-                {Object.entries(endpointPresets).map(([value, settings]) => (
-                  <option key={value} value={value}>{settings.label}</option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <p className="connection-form-guide">
-            {connectionGuide.guide} Model örneği: <code>{connectionGuide.modelExample}</code>
-          </p>
-          <label>
-            Bağlantı adı
-            <input
-              type="text"
-              value={connectionLabel}
-              maxLength={80}
-              placeholder="Örn. Kişisel OpenAI"
-              onChange={(event) => setConnectionLabel(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            API anahtarı
-            <input
-              type="password"
-              value={apiKey}
-              autoComplete="off"
-              onChange={(event) => setApiKey(event.target.value)}
-              required={
-                !editingConnectionId &&
-                !(
-                  connectionProvider === "openai-compatible" &&
-                  ["ollama", "vllm", "litellm"].includes(endpointPreset)
-                )
-              }
-              placeholder={
-                editingConnectionId
-                  ? "Değiştirmeyecekseniz boş bırakın"
-                  : connectionProvider === "openai-compatible" &&
-                      ["ollama", "vllm", "litellm"].includes(endpointPreset)
-                    ? "Yerel uç noktada isteğe bağlı"
-                    : "Sağlayıcının API anahtarı"
-              }
-            />
-          </label>
-          <label>
-            Başlangıç modeli (görev sırasında değiştirilebilir)
-            <input
-              type="text"
-              value={model}
-              placeholder={connectionGuide.modelExample}
-              onChange={(event) => setModel(event.target.value)}
-              required
-            />
-          </label>
-          {(connectionProvider === "openai-compatible" || baseUrl) ? (
-            <label>
-              Temel URL
-              <input
-                type="url"
-                aria-label="Temel URL"
-                value={baseUrl}
-                placeholder={endpointPreset === "qwen" ? "Bölgenize ait Model Studio uyumlu URL" : "https://…/v1"}
-                onChange={(event) => setBaseUrl(event.target.value)}
-                required={connectionProvider === "openai-compatible"}
-              />
-            </label>
-          ) : null}
-          <label>
-            Düşünme parametresi
-            <select
-              aria-label="Düşünme parametresi"
-              value={reasoningProtocol}
-              onChange={(event) => setReasoningProtocol(event.target.value as ReasoningProtocol)}
-            >
-              <option value="none">Gönderme</option>
-              {connectionProvider === "openai" || connectionProvider === "openai-compatible" ? (
-                <option value="openai">reasoning_effort</option>
-              ) : null}
-              {connectionProvider === "anthropic" ? (
-                <option value="anthropic">Anthropic effort</option>
-              ) : null}
-              {connectionProvider === "google" ? (
-                <>
-                  <option value="gemini-level">Gemini thinkingLevel</option>
-                  <option value="gemini-budget">Gemini thinkingBudget</option>
-                </>
-              ) : null}
-            </select>
-          </label>
-          <label>
-            Yapılandırılmış çıktı
-            <select
-              aria-label="Yapılandırılmış çıktı"
-              value={structuredOutputMode}
-              onChange={(event) => setStructuredOutputMode(event.target.value as StructuredOutputMode)}
-            >
-              <option value="json-schema">JSON Schema</option>
-              <option value="json-object">JSON nesnesi</option>
-              <option value="prompt-only">Yalnız istem sözleşmesi</option>
-            </select>
-          </label>
-          <div className="connection-form-actions">
-            <button disabled={savingConnection} type="submit">
-              {savingConnection
-                ? "Kaydediliyor…"
-                : editingConnectionId
-                  ? "Bağlantıyı güncelle"
-                  : "Yeni bağlantıyı şifrele"}
-            </button>
-            {editingConnectionId ? (
-              <button className="secondary-button" type="button" onClick={cancelConnectionEdit}>
-                Düzenlemeyi iptal et
-              </button>
-            ) : null}
-          </div>
-        </form>
+        {!editingConnectionId ? connectionForm : null}
         <p className="hint">OpenAI, Claude ve Gemini yerel adaptörleri; Kimi, Qwen, vLLM, Ollama, LiteLLM, OpenRouter ve özel uç noktalar OpenAI uyumlu adaptörü kullanır. Model listesi yalnızca düğmeye basınca sorgulanır; üretim, ücretlendirme ve düşünme seviyesi desteğini doğrulamaz.</p>
       </details>
 

@@ -1,8 +1,15 @@
 # Current state
 
-Updated: 3 October 2026 (DA-103 lint dependency mitigation verified; next DA-104 preflight draft deletion)
+Updated: 3 October 2026 (DA-105/DA-106 provider connection UI verified; next DA-104 preflight draft deletion)
 
-## Current increment — DA-103 reviewed Next lint dependency mitigation
+## Owner-requested UI increments — DA-105 and DA-106
+
+- [x] DA-105: checked connection catalogs appear in a selectable dropdown; each completed check replaces its options. Selection opens an explicit default-model edit draft; saving does not change existing council member models. Catalog revision invalidation and member suggestions are preserved.
+- [x] DA-106: the shared connection editor opens inside the selected connection card, with one active form, cancellation, empty credential fields and responsive layout. Creation remains below the cards when no edit is active.
+
+Inserted ahead of DA-104 at the owner's request. Verified with focused loopback-only browser acceptance (refresh, selection, save, cancellation, switching cards, mobile width), workspace type checks, zero-warning lint and separate-output production build. No schema change or paid model call.
+
+## Previous verified increment — DA-103 reviewed Next lint dependency mitigation
 
 The active lockfile no longer contains fast-glob/micromatch/braces. An exact Next lint
 16.3.6 dependency alias uses pinned tinyglobby 0.2.17; a version-scoped, lock-hashed patch

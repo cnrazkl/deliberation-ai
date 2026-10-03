@@ -89,7 +89,13 @@ button, textarea, input, select { font: inherit; }
 .connection-usage.active { background: var(--green-soft); color: var(--green); }
 .connection-usage.idle { background: #edf0ed; color: var(--muted); }
 .connection-list { display: grid; gap: 10px; margin-top: 16px; }
-.connection-list .connection-status { margin-top: 0; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: white; }
+.connection-card { border: 1px solid var(--line); border-radius: 12px; background: white; min-width: 0; overflow-wrap: anywhere; }
+.connection-list .connection-status { margin-top: 0; padding: 12px 14px; }
+.connection-status > div:first-child { flex: 1; min-width: 0; }
+.connection-model-picker { display: grid; gap: 6px; margin-top: 8px; font-size: 13px; max-width: 480px; }
+.connection-model-picker select { width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); }
+.connection-editor { padding: 16px 14px; border-top: 1px solid var(--line); background: var(--surface); border-radius: 0 0 12px 12px; }
+.connection-editor h3 { margin: 0; font-size: 16px; }
 .config-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
 .config-heading > div { display: grid; gap: 5px; }
 .config-heading small { color: var(--muted); }
