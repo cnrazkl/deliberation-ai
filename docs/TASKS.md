@@ -1,5 +1,7 @@
 # Tasks
 
+- [x] DA-111 owner-requested insertion: persistent left history, separate Sohbet/Zamanlayıcı/Ayarlar views, progressive disclosure and persistent dark/light/system appearance. 281 units, all 33 browser cases plus the focused unavailable-output repeat, type/lint/build pass. [Design](UI_DESIGN.md).
+
 - [x] DA-110 owner runtime recovery: isolate interactive port/output/process lifetime
   from Playwright's temporary tree. Real-route 3100 smoke passes; after cleanup 3000
   remains HTTP 200 with ready DB/worker. Type/lint/build/syntax pass.

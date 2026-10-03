@@ -1,3 +1,4 @@
+import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 import { createServer, type Server } from "node:http";
 import { expect, test } from "@playwright/test";
 import type { ExecutionLimits } from "@deliberation-ai/contracts";
@@ -60,7 +61,7 @@ test("reruns only the selected member against a local mock endpoint", async ({ p
     expect(sourceUsage.executionBudget).toEqual({ limits: executionLimits, submittedCalls: 2,
       reservedOutputTokens: 2_048, remainingCalls: 0, remainingOutputTokens: 0 });
 
-    await page.goto("/");
+    await page.goto("/"); await revealCouncilControls(page);
     await page.locator(`[data-run-id="${sourceRunId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await expect(page.getByRole("region", { name: "Gönderim rezervasyonu" })).toContainText("2 çağrı için 2.048 yanıt tokenı ayrıldı.");
     await expect(page.getByRole("region", { name: "Token maliyet tahmini", exact: true })).toContainText("0.000132000000 USD");
@@ -212,17 +213,19 @@ test("keeps limits optional and blocks an insufficient plan before any dispatch"
     scheduleSubmissions += 1;
     await route.abort("blockedbyclient");
   });
-  await page.goto("/");
+  await page.goto("/"); await revealCouncilControls(page);
   const option = page.getByRole("checkbox", { name: "Bu çalışma için çağrı ve yanıt kotası sınırı uygula", exact: true });
   const limitPanel = page.getByRole("region", { name: "Çağrı ve yanıt kotası sınırları", exact: true });
   const start = page.getByRole("button", { name: "Konseyi çalıştır", exact: true });
-  const schedulePanel = page.getByRole("region", { name: "Yerel zamanlamalar", exact: true });
-  const createSchedule = schedulePanel.getByRole("button", { name: "Duraklatılmış zamanlama oluştur", exact: true });
+  const schedulePanel = page.getByRole("region", { name: "Yerel zamanlamalar", exact: true, includeHidden: true });
+  const createSchedule = schedulePanel.getByRole("button", { name: "Duraklatılmış zamanlama oluştur", exact: true, includeHidden: true });
   await expect(option).not.toBeChecked();
   await expect(page.getByLabel("En fazla API çağrısı", { exact: true })).toHaveCount(0);
   await expect(start).toBeEnabled();
+  await workspaceView(page, "Zamanlayıcı");
   await schedulePanel.getByLabel("Zamanlama adı", { exact: true }).fill("E2E limits no dispatch");
   await expect(createSchedule).toBeEnabled();
+  await workspaceView(page, "Sohbet");
   await option.check();
   const callLimit = page.getByLabel("En fazla API çağrısı", { exact: true });
   const perCall = page.getByLabel("Çağrı başına yanıt tokenı kotası", { exact: true });

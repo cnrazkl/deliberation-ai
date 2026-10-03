@@ -1,3 +1,4 @@
+import { revealCouncilControls } from "./workspace-navigation";
 import { expect, test } from "@playwright/test";
 
 test("shows additive prompt differences, allows editing and blocks omission before submission", async ({ page }) => {
@@ -13,7 +14,7 @@ test("shows additive prompt differences, allows editing and blocks omission befo
     submissions += 1;
     await route.fulfill({ status: 422, json: { error: "Fixture must not submit" } });
   });
-  await page.goto("/");
+  await page.goto("/"); await revealCouncilControls(page);
   const question = "Renk paletlerini hangi ölçütlerle karşılaştırmalıyım?";
   await page.getByRole("textbox", { name: "Sorunuz", exact: true }).fill(question);
   const editor = page.getByRole("region", { name: "İstem sürümleri" });

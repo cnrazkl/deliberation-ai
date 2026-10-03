@@ -124,7 +124,7 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun, onDeletedR
                 <strong>{item.question}</strong>
                 <small>{new Date(item.createdAt).toLocaleString("tr-TR")} · {statusLabels[item.status]} · {item.memberCount} üye{item.riskProfile === "high" ? " · yüksek risk" : ""}{item.attachmentCount > 0 ? ` · ${item.attachmentCount} ek` : ""}</small>
               </div>
-              <button className="secondary-button" type="button" disabled={Boolean(openingRunId) || Boolean(deletionId)} onClick={() => void openRun(item.runId)}>
+              <button className="secondary-button" type="button" disabled={Boolean(openingRunId) || Boolean(deletionId)} data-open-history onClick={() => void openRun(item.runId)}>
                 {openingRunId === item.runId ? "Açılıyor…" : item.runId === activeRunId ? "Yeniden yükle" : "Çalışmayı aç"}
               </button>
               {item.status !== "queued" && item.status !== "running" && <button type="button" className="secondary-button"

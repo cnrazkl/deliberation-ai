@@ -1,3 +1,4 @@
+import { revealConversationOptions } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import { eq, sql } from "drizzle-orm";
@@ -38,8 +39,10 @@ test("reviews leaf-first private deletion, keeps usage/drafts, rejects stale con
     expect((await request.post(endpoint, { data: confirmation })).status()).toBe(409);
     await page.goto("/");
     const card = page.locator(`[data-conversation-id="${conversationId}"]`);
+    await revealConversationOptions(page);
     await expect(card.getByRole("button", { name: "Özel dal taslaklarını göster" })).toBeVisible();
     await page.getByLabel("Sorunuz", { exact: true }).fill("Council draft preserved during private deletion");
+    await revealConversationOptions(page);
     await card.getByRole("button", { name: "Özel dal taslaklarını göster" }).click();
     const panel = page.getByRole("region", { name: "Özel dal taslakları", exact: true });
     const open = async (id: string) => {

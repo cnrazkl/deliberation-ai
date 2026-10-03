@@ -1,3 +1,4 @@
+import { workspaceView } from "./workspace-navigation";
 import { expect, test } from "@playwright/test";
 
 test("keeps a selected MCP result when deletion fails and allows retry", async ({ page }) => {
@@ -30,7 +31,7 @@ test("keeps a selected MCP result when deletion fails and allows retry", async (
       : { json: { deleted: true } });
   });
 
-  await page.goto("/");
+  await page.goto("/"); await workspaceView(page, "Ayarlar");
   const panel = page.getByRole("region", { name: "Yerel MCP araçları" });
   const card = panel.locator(".mcp-result-list article").filter({ hasText: "Yerel test sonucu" });
   await expect(card).toBeVisible();

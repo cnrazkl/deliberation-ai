@@ -1,3 +1,4 @@
+import { revealCouncilControls } from "./workspace-navigation";
 import { expect, test } from "@playwright/test";
 
 test("explains automatic risk and requires controls without changing the owner's question or calling a model", async ({ page, request }) => {
@@ -13,7 +14,7 @@ test("explains automatic risk and requires controls without changing the owner's
     submissions += 1;
     await route.fulfill({ status: 422, json: { error: "Fixture must not submit" } });
   });
-  await page.goto("/");
+  await page.goto("/"); await revealCouncilControls(page);
   const question = page.getByRole("textbox", { name: "Sorunuz", exact: true });
   const risk = page.getByLabel("Risk ön değerlendirmesi");
   await question.fill("İlaç dozunu nasıl değiştirmeliyim?");

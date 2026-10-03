@@ -1,5 +1,7 @@
 # Product
 
+**DA-111:** the owner-requested workspace opens in a simpler Sohbet view. Conversation/run history stays in a left sidebar; Zamanlayıcı groups scheduling and linked latest outputs, and Ayarlar contains provider/MCP/worker details. Navigation preserves drafts. Detailed task controls open on demand; light, dark and system themes share semantic colors and persist appearance locally. [Design principles](UI_DESIGN.md).
+
 **DA-109:** **Konuşmayı indir (MD)** exports retained history, raw replies, private branches
 and missing-content notices. **Sentezi indir (MD)** exports included/unresolved/omitted
 claims with minority/red-team provenance. Downloads preserve drafts and start no generation;

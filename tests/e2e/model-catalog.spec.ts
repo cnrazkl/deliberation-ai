@@ -1,3 +1,4 @@
+import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 import { createServer, type Server } from "node:http";
 import { expect, test } from "@playwright/test";
 import { closeDatabase } from "@deliberation-ai/persistence";
@@ -35,7 +36,8 @@ test("checks a saved local catalog only on click and offers its models to counci
     expect(second.ok()).toBe(true);
     secondConnectionId = (await second.json() as { id: string }).id;
 
-    await page.goto("/");
+    await page.goto("/"); await revealCouncilControls(page);
+    await workspaceView(page, "Ayarlar");
     await page.getByText(/Yerel sağlayıcı bağlantıları/).click();
     expect(calls).toEqual([]);
     const card = page.locator(".connection-status").filter({ hasText: "E2E catalog" });
@@ -64,15 +66,18 @@ test("checks a saved local catalog only on click and offers its models to counci
     await editor.getByRole("button", { name: "Düzenlemeyi iptal et" }).click();
     await expect(editor).toHaveCount(0);
     expect(calls).toHaveLength(1);
+    await workspaceView(page, "Sohbet");
     await page.getByLabel("Üye 1 bağlantısı").selectOption(connectionId);
     await expect(page.getByLabel("Üye 1 modeli")).toHaveAttribute("list", `connection-models-${connectionId}`);
     const modelField = page.getByLabel("Üye 1 modeli").locator("..");
     await expect(modelField).not.toContainText("Do not trust custom metadata");
 
-    await page.reload();
+    await page.reload(); await revealCouncilControls(page);
+    await workspaceView(page, "Ayarlar");
     await page.getByText(/Yerel sağlayıcı bağlantıları/).click();
     await expect(card.getByRole("status")).toContainText("2 model kimliği listelendi");
     expect(calls).toHaveLength(1);
+    await workspaceView(page, "Sohbet");
     await page.getByLabel("Üye 1 bağlantısı").selectOption(connectionId);
     await expect(page.getByLabel("Üye 1 modeli")).toHaveAttribute("list", `connection-models-${connectionId}`);
 
@@ -86,6 +91,7 @@ test("checks a saved local catalog only on click and offers its models to counci
         truncated: false,
       } });
     });
+    await workspaceView(page, "Ayarlar");
     await card.getByRole("button", { name: "Model listesini kontrol et" }).click();
     await expect(modelField).toContainText("Katalog modeli");
     await expect(modelField).toContainText("Düşük, Yüksek");

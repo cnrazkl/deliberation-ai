@@ -1,5 +1,7 @@
 # Security
 
+DA-111 stores only light/dark/system appearance in localStorage. Navigation and theme controls dispatch no model requests and do not persist question/report/credential content in browser preferences. Existing owner/same-origin and reviewed deletion boundaries remain; collapsed/hidden views do not alter execution or retention. [Design](UI_DESIGN.md).
+
 DA-109 Markdown attachments reuse owned export DTOs and same-origin checks. Input-sized
 literal fences and escaped heading metadata keep embedded fences/HTML from becoming active
 content. UTF-8/no-store/nosniff and oversize refusal apply; plaintext independent copies

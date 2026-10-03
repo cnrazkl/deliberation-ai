@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ConversationLibraryPage } from "@deliberation-ai/persistence";
-import { ConversationDeletionPanel } from "./conversation-deletion-panel";
-import { PrivateBranchesPanel } from "./private-branches-panel";
 
-export function ConversationLibraryPanel({ refreshKey, onOpenRun }: {
+export function ConversationLibraryPanel({ refreshKey, onOpenRun, onReviewDeletion, onOpenPrivate, activeRunId }: {
+  onReviewDeletion: (id: string) => void; onOpenPrivate: (id: string) => void; activeRunId: string | undefined;
   refreshKey: number; onOpenRun: (id: string) => Promise<void>;
 }) {
   const [page, setPage] = useState<ConversationLibraryPage>({ conversations: [], nextCursor: null });
@@ -14,8 +13,6 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun }: {
   const [olderLoading, setOlderLoading] = useState(false);
   const [opening, setOpening] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [deletionId, setDeletionId] = useState<string | null>(null);
-  const [privateId, setPrivateId] = useState<string | null>(null);
   const generation = useRef(0);
   const olderRequest = useRef<AbortController | null>(null);
   const openingRequest = useRef(false);
@@ -70,7 +67,6 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun }: {
   }
 
   function reload() {
-    setDeletionId(null);
     ++generation.current;
     olderRequest.current?.abort(); olderRequest.current = null;
     setLoading(true); setOlderLoading(false); setError(null);
@@ -84,24 +80,23 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun }: {
     <p className="section-hint">Her konuşmanın son erişilebilir çalışmasını açabilirsiniz. Soru taslağı ve model seçimleri korunur; yeni model isteği gönderilmez.</p>
     {loading ? <p className="hint">Konuşmalar yükleniyor…</p> : <div className="run-history-list">
       {page.conversations.length === 0 && !error && <p className="hint">Henüz kayıtlı konuşma yok.</p>}
-      {page.conversations.map((item) => <article key={item.conversationId} data-conversation-id={item.conversationId}>
+      {page.conversations.map((item) => <article key={item.conversationId} data-conversation-id={item.conversationId} className={item.latestAvailableRun?.runId === activeRunId ? "active" : ""}>
         <div><strong>{item.latestAvailableRun?.question ?? "Bu konuşmanın çalışma içerikleri artık erişilebilir değil"}</strong>
           <small>{new Date(item.createdAt).toLocaleString("tr-TR")} · {item.recordedRunCount} çalışma · {item.unavailableRunCount} erişilemeyen içerik</small>
           {item.origin === "legacy-reconstructed" && <small>Eski kayıtlar mevcut bağlantılarından birleştirildi; eksik geçmiş bulunabilir.</small>}
         </div>
         <button className="secondary-button" type="button" disabled={!item.latestAvailableRun || Boolean(opening)}
-          onClick={() => item.latestAvailableRun && void open(item.latestAvailableRun.runId)}>
+          data-open-history onClick={() => item.latestAvailableRun && void open(item.latestAvailableRun.runId)}>
           {opening === item.latestAvailableRun?.runId ? "Açılıyor…" : item.latestAvailableRun ? "Konuşmayı aç" : "İçerik erişilemiyor"}
         </button>
+        <details className="conversation-options"><summary aria-label="Konuşma seçenekleri">Diğer işlemler</summary>
         {item.availableRunCount === 0 && <button className="secondary-button" type="button" disabled={Boolean(opening)}
-          onClick={() => setDeletionId(item.conversationId)}>Kayıt silmeyi incele</button>}
-        <button className="secondary-button" type="button" disabled={Boolean(opening)} onClick={() => setPrivateId(item.conversationId)}>Özel dal taslaklarını göster</button>
+          onClick={() => onReviewDeletion(item.conversationId)}>Kayıt silmeyi incele</button>}
+        <button className="secondary-button" type="button" disabled={Boolean(opening)} data-open-history onClick={() => onOpenPrivate(item.conversationId)}>Özel dal taslaklarını göster</button>
+        </details>
       </article>)}
     </div>}
     {!loading && page.nextCursor && <button className="secondary-button" type="button" disabled={olderLoading} onClick={() => void older()}>{olderLoading ? "Yükleniyor…" : "Daha eski konuşmaları göster"}</button>}
     {error && <p role="alert" className="error">{error}</p>}
-    {deletionId && <ConversationDeletionPanel key={deletionId} conversationId={deletionId}
-      onDeleted={reload} onCancel={() => setDeletionId(null)} />}
-    {privateId && <PrivateBranchesPanel key={privateId} conversationId={privateId} onClose={() => setPrivateId(null)} />}
   </section>;
 }

@@ -1,3 +1,4 @@
+import { revealCouncilControls } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -22,7 +23,7 @@ test("discovers saved conversations, paginates and opens a result without changi
     expect(listing.status()).toBe(200); expect(listing.headers()["cache-control"]).toBe("no-store");
     let dispatches = 0;
     page.on("request", (req) => { if (new URL(req.url()).pathname === "/api/runs" && req.method() === "POST") dispatches++; });
-    await page.goto("/");
+    await page.goto("/"); await revealCouncilControls(page);
     const library = page.getByRole("region", { name: "Kayıtlı konuşmalar", exact: true });
     await expect(library.locator("[data-conversation-id]")).toHaveCount(20);
     await library.getByRole("button", { name: "Daha eski konuşmaları göster" }).click();
@@ -70,7 +71,7 @@ test("retrying the list preserves the draft and a refreshed first page rejects a
     await route.fulfill({ json: { conversations: [item(listStage === "current" ? currentId : freshId, listStage === "current" ? "Önceki liste" : "Yenilenen liste")], nextCursor: listStage === "current" ? currentId : null } });
   });
   try {
-    await page.goto("/");
+    await page.goto("/"); await revealCouncilControls(page);
     const library = page.getByRole("region", { name: "Kayıtlı konuşmalar", exact: true });
     await expect(library.getByRole("alert")).toHaveText("Liste geçici olarak erişilemiyor.");
     await page.getByLabel("Sorunuz", { exact: true }).fill("Liste yenilenirken korunacak taslak");

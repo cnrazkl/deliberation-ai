@@ -1,7 +1,8 @@
+import { workspaceView } from "./workspace-navigation";
 import { expect, test } from "@playwright/test";
 
 test("shows read-only local database and worker diagnostics", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/"); await workspaceView(page, "Ayarlar");
   const panel = page.locator(".diagnostics-card");
   await expect(panel.locator("summary")).toContainText("Worker");
   await panel.locator("summary").click();

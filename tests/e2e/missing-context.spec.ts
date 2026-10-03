@@ -1,3 +1,4 @@
+import { revealCouncilControls } from "./workspace-navigation";
 import { expect, test } from "@playwright/test";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { getDatabase, preflightDrafts, closeDatabase } from "@deliberation-ai/persistence";
@@ -17,7 +18,7 @@ test("restores a pending clarification after reload and previews both owner choi
   const directPreview = await request.post(`/api/preflight-drafts/${draftId}/preview`, { data: { choice: "original" } });
   expect(directPreview.status()).toBe(200);
   try {
-    await page.goto("/");
+    await page.goto("/"); await revealCouncilControls(page);
     const panel = page.getByRole("region", { name: "Yanıt bekleyen ön değerlendirmeler" });
     await expect(panel).toBeVisible();
     await panel.getByRole("button", { name: question }).click();

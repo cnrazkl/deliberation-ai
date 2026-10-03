@@ -1,8 +1,14 @@
 # Current state
 
-Updated: 3 October 2026 (DA-108 completed)
+Updated: 3 October 2026 (DA-111 workspace layout and appearance completed)
 
-## Latest verified increment — DA-108
+## Latest owner-requested increment — DA-111
+
+Persistent left conversation/run history accompanies three views: Sohbet, Zamanlayıcı and Ayarlar. Main chat starts with collapsed task details; provider/MCP/worker details live in settings. Schedule outputs open exact existing latest run identities and unavailable content produces a visible error. Navigation preserves question/model/attachment/retry state. Explicit new chat clears composer context while preserving council choices. Light/dark/system appearance uses semantic tokens and a non-sensitive browser preference.
+
+281 units and all 33 browser cases pass; two focused repeats additionally cover unavailable schedule output and desktop/mobile appearance. Workspace type checks, zero-warning lint and separate-output build pass. Interactive 3000 remains HTTP 200 with DB/one worker ready after test 3100 closes. No schema change, migration, real owner deletion or paid provider call. [Design principles](UI_DESIGN.md), [acceptance](DA111_ACCEPTANCE.md).
+
+## Previous verified increment — DA-108
 
 Saved council templates require durable creation identities and reviewed deletion with explicit retained-copy acknowledgement. Exact-state confirmation scrubs content into a hidden encrypted-receipt tombstone. Old creation replay stays blocked; fresh name reuse works. Current drafts, frozen runs and independent schedules remain.
 

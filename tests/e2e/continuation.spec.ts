@@ -1,3 +1,4 @@
+import { revealCouncilControls } from "./workspace-navigation";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -38,7 +39,7 @@ test("reviews full history, starts a fresh council against a local mock and expo
     const original = await (await request.get(`/api/runs/${sourceId}`)).json() as RunRecord;
     const context = await (await request.get(`/api/runs/${sourceId}/continuation`)).json() as FrozenContinuation;
     expect(sent).toHaveLength(2);
-    await page.goto("/");
+    await page.goto("/"); await revealCouncilControls(page);
     await page.locator(`[data-run-id="${sourceId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await page.getByRole("button", { name: "Bu rapordan yeni soruyla devam et", exact: true }).click();
     const history = page.getByRole("region", { name: "Yeni çalışmanın geçmiş bağlamı" });
@@ -53,7 +54,7 @@ test("reviews full history, starts a fresh council against a local mock and expo
     await expect(start).toBeDisabled();
     await page.getByLabel("Sorunuz", { exact: true }).press("Control+Enter");
     expect(sent).toHaveLength(2);
-    await expect(page.getByRole("button", { name: "Duraklatılmış zamanlama oluştur", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Duraklatılmış zamanlama oluştur", exact: true, includeHidden: true })).toBeDisabled();
     await history.getByRole("checkbox", { name: "Geçmiş bağlamı inceledim; yeni soruma dahil et" }).check();
     await expect(start).toBeEnabled();
     const posted = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/runs" && response.request().method() === "POST");
@@ -181,7 +182,7 @@ test("reviews a manual summary and omissions, invalidates approval on edits and 
     const packetResponse = await request.get(`/api/runs/${sourceId}/continuation?mode=compaction`);
     expect(packetResponse.ok()).toBe(true);
     const packet = await packetResponse.json() as ContinuationCompactionPacket;
-    await page.goto("/");
+    await page.goto("/"); await revealCouncilControls(page);
     await page.locator(`[data-run-id="${sourceId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await page.getByRole("button", { name: "Geçmişi kısaltarak yeni soruyla devam et", exact: true }).click();
     const editor = page.getByRole("region", { name: "Geçmişi elle kısaltma", exact: true });
@@ -204,7 +205,7 @@ test("reviews a manual summary and omissions, invalidates approval on edits and 
     await summary.fill("Düzenlenmiş özet: alternatif yol ve açık belirsizlikler ayrıca incelensin.");
     await expect(approval).not.toBeChecked();
     await expect(start).toBeDisabled();
-    await expect(page.getByRole("button", { name: "Duraklatılmış zamanlama oluştur", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Duraklatılmış zamanlama oluştur", exact: true, includeHidden: true })).toBeDisabled();
     await approval.check();
     await expect(start).toBeEnabled();
     const submitted = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/runs" && response.request().method() === "POST");

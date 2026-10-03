@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { WorkspaceShell, ThemeSelect, type WorkspaceView } from "./workspace-shell";
+import { LocalDiagnosticsPanel } from "./local-diagnostics-panel";
 import { CouncilTemplateDeletionPanel } from "./council-template-deletion-panel";
 import type { RunRecord } from "@deliberation-ai/application";
 import { auditPromptRevision, findCriticalMissingContext, PROMPT_REVISION_VERSION, suggestStructuredQuestion } from "@deliberation-ai/domain";
@@ -40,6 +42,8 @@ import { RunHistoryPanel } from "./run-history-panel";
 import { RunBranchesPanel } from "./run-branches-panel";
 import { ConversationPanel } from "./conversation-panel";
 import { PrivateBranchSeedButton } from "./private-branches-panel";
+import { ConversationDeletionPanel } from "./conversation-deletion-panel";
+import { PrivateBranchesPanel } from "./private-branches-panel";
 import { ConversationLibraryPanel } from "./conversation-library-panel";
 import { RunUsagePanel } from "./run-usage-panel";
 import { ContinuationArchiveDetails, ContinuationCompactionEditor } from "./continuation-compaction-editor";
@@ -317,6 +321,10 @@ async function readReplay(response: Response): Promise<RunEventReplay> {
 }
 
 export function CouncilWorkbench() {
+  const configRef = useRef<HTMLDetailsElement>(null);
+  const [libraryDeletionId, setLibraryDeletionId] = useState<string>();
+  const [privateConversationId, setPrivateConversationId] = useState<string>();
+  const [view, setView] = useState<WorkspaceView>("chat");
   const [question, setQuestion] = useState(starterQuestion);
   const [continuationContext, setContinuationContext] = useState<FrozenContinuation>();
   const [compactionDraft, setCompactionDraft] = useState<{ packet: ContinuationCompactionPacket; summary: string }>();
@@ -945,14 +953,20 @@ export function CouncilWorkbench() {
   }
 
   async function openSavedRun(runId: string): Promise<void> {
+    setView("chat");
     cancelActiveWatchRef.current?.();
     activeRunIdRef.current = runId;
     setError(undefined);
     setRun(undefined);
-    const loaded = await readJson(await fetch(`/api/runs/${runId}`, { cache: "no-store" }));
+    let loaded: RunRecord;
+    try { loaded = await readJson(await fetch(`/api/runs/${runId}`, { cache: "no-store" })); }
+    catch (reason) {
+      if (activeRunIdRef.current === runId) setError("Kayıtlı çalışma açılamadı. İçerik kaldırılmış veya artık erişilemiyor olabilir.");
+      throw reason;
+    }
     if (activeRunIdRef.current !== runId) return;
     setRun(loaded);
-    window.requestAnimationFrame(() => document.getElementById("council-result")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    window.requestAnimationFrame(() => document.getElementById("council-result")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
     if (!terminalStatuses.has(loaded.status)) {
       void watchRun(runId).catch((reason: unknown) => {
         if (activeRunIdRef.current === runId) {
@@ -1556,8 +1570,30 @@ export function CouncilWorkbench() {
     </form>
   );
 
+  function newChat() {
+    cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined;
+    setLibraryDeletionId(undefined); setPrivateConversationId(undefined);
+    setRun(undefined); setError(undefined); setQuestion(""); setPromptCandidate(""); setPromptChoice("original");
+    setContinuationContext(undefined); setCompactionDraft(undefined); setContinuationReviewed(false);
+    setAttachments([]); setAttachmentDimensions([]); setAttachmentError(undefined);
+    setSelectedMemoryEntryIds([]); setSelectedToolResultIds([]); setView("chat");
+    window.requestAnimationFrame(() => document.getElementById("question")?.focus());
+  }
+
   return (
-    <section className="workspace" aria-label="Konsey çalışma alanı">
+    <WorkspaceShell view={view} onViewChange={setView} onNewChat={newChat} newChatDisabled={pending || loadingContinuation} attentionCount={operatorOperations.length} sidebar={<>
+      <ConversationLibraryPanel refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
+        onReviewDeletion={(id) => { setLibraryDeletionId(id); setView("chat"); }}
+        onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); }} />
+      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onDeletedRun={(id) => {
+        if (activeRunIdRef.current === id) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
+        setHistoryRefreshKey((value) => value + 1);
+      }} />
+
+    </>}>
+      <section className="workspace workspace-view" hidden={view !== "settings"} aria-label="Ayarlar alanı">
+        <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
+        <section className="settings-card appearance-card" aria-label="Görünüm ayarları"><h2>Görünüm</h2><ThemeSelect /></section>
       <details className="settings-card">
         <summary>Yerel sağlayıcı bağlantıları ({connections.length})</summary>
         <div className="connection-guide" aria-label="Bağlantı kullanım adımları">
@@ -1658,11 +1694,12 @@ export function CouncilWorkbench() {
         <p className="hint">OpenAI, Claude ve Gemini yerel adaptörleri; Kimi, Qwen, vLLM, Ollama, LiteLLM, OpenRouter ve özel uç noktalar OpenAI uyumlu adaptörü kullanır. Model listesi yalnızca düğmeye basınca sorgulanır; üretim, ücretlendirme ve düşünme seviyesi desteğini doğrulamaz.</p>
       </details>
 
-      <ConversationLibraryPanel refreshKey={historyRefreshKey} onOpenRun={openSavedRun} />
-      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onDeletedRun={(id) => {
-        if (activeRunIdRef.current === id) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
-        setHistoryRefreshKey((value) => value + 1);
-      }} />
+      <LocalToolsPanel
+        selectedResultIds={selectedToolResultIds}
+        onSelectionChange={setSelectedToolResultIds}
+        retrieveRelevant={retrieveToolContext}
+        onRetrieveRelevantChange={setRetrieveToolContext}
+      />
 
       {operatorOperations.length > 0 ? (
         <section className="operator-card" aria-label="Operatör kararı bekleyen işlemler">
@@ -1710,59 +1747,26 @@ export function CouncilWorkbench() {
         </section>
       ) : null}
 
-      <section className="settings-card memory-card" aria-label="Ortak konuşma belleği">
-        <div className="memory-heading">
-          <div>
-            <strong>Ortak konuşma belleği</strong>
-            <small>{memoryEntries.length}/20 kayıt · bu çalışma için {selectedMemoryEntryIds.length}/5 seçili</small>
-          </div>
-        </div>
-        <p className="hint">
-          Yalnızca seçtiğiniz kayıtlar sonraki çalışmanın donmuş girdisine eklenir. Bunlar geçmiş
-          model iddialarıdır; doğrulanmış gerçek veya talimat sayılmaz.
-        </p>
-        {memoryEntries.length > 0 ? (
-          <div className="memory-list">
-            {memoryEntries.map((entry) => (
-              <article className="memory-entry" key={entry.id} data-memory-id={entry.id}>
-                <label>
-                  <input
-                    type="checkbox"
-                    aria-label={`${entry.content} sonraki çalışmada kullan`}
-                    checked={selectedMemoryEntryIds.includes(entry.id)}
-                    onChange={(event) => toggleMemoryEntry(entry.id, event.target.checked)}
-                  />
-                  <span>
-                    <strong>{entry.content}</strong>
-                    <small>
-                      {entry.sourceType === "red-team-challenge" ? "Red-team" : "Analist iddiası"}
-                      {" · "}{evidenceStateLabels[entry.evidenceState]}
-                    </small>
-                  </span>
-                </label>
-                <button
-                  className="secondary-button danger-button"
-                  type="button"
-                  onClick={() => void removeMemoryEntry(entry.id)}
-                >
-                  Bellekten kaldır
-                </button>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="empty">Henüz açıkça belleğe alınmış iddia yok.</p>
-        )}
+        <LocalDiagnosticsPanel />
       </section>
-
-      <LocalToolsPanel
-        selectedResultIds={selectedToolResultIds}
-        onSelectionChange={setSelectedToolResultIds}
-        retrieveRelevant={retrieveToolContext}
-        onRetrieveRelevantChange={setRetrieveToolContext}
+      <section className="workspace workspace-view" hidden={view !== "schedules"} aria-label="Zamanlayıcı alanı">
+        <p className="view-intro">Sohbette hazırladığınız soru ve konsey ile tekrar eden çalışmalar oluşturun.</p>
+        <div className="schedule-draft-summary"><strong>Zamanlanacak soru</strong><p>{question || "Önce Sohbet bölümünde bir soru yazın."}</p><button type="button" className="secondary-button" onClick={() => setView("chat")}>Soruyu ve konseyi düzenle</button></div>
+      <LocalSchedulesPanel onOpenRun={openSavedRun}
+        creationBlockedReason={continuationSource ? "Geçmiş rapor içeren devam çalışmaları henüz zamanlanamaz. Önce geçmiş bağlamı kaldırın." : undefined}
+        question={question}
+        members={members}
+        reviewRounds={reviewRounds}
+        selfRevisionEnabled={selfRevisionEnabled && reviewRounds > 0}
+        riskProfile={effectiveRiskProfile}
+        {...(executionLimits ? { executionLimits } : {})}
       />
 
-      <section className="settings-card" aria-label="Konsey yapılandırması">
+      </section>
+      <section className="workspace workspace-view" hidden={view !== "chat"} aria-label="Konsey çalışma alanı">
+        <p className="view-intro">Sorunuzu yazın. Konsey farklı bakış açılarını, itirazları ve dayanakları birlikte görünür kılsın.</p>
+        {!connections.length ? <div className="connection-onboarding">Başlamak için bir sağlayıcı bağlantısı ekleyin.<button type="button" className="secondary-button" onClick={() => setView("settings")}>Bağlantıları ayarla</button></div> : null}
+      <details ref={configRef} className="settings-card council-config" role="region" aria-label="Konsey yapılandırması"><summary>Konsey yapılandırması <span>{members.length} üye · {reviewRounds} inceleme turu</span></summary>
         <div className="config-heading">
           <div>
             <strong>Konsey yapılandırması</strong>
@@ -1985,6 +1989,22 @@ export function CouncilWorkbench() {
               : "Tüm üyeler için ad, rol, model ve geçerli bağlantı seçimi gerekli."}
           </p>
         ) : null}
+          <div className="form-options">
+            <strong className="run-mode">{members.length} üye · Kayıtlı sağlayıcı bağlantıları</strong>
+            <label>Çapraz inceleme turu
+              <select value={reviewRounds} onChange={(event) => setReviewRounds(Number(event.target.value) as ReviewRoundCount)}>
+                <option value={0} disabled={effectiveRiskProfile === "high"}>0 · İnceleme yok</option>
+                <option value={1}>1 · Varsayılan</option>
+                <option value={2}>2 · Ek inceleme</option>
+                <option value={3}>3 · Üst sınır</option>
+              </select>
+            </label>
+            <label className="checkbox-label">
+              <input type="checkbox" checked={selfRevisionEnabled && reviewRounds > 0} disabled={reviewRounds === 0} onChange={(event) => setSelfRevisionEnabled(event.target.checked)} />
+              Üyelerin kendi ilk iddiaları için düzeltme önerisi üretmesine izin ver
+            </label>
+            {selfRevisionEnabled && reviewRounds > 0 ? <small>İlk yanıtlar korunur; öneriler otomatik olarak doğru kabul edilmez. Ek bağlam ve çıktı tokenları oluşabilir.</small> : null}
+          </div>
         <div className="template-controls">
           <input
             aria-label="Şablon adı"
@@ -2018,7 +2038,7 @@ export function CouncilWorkbench() {
             ))}
           </div>
         ) : <p className="hint">Henüz kayıtlı yerel şablon yok.</p>}
-      </section>
+      </details>
 
       <form className="question-card" onSubmit={submit}>
         {compactionDraft ? <ContinuationCompactionEditor packet={compactionDraft.packet} summary={compactionDraft.summary}
@@ -2051,10 +2071,18 @@ export function CouncilWorkbench() {
           }}
           required
         />
-        {originalQuestion.length >= 10 ? <PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
-          choice={promptChoice} disabled={needsContext} onCandidateChange={setPromptCandidate} onChoiceChange={setPromptChoice} /> : null}
+        <div className="form-row">
+          <div className="composer-council-summary"><strong>{members.length} üye · {reviewRounds} inceleme turu</strong><button type="button" className="secondary-button" onClick={() => { if (configRef.current) { configRef.current.open = true; configRef.current.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } }}>Konseyi düzenle</button></div>
+          <button disabled={pending || loadingContinuation || (Boolean(continuationSource) && !continuationReviewed) || preparingAttachments || Boolean(limitsError) || selectedQuestion.length < 10 || (!needsContext && promptChoice === "candidate" && !revisionAudit.canSelectCandidate) || !memberConfigurationValid || !highRiskReady || (attachments.length > 0 && !members.some((member) => member.receiveAttachments === true)) || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.promptPlan || !tokenPreview.value.riskPreflight || Boolean(currentPreviewError)} type="submit">
+            {pending ? "Değerlendiriliyor…" : (tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0) ? "Açıklama sorularını aç" : "Konseyi çalıştır"}
+          </button>
+        </div>
+        {!highRiskReady ? <p className="inline-warning">Yüksek risk profili için en az bir red-team üyesi ve bir çapraz inceleme turu seçin.</p> : null}
+        <p className="hint">Ctrl/⌘ + Enter ile gönderin. Seçili modellere gerçek API isteği yapılır.</p>
+        {originalQuestion.length >= 10 ? <details className="composer-disclosure"><summary>İstemi düzenle ve karşılaştır</summary><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
+          choice={promptChoice} disabled={needsContext} onCandidateChange={setPromptCandidate} onChoiceChange={setPromptChoice} /></details> : null}
         {needsContext ? <p className="hint">Önce eksik bilgi sorularını yanıtlayın; istem sürümü seçimi bu yanıttan sonra açılır.</p> : null}
-        <div className="attachment-picker">
+        <details className="attachment-picker composer-disclosure"><summary>Dosya ekle{attachments.length > 0 ? ` · ${attachments.length} ek` : ""}</summary>
           <label htmlFor="task-attachments">Görev ekleri (isteğe bağlı)</label>
           <input
             id="task-attachments"
@@ -2090,13 +2118,13 @@ export function CouncilWorkbench() {
           {attachments.length > 0 && !members.some((member) => member.receiveAttachments === true) ? (
             <p className="inline-warning">Ekler seçildi, fakat hiçbir üye için “Bu üyeye gönder” açık değil.</p>
           ) : null}
-        </div>
-        <div className="token-preview" aria-live="polite">
+        </details>
+        <details className="token-preview composer-disclosure"><summary>Gönderilecek bağlam ve token tahmini{selectedMemoryEntryIds.length + selectedToolResultIds.length > 0 ? ` · ${selectedMemoryEntryIds.length + selectedToolResultIds.length} seçili bağlam` : ""}</summary>
           {!question.trim() && attachments.length === 0 ? (
             <><strong>Sorunuz ve ekleriniz: 0 token</strong><p className="hint">Soru alanı boş; henüz gönderilecek bir görev yok.</p></>
           ) : !memberConfigurationValid ? (
             <p className="hint">Token tahmini için önce geçerli sağlayıcı bağlantılarını ve modelleri seçin.</p>
-          ) : currentPreviewError ? <p className="hint">{currentPreviewError}</p> : tokenPreview?.key === previewRequestKey ? (
+          ) : currentPreviewError ? null : tokenPreview?.key === previewRequestKey ? (
             <>
               <strong>Sorunuz ve ekleriniz: ≈{(tokenPreview.value.questionTokens + tokenPreview.value.documentTokens + tokenPreview.value.imageTokens).toLocaleString("tr-TR")} token</strong>
               <p className="hint">Soru ≈{tokenPreview.value.questionTokens.toLocaleString("tr-TR")}{tokenPreview.value.documentTokens > 0 ? ` · PDF metni ≈${tokenPreview.value.documentTokens.toLocaleString("tr-TR")}` : ""}{tokenPreview.value.imageTokens > 0 ? ` · Seçili üyelere gönderilecek görseller ≈${tokenPreview.value.imageTokens.toLocaleString("tr-TR")}` : ""}</p>
@@ -2117,9 +2145,11 @@ export function CouncilWorkbench() {
               <p className="hint">Yerel tahmindir; PDF metni her seçili üyeye ayrı gönderilir, bu nedenle konsey toplamında tekrar sayılır. Sağlayıcının gerçek sayımı farklı olabilir. Düşünme, yanıt ve {reviewRounds > 0 ? "seçilen çapraz inceleme" : "sonraki"} turlarının tokenları bu toplamda yoktur. Ek inceleme turları ek sağlayıcı çağrıları ve maliyet oluşturabilir. Tahmin için modele istek gönderilmez.</p>
             </>
           ) : <p className="hint">{compactionDraft && !continuationReviewed ? "Özeti yazıp atlanan bilgileri inceleyin; ardından gönderilecek metin ve token tahmini hazırlanır." : "Token tahmini hesaplanıyor…"}</p>}
-        </div>
+        </details>
+        {currentPreviewError ? <p className="inline-warning" role="alert">{currentPreviewError}</p> : null}
+        {!memberConfigurationValid && connections.length > 0 ? <p className="inline-warning">Konseydeki bağlantı veya model seçimlerini kontrol edin. “Konseyi düzenle” ile ayrıntıları açabilirsiniz.</p> : null}
         {currentRisk ? <>
-          <RiskAssessmentSummary assessment={currentRisk.assessment} />
+          {effectiveRiskProfile === "high" ? <RiskAssessmentSummary assessment={currentRisk.assessment} /> : <details className="composer-disclosure"><summary>Risk denetimi · Standart profil</summary><RiskAssessmentSummary assessment={currentRisk.assessment} /></details>}
           {!highRiskReady ? <>
             <button type="button" className="secondary-button" onClick={() => { setReviewRounds((current) => current === 0 ? 1 : current); setRedTeamComparison(true); }}>Gerekli risk kontrollerini ekle</button>
             <p className="hint">Red-team yoksa son üyenin bağlantısıyla eklenir; altı üyede son üyenin görevi değiştirilir. Göndermeden önce bağlantısını ve modelini düzenleyebilirsiniz.</p>
@@ -2127,42 +2157,56 @@ export function CouncilWorkbench() {
         </> : null}
         {tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0 ?
           <div className="inline-warning">Bu soruda kritik bağlam eksik olabilir. Devam ettiğinizde açıklama soruları açılır; siz incelemeden model çağrısı başlamaz.</div> : null}
-        <ExecutionLimitsEditor enabled={executionLimitsEnabled} limits={configuredExecutionLimits} plannedProviderCalls={plannedProviderCalls} onEnabledChange={setExecutionLimitsEnabled} onChange={setConfiguredExecutionLimits} />
-        <div className="form-row">
-          <div className="form-options">
-            <strong className="run-mode">{members.length} üye · Kayıtlı sağlayıcı bağlantıları</strong>
-            <label>Çapraz inceleme turu
-              <select value={reviewRounds} onChange={(event) => setReviewRounds(Number(event.target.value) as ReviewRoundCount)}>
-                <option value={0} disabled={effectiveRiskProfile === "high"}>0 · İnceleme yok</option>
-                <option value={1}>1 · Varsayılan</option>
-                <option value={2}>2 · Ek inceleme</option>
-                <option value={3}>3 · Üst sınır</option>
-              </select>
-            </label>
-            <label className="checkbox-label">
-              <input type="checkbox" checked={selfRevisionEnabled && reviewRounds > 0} disabled={reviewRounds === 0} onChange={(event) => setSelfRevisionEnabled(event.target.checked)} />
-              Üyelerin kendi ilk iddiaları için düzeltme önerisi üretmesine izin ver
-            </label>
-            {selfRevisionEnabled && reviewRounds > 0 ? <small>İlk yanıtlar korunur; öneriler otomatik olarak doğru kabul edilmez. Ek bağlam ve çıktı tokenları oluşabilir.</small> : null}
-          </div>
-          <button disabled={pending || loadingContinuation || (Boolean(continuationSource) && !continuationReviewed) || preparingAttachments || Boolean(limitsError) || selectedQuestion.length < 10 || (!needsContext && promptChoice === "candidate" && !revisionAudit.canSelectCandidate) || !memberConfigurationValid || !highRiskReady || (attachments.length > 0 && !members.some((member) => member.receiveAttachments === true)) || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.promptPlan || !tokenPreview.value.riskPreflight || Boolean(currentPreviewError)} type="submit">
-            {pending ? "Değerlendiriliyor…" : (tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0) ? "Açıklama sorularını aç" : "Konseyi çalıştır"}
-          </button>
-        </div>
-        {!highRiskReady ? <p className="inline-warning">Yüksek risk profili için en az bir red-team üyesi ve bir çapraz inceleme turu seçin.</p> : null}
-        <p className="hint">Ctrl/⌘ + Enter ile gönderin. Seçili modellere gerçek API isteği yapılır.</p>
+        <details className="composer-disclosure"><summary>Çalışma sınırları{executionLimitsEnabled ? " · Etkin" : " · Kapalı"}</summary><ExecutionLimitsEditor enabled={executionLimitsEnabled} limits={configuredExecutionLimits} plannedProviderCalls={plannedProviderCalls} onEnabledChange={setExecutionLimitsEnabled} onChange={setConfiguredExecutionLimits} /></details>
       </form>
 
-      <LocalSchedulesPanel
-        creationBlockedReason={continuationSource ? "Geçmiş rapor içeren devam çalışmaları henüz zamanlanamaz. Önce geçmiş bağlamı kaldırın." : undefined}
-        question={question}
-        members={members}
-        reviewRounds={reviewRounds}
-        selfRevisionEnabled={selfRevisionEnabled && reviewRounds > 0}
-        riskProfile={effectiveRiskProfile}
-        {...(executionLimits ? { executionLimits } : {})}
-      />
+      <details className="settings-card memory-card context-disclosure" role="region" aria-label="Ortak konuşma belleği"><summary>Konuşma belleği · {selectedMemoryEntryIds.length} seçili kayıt</summary>
+        <div className="memory-heading">
+          <div>
+            <strong>Ortak konuşma belleği</strong>
+            <small>{memoryEntries.length}/20 kayıt · bu çalışma için {selectedMemoryEntryIds.length}/5 seçili</small>
+          </div>
+        </div>
+        <p className="hint">
+          Yalnızca seçtiğiniz kayıtlar sonraki çalışmanın donmuş girdisine eklenir. Bunlar geçmiş
+          model iddialarıdır; doğrulanmış gerçek veya talimat sayılmaz.
+        </p>
+        {memoryEntries.length > 0 ? (
+          <div className="memory-list">
+            {memoryEntries.map((entry) => (
+              <article className="memory-entry" key={entry.id} data-memory-id={entry.id}>
+                <label>
+                  <input
+                    type="checkbox"
+                    aria-label={`${entry.content} sonraki çalışmada kullan`}
+                    checked={selectedMemoryEntryIds.includes(entry.id)}
+                    onChange={(event) => toggleMemoryEntry(entry.id, event.target.checked)}
+                  />
+                  <span>
+                    <strong>{entry.content}</strong>
+                    <small>
+                      {entry.sourceType === "red-team-challenge" ? "Red-team" : "Analist iddiası"}
+                      {" · "}{evidenceStateLabels[entry.evidenceState]}
+                    </small>
+                  </span>
+                </label>
+                <button
+                  className="secondary-button danger-button"
+                  type="button"
+                  onClick={() => void removeMemoryEntry(entry.id)}
+                >
+                  Bellekten kaldır
+                </button>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="empty">Henüz açıkça belleğe alınmış iddia yok.</p>
+        )}
+      </details>
 
+      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)} onDeleted={() => { setLibraryDeletionId(undefined); setHistoryRefreshKey((value) => value + 1); }} />}
+      {privateConversationId && <PrivateBranchesPanel key={privateConversationId} conversationId={privateConversationId} onClose={() => setPrivateConversationId(undefined)} />}
       <PreflightDraftsPanel refreshKey={draftRefreshKey} focusDraftId={focusDraftId} onStarted={(created) => {
         cancelActiveWatchRef.current?.();
         activeRunIdRef.current = created.runId;
@@ -2716,6 +2760,7 @@ export function CouncilWorkbench() {
           ) : null}
         </div>
       ) : null}
-    </section>
+      </section>
+    </WorkspaceShell>
   );
 }

@@ -28,7 +28,8 @@ function tomorrowLocal(): string {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
-export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevisionEnabled, riskProfile, executionLimits, creationBlockedReason }: {
+export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevisionEnabled, riskProfile, executionLimits, creationBlockedReason, onOpenRun }: {
+  onOpenRun: (id: string) => Promise<void>;
   creationBlockedReason?: string | undefined;
   question: string;
   members: CouncilMemberConfig[];
@@ -134,6 +135,7 @@ export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevis
       </div>
       {error ? <p className="error">{error}</p> : null}
       <div className="schedule-list">
+        {schedules.length === 0 ? <p className="empty">Henüz bir zamanlama yok.</p> : null}
         {schedules.map((schedule) => (
           <div key={schedule.id}>
           <article>
@@ -148,6 +150,17 @@ export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevis
           </div>
         ))}
       </div>
+      <section className="schedule-outputs" aria-label="Zamanlayıcı çıktıları">
+        <h2>Zamanlayıcı çıktıları</h2>
+        <p className="hint">Her zamanlamanın son kaydedilmiş çalışması. Daha eski çalışmalar soldaki çalışma geçmişinde bulunur.</p>
+        {schedules.some((schedule) => schedule.lastRunId) ? schedules.filter((schedule) => schedule.lastRunId).map((schedule) => <article key={schedule.id}>
+          <div><strong>{schedule.name}</strong><small>{schedule.lastRunAt ? new Date(schedule.lastRunAt).toLocaleString("tr-TR") : "Çalışma kaydı"}</small></div>
+          <button type="button" className="secondary-button" disabled={pending} onClick={() => {
+            setError(undefined);
+            void onOpenRun(schedule.lastRunId!).catch(() => setError("Çalışma açılamadı; içerik kaldırılmış veya artık erişilemiyor olabilir."));
+          }}>Son çalışmayı aç</button>
+        </article>) : <p className="empty">Henüz zamanlanmış bir çalışma çıktısı yok.</p>}
+      </section>
     </section>
   );
 }

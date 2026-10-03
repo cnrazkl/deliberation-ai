@@ -1,3 +1,4 @@
+import { revealCouncilControls } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -14,7 +15,7 @@ test("reviews template deletion, rejects stale confirmation and recovers a lost 
       input = route.request().postDataJSON(); const response = await route.fetch(); expect(response.ok()).toBe(true);
       ids.push((await response.json()).id); await route.fulfill({ response });
     });
-    await page.goto("/"); const question = page.getByRole("textbox", { name: "Sorunuz", exact: true });
+    await page.goto("/"); await revealCouncilControls(page); const question = page.getByRole("textbox", { name: "Sorunuz", exact: true });
     await question.fill("Generated template deletion keeps this draft question");
     await page.getByLabel("Şablon adı", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Şablonu kaydet", exact: true }).click();

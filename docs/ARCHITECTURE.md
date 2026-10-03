@@ -1,5 +1,9 @@
 # Architecture
 
+## DA-111 workspace shell
+
+WorkspaceShell owns responsive navigation and appearance. CouncilWorkbench keeps the existing task/configuration state and mounted panels while switching hidden views. The sidebar reuses owner-scoped conversation/run discovery; private conversation reviews render in the main area. LocalSchedulesPanel opens an exact existing lastRunId through the same saved-run handler. Theme preference is a non-sensitive browser key, synchronized through a small external store and applied before paint. Existing BFF, queue and provider boundaries remain unchanged. [Design](UI_DESIGN.md).
+
 ## DA-110 runtime/test lifecycle
 
 Interactive `pnpm dev` uses loopback 3000 and `.next/`; Playwright owns `dev:e2e` on

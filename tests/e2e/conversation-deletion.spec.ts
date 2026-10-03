@@ -1,3 +1,4 @@
+import { revealConversationOptions } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -36,8 +37,10 @@ test("reviews deletion of generated empty metadata, rejects invalid confirmation
     const card = library.locator('[data-conversation-id="' + target + '"]');
     // The API-loaded fixture card establishes client readiness before editing
     // the server-rendered controlled textarea during a cold development load.
+    await revealConversationOptions(page);
     await expect(card.getByRole("button", { name: "Kayıt silmeyi incele" })).toBeVisible();
     await page.getByLabel("Sorunuz", { exact: true }).fill("Silme önizlemesinde korunacak soru taslağı");
+    await revealConversationOptions(page);
     await card.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
     const panel = page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi", exact: true });
     await expect(panel).toContainText("1 konuşma kaydı ve 1 üyelik bağlantısı");
@@ -45,6 +48,7 @@ test("reviews deletion of generated empty metadata, rejects invalid confirmation
     await expect(panel.getByRole("button", { name: "Konuşma kaydını kalıcı olarak sil" })).toBeDisabled();
     await panel.getByRole("button", { name: "Vazgeç", exact: true }).click();
     expect((await request.get(endpoint)).status()).toBe(200);
+    await revealConversationOptions(page);
     await card.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
     const checkbox = panel.getByRole("checkbox");
     await checkbox.check();
@@ -83,7 +87,8 @@ test("failed previews allow retry and a blocked preview cannot delete", async ({
         recordedRunCount: 1, memberRunIds: [randomUUID()], eligible: false, blockedReasons: ["retained_references"], fingerprint: null } });
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
+  await revealConversationOptions(page);
+    await page.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
   const panel = page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi", exact: true });
   await expect(panel.getByRole("alert")).toContainText("Önizleme geçici olarak erişilemiyor.");
   fail = false; await panel.getByRole("button", { name: "Silme önizlemesini yenile" }).click();

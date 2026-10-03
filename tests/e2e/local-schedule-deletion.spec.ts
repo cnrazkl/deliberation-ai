@@ -1,3 +1,4 @@
+import { workspaceView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect,test } from "@playwright/test";
 import { eq,inArray,sql } from "drizzle-orm";
@@ -15,7 +16,8 @@ test("deduplicates a lost schedule creation, reviews deletion and recovers a los
       const body=await response.json();if(!ids.includes(body.id))ids.push(body.id);
       if(first){first=false;await route.abort();}else await route.fulfill({response});
     });
-    await page.goto("/");const question=page.getByRole("textbox",{name:"Sorunuz",exact:true});await question.fill("Generated schedule browser comparison question");
+    await page.goto("/");const question=page.getByLabel("Sorunuz",{exact:true});await question.fill("Generated schedule browser comparison question");
+    await workspaceView(page,"Zamanlayıcı");
     const panel=page.getByRole("region",{name:"Yerel zamanlamalar"});await panel.getByLabel("Zamanlama adı").fill(name);
     await panel.getByLabel("İlk çalışma").fill("2400-01-01T03:00");const create=panel.getByRole("button",{name:"Duraklatılmış zamanlama oluştur"});
     await create.click();await expect(panel.locator("p.error")).toBeVisible();await create.click();

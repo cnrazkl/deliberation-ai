@@ -1,3 +1,4 @@
+import { revealCouncilControls } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { eq, or } from "drizzle-orm";
@@ -23,7 +24,7 @@ test("lost template save responses retry without overwriting drafts or resurrect
       id = (await response.json()).id;
       if (first) { first = false; await route.abort(); } else await route.fulfill({ response });
     });
-    await page.goto("/");
+    await page.goto("/"); await revealCouncilControls(page);
     const question = page.getByRole("textbox", { name: "Sorunuz", exact: true });
     await question.fill("Generated template save question stays unchanged");
     const field = page.getByRole("textbox", { name: "Şablon adı", exact: true });

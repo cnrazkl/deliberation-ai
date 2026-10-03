@@ -107,3 +107,7 @@ This prune command does not remove earlier archives or locally downloaded JSON f
 Migration 0049 was reviewed and applied locally after verified backup deliberation-20261003T134321Z-66ad7c86a96e.manifest.json. Post-migration backup deliberation-20261003T140520Z-50ca0cafe493.manifest.json restored and passed exhaustive encryption audit (398 runs, 6831 encrypted rows, 10879 values). Backups remain outside Git under the local application backup directory; retain the encryption key separately.
 
 Generated-only populated restore: node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/verify-council-template-restore.ts. The script creates two disposable databases, migrates/dumps/restores synthetic templates, validates identical authenticated receipts and replay protection, then removes only its generated databases/archive. No owner history is deleted. Interactive runtime remains independent of the full browser suite.
+
+## DA-111 — settings and appearance location
+
+Provider connections, local MCP configuration/results and DB/worker diagnostics are reached through Ayarlar in the sidebar. Zamanlayıcı contains scheduling and latest linked run outputs; older runs remain in sidebar history. Appearance is selectable in the sidebar or Ayarlar and stored only as a non-sensitive browser preference. Menu changes do not stop a worker or pause schedules. Runtime health endpoints and independent 3000/3100 lifecycle remain unchanged. [Design](UI_DESIGN.md).

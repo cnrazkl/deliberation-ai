@@ -1,3 +1,4 @@
+import { revealConversationOptions } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import { eq, sql } from "drizzle-orm";
@@ -94,6 +95,7 @@ test("private drafts preserve the council draft, retry one committed message, fo
     expect(childView.messageCount).toBe(4); expect(JSON.stringify(childView)).not.toContain("EXCLUDED PRIVATE PEER");
     await getDatabase().delete(runs).where(eq(runs.id, sourceId));
     await page.reload();
+    await revealConversationOptions(page);
     await card.getByRole("button", { name: "Özel dal taslaklarını göster" }).click();
     panel = page.getByRole("region", { name: "Özel dal taslakları", exact: true });
     await panel.locator(`[data-private-branch-id="${child.id}"]`).getByRole("button", { name: "Özel dalı aç" }).click();
@@ -106,6 +108,7 @@ test("private drafts preserve the council draft, retry one committed message, fo
     expect(exported.branch.body.seed.rawText).toBe("Selected private seed output"); expect(exported.branch.messageCount).toBe(4);
     const conversationExport = await request.post(`/api/conversations/${conversationId}/export`);
     expect(conversationExport.status()).toBe(200); expect((await conversationExport.json() as { privateBranches: unknown[] }).privateBranches).toHaveLength(2);
+    await revealConversationOptions(page);
     await card.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
     await expect(page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi" })).toContainText("saklanan özel dal taslakları");
     expect((await request.post(`/api/private-branches/${child.id}/export`, { headers: { origin: "https://external.example" } })).status()).toBe(403);
