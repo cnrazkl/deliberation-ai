@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { closeDatabase, councilTemplates, getDatabase } from "@deliberation-ai/persistence";
 
 test("lost template save responses retry without overwriting drafts or resurrecting explicit deleted identities", async ({ page, request }) => {
@@ -43,13 +43,15 @@ test("lost template save responses retry without overwriting drafts or resurrect
     expect(conflict.status()).toBe(409);
     expect((await conflict.json()).error).toContain("farklı bir ad seçin");
     expect(await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, id!))).toEqual(before);
-    expect((await request.delete(`/api/council-templates?id=${id}`)).ok()).toBe(true);
-    expect((await request.post("/api/council-templates", { data: { ...input, id } })).status()).toBe(409);
+    expect((await request.delete(`/api/council-templates?id=${id}`)).status()).toBe(405);
+    const preview = await (await request.get(`/api/council-templates/${id}/deletion`)).json();
+    expect((await request.post(`/api/council-templates/${id}/deletion`, { data: { templateId: id, fingerprint: preview.fingerprint, confirmContentDeletion: true, acknowledgeRetainedCopies: true } })).ok()).toBe(true);
+    expect((await request.post("/api/council-templates", { data: { ...input, requestId: undefined, id } })).status()).toBe(409);
     expect(await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.name, name))).toHaveLength(0);
     await expect(question).toHaveValue("Generated template save question stays unchanged");
     expect(generations).toBe(0);
   } finally {
-    await getDatabase().delete(councilTemplates).where(eq(councilTemplates.name, name));
+    await getDatabase().delete(councilTemplates).where(or(eq(councilTemplates.name, name), id ? eq(councilTemplates.id, id) : undefined));
     await closeDatabase();
   }
 });

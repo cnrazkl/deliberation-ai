@@ -5,11 +5,7 @@ literal fences and escaped heading metadata keep embedded fences/HTML from becom
 content. UTF-8/no-store/nosniff and oversize refusal apply; plaintext independent copies
 retain existing export exclusions. [Contract](MARKDOWN_EXPORTS.md).
 
-DA-108 preparation prevents a missing/foreign/deleted template update identity from
-creating another row and prevents implicit same-name content overwrite. Owner-scoped
-write serialization coordinates application saves/deletes. Physical template deletion
-still has no review/receipt, and an old id-less create may recreate it after deletion.
-These remaining boundaries are explicit in [the lifecycle](COUNCIL_TEMPLATE_LIFECYCLE.md).
+DA-108 uses strict same-origin 4 KiB confirmations, bounded inspection and exact-state fingerprints. Schema/FK/trigger/check/index drift blocks mutation. Receipts use context-authenticated encryption and exhaustive restore auditing. Names/descriptions are cleared and encrypted members become empty. Creation identity/hash and member count remain as replay metadata; independent snapshots, exports, backups and storage copies remain. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md).
 
 **DA-104:** Strict same-origin 4 KiB confirmations, schema/FK/trigger/unique-index checks, a 24 MiB inspection cap, exact-state fingerprints and owner/table serialization protect draft deletion. Ciphertexts are nulled, and original intent replay is denied. Receipts are plain content-free metadata; independent records, old backups and physical storage remain. Destructive acceptance uses generated fixtures only. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

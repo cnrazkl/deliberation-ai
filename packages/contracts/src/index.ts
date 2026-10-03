@@ -588,12 +588,21 @@ export type LocalScheduleDeletionReceipt = z.infer<typeof localScheduleDeletionR
 
 export const saveCouncilTemplateSchema = z.object({
   id: z.string().uuid().optional(),
+  requestId: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(80),
   description: z.string().trim().max(240).default(""),
   members: councilMembersSchema,
+}).strict().superRefine((value, context) => {
+  if (Boolean(value.id) === Boolean(value.requestId)) context.addIssue({ code: "custom", message: "Supply an update id or a creation request id, exclusively." });
 });
 
 export type SaveCouncilTemplateRequest = z.infer<typeof saveCouncilTemplateSchema>;
+export const deleteCouncilTemplateSchema = z.object({ templateId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  confirmContentDeletion: z.literal(true), acknowledgeRetainedCopies: z.literal(true) }).strict();
+export const councilTemplateDeletionReceiptSchema = z.object({ version: z.literal("council-template-deletion-v1"), templateId: z.string().uuid(),
+  creationRequestId: z.string().uuid().nullable(), creationRequestHash: z.string().regex(/^[a-f0-9]{64}$/).nullable(),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/), deletedAt: z.string().datetime(), memberCount: z.number().int().min(2).max(6) }).strict();
+export type CouncilTemplateDeletionReceipt = z.infer<typeof councilTemplateDeletionReceiptSchema>;
 
 const claimCore = {
   statement: z.string().trim().min(1).max(1_000),

@@ -518,9 +518,14 @@ export const councilTemplates = pgTable(
     memberCount: integer("member_count").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    creationRequestId: uuid("creation_request_id"),
+    creationRequestHash: text("creation_request_hash"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletionReceiptCiphertext: text("deletion_receipt_ciphertext"),
   },
   (table) => [
-    uniqueIndex("council_templates_owner_name_uq").on(table.ownerId, table.name),
+    uniqueIndex("council_templates_owner_name_uq").on(table.ownerId, table.name).where(sql`${table.deletedAt} is null`),
+    uniqueIndex("council_templates_owner_request_uq").on(table.ownerId, table.creationRequestId),
     check("council_templates_member_count_range", sql`${table.memberCount} between 2 and 6`),
   ],
 );

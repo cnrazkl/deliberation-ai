@@ -14,14 +14,9 @@ DTOs to pure web formatters. JSON remains the default. Conversation snapshot bou
 are reused; Markdown adds literal fencing and a formatted-byte limit. No database or
 provider mutation. [Contract](MARKDOWN_EXPORTS.md).
 
-## DA-108 template save boundaries
+## DA-108 saved template lifecycle
 
-The persistence template service serializes save/delete through one owner-scoped
-transaction advisory lock. Id-less same-name requests compare description and ordered
-members before returning an unchanged row or refusing a conflict. Explicit updates
-require an owned existing row. The BFF exposes content-free conflict errors; no schema
-or provider boundary changes. Reviewed deletion/intent receipts remain open.
-[Lifecycle](COUNCIL_TEMPLATE_LIFECYCLE.md).
+Persistence owns request identity/hash, exact-row review and encrypted deletion receipts. Owner advisory and table locks serialize save/delete. Active-name uniqueness permits fresh name reuse while owner/request uniqueness preserves deleted intent. The BFF exposes bounded same-origin preview/confirmation; UI retains retry identity and fences review responses. Run/schedule snapshots and provider/queue boundaries remain independent. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md), [ADR-0033](adr/0033-reviewed-council-template-deletion.md).
 
 **DA-104:** A separate persistence boundary inspects one owned preflight row, fingerprints exact database timestamps and scrubs it under existing owner serialization plus a draft-table lock. Existing JSON metadata holds the strict receipt; create/start/cancel and enqueue/rerun guards preserve tombstone ordering. No provider or queue work is dispatched by review/deletion. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

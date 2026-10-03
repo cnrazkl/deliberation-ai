@@ -507,7 +507,10 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.getByText("Analist B", { exact: true })).toBeVisible();
   await expect(page.getByText("Deneme üyesi planlanan hata senaryosunu tetikledi.")).toBeVisible();
 
-  await page.getByRole("button", { name: `${templateName} şablonunu sil` }).click();
+  await page.getByRole("button", { name: `${templateName} şablonunu silmeyi incele` }).click();
+  const templateDeletion = page.getByRole("region", { name: "Şablon silme önizlemesi" });
+  await templateDeletion.getByRole("checkbox").check();
+  await templateDeletion.getByRole("button", { name: "Şablon içeriğini kalıcı olarak sil" }).click();
   await expect(page.locator(".template-button").filter({ hasText: templateName })).toHaveCount(0);
 
   for (const label of [firstConnection, secondConnection, localConnection, openRouterConnection]) {

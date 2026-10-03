@@ -94,3 +94,5 @@ Deprecated plaintext content columns remain temporarily for migration compatibil
 ## DA-107 reviewed local schedule deletion
 
 Migration 0048 adds local_schedules.creation_request_id, creation_request_hash, deleted_at and deletion_receipt_ciphertext; owner/request uniqueness and a paired paused deletion constraint preserve retry identity. Legacy values are nullable. Removed templates retain encrypted empty name/question/members, clear execution limits and keep independent runs. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).
+
+Migration 0049 adds nullable council_templates.creation_request_id, creation_request_hash, deleted_at and deletion_receipt_ciphertext. Owner/request uniqueness survives deletion; owner/name uniqueness covers active rows only. Tombstones clear name/description, encrypt empty members, retain the original member count and authenticate a strict content-free receipt. Legacy rows retain null creation metadata. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md).

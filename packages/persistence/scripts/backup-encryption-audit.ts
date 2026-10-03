@@ -5,6 +5,7 @@ import { decodePrivateBranchDeletion } from "../src/private-branch-deletion";
 import { decodeRunDeletion } from "../src/run-deletion";
 import { readPreflightDraftDeletion } from "../src/preflight-draft-deletion";
 import { decodeLocalScheduleDeletion } from "../src/local-schedule-deletion";
+import { decodeCouncilTemplateDeletion } from "../src/council-templates";
 
 type EncryptedField = readonly [column: string, contextSuffix: string, format: "text" | "json"];
 interface EncryptedTable {
@@ -79,7 +80,9 @@ const encryptedTables: readonly EncryptedTable[] = [
   { table: "mcp_tool_results", keys: ["id"], contextPrefix: "mcp-tool-result", fields: [
     ["arguments_ciphertext", "arguments", "json"], ["content_ciphertext", "content", "text"],
   ] },
-  { table: "council_templates", keys: ["id"], contextPrefix: "council-template", fields: [["members_ciphertext", "members", "json"]] },
+  { table: "council_templates", keys: ["id"], contextPrefix: "council-template", fields: [["members_ciphertext", "members", "json"],
+    ["deletion_receipt_ciphertext", "deletion-receipt", "json"]], metadata: [["name", "templateName"], ["description", "templateDescription"],
+    ["member_count::text", "templateMemberCount"], ["creation_request_id", "templateRequestId"], ["creation_request_hash", "templateRequestHash"], ["deleted_at::text", "templateDeletedAt"]] },
   { table: "decision_connections", keys: ["id"], contextPrefix: "decision-connection", fields: [["secret_ciphertext", "secret", "text"]] },
   { table: "decision_assessments", keys: ["id"], contextPrefix: "decision-assessment", fields: [
     ["input_ciphertext", "input", "json"], ["result_ciphertext", "result", "json"],
@@ -131,6 +134,12 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
         const key = keys.map((_, index) => row[`key_${index}`]);
         if (key.some((part) => typeof part !== "string")) throw new Error("Restored encrypted-row key is missing.");
         const contextBase = `${descriptor.contextPrefix}:${key.join(":")}`;
+        if (descriptor.table === "council_templates") {
+          try { decodeCouncilTemplateDeletion({ id: key[0]!, name: row.templateName!, description: row.templateDescription!, memberCount: Number(row.templateMemberCount),
+            creationRequestId: row.templateRequestId ?? null, creationRequestHash: row.templateRequestHash ?? null, deletedAt: row.templateDeletedAt ? new Date(row.templateDeletedAt) : null,
+            deletionReceiptCiphertext: row.deletion_receipt_ciphertext ?? null, membersCiphertext: row.members_ciphertext! });
+          } catch { throw new Error("Restored council-template deletion metadata is invalid."); }
+        }
         if (descriptor.table === "local_schedules" && added.length === 4) {
           try { decodeLocalScheduleDeletion({ id: key[0]!, creationRequestId: row.scheduleRequestId ?? null,
             deletedAt: row.scheduleDeletedAt ? new Date(row.scheduleDeletedAt) : null, status: row.scheduleStatus!,

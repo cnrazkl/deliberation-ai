@@ -1,21 +1,28 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, expect, test } from "vitest";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, or } from "drizzle-orm";
 import { defaultFakeCouncilMembers, saveCouncilTemplateSchema } from "@deliberation-ai/contracts";
 import { closeDatabase, getDatabase } from "./database";
 import { councilTemplates } from "./schema";
 import { encryptJson } from "./crypto";
-import { CouncilTemplateConflictError, deleteCouncilTemplate, saveCouncilTemplate } from "./council-templates";
+import { CouncilTemplateConflictError, CouncilTemplateDeletionStaleError, previewCouncilTemplateDeletion, deleteCouncilTemplateContent, saveCouncilTemplate } from "./council-templates";
 
 const names: string[] = [];
+const requestIds: string[] = [];
+async function deleteCouncilTemplate(id: string) {
+  const preview = await previewCouncilTemplateDeletion(id);
+  return preview ? Boolean(await deleteCouncilTemplateContent(id, preview.fingerprint!)) : false;
+}
 function input() {
   const name = `generated-${randomUUID()}`;
   names.push(name);
-  return saveCouncilTemplateSchema.parse({ name, description: "Generated retry fixture", members: defaultFakeCouncilMembers });
+  const requestId = randomUUID(); requestIds.push(requestId);
+  return saveCouncilTemplateSchema.parse({ requestId, name, description: "Generated retry fixture", members: defaultFakeCouncilMembers });
 }
 afterEach(async () => {
-  if (names.length) await getDatabase().delete(councilTemplates).where(inArray(councilTemplates.name, names));
+  if (names.length) await getDatabase().delete(councilTemplates).where(or(inArray(councilTemplates.name, names), inArray(councilTemplates.creationRequestId, requestIds)));
   names.length = 0;
+  requestIds.length = 0;
 });
 afterAll(closeDatabase);
 
@@ -37,17 +44,17 @@ test("same-name creation cannot silently change descriptions or member settings"
 
 test("missing and deleted explicit update identities never create replacements", async () => {
   const request = input();
-  await expect(saveCouncilTemplate({ ...request, id: randomUUID() })).rejects.toBeInstanceOf(CouncilTemplateConflictError);
+  await expect(saveCouncilTemplate({ ...request, requestId: undefined, id: randomUUID() })).rejects.toBeInstanceOf(CouncilTemplateConflictError);
   const saved = await saveCouncilTemplate(request);
   expect(await deleteCouncilTemplate(saved.id)).toBe(true);
-  await expect(saveCouncilTemplate({ ...request, id: saved.id })).rejects.toBeInstanceOf(CouncilTemplateConflictError);
+  await expect(saveCouncilTemplate({ ...request, requestId: undefined, id: saved.id })).rejects.toBeInstanceOf(CouncilTemplateConflictError);
   expect(await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.name, request.name))).toHaveLength(0);
 });
 
 test("explicit owned updates still work and stale creation payloads cannot undo them", async () => {
   const request = input();
   const saved = await saveCouncilTemplate(request);
-  const updated = await saveCouncilTemplate({ ...request, id: saved.id, description: "Explicit update" });
+  const updated = await saveCouncilTemplate({ ...request, requestId: undefined, id: saved.id, description: "Explicit update" });
   expect(updated.id).toBe(saved.id);
   expect(updated.description).toBe("Explicit update");
   await expect(saveCouncilTemplate(request)).rejects.toBeInstanceOf(CouncilTemplateConflictError);
@@ -60,7 +67,7 @@ test("foreign identities cannot be updated or deleted and owner names remain ind
     description: request.description, memberCount: request.members.length,
     membersCiphertext: encryptJson(request.members, `council-template:${id}:members`) });
   const before = await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, id));
-  await expect(saveCouncilTemplate({ ...request, id })).rejects.toBeInstanceOf(CouncilTemplateConflictError);
+  await expect(saveCouncilTemplate({ ...request, requestId: undefined, id })).rejects.toBeInstanceOf(CouncilTemplateConflictError);
   expect(await deleteCouncilTemplate(id)).toBe(false);
   expect((await saveCouncilTemplate(request)).id).not.toBe(id);
   expect(await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, id))).toEqual(before);
@@ -85,8 +92,11 @@ test("concurrent conflicting creations preserve exactly one draft", async () => 
 test("overlapping explicit update and deletion cannot resurrect a removed template", async () => {
   const request = input();
   const saved = await saveCouncilTemplate(request);
-  const results = await Promise.allSettled([deleteCouncilTemplate(saved.id), saveCouncilTemplate({ ...request, id: saved.id, description: "Updated draft" })]);
-  expect(results[0]).toEqual({ status: "fulfilled", value: true });
+  const results = await Promise.allSettled([deleteCouncilTemplate(saved.id), saveCouncilTemplate({ ...request, requestId: undefined, id: saved.id, description: "Updated draft" })]);
+  if (results[0]?.status === "rejected") {
+    expect(results[0].reason).toBeInstanceOf(CouncilTemplateDeletionStaleError);
+    expect(await deleteCouncilTemplate(saved.id)).toBe(true);
+  } else expect(results[0]).toEqual({ status: "fulfilled", value: true });
   if (results[1]?.status === "rejected") expect(results[1].reason).toBeInstanceOf(CouncilTemplateConflictError);
   expect(await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.name, request.name))).toHaveLength(0);
 });

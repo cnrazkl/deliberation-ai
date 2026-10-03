@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { CouncilTemplateDeletionPanel } from "./council-template-deletion-panel";
 import type { RunRecord } from "@deliberation-ai/application";
 import { auditPromptRevision, findCriticalMissingContext, PROMPT_REVISION_VERSION, suggestStructuredQuestion } from "@deliberation-ai/domain";
 import { MAX_ATTACHMENT_BYTES, MAX_PDF_ATTACHMENT_BYTES, MAX_RUN_ATTACHMENTS, MAX_TOTAL_ATTACHMENT_BYTES } from "@deliberation-ai/contracts";
@@ -333,6 +334,9 @@ export function CouncilWorkbench() {
   const [templates, setTemplates] = useState<CouncilTemplate[]>([]);
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const templateIntent = useRef<{ body: string; requestId: string } | undefined>(undefined);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string>();
+  const [deletingTemplateBusy, setDeletingTemplateBusy] = useState(false);
   const [connections, setConnections] = useState<ProviderConnection[]>([]);
   const [catalogChecks, setCatalogChecks] = useState<Record<string, ModelCatalogCheck>>({});
   const [checkingConnectionId, setCheckingConnectionId] = useState<string>();
@@ -630,18 +634,17 @@ export function CouncilWorkbench() {
   }
 
   async function saveTemplate(): Promise<void> {
-    if (!templateName.trim()) return;
+    if (!templateName.trim() || savingTemplate || deletingTemplateBusy) return;
+    const draft = { name: templateName.trim(), description: `${members.length} üyeli kayıtlı sağlayıcı konseyi`, members };
+    const bodyKey = JSON.stringify(draft);
+    if (!templateIntent.current || templateIntent.current.body !== bodyKey) templateIntent.current = { body: bodyKey, requestId: crypto.randomUUID() };
     setSavingTemplate(true);
     setError(undefined);
     try {
       const response = await fetch("/api/council-templates", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: templateName,
-          description: `${members.length} üyeli kayıtlı sağlayıcı konseyi`,
-          members,
-        }),
+        body: JSON.stringify({ ...draft, requestId: templateIntent.current.requestId }),
       });
       const body = (await response.json()) as CouncilTemplate | { error?: string };
       if (!response.ok) {
@@ -650,6 +653,7 @@ export function CouncilWorkbench() {
       const saved = body as CouncilTemplate;
       setTemplates((current) => [...current.filter((item) => item.id !== saved.id), saved].sort((a, b) => a.name.localeCompare(b.name, "tr")));
       setTemplateName("");
+      templateIntent.current = undefined;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Şablon kaydedilemedi.");
     } finally {
@@ -657,14 +661,10 @@ export function CouncilWorkbench() {
     }
   }
 
-  async function deleteTemplate(templateId: string): Promise<void> {
-    const response = await fetch(`/api/council-templates?id=${encodeURIComponent(templateId)}`, { method: "DELETE" });
-    if (!response.ok) {
-      setError("Şablon silinemedi.");
-      return;
-    }
-    setTemplates((current) => current.filter((item) => item.id !== templateId));
-  }
+  const onTemplateDeleted = useCallback(() => {
+    setTemplates((current) => current.filter((item) => item.id !== deletingTemplateId));
+    setDeletingTemplateId(undefined);
+  }, [deletingTemplateId]);
 
   async function saveConnection(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -1993,7 +1993,7 @@ export function CouncilWorkbench() {
             placeholder="Şablon adı"
             onChange={(event) => setTemplateName(event.target.value)}
           />
-          <button type="button" disabled={savingTemplate || !templateName.trim() || !memberConfigurationValid} onClick={saveTemplate}>
+          <button type="button" disabled={savingTemplate || deletingTemplateBusy || !templateName.trim() || !memberConfigurationValid} onClick={saveTemplate}>
             {savingTemplate ? "Kaydediliyor…" : "Şablonu kaydet"}
           </button>
         </div>
@@ -2004,13 +2004,16 @@ export function CouncilWorkbench() {
                 <button
                   className="template-button"
                   type="button"
+                  disabled={deletingTemplateBusy}
                   onClick={() => {
                     setMembers(template.members);
                   }}
                 >
                   {template.name} <small>{template.memberCount} üye</small>
                 </button>
-                <button className="icon-button" type="button" aria-label={`${template.name} şablonunu sil`} onClick={() => void deleteTemplate(template.id)}>×</button>
+                <button className="secondary-button" type="button" disabled={savingTemplate || deletingTemplateBusy} aria-label={`${template.name} şablonunu silmeyi incele`} onClick={() => setDeletingTemplateId(template.id)}>Silmeyi incele</button>
+                {deletingTemplateId === template.id && <CouncilTemplateDeletionPanel key={template.id} templateId={template.id}
+                  onCancel={() => setDeletingTemplateId(undefined)} onDeleted={onTemplateDeleted} onBusy={setDeletingTemplateBusy} />}
               </div>
             ))}
           </div>

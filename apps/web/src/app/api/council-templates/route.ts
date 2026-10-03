@@ -1,7 +1,6 @@
 import { saveCouncilTemplateSchema } from "@deliberation-ai/contracts";
 import {
   CouncilTemplateConflictError,
-  deleteCouncilTemplate,
   listCouncilTemplates,
   saveCouncilTemplate,
 } from "@deliberation-ai/persistence";
@@ -40,7 +39,5 @@ export async function POST(request: Request): Promise<Response> {
 export async function DELETE(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
-  const id = new URL(request.url).searchParams.get("id");
-  if (!id) return Response.json({ error: "Şablon kimliği gerekli." }, { status: 400 });
-  return Response.json({ deleted: await deleteCouncilTemplate(id) });
+  return Response.json({ error: "Önce şablon silme önizlemesini inceleyin ve onaylayın." }, { status: 405, headers: { "Cache-Control": "no-store" } });
 }

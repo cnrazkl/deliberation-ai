@@ -1,6 +1,14 @@
 # Current state
 
-Updated: 3 October 2026 (DA-110 runtime restored/test lifecycle separated; next remaining DA-108)
+Updated: 3 October 2026 (DA-108 completed)
+
+## Latest verified increment — DA-108
+
+Saved council templates require durable creation identities and reviewed deletion with explicit retained-copy acknowledgement. Exact-state confirmation scrubs content into a hidden encrypted-receipt tombstone. Old creation replay stays blocked; fresh name reuse works. Current drafts, frozen runs and independent schedules remain.
+
+281 units, 203 isolated PostgreSQL cases, all 31 browser cases, type/lint/build/audit and populated custom archive restore pass. Additive migration 0049 applied locally after verified backup; post-migration backup restore also passes. No real owner deletion or paid provider call. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md), [acceptance](DA108_ACCEPTANCE.md).
+
+Next: bounded remaining settings/decision/accounting/copy work. Older next-task statements below are historical.
 
 ## Latest maintenance — DA-110 runtime/test lifecycle
 
@@ -23,24 +31,11 @@ Read-only downloads preserve drafts and start no generation.
 279 units, two focused real-worker loopback browser cases, type checks, zero-warning lint
 and separate-output production build pass. No schema change, migration, real owner deletion
 or paid/cloud call. [Scope and acceptance](MARKDOWN_EXPORTS.md). Inserted before remaining
-DA-108 work at the owner's request; DA-108 remains open.
+DA-108 work at the owner's request; DA-108 was pending at that point; completion is recorded above.
 
-## Current preparation — DA-108 saved council-template lifecycle
+## Previous preparation — DA-108
 
-Identical same-name creation retries return unchanged rows; conflicting content returns
-409 rather than silently overwriting. Explicit updates require an existing owned id;
-missing/deleted/foreign identities cannot create replacements. Owner-scoped write locks
-serialize save/delete and concurrent creations.
-
-274 units, 193 isolated PostgreSQL cases (eight new template cases), one focused real-route
-browser case, workspace type checks, zero-warning lint, separate-output production build
-and full dependency audit pass. The initial fresh-checkout type check lacked generated
-Next types; build/dev generation precedes the successful repeat. No schema change,
-primary migration, real owner deletion or paid call. [Scope and evidence](COUNCIL_TEMPLATE_LIFECYCLE.md).
-
-DA-108 remains open: reviewed deletion, durable creation identity/tombstones, lost-delete
-response recovery, name reuse and populated receipt restore are still required. Existing
-physical deletion can permit old id-less creation replay. Next: implement those boundaries.
+Save-boundary preparation was superseded by the completed reviewed lifecycle above.
 
 ## Previous verified increment — DA-107 reviewed local schedule-template deletion
 

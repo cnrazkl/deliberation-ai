@@ -73,7 +73,8 @@ import {
   saveResearchCapture,
 } from "./research-captures";
 import {
-  deleteCouncilTemplate,
+  deleteCouncilTemplateContent,
+  previewCouncilTemplateDeletion,
   listCouncilTemplates,
   saveCouncilTemplate,
 } from "./council-templates";
@@ -1275,6 +1276,7 @@ test("persists queued, cancelled, completed and partial council runs", async () 
   expect(sixMemberRows.filter((row) => row.councilRole === "red-team")).toHaveLength(2);
 
   const template = await saveCouncilTemplate({
+    requestId: randomUUID(),
     name: `Altılı konsey ${randomUUID()}`,
     description: "Entegrasyon testi",
     members: sixMemberRequest.members!,
@@ -1451,8 +1453,10 @@ test("persists queued, cancelled, completed and partial council runs", async () 
 
   expect(await deleteProviderConnection(connection.id)).toBe(true);
   expect(await deleteProviderConnection(secondConnection.id)).toBe(true);
-  expect(await deleteCouncilTemplate(template.id)).toBe(true);
-  createdTemplateIds.splice(createdTemplateIds.indexOf(template.id), 1);
+  const templatePreview = await previewCouncilTemplateDeletion(template.id);
+  const retainedRunsBeforeTemplateDeletion = await getDatabase().select().from(runs).where(inArray(runs.id, createdRunIds));
+  expect(await deleteCouncilTemplateContent(template.id, templatePreview!.fingerprint!)).toBeTruthy();
+  expect(await getDatabase().select().from(runs).where(inArray(runs.id, createdRunIds))).toEqual(retainedRunsBeforeTemplateDeletion);
 });
 
 test("reloads repeated demo perspectives without presenting independent agreement", async () => {

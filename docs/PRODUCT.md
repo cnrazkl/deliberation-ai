@@ -5,10 +5,7 @@ and missing-content notices. **Sentezi indir (MD)** exports included/unresolved/
 claims with minority/red-team provenance. Downloads preserve drafts and start no generation;
 JSON remains available. [Scope](MARKDOWN_EXPORTS.md).
 
-**DA-108 preparation:** saved council templates reject conflicting same-name creation
-instead of silently overwriting content. Identical retries return the unchanged template;
-explicit updates require an existing owned id and cannot recreate a deleted row. Reviewed
-deletion and durable creation receipts remain open. [Scope](COUNCIL_TEMPLATE_LIFECYCLE.md).
+**DA-108:** saved council templates use durable creation identities and reviewed deletion beneath the selected card. Acknowledgement clears that reusable configuration; current drafts, frozen runs and schedules remain. Lost responses can be retried safely, deleted identities remain blocked, and a fresh identity can reuse the name. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md).
 
 **DA-104:** Pending clarification tasks now offer a read-only draft deletion review and separate acknowledgement. Confirmed deletion clears the stored question/request while retaining a content-free tombstone; existing runs and the main council draft remain. Original-intent replay is refused. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
