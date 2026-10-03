@@ -1,6 +1,19 @@
 # Current state
 
-Updated: 3 October 2026 (DA-108 template save boundaries verified; reviewed deletion remains open)
+Updated: 3 October 2026 (DA-109 Markdown downloads verified; next remaining DA-108 deletion work)
+
+## Latest owner-requested increment — DA-109 Markdown history and synthesis
+
+Conversation history and selected-run synthesis coverage download as UTF-8 `.md`.
+History preserves raw/structured outputs, archives, private branches, deletion audits
+and unavailable records. Synthesis preserves every coverage group, minority/red-team
+occurrence, evidence/scope/relations and prompt/risk provenance. JSON remains available.
+Read-only downloads preserve drafts and start no generation.
+
+279 units, two focused real-worker loopback browser cases, type checks, zero-warning lint
+and separate-output production build pass. No schema change, migration, real owner deletion
+or paid/cloud call. [Scope and acceptance](MARKDOWN_EXPORTS.md). Inserted before remaining
+DA-108 work at the owner's request; DA-108 remains open.
 
 ## Current preparation — DA-108 saved council-template lifecycle
 

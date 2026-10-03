@@ -1,5 +1,10 @@
 # Tasks
 
+- [x] DA-109 owner-requested insertion before remaining DA-108: Markdown downloads for
+  conversation history and selected report synthesis coverage, preserving provenance,
+  minority/raw/private history and unavailable records. 279 units, two focused browser
+  flows, type/lint/build pass. [Acceptance](MARKDOWN_EXPORTS.md).
+
 DA-103 removes DA-102's vulnerable lint dependency chain with a scoped replacement and
 reviewed compatibility patch, preserving all 113 lint rule settings. Full dependency
 audit, 7 compatibility tests, frozen clean installation, 272 units, lint/type/build pass.

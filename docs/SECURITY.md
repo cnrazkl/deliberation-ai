@@ -1,5 +1,10 @@
 # Security
 
+DA-109 Markdown attachments reuse owned export DTOs and same-origin checks. Input-sized
+literal fences and escaped heading metadata keep embedded fences/HTML from becoming active
+content. UTF-8/no-store/nosniff and oversize refusal apply; plaintext independent copies
+retain existing export exclusions. [Contract](MARKDOWN_EXPORTS.md).
+
 DA-108 preparation prevents a missing/foreign/deleted template update identity from
 creating another row and prevents implicit same-name content overwrite. Owner-scoped
 write serialization coordinates application saves/deletes. Physical template deletion

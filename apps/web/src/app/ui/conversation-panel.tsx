@@ -16,15 +16,15 @@ export function ConversationPanel({ runId, onOpenRun }: { runId: string; onOpenR
     }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Konuşma yüklenemedi."); });
     return () => controller.abort();
   }, [runId, refresh]);
-  async function download() {
+  async function download(format: "json" | "md" = "json") {
     if (!conversation || busy) return;
     setBusy(true); setError(null);
     try {
-      const response = await fetch(`/api/conversations/${conversation.conversationId}/export`, { method: "POST", cache: "no-store" });
+      const response = await fetch(`/api/conversations/${conversation.conversationId}/export?format=${format}`, { method: "POST", cache: "no-store" });
       if (!response.ok) { const body = await response.json() as { error?: string }; throw new Error(body.error ?? "Konuşma indirilemedi."); }
       const url = URL.createObjectURL(await response.blob());
       const link = document.createElement("a"); link.href = url;
-      link.download = `deliberationai-conversation-${conversation.conversationId}.json`;
+      link.download = `deliberationai-conversation-${conversation.conversationId}.${format}`;
       document.body.append(link); link.click(); link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Konuşma indirilemedi."); }
@@ -38,6 +38,7 @@ export function ConversationPanel({ runId, onOpenRun }: { runId: string; onOpenR
   return <section className="settings-card" aria-label="Konuşma kaydı">
     <div className="config-heading"><strong>Konuşma</strong>
       <button className="secondary-button" type="button" disabled={!conversation || busy} onClick={() => void download()}>{busy ? "Hazırlanıyor…" : "Konuşmayı indir (JSON)"}</button>
+      <button className="secondary-button" type="button" disabled={!conversation || busy} onClick={() => void download("md")}>Konuşmayı indir (MD)</button>
       <button className="secondary-button" type="button" disabled={busy} onClick={() => setRefresh((value) => value + 1)}>Konuşmayı yenile</button>
     </div>
     <p className="section-hint">Dosya, bu konuşmanın tüm kayıtlı çalışmalarını, özel dal taslaklarını, ham yanıtlarını ve saklanan özgün geçmişini okunabilir metin olarak içerir. Silinen çalışmalar eksik olarak belirtilir; devam edenlerin o anki durumu alınır. Ayrı ek dosyalar ve harici kaynak kayıtları dahil edilmez.</p>

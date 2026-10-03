@@ -1031,12 +1031,12 @@ export function CouncilWorkbench() {
     }
   }
 
-  async function exportRun(): Promise<void> {
+  async function exportRun(format: "json" | "md" = "json"): Promise<void> {
     if (!run?.report || exportingRun) return;
     setExportingRun(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/runs/${run.runId}/export`, { method: "POST", cache: "no-store" });
+      const response = await fetch(`/api/runs/${run.runId}/export?format=${format}`, { method: "POST", cache: "no-store" });
       if (!response.ok) {
         const body = await response.json() as { error?: string };
         throw new Error(body.error ?? "Rapor indirilemedi.");
@@ -1044,7 +1044,7 @@ export function CouncilWorkbench() {
       const url = URL.createObjectURL(await response.blob());
       const link = document.createElement("a");
       link.href = url;
-      link.download = `deliberationai-report-${run.runId}.json`;
+      link.download = `deliberationai-${format === "md" ? "synthesis" : "report"}-${run.runId}.${format}`;
       document.body.append(link);
       link.click();
       link.remove();
@@ -2351,6 +2351,7 @@ export function CouncilWorkbench() {
                   <small>
                     Kapsam bir doğruluk kararı değildir; hiçbir azınlık görüşü otomatik silinmez.
                   </small>
+                  <button className="secondary-button" type="button" disabled={exportingRun} onClick={() => void exportRun("md")}>Sentezi indir (MD)</button>
                 </div>
                 <div className="synthesis-grid">
                   {(["included", "unresolved", "omitted"] as const).map((coverage) => {

@@ -1,5 +1,10 @@
 # Product
 
+**DA-109:** **Konuşmayı indir (MD)** exports retained history, raw replies, private branches
+and missing-content notices. **Sentezi indir (MD)** exports included/unresolved/omitted
+claims with minority/red-team provenance. Downloads preserve drafts and start no generation;
+JSON remains available. [Scope](MARKDOWN_EXPORTS.md).
+
 **DA-108 preparation:** saved council templates reject conflicting same-name creation
 instead of silently overwriting content. Identical retries return the unchanged template;
 explicit updates require an existing owned id and cannot recreate a deleted row. Reviewed

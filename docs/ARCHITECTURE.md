@@ -1,5 +1,12 @@
 # Architecture
 
+## DA-109 Markdown exports
+
+Existing owner-scoped run/conversation export routes accept `format=md` and pass safe
+DTOs to pure web formatters. JSON remains the default. Conversation snapshot boundaries
+are reused; Markdown adds literal fencing and a formatted-byte limit. No database or
+provider mutation. [Contract](MARKDOWN_EXPORTS.md).
+
 ## DA-108 template save boundaries
 
 The persistence template service serializes save/delete through one owner-scoped
