@@ -1,5 +1,7 @@
 # Decisions
 
+DA-102 implements [ADR-0029](adr/0029-reviewed-run-body-deletion.md): owned terminal leaf content removal with retained usage/intent audit, existing worker fence and exact cascade review. Preserve memberships and independent inputs/billing; exclude decision aggregates without a fence. Functional verification passes while the full dependency security gate remains open; no audit exception is introduced.
+
 DA-101 accepts [ADR-0028](adr/0028-reviewed-private-branch-deletion.md): reviewed leaf-first private content removal with encrypted content-free usage/provenance and replay retention. Keep logical audit identifiers after later empty-conversation metadata deletion. Do not cascade into copies, clear unknown work, erase external archives or imply a refund.
 
 DA-100 extends [ADR-0027](adr/0027-reviewed-private-delivery.md) to reviewed native Gemini generateContent text. Reuse existing versions/locks/allowances, refuse unsupported output and keep candidate/thought conventions distinct. Drop opaque signatures from reconstructed history, preserve unfinished uncertainty and add no blind resend. Richer settings, provider-managed continuity, erasure and live acceptance remain separate; earlier provider-absence notes describe historical increments.

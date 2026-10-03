@@ -1,5 +1,7 @@
 # Durable conversations and complete retained-run export — DA-093
 
+**DA-102:** reviewed terminal leaf body removal preserves conversation membership and adds content-free `runDeletions` to owned bounded conversation export. Removed bodies have unavailable/null payloads, while retained usage/intent audits survive later eligible empty metadata deletion. Independent inputs/billing and external copies remain. [Policy](RUN_DELETION.md). Earlier run-body absence statements describe historical increments.
+
 **DA-101 export extension:** bounded owned conversation exports include `privateBranchDeletions` with content-free retained audit projected as JSON. Removed private branch seed/messages/request/reply text is absent from active `privateBranches`; usage/origin identifiers remain and copied receipts are not new calls. Audit rows use logical conversation IDs and survive later DA-095 empty metadata deletion. External downloaded/backup copies retain what they captured. [Contract](PRIVATE_BRANCH_DELETION.md).
 
 DA-096 additionally retains [selected-member private owner drafts and prefix forks](PRIVATE_BRANCHES.md). The conversation library reopens these even without a surviving run body. Conversation JSON now includes `privateBranches` in the same snapshot, with an explicit plaintext warning. This is draft storage, not live one-model chat. The earlier DA-093/094 scope below is extended by this increment; actual sending/replies and message editing/deletion remain open.

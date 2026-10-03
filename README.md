@@ -2,6 +2,8 @@
 
 DeliberationAI is a provider-independent multi-model council that preserves disagreements and provenance instead of treating agreement as truth.
 
+DA-102 adds functionally verified reviewed terminal run-body deletion with copy/pending/fence guards, retained usage/intent audit and preserved conversation membership. Decision aggregates, independent inputs and external copies remain outside scope. Full dependency security acceptance is open on an unpatched lint-tool advisory; production dependency audit passes. [Workflow](docs/RUN_DELETION.md), [verification](docs/DA102_ACCEPTANCE.md), [security finding](docs/DEPENDENCY_SECURITY_2026_10_03.md).
+
 DA-101 adds reviewed deletion of one private branch's stored content. Surviving copies and pending/unknown deliveries block removal; encrypted content-free usage/provenance and replay records remain. Source reports, backups and downloaded exports keep their own copies. [Workflow](docs/PRIVATE_BRANCH_DELETION.md), [acceptance](docs/DA101_ACCEPTANCE.md). Earlier erasure/deletion-absence statements describe historical scope.
 
 DA-100 adds reviewed native Gemini `generateContent` private replies alongside OpenAI Responses, Claude/Anthropic and compatible endpoints. Exact text history, bounded text-only output, separate candidate/thought counters and durable unknown outcomes share the existing private boundary. Default reasoning/search off only; richer settings, private erasure/accounting and live/model-quality acceptance remain open. [Workflow](docs/PRIVATE_BRANCHES.md#da-100-native-gemini-generatecontent), [acceptance](docs/DA100_ACCEPTANCE.md). Earlier increment notes below describe their historical scope; provider-absence statements are superseded by DA-100.

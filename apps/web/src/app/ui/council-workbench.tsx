@@ -1629,7 +1629,10 @@ export function CouncilWorkbench() {
       </details>
 
       <ConversationLibraryPanel refreshKey={historyRefreshKey} onOpenRun={openSavedRun} />
-      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} />
+      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onDeletedRun={(id) => {
+        if (activeRunIdRef.current === id) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
+        setHistoryRefreshKey((value) => value + 1);
+      }} />
 
       {operatorOperations.length > 0 ? (
         <section className="operator-card" aria-label="Operatör kararı bekleyen işlemler">

@@ -1,4 +1,5 @@
 export * from "./database";
+export * from "./run-deletion";
 export * from "./crypto";
 export * from "./council-templates";
 export * from "./queue";

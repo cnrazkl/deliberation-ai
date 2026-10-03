@@ -2,6 +2,7 @@ import type { Client } from "pg";
 import { decryptText } from "../src/crypto";
 import { decodePrivateBranchBody } from "../src/private-branches";
 import { decodePrivateBranchDeletion } from "../src/private-branch-deletion";
+import { decodeRunDeletion } from "../src/run-deletion";
 
 type EncryptedField = readonly [column: string, contextSuffix: string, format: "text" | "json"];
 interface EncryptedTable {
@@ -16,6 +17,8 @@ interface EncryptedTable {
 // Keep this inventory exhaustive. A new ciphertext column must have an explicit
 // authenticated context here before another archive can be published.
 const encryptedTables: readonly EncryptedTable[] = [
+  { table: "run_deletions", keys: ["id"], contextPrefix: "run-deletion", fields: [["audit_ciphertext", "audit", "json"]], optional: true,
+    metadata: [["conversation_id", "conversationId"], ["deleted_at", "deletedAt"], ["intent_key_hash", "intentKeyHash"], ["owner_id", "ownerId"]] },
   { table: "private_branch_deletions", keys: ["id"], contextPrefix: "private-branch-deletion", fields: [["audit_ciphertext", "audit", "json"]], optional: true,
     metadata: [["conversation_id", "conversationId"], ["deleted_at", "deletedAt"], ["request_id", "requestId"]] },
   { table: "conversation_private_branches", keys: ["id"], contextPrefix: "private-branch", fields: [["body_ciphertext", "body", "json"]], optional: true,
@@ -127,6 +130,8 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
           try {
             const plaintext = decryptText(ciphertext, suffix ? `${contextBase}:${suffix}` : contextBase);
             if (format === "json") JSON.parse(plaintext);
+            if (descriptor.table === "run_deletions") decodeRunDeletion({ id: key[0]!, conversationId: row.conversationId!,
+              ownerId: row.ownerId!, intentKeyHash: row.intentKeyHash!, deletedAt: new Date(row.deletedAt!), auditCiphertext: ciphertext });
             if (descriptor.table === "private_branch_deletions") decodePrivateBranchDeletion({ id: key[0]!, conversationId: row.conversationId!,
               requestId: row.requestId!, deletedAt: new Date(row.deletedAt!), auditCiphertext: ciphertext });
             if (descriptor.table === "conversation_private_branches") decodePrivateBranchBody({

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { RunHistoryPage } from "@deliberation-ai/persistence";
+import { RunDeletionPanel } from "./run-deletion-panel";
 
 const statusLabels: Record<RunHistoryPage["runs"][number]["status"], string> = {
   queued: "Sırada",
@@ -16,9 +17,12 @@ type Props = {
   activeRunId: string | undefined;
   refreshKey: number;
   onOpenRun: (runId: string) => Promise<void>;
+  onDeletedRun: (runId: string) => void;
 };
 
-export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun }: Props) {
+export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun, onDeletedRun }: Props) {
+  const [deletionId, setDeletionId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState<RunHistoryPage>({ runs: [], nextCursor: null });
   const [loading, setLoading] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -60,7 +64,7 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun }: Props) {
   }, [refreshKey, manualRefresh]);
 
   async function loadOlder(): Promise<void> {
-    if (!page.nextCursor || olderRequest.current || loading || initialRequest.current) return;
+    if (deletionId || !page.nextCursor || olderRequest.current || loading || initialRequest.current) return;
     const controller = new AbortController();
     const current = generation.current;
     olderRequest.current = controller;
@@ -93,7 +97,7 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun }: Props) {
   }
 
   async function openRun(runId: string): Promise<void> {
-    if (openingRequest.current) return;
+    if (deletionId || openingRequest.current) return;
     openingRequest.current = true;
     setOpeningRunId(runId);
     setError(undefined);
@@ -111,7 +115,7 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun }: Props) {
     <details className="run-history settings-card" open>
       <summary>Son çalışmalar</summary>
       <p className="hint">Kayıtlı bir çalışmayı açıp raporunu inceleyebilir veya indirebilirsiniz. Soru alanınız ve model seçimleriniz değişmez.</p>
-      <button className="secondary-button" type="button" disabled={loading} onClick={reload}>Listeyi yenile</button>
+      <button className="secondary-button" type="button" disabled={loading || Boolean(deletionId)} onClick={reload}>Listeyi yenile</button>
       {loading ? <p className="hint">Geçmiş yükleniyor…</p> : page.runs.length === 0 ? <p className="hint">Henüz kayıtlı çalışma yok.</p> : (
         <div className="run-history-list">
           {page.runs.map((item) => (
@@ -120,14 +124,18 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun }: Props) {
                 <strong>{item.question}</strong>
                 <small>{new Date(item.createdAt).toLocaleString("tr-TR")} · {statusLabels[item.status]} · {item.memberCount} üye{item.riskProfile === "high" ? " · yüksek risk" : ""}{item.attachmentCount > 0 ? ` · ${item.attachmentCount} ek` : ""}</small>
               </div>
-              <button className="secondary-button" type="button" disabled={Boolean(openingRunId)} onClick={() => void openRun(item.runId)}>
+              <button className="secondary-button" type="button" disabled={Boolean(openingRunId) || Boolean(deletionId)} onClick={() => void openRun(item.runId)}>
                 {openingRunId === item.runId ? "Açılıyor…" : item.runId === activeRunId ? "Yeniden yükle" : "Çalışmayı aç"}
               </button>
+              {item.status !== "queued" && item.status !== "running" && <button type="button" className="secondary-button"
+                disabled={Boolean(openingRunId) || Boolean(deletionId) || loadingOlder} onClick={() => setDeletionId(item.runId)}>Çalışma silmeyi incele</button>}
             </article>
           ))}
         </div>
       )}
-      {!loading && page.nextCursor ? <button className="secondary-button" type="button" disabled={loadingOlder} onClick={() => void loadOlder()}>{loadingOlder ? "Yükleniyor…" : "Daha eski çalışmaları göster"}</button> : null}
+      {!loading && page.nextCursor ? <button className="secondary-button" type="button" disabled={loadingOlder || Boolean(deletionId)} onClick={() => void loadOlder()}>{loadingOlder ? "Yükleniyor…" : "Daha eski çalışmaları göster"}</button> : null}
+      {deletionId && <RunDeletionPanel key={deletionId} runId={deletionId} onBusy={setDeleting} onCancel={() => { if (!deleting) setDeletionId(null); }}
+        onDeleted={() => { onDeletedRun(deletionId); setDeletionId(null); reload(); }} />}
       {error ? <p className="inline-warning" role="alert">{error}</p> : null}
     </details>
   );

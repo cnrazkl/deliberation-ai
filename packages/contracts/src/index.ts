@@ -203,6 +203,21 @@ export const privateBranchDeletionAuditSchema = z.object({
   }).strict()).max(16),
 }).strict();
 export type PrivateBranchDeletionAudit = z.infer<typeof privateBranchDeletionAuditSchema>;
+export const runDeletionAuditSchema = z.object({
+  version: z.literal("run-deletion-audit-v1"), runId: z.string().uuid(), conversationId: z.string().uuid(),
+  creationIntentHash: z.string().regex(/^[a-f0-9]{64}$/), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  deletedAt: z.string().datetime(), status: z.enum(["completed", "partially_completed", "failed", "cancelled"]),
+  receipts: z.array(z.object({
+    operationId: z.string().uuid(), memberId: z.string().min(1).max(128), provider: z.string().min(1).max(128), model: z.string().min(1).max(256),
+    round: z.number().int().min(0).max(3), attempt: z.number().int().positive(),
+    status: z.enum(["succeeded", "failed", "discarded"]), startedAt: z.string().datetime(), finishedAt: z.string().datetime().nullable(),
+    inputTokens: z.number().int().nonnegative().nullable(), outputTokens: z.number().int().nonnegative().nullable(),
+    tokenDetails: providerTokenDetailsSchema.nullable(), priceSnapshotId: z.string().uuid().nullable(),
+  }).strict()).max(500),
+}).strict();
+export type RunDeletionAudit = z.infer<typeof runDeletionAuditSchema>;
+export const deleteRunBodySchema = z.object({ runId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  confirmContentDeletion: z.literal(true), acknowledgeRetainedRecords: z.literal(true) }).strict();
 export const deletePrivateBranchSchema = z.object({ branchId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   confirmContentDeletion: z.literal(true), acknowledgeRetainedMetadata: z.literal(true) }).strict();
 export const sendPrivateDeliverySchema = z.object({ requestId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict();

@@ -20,9 +20,12 @@ import { exportConversation } from "./conversations";
 import { auditRestoredEncryption } from "../scripts/backup-encryption-audit";
 import { previewPrivateBranchDeletion, deletePrivateBranch } from "./private-branch-deletion";
 import { privateBranchDeletions } from "./schema";
+import { runDeletions, providerOperations } from "./schema";
+import { deleteRunBody, previewRunDeletion } from "./run-deletion";
 
 const ids: string[] = []; const connections: string[] = []; const sources: string[] = [];
 afterEach(async () => {
+  if (sources.length) await getDatabase().delete(runDeletions).where(inArray(runDeletions.id, sources));
   if (ids.length) {
     await getDatabase().delete(privateBranchDeletions).where(inArray(privateBranchDeletions.conversationId, ids));
     await getDatabase().delete(branches).where(inArray(branches.conversationId, ids));
@@ -269,6 +272,10 @@ test("a populated native private receipt survives an actual disposable archive r
   await executePrivateDelivery(googleId, (await send(googleId))!.operationId, async () => ({ result: { ...reply,
     tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "inclusive", outputTokenKind: "candidates", cachedInputTokens: 9, reasoningTokens: 3, totalTokens: 25 } } }));
   await deletePrivateBranch(googleId, (await previewPrivateBranchDeletion(googleId))!.fingerprint!);
+  const councilOperation = randomUUID();
+  await getDatabase().insert(providerOperations).values({ id: councilOperation, runId: google.id, memberId: "private-one", provider: "google",
+    model: "offline-council-model", status: "failed", requestFingerprint: "fixture-deleted-council", inputTokens: 7, outputTokens: null });
+  await deleteRunBody(google.id, (await previewRunDeletion(google.id))!.fingerprint!);
   const name = `da_private_restore_${randomUUID().replaceAll("-", "")}`;
   const localRoot = join(process.env.LOCALAPPDATA!, "DeliberationAI");
   const adminFile = await readFile(join(localRoot, "postgres-admin.local"), "utf8");
@@ -296,6 +303,9 @@ test("a populated native private receipt survives an actual disposable archive r
       const googleValue = await reader.query<{ audit_ciphertext: string }>("select audit_ciphertext from private_branch_deletions where id = $1", [googleId]);
       expect(googleValue.rows[0]!.audit_ciphertext).toBe((await getDatabase().select().from(privateBranchDeletions).where(eq(privateBranchDeletions.id, googleId)))[0]!.auditCiphertext);
       expect((await reader.query("select 1 from conversation_private_branches where id = $1", [googleId])).rowCount).toBe(0);
+      const runAudit = await reader.query<{ audit_ciphertext: string }>("select audit_ciphertext from run_deletions where id=$1", [google.id]);
+      expect(runAudit.rows[0]!.audit_ciphertext).toBe((await getDatabase().select().from(runDeletions).where(eq(runDeletions.id, google.id)))[0]!.auditCiphertext);
+      expect((await reader.query("select 1 from runs where id=$1", [google.id])).rowCount).toBe(0);
     } finally { await reader.end(); }
   } finally {
     if (created) await admin.query(`drop database "${name}" with (force)`);

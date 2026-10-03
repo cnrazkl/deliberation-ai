@@ -76,6 +76,14 @@ export const privateBranchDeletions = pgTable("private_branch_deletions", {
 }, (table) => [index("private_branch_deletions_owner_conversation_idx").on(table.ownerId, table.conversationId, table.id),
   uniqueIndex("private_branch_deletions_owner_request_uq").on(table.ownerId, table.requestId)]);
 
+// Content-free usage and intent evidence survives reviewed run-body removal.
+export const runDeletions = pgTable("run_deletions", {
+  id: uuid("id").primaryKey(), ownerId: text("owner_id").notNull(), conversationId: uuid("conversation_id").notNull(),
+  intentKeyHash: text("intent_key_hash").notNull(), auditCiphertext: text("audit_ciphertext").notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }).notNull(),
+}, (table) => [uniqueIndex("run_deletions_owner_intent_uq").on(table.ownerId, table.intentKeyHash),
+  index("run_deletions_owner_conversation_idx").on(table.ownerId, table.conversationId, table.id)]);
+
 export const runs = pgTable(
   "runs",
   {

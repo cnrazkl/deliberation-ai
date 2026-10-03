@@ -6,6 +6,7 @@ import { projectRunBranch, type RunBranchItem } from "./run-branches";
 import { mapStoredRun } from "./run-repository";
 import { exportPrivateBranchesInSnapshot } from "./private-branches";
 import { exportPrivateBranchDeletions } from "./private-branch-deletion";
+import { exportRunDeletions } from "./run-deletion";
 import { ConversationIntegrityError, ConversationPendingError, ConversationSizeError, type ConversationTransaction } from "./conversation-membership";
 
 export const MAX_CONVERSATION_RUNS = 200;
@@ -87,7 +88,8 @@ export async function exportConversation(conversationId: string) {
       conversation: value.view,
       privateBranches: await exportPrivateBranchesInSnapshot(tx, conversationId),
       privateBranchDeletions: await exportPrivateBranchDeletions(tx, conversationId),
-      scope: "All retained runs, private branches and content-free private deletion audits in this database snapshot; unavailable runs have metadata only. Private branches contain selected reply copies, saved owner text and retained private delivery replies/receipts. Deletion audits retain usage/provenance identifiers without removed branch text; copied receipts are not fresh calls. Legacy grouping uses surviving source links. Separate attachments, memory/tool/evidence records and decision assessments are outside this export.",
+      runDeletions: await exportRunDeletions(tx, conversationId),
+      scope: "All retained runs, private branches and content-free run/private deletion audits in this database snapshot; unavailable runs have metadata only. Private branches contain selected reply copies, saved owner text and retained private delivery replies/receipts. Deletion audits retain usage/provenance identifiers without removed content; copied receipts are not fresh calls. Legacy grouping uses surviving source links. Separate attachments, memory/tool/evidence records and decision assessments are outside this export.",
       runs: value.rows.map(({ member, run: row }) => {
         if (!row) return { runId: member.runId, availability: "unavailable" as const, payload: null };
         const run = mapStoredRun(row);

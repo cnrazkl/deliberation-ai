@@ -1,5 +1,7 @@
 # Explicit empty-conversation metadata deletion — DA-095
 
+**DA-102 extension:** terminal leaf run bodies can now be removed through a separate reviewed policy before retention age. DA-095 still removes identity/memberships only once all body/reference/index guards pass. Logical `run_deletions` audit remains afterwards and blocks old enqueue/rerun intent replay; this is not complete account or independent-input erasure. [Policy](RUN_DELETION.md).
+
 **DA-101 extension:** owned private branch content can now be removed through its separate reviewed leaf-first policy. Any surviving private branch still blocks DA-095 metadata deletion. Content-free `private_branch_deletions` audit has logical conversation identifiers without FKs and remains after eligible identity deletion; this preserves usage/replay evidence and is not complete metadata/account erasure. [Policy](PRIVATE_BRANCH_DELETION.md). Earlier DA-095/096 private-body absence statements below describe those increments.
 
 **DA-096 dependency extension:** the schema guard registers `conversation_private_branches` and its restrictive conversation FK. Any branch, including a zero-message copied seed, returns `private_branches` and blocks identity removal. Foreign private rows block too; another conversation's private source references are retained references. Apply also protects the private table against direct inserts. This extends the blocker, never the deletion target. Private bodies and backup/export copies remain retained. [Contract](PRIVATE_BRANCHES.md).

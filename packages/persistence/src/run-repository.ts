@@ -71,6 +71,7 @@ import { decryptJson, decryptText, encryptJson, encryptText } from "./crypto";
 import { getBoss, RUN_COUNCIL_QUEUE } from "./queue";
 import { validateRunAttachments } from "./run-attachments";
 import { LOCAL_OWNER_ID } from "./owner";
+import { isRunIntentDeleted } from "./run-deletion";
 import { attachRunToConversation, lockConversationMembership } from "./conversation-membership";
 import { loadFrozenMemoryEntries } from "./memory-entries";
 import { loadFrozenToolContexts, loadRelevantToolContexts } from "./mcp-connections";
@@ -425,6 +426,7 @@ export async function enqueueDurableRun(request: CreateRunRequest): Promise<RunR
     // alone cannot replay two concurrent requests after both observe no run.
     await lockConversationMembership(tx);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext(${request.idempotencyKey}))`);
+    if (await isRunIntentDeleted(tx, request.idempotencyKey)) throw new IdempotencyConflictError();
     const [alreadyQueued] = await tx.select().from(runs)
       .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, request.idempotencyKey))).limit(1);
     if (alreadyQueued) {
@@ -552,6 +554,7 @@ export async function enqueueSelectedMemberRerun(input: {
   return db.transaction(async (tx) => {
     await lockConversationMembership(tx);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext(${input.idempotencyKey}))`);
+    if (await isRunIntentDeleted(tx, input.idempotencyKey)) throw new IdempotencyConflictError();
     const [existing] = await tx.select().from(runs)
       .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, input.idempotencyKey))).limit(1);
     if (existing) {

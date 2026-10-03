@@ -1,8 +1,44 @@
 # Current state
 
-Updated: 2 October 2026 (DA-101 reviewed private branch content deletion accepted in the primary local application)
+Updated: 3 October 2026 (DA-102 run-body deletion functionally verified; full dependency security gate open)
 
-## Verified increment — DA-101 reviewed private branch content deletion
+## Current increment — DA-102 reviewed terminal run-body deletion
+
+One owned terminal leaf run can be removed after bounded read-only preview and exact
+affected-row confirmation, before retention age. Owned copied/archived history, private
+branches, unresolved provider work, a live council fence and schema/ownership drift block
+removal. Nested JSON history keeps original sources protected after intermediate source
+retention. Unrelated foreign rows remain untouched without globally disabling the target.
+
+Known run-owned content/receipts and the recorded job are removed atomically with an
+encrypted content-free provider usage/hashed-intent audit. Conversation membership,
+independent billing, preflight draft inputs, schedule templates and external copies
+remain; only the existing preflight/schedule run pointers become null. Original creation/
+rerun intent replay cannot recreate the body, and lost confirmed HTTP responses can be
+manually replayed to the same audit. The question/model draft is preserved; the active
+removed report view is cleared. All decision aggregates remain excluded without a
+matching execution fence. Age-based pruning is unchanged; JEV stays excluded.
+
+Additive migration 0047 was applied locally. Audit enters conversation export and the
+exhaustive encrypted backup inventory, survives later eligible metadata deletion and
+passed populated actual disposable archive restore with ciphertext equality.
+Passed 272 unit tests, 170 isolated PostgreSQL tests, all 27 browser flows, type checks,
+zero-warning lint and separate-output production build. Destructive cases used generated
+fixtures only; no paid/cloud calls or real owner content deletion occurred.
+
+The full dependency audit fails on one high-severity unpatched lint-tool braces advisory.
+Production dependency audit reports no known vulnerabilities. No suppression, dependency
+override or weakened security workflow was introduced. Repository-wide security acceptance
+is still open. [Policy](RUN_DELETION.md), [verification](DA102_ACCEPTANCE.md),
+[finding](DEPENDENCY_SECURITY_2026_10_03.md).
+
+Immediate next work: resolve this dependency gate through a verified upstream release
+or separately reviewed compatible mitigation. After that, reviewed preflight draft
+content deletion is the next privacy increment. Decision fences, retention accounting,
+external/cascading copies and broad original-plan gates remain open. Older next-task
+statements below are historical; earlier blocked cache cleanup remains unresolved.
+
+## Previous verified increment — DA-101 reviewed private branch content deletion
 
 One owned private leaf branch can be removed after a read-only preview and explicit
 state-bound confirmation. Copies, pending/unknown receipts, worker execution, schema
