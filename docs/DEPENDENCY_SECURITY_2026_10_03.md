@@ -1,6 +1,11 @@
 # Dependency audit finding — 3 October 2026
 
-Full `pnpm audit --audit-level moderate` fails on one high-severity advisory:
+Status: historical DA-102 finding, resolved in the declared dependency graph by
+[DA-103](DEPENDENCY_MITIGATION.md). Full and production audits now pass without
+ignoring this advisory. The discovery snapshot below records the original failure;
+the upstream braces advisory itself remains unresolved.
+
+The original full `pnpm audit --audit-level moderate` failed on one high-severity advisory:
 [GHSA-vfj7-8cjw-p6xm / CVE-2026-93687](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
 The current reviewed advisory affects `braces <=3.0.3` and lists no patched release.
 The upstream [issue](https://github.com/micromatch/braces/issues/70) describes unbounded

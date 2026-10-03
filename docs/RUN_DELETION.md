@@ -1,7 +1,7 @@
 # Reviewed retained run-body deletion — DA-102
 
-Local functional verification: 3 October 2026. Repository-wide dependency security
-acceptance remains open; see [the dependency finding](DEPENDENCY_SECURITY_2026_10_03.md).
+Local functional verification: 3 October 2026. The original dependency finding is
+resolved in the current graph by [DA-103](DEPENDENCY_MITIGATION.md).
 This removes one owned terminal run's stored content without waiting for retention age.
 It does not erase a complete conversation/account, independent inputs or every copy.
 
@@ -114,7 +114,7 @@ strict JSON and row metadata. Historical archives predating the entire table rem
 supported. Populated actual disposable restore verifies ciphertext equality and absent body.
 
 [Functional verification](DA102_ACCEPTANCE.md), [decision](adr/0029-reviewed-run-body-deletion.md).
-The immediate follow-up is the unresolved lint dependency security gate. After that,
-reviewed preflight draft content deletion is the next bounded privacy increment.
+DA-103 resolved the lint dependency gate. Reviewed preflight draft content deletion
+is the next bounded privacy increment (DA-104).
 Decision execution fences, age-retention accounting unification, partial/cascading copies,
 backup/export erasure and full account deletion remain separate work.

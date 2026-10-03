@@ -1,0 +1,40 @@
+diff --git a/dist/utils/get-root-dirs.js b/dist/utils/get-root-dirs.js
+index 47108c943514a1d7e686c5eb18aad00a59963c83..d081d6ab68fdde1b29b0975b9d03a631efad5941 100644
+--- a/dist/utils/get-root-dirs.js
++++ b/dist/utils/get-root-dirs.js
+@@ -9,11 +9,33 @@ Object.defineProperty(exports, "getRootDirs", {
+     }
+ });
+ var _fastglob = require("fast-glob");
++var _path = require("node:path");
++var _fs = require("node:fs");
+ /**
+  * Process a Next.js root directory glob.
+  */ var processRootDir = function(rootDir) {
+-    return (0, _fastglob.globSync)(rootDir.replace(/\\/g, '/'), {
+-        onlyDirectories: true
++    var pattern = rootDir.replace(/\\/g, '/');
++    if (!(0, _fastglob.isDynamicPattern)(pattern)) {
++        try {
++            return _fs.statSync(pattern).isDirectory() ? [pattern] : [];
++        } catch (error) {
++            if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return [];
++            throw error;
++        }
++    }
++    var options = {
++        onlyDirectories: true,
++        expandDirectories: false,
++        absolute: _path.isAbsolute(pattern)
++    };
++    var basePattern = /\/\*\*\/?$/.test(pattern) ? pattern.replace(/\/\*\*\/?$/, '') : null;
++    var excludedRoots = basePattern && !/[*?\[\]()]/.test(basePattern) ?
++        ((0, _fastglob.isDynamicPattern)(basePattern) ? (0, _fastglob.globSync)(basePattern, options).map(function(dir) { return _path.resolve(dir); }) : [_path.resolve(basePattern)]) : [];
++    return (0, _fastglob.globSync)(pattern, options).filter(function(dir) {
++        return !excludedRoots.includes(_path.resolve(dir));
++    }).map(function(dir) {
++        var result = dir.length > 1 && !/^[a-zA-Z]:\/$/.test(dir) ? dir.replace(/\/$/, '') : dir;
++        return pattern.startsWith('./') && !result.startsWith('./') ? './' + result : result;
+     });
+ };
+ var getRootDirs = function(context) {

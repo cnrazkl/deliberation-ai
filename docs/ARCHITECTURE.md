@@ -1,5 +1,7 @@
 # Architecture
 
+**DA-103 tooling boundary:** a parent/version-scoped pnpm alias and lock-hashed patch replace Next lint's single directory discovery dependency with tinyglobby, preserving exercised paths and all rule settings. The normal runtime/provider/DB dependency boundaries stay unchanged. Frozen clean installation and Linux CI compatibility checks protect this locally maintained integration. [Policy](DEPENDENCY_MITIGATION.md).
+
 **DA-102:** a separate run deletion boundary supplies bounded read-only inspection, exact affected-row fingerprints and atomic encrypted audit/job/body removal through the existing BFF. It reuses owner serialization and the council session fence, registers the cascade closure and inspects nested frozen provenance. Creation/rerun keys are tombstoned; conversation export adds retained audits. Decision execution remains outside deletion scope. [Contract](RUN_DELETION.md).
 
 **DA-101:** a separate persistence deletion boundary supplies read-only previews, state fingerprints and atomic content removal plus encrypted retained audit. The BFF checks same-origin and strict reviewed confirmations; UI blocks branch changes during review. Owner serialization, a nonwaiting worker lease and table locks protect the transaction; copied provenance is inspected before removing one row. Replayed confirmations return the same audit; deleted create/fork intent IDs cannot resurrect the branch. [Contract](PRIVATE_BRANCH_DELETION.md).

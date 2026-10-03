@@ -1,7 +1,8 @@
 # ADR-0029: reviewed run-body deletion with retained usage and replay evidence
 
 Status: locally implemented and functionally verified, 3 October 2026.
-Repository dependency security acceptance remains open.
+The original repository dependency gate was open; [DA-103](../DA103_ACCEPTANCE.md)
+resolves that finding in the current dependency graph.
 
 Age-based pruning removes run-owned content/receipts by declared cascades. An owner-requested
 early removal needs review of exact scope, unresolved calls, copied history and accounting

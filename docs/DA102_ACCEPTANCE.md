@@ -1,8 +1,9 @@
 # DA-102 local functional verification — reviewed run-body deletion
 
 Verified: 3 October 2026, primary repository `C:\Users\caner\Projects\DeliberationAI`.
-Functional checks pass. Repository-wide dependency security acceptance is **open**;
-this increment is not labelled fully security-accepted. [Current finding](DEPENDENCY_SECURITY_2026_10_03.md).
+Functional checks passed; the original publication's dependency gate was **open**.
+The original results below are preserved. [DA-103](DA103_ACCEPTANCE.md) resolves
+that dependency finding in the current graph; it does not certify all application security.
 
 ## Delivered scope
 
@@ -62,7 +63,7 @@ content deletion ran. All destructive tests use generated fixture IDs, and integ
 DDL/retention fixtures run in the disposable isolated database. This is not a model
 quality measurement, billing/refund result or complete-account/forensic erasure claim.
 
-## Remaining gate
+## Original remaining gate (resolved by DA-103 in the current graph)
 
 The full dependency audit fails on GHSA-vfj7-8cjw-p6xm through Next lint development
 dependencies. Production-only audit is clean; this does not close the full audit.

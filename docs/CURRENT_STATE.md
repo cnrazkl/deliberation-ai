@@ -1,8 +1,36 @@
 # Current state
 
-Updated: 3 October 2026 (DA-102 run-body deletion functionally verified; full dependency security gate open)
+Updated: 3 October 2026 (DA-103 lint dependency mitigation verified; next DA-104 preflight draft deletion)
 
-## Current increment — DA-102 reviewed terminal run-body deletion
+## Current increment — DA-103 reviewed Next lint dependency mitigation
+
+The active lockfile no longer contains fast-glob/micromatch/braces. An exact Next lint
+16.3.6 dependency alias uses pinned tinyglobby 0.2.17; a version-scoped, lock-hashed patch
+adapts only its directory discovery utility after alias-only compatibility failed.
+Literal/relative/absolute/Windows paths, braces/extglobs and recursive-root behavior are
+protected by regression checks. All 113 configured lint rule settings remain unchanged.
+
+Full and production dependency audits report no known vulnerabilities. Seven compatibility
+cases pass in the primary pnpm 11.25.0 installation and a clean source export installed
+with repository-declared pnpm 11.19.0, without lifecycle scripts. All 38 bounded comparisons
+against the original matcher agree. 272 unit tests, zero-warning lint, workspace type
+checks and the separate production build pass. No DB/browser suite rerun, migration,
+owner-data deletion, paid call, JEV activation or cache erasure occurred for this tooling work.
+
+Security CI preserves the full audit/history secret scan and adds frozen installation and
+compatibility tests on Linux. Patch files use LF; an upstream upgrade requires explicit
+review of both alias and patch and deliberate test rebaselining. The original braces
+advisory has no published fix; this mitigation removes it from this graph rather than
+fixing that upstream package. This is not a complete application-security certificate.
+[Policy](DEPENDENCY_MITIGATION.md), [evidence](DA103_ACCEPTANCE.md),
+[decision](adr/0030-next-lint-glob-mitigation.md).
+
+Next task: DA-104 reviewed preflight draft content deletion and original-intent replay
+protection. Broader settings, decision fences, retention/accounting unification, external
+copy erasure and semantic/human acceptance remain open. Previous next-task statements
+below are historical; blocked primary cache cleanup remains unresolved.
+
+## Previous verified increment — DA-102 reviewed terminal run-body deletion
 
 One owned terminal leaf run can be removed after bounded read-only preview and exact
 affected-row confirmation, before retention age. Owned copied/archived history, private
@@ -26,15 +54,14 @@ Passed 272 unit tests, 170 isolated PostgreSQL tests, all 27 browser flows, type
 zero-warning lint and separate-output production build. Destructive cases used generated
 fixtures only; no paid/cloud calls or real owner content deletion occurred.
 
-The full dependency audit fails on one high-severity unpatched lint-tool braces advisory.
-Production dependency audit reports no known vulnerabilities. No suppression, dependency
-override or weakened security workflow was introduced. Repository-wide security acceptance
-is still open. [Policy](RUN_DELETION.md), [verification](DA102_ACCEPTANCE.md),
-[finding](DEPENDENCY_SECURITY_2026_10_03.md).
+The original full dependency audit failed on a high-severity lint-tool braces advisory.
+DA-103 resolves that finding in the current graph without suppressing it. Original
+DA-102 functional verification and dependency-failure evidence remain historical.
+[Policy](RUN_DELETION.md), [verification](DA102_ACCEPTANCE.md),
+[historical finding](DEPENDENCY_SECURITY_2026_10_03.md).
 
-Immediate next work: resolve this dependency gate through a verified upstream release
-or separately reviewed compatible mitigation. After that, reviewed preflight draft
-content deletion is the next privacy increment. Decision fences, retention accounting,
+Reviewed preflight draft content deletion is now the next privacy increment. Decision
+fences, retention accounting,
 external/cascading copies and broad original-plan gates remain open. Older next-task
 statements below are historical; earlier blocked cache cleanup remains unresolved.
 

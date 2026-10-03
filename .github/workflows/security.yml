@@ -20,6 +20,10 @@ jobs:
           node-version: '24'
       - name: Dependency vulnerability audit
         run: pnpm audit --audit-level=moderate
+      - name: Install reviewed dependency graph
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Check lint dependency compatibility
+        run: pnpm test:lint-dependencies
       - name: Scan Git history for secrets
         shell: bash
         run: |

@@ -20,7 +20,8 @@ The owner has requested commit/push synchronization of completed reviewed increm
 Do not fabricate old daily history, rewrite dates or create empty contribution commits.
 Never reset/discard unrelated changes. If remote history diverges, inspect and reconcile first.
 
-The Security checks workflow audits dependency vulnerabilities and scans full Git history
+The Security checks workflow audits dependency vulnerabilities, installs the frozen graph
+without lifecycle scripts, runs lint-dependency compatibility tests and scans full Git history
 with Gitleaks on each push or pull request. Checks are not a complete application-security
 assessment and do not establish functional or model-quality acceptance.
 

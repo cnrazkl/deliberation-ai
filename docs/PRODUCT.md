@@ -1,6 +1,8 @@
 # Product
 
-**DA-102 functional scope:** reviewed removal of one owned terminal run body is available before retention age. Copies, unresolved provider work, the live worker fence and schema/ownership drift block deletion. Content-free usage/intent audit and conversation membership remain; independent billing, preflight/schedule inputs and external copies remain. Decision aggregates are excluded. Repository dependency security acceptance is still open. [Workflow](RUN_DELETION.md), [verification](DA102_ACCEPTANCE.md).
+**DA-103 maintenance:** the Next lint dependency finding is removed from the current graph while preserving lint settings; product/provider/data behavior stays the same. Full dependency audit and local compatibility checks pass. Next bounded product work is reviewed preflight draft deletion. [Evidence](DA103_ACCEPTANCE.md).
+
+**DA-102 functional scope:** reviewed removal of one owned terminal run body is available before retention age. Copies, unresolved provider work, the live worker fence and schema/ownership drift block deletion. Content-free usage/intent audit and conversation membership remain; independent billing, preflight/schedule inputs and external copies remain. Decision aggregates are excluded. The original dependency gate is resolved by DA-103. [Workflow](RUN_DELETION.md), [verification](DA102_ACCEPTANCE.md).
 
 **DA-101:** the owner can review and confirm deletion of one private branch's stored content. Copies must be removed separately first; queued/submitted/unknown work blocks deletion. Content-free encrypted usage/provenance and replay records remain, as do source reports and external backups/exports. Cancelling preserves the draft; confirmed deletion preserves unsaved text separately in the current page. This is not complete conversation/account erasure. [Workflow](PRIVATE_BRANCH_DELETION.md).
 

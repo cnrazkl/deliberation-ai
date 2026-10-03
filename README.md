@@ -2,7 +2,9 @@
 
 DeliberationAI is a provider-independent multi-model council that preserves disagreements and provenance instead of treating agreement as truth.
 
-DA-102 adds functionally verified reviewed terminal run-body deletion with copy/pending/fence guards, retained usage/intent audit and preserved conversation membership. Decision aggregates, independent inputs and external copies remain outside scope. Full dependency security acceptance is open on an unpatched lint-tool advisory; production dependency audit passes. [Workflow](docs/RUN_DELETION.md), [verification](docs/DA102_ACCEPTANCE.md), [security finding](docs/DEPENDENCY_SECURITY_2026_10_03.md).
+DA-103 removes the vulnerable Next lint glob chain with a version-scoped replacement and reviewed compatibility patch. Full dependency audit passes, all 113 lint rule settings remain unchanged and frozen clean installation passes. Next: reviewed preflight draft content deletion. [Maintenance](docs/DEPENDENCY_MITIGATION.md), [verification](docs/DA103_ACCEPTANCE.md).
+
+DA-102 adds functionally verified reviewed terminal run-body deletion with copy/pending/fence guards, retained usage/intent audit and preserved conversation membership. Decision aggregates, independent inputs and external copies remain outside scope. Its original dependency finding is resolved in the current graph by DA-103. [Workflow](docs/RUN_DELETION.md), [verification](docs/DA102_ACCEPTANCE.md).
 
 DA-101 adds reviewed deletion of one private branch's stored content. Surviving copies and pending/unknown deliveries block removal; encrypted content-free usage/provenance and replay records remain. Source reports, backups and downloaded exports keep their own copies. [Workflow](docs/PRIVATE_BRANCH_DELETION.md), [acceptance](docs/DA101_ACCEPTANCE.md). Earlier erasure/deletion-absence statements describe historical scope.
 
