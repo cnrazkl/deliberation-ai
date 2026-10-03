@@ -199,6 +199,10 @@ export const localSchedules = pgTable(
   "local_schedules",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    creationRequestId: uuid("creation_request_id"),
+    creationRequestHash: text("creation_request_hash"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletionReceiptCiphertext: text("deletion_receipt_ciphertext"),
     ownerId: text("owner_id").notNull(),
     nameCiphertext: text("name_ciphertext").notNull(),
     questionCiphertext: text("question_ciphertext").notNull(),
@@ -218,6 +222,8 @@ export const localSchedules = pgTable(
   },
   (table) => [
     index("local_schedules_owner_next_idx").on(table.ownerId, table.status, table.nextRunAt),
+    uniqueIndex("local_schedules_owner_request_uq").on(table.ownerId, table.creationRequestId),
+    check("local_schedules_deletion_valid", sql`(${table.deletedAt} is null and ${table.deletionReceiptCiphertext} is null) or (${table.deletedAt} is not null and ${table.deletionReceiptCiphertext} is not null and ${table.status} = 'paused')`),
     check("local_schedules_provider_mode_valid", sql`${table.providerMode} in ('fake', 'remote')`),
     check("local_schedules_risk_profile_valid", sql`${table.riskProfile} in ('standard', 'high')`),
     check("local_schedules_review_rounds_valid", sql`${table.reviewRounds} between 0 and 3`),

@@ -550,6 +550,7 @@ export const scheduleCadenceSchema = z.enum(["daily", "weekly"]);
 export type ScheduleCadence = z.infer<typeof scheduleCadenceSchema>;
 
 export const createScheduleSchema = z.object({
+  requestId: z.string().uuid().optional(),
   continuationSource: z.never().optional(),
   name: z.string().trim().min(1).max(80),
   question: z.string().trim().min(10).max(4_000),
@@ -578,6 +579,12 @@ export type CreateScheduleRequest = z.infer<typeof createScheduleSchema>;
 
 export const updateScheduleSchema = z.object({ status: z.enum(["active", "paused"]) });
 export type UpdateScheduleRequest = z.infer<typeof updateScheduleSchema>;
+export const deleteLocalScheduleSchema = z.object({ scheduleId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  confirmContentDeletion: z.literal(true), acknowledgeRetainedRuns: z.literal(true) }).strict();
+export const localScheduleDeletionReceiptSchema = z.object({ version: z.literal("local-schedule-deletion-v1"), scheduleId: z.string().uuid(),
+  creationRequestId: z.string().uuid().nullable(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/), deletedAt: z.string().datetime(),
+  retainedLastRunId: z.string().uuid().nullable() }).strict();
+export type LocalScheduleDeletionReceipt = z.infer<typeof localScheduleDeletionReceiptSchema>;
 
 export const saveCouncilTemplateSchema = z.object({
   id: z.string().uuid().optional(),

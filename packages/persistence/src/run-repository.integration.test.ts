@@ -97,7 +97,6 @@ import {
 } from "./provider-operations";
 import {
   createLocalSchedule,
-  deleteLocalSchedule,
   dispatchDueLocalSchedules,
   listLocalSchedules,
   updateLocalSchedule,
@@ -1691,3 +1690,10 @@ test("re-audits a clarified draft's selected revision before creating its run", 
     expect(run.promptRevision?.revision).toEqual(promptRevision);
   } finally { await getDatabase().delete(preflightDrafts).where(eq(preflightDrafts.id, draft.id)); }
 });
+
+// Exact generated fixture cleanup; production schedule deletion requires review.
+async function deleteLocalSchedule(id: string): Promise<boolean> {
+  const rows = await getDatabase().delete(localSchedules).where(eq(localSchedules.id, id))
+    .returning({ id: localSchedules.id });
+  return rows.length > 0;
+}

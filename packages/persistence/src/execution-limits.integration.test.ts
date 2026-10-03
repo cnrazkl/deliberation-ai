@@ -11,7 +11,7 @@ import { closeDatabase, getDatabase } from "./database";
 import { decryptJson, encryptJson } from "./crypto";
 import { closeBoss, RUN_COUNCIL_QUEUE } from "./queue";
 import { cancelDurableRun, enqueueDurableRun, findDurableRunById } from "./run-repository";
-import { createLocalSchedule, deleteLocalSchedule, dispatchDueLocalSchedules, listLocalSchedules, updateLocalSchedule } from "./local-schedules";
+import { createLocalSchedule, dispatchDueLocalSchedules, listLocalSchedules, updateLocalSchedule } from "./local-schedules";
 import {
   claimProviderOperationSubmission,
   ExecutionLimitsExceededError,
@@ -324,3 +324,10 @@ test("rejects an insufficient scheduled plan at creation and at activation or di
   const withheld = (await listLocalSchedules()).find((item) => item.id === schedule.id);
   expect(withheld).toMatchObject({ status: "paused", lastRunId: null });
 });
+
+// Exact generated fixture cleanup; production schedule deletion requires review.
+async function deleteLocalSchedule(id: string): Promise<boolean> {
+  const rows = await getDatabase().delete(localSchedules).where(eq(localSchedules.id, id))
+    .returning({ id: localSchedules.id });
+  return rows.length > 0;
+}

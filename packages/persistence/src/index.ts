@@ -37,3 +37,5 @@ export * from "./private-branch-deletion";
 export * from "./private-deliveries";
 
 export * from "./preflight-draft-deletion";
+
+export * from "./local-schedule-deletion";

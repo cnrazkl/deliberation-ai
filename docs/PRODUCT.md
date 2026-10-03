@@ -175,3 +175,7 @@ The local evaluation library can compare human-authored, source-anchored gold cl
 ## Checked model selection and inline connection editing (DA-105/DA-106)
 
 A successful model-catalog check exposes its model IDs in a connection-card dropdown, refreshed after every completed check. Selecting an ID opens a default-model edit draft; the owner saves it with “Bağlantıyı güncelle”. Existing council member model choices remain unchanged. Unlisted models can still be typed manually. Editing opens directly inside the selected card; only one edit form is active. Cancelling discards its unsaved fields. Saving invalidates the catalog for the revised connection, requiring another explicit check. Catalog availability is not generation or capability verification.
+
+## DA-107 reviewed local schedule deletion
+
+Recurring schedule deletion now requires a paused-template preview and explicit content/retained-run acknowledgement. The review opens beneath the selected card. Lost-response creation retries reuse a request identity; template removal keeps already queued and historical runs. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).

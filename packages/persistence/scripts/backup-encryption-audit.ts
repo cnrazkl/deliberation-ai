@@ -4,6 +4,7 @@ import { decodePrivateBranchBody } from "../src/private-branches";
 import { decodePrivateBranchDeletion } from "../src/private-branch-deletion";
 import { decodeRunDeletion } from "../src/run-deletion";
 import { readPreflightDraftDeletion } from "../src/preflight-draft-deletion";
+import { decodeLocalScheduleDeletion } from "../src/local-schedule-deletion";
 
 type EncryptedField = readonly [column: string, contextSuffix: string, format: "text" | "json"];
 interface EncryptedTable {
@@ -70,7 +71,8 @@ const encryptedTables: readonly EncryptedTable[] = [
     ["name_ciphertext", "name", "text"], ["question_ciphertext", "question", "text"],
     ["members_ciphertext", "members", "json"],
     ["execution_limits_ciphertext", "execution-limits", "json"],
-  ] },
+    ["deletion_receipt_ciphertext", "deletion-receipt", "json"],
+  ], metadata: [["creation_request_id", "scheduleRequestId"], ["deleted_at::text", "scheduleDeletedAt"], ["status", "scheduleStatus"]] },
   { table: "mcp_connections", keys: ["id"], contextPrefix: "mcp-connection", fields: [
     ["label_ciphertext", "label", "text"], ["endpoint_ciphertext", "endpoint", "text"],
   ] },
@@ -93,15 +95,20 @@ export interface EncryptionAudit {
 
 export async function auditRestoredEncryption(client: Client): Promise<EncryptionAudit> {
   const actual = await client.query<{ table_name: string; column_name: string }>(
-    "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public' AND column_name LIKE '%_ciphertext'",
+    "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'",
   );
   // Historical archives may predate the entire private-branch table. An
-  // existing table with a missing/new ciphertext field still fails closed.
+  // Except for the explicit complete pre-DA107 schedule era below, missing/new ciphertext fields fail closed.
   const tables = await client.query<{ table_name: string }>("select table_name from information_schema.tables where table_schema = 'public'");
   const presentTables = new Set(tables.rows.map((row) => row.table_name));
-  const supportedTables = encryptedTables.filter((descriptor) => !descriptor.optional || presentTables.has(descriptor.table));
+  const scheduleColumns = new Set(actual.rows.filter((row) => row.table_name === "local_schedules").map((row) => row.column_name));
+  const added = ["creation_request_id", "creation_request_hash", "deleted_at", "deletion_receipt_ciphertext"].filter((column) => scheduleColumns.has(column));
+  if (added.length !== 0 && added.length !== 4) throw new Error("Restored schedule deletion schema is incomplete.");
+  const supportedTables = encryptedTables.filter((descriptor) => !descriptor.optional || presentTables.has(descriptor.table)).map((descriptor) =>
+    descriptor.table === "local_schedules" && added.length === 0
+      ? { ...descriptor, fields: descriptor.fields.filter(([column]) => column !== "deletion_receipt_ciphertext"), metadata: [] } : descriptor);
   const expected = new Set(supportedTables.flatMap(({ table, fields }) => fields.map(([column]) => `${table}.${column}`)));
-  const found = new Set(actual.rows.map(({ table_name, column_name }) => `${table_name}.${column_name}`));
+  const found = new Set(actual.rows.filter(({ column_name }) => column_name.endsWith("_ciphertext")).map(({ table_name, column_name }) => `${table_name}.${column_name}`));
   if (expected.size !== found.size || [...expected].some((column) => !found.has(column))) {
     throw new Error("Restored encrypted-column inventory differs from the backup verifier contract.");
   }
@@ -124,6 +131,13 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
         const key = keys.map((_, index) => row[`key_${index}`]);
         if (key.some((part) => typeof part !== "string")) throw new Error("Restored encrypted-row key is missing.");
         const contextBase = `${descriptor.contextPrefix}:${key.join(":")}`;
+        if (descriptor.table === "local_schedules" && added.length === 4) {
+          try { decodeLocalScheduleDeletion({ id: key[0]!, creationRequestId: row.scheduleRequestId ?? null,
+            deletedAt: row.scheduleDeletedAt ? new Date(row.scheduleDeletedAt) : null, status: row.scheduleStatus!,
+            deletionReceiptCiphertext: row.deletion_receipt_ciphertext ?? null, nameCiphertext: row.name_ciphertext!,
+            questionCiphertext: row.question_ciphertext!, membersCiphertext: row.members_ciphertext!, executionLimitsCiphertext: row.execution_limits_ciphertext ?? null }); }
+          catch { throw new Error("Restored schedule deletion receipt is invalid."); }
+        }
         if (descriptor.table === "preflight_drafts") {
           try { readPreflightDraftDeletion({ id: key[0]!, status: row.draftStatus!, questions: row.draftQuestions,
             questionCiphertext: row.question_ciphertext ?? null, requestCiphertext: row.request_ciphertext ?? null }); }

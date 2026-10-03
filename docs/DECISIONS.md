@@ -86,3 +86,7 @@ The Phase 0b implementation uses the accepted PostgreSQL and pg-boss path. No ru
 DA-068 decision, 27 September 2026: the first broad correctness group separates technical readiness from human/empirical acceptance. External source families are frozen before labels; gold requires two human reviews, third-person adjudication and an explicit coordinator attestation. Source-level measurement must prove that the exact source bundle reached the persisted prompt, rather than matching only the short question. Held-out results and critical losses gate acceptance independently of pooled recall. Semantic contradiction remains an offline shadow prototype with candidate omissions measured against all-pair human labels until a separately evaluated provider binding exists. See [the complete acceptance contract](evaluation/COUNCIL_CORRECTNESS.md).
 
 - DA-104 retains the existing preflight row as a content-free cancelled tombstone after reviewed payload scrubbing, without changing the schema or deleting linked runs. [ADR-0031](adr/0031-reviewed-preflight-draft-content-deletion.md).
+
+## DA-107 reviewed local schedule deletion
+
+ADR-0032 retains reviewed schedule tombstones, reserves occurrence keys to fenced dispatch and makes enqueue/cursor advancement atomic. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).

@@ -293,13 +293,13 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(scheduleCard).toContainText("yüksek risk");
   let failSchedulePatch = true;
   let failScheduleDelete = true;
-  await page.route(/\/api\/local-schedules\?id=/, async (route) => {
+  await page.route(/\/api\/local-schedules(?:\?id=|\/[^/]+\/deletion)/, async (route) => {
     if (route.request().method() === "PATCH" && failSchedulePatch) {
       failSchedulePatch = false;
       await route.fulfill({ status: 503, json: { error: "E2E zamanlama güncelleme hatası" } });
       return;
     }
-    if (route.request().method() === "DELETE" && failScheduleDelete) {
+    if (route.request().method() === "POST" && failScheduleDelete) {
       failScheduleDelete = false;
       await route.fulfill({ status: 503, json: { error: "E2E zamanlama silme hatası" } });
       return;
@@ -427,11 +427,15 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await researchRegion.getByLabel("Herkese açık kaynak adresi").fill("http://127.0.0.1/private");
   await researchRegion.getByRole("button", { name: "Kaynağı getir ve mühürle" }).click();
   await expect(researchRegion).toContainText("güvenli olmayan bir ağ adresine çözümlendi");
-  await scheduleCard.getByRole("button", { name: "Sil" }).click();
+  await scheduleCard.getByRole("button", { name: "Zamanlama silmeyi incele" }).click();
+  const scheduleDeletion = scheduleRegion.getByRole("region", { name: "Zamanlama silme önizlemesi" });
+  await scheduleDeletion.getByRole("checkbox").check();
+  await scheduleDeletion.getByRole("button", { name: "Zamanlama içeriğini kalıcı olarak sil" }).click();
   await expect(scheduleRegion).toContainText("E2E zamanlama silme hatası");
   await expect(scheduleCard).toBeVisible();
-  await expect(scheduleCard.getByRole("button", { name: "Sil" })).toBeEnabled();
-  await scheduleCard.getByRole("button", { name: "Sil" }).click();
+  await scheduleDeletion.getByRole("button", { name: "Silme önizlemesini yenile" }).click();
+  await scheduleDeletion.getByRole("checkbox").check();
+  await scheduleDeletion.getByRole("button", { name: "Zamanlama içeriğini kalıcı olarak sil" }).click();
   await expect(scheduleCard).toHaveCount(0);
   const evidenceRegion = page.getByRole("region", { name: "Kaynak bağlantılı kanıtlar" });
   await page.getByLabel("Kaynak başlığı").fill("E2E doğrulama kaynağı");

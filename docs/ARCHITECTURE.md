@@ -158,3 +158,7 @@ The data flow is `persisted report + owner-selected immutable excerpt + explicit
 ## Connection-card UI (DA-105/DA-106)
 
 CouncilWorkbench reuses one controlled connection form, rendering it inside the selected connection card for editing and below the list for creation. The existing revision-bound catalog projection supplies dropdown IDs and member datalist suggestions. Dropdown selection changes only the controlled default-model draft; persistence still uses the existing provider-connections endpoint. No provider, persistence or schema boundary changes.
+
+## DA-107 reviewed local schedule deletion
+
+The schedule deletion service owns bounded inspection, exact-row fingerprints, authenticated receipts and owner/table serialization. An internal occurrence fence coordinates run/job enqueue and cursor advancement in one persistence transaction; HTTP cannot submit reserved schedule occurrence keys. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).

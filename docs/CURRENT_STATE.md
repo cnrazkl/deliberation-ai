@@ -1,14 +1,21 @@
 # Current state
 
-Updated: 3 October 2026 (DA-104 preflight draft deletion verified; next DA-107 local schedule deletion)
+Updated: 3 October 2026 (DA-107 reviewed local schedule deletion; next DA-108 council templates)
 
-## Current increment — DA-104 reviewed preflight draft deletion
+## Current increment — DA-107 reviewed local schedule-template deletion
+
+Paused schedules now use bounded deletion preview and explicit acknowledgement beneath the selected card. Content is scrubbed into authenticated empty encrypted payloads; the paused row retains an encrypted receipt and creation retry identity. Old create retries cannot resurrect it. Independently queued/historical run work and accounting remain intact. Exact occurrence fences and one run/job/cursor transaction prevent dispatch from a stale paused/deleted snapshot.
+
+274 units, 185 isolated PostgreSQL cases, workspace type checks, zero-warning lint, separate-output production build and full dependency audit pass. All 29 browser cases pass in the final complete sweep. A real synthetic-only custom archive restore preserves the receipt, rejects original creation replay and keeps deleted templates hidden/undispatched. Reviewed additive migration 0048 is applied locally; no real owner deletion or paid provider call occurred. [Contract](LOCAL_SCHEDULE_DELETION.md), [acceptance](DA107_ACCEPTANCE.md).
+
+Next: DA-108 reviewed saved council-template deletion and creation retry boundaries. Broader settings, decision fences, retained copies, accounting and semantic/human acceptance remain open. Older next-task statements below are historical.
+
+## Previous verified increment — DA-104 reviewed preflight draft deletion
 
 Owned draft payloads now require read-only inspection and explicit acknowledgement before scrubbing. The existing row retains a strict, content-free tombstone; original intent reuse is blocked in creation/enqueue/rerun, and repeated matching confirmations return the same receipt. Exact timestamp fingerprints and bounded schema/FK/trigger/unique-index checks reject drift. Owner/table locking serializes creation, start, cancellation and deletion. Linked run work remains unchanged.
 
 273 unit tests and 177 isolated PostgreSQL cases pass. The full browser sweep passed 27 cases; one outdated immediate-delete test was updated, and it plus the new deletion case pass in the focused repeat. Type checks, zero-warning lint, separate-output build and full audit pass. A real custom archive of synthetic-only data was restored to a disposable database; receipt/null-payload equality, metadata/encryption auditing and replay blocking pass. No migration, paid call or real owner deletion occurred. [Contract](PREFLIGHT_DRAFT_DELETION.md), [acceptance](DA104_ACCEPTANCE.md).
 
-Next: DA-107 reviewed local schedule-template deletion and dispatch/replay boundaries. Broader settings, decision fences, retained copies, accounting and semantic/human acceptance remain open. Older next-task statements below are historical.
 
 ## Previous owner-requested UI increments — DA-105 and DA-106
 

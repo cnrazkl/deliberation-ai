@@ -1,3 +1,4 @@
+import { assertScheduleOccurrence, completeScheduleOccurrence, type ScheduleOccurrenceFence } from "./schedule-occurrences";
 import { isPreflightIntentClosed } from "./preflight-draft-deletion";
 import { createHash, randomUUID } from "node:crypto";
 import {
@@ -368,15 +369,21 @@ export async function loadRunContinuation(sourceRunId: string, expectedSha256?: 
   return (await loadContinuationSelection(sourceRunId, expectedSha256, compaction)).context;
 }
 
-export async function enqueueDurableRun(request: CreateRunRequest): Promise<RunRecord> {
+export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence?: ScheduleOccurrenceFence): Promise<RunRecord> {
+  if (request.idempotencyKey.startsWith("schedule:") && !scheduleFence) throw new IdempotencyConflictError();
   const db = getDatabase();
   const requestHash = hashRunRequest(request);
   const [previous] = await db.select().from(runs)
     .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, request.idempotencyKey)))
     .limit(1);
-  if (previous) {
-    if (previous.requestHash !== requestHash) throw new IdempotencyConflictError();
-    return mapRun(previous);
+  if (previous && !scheduleFence) {
+    return db.transaction(async (tx) => {
+      await lockConversationMembership(tx);
+      if (await isPreflightIntentClosed(tx, request.idempotencyKey) || await isRunIntentDeleted(tx, request.idempotencyKey)) throw new IdempotencyConflictError();
+      const [current] = await tx.select().from(runs).where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, request.idempotencyKey))).limit(1);
+      if (!current || current.requestHash !== requestHash) throw new IdempotencyConflictError();
+      return mapRun(current);
+    });
   }
   const revision = request.promptRevision ?? { version: PROMPT_REVISION_VERSION,
     originalQuestion: request.question, candidateQuestion: request.question, choice: "original" as const };
@@ -428,10 +435,12 @@ export async function enqueueDurableRun(request: CreateRunRequest): Promise<RunR
     await lockConversationMembership(tx);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext(${request.idempotencyKey}))`);
     if (await isPreflightIntentClosed(tx, request.idempotencyKey) || await isRunIntentDeleted(tx, request.idempotencyKey)) throw new IdempotencyConflictError();
+    if (scheduleFence) await assertScheduleOccurrence(tx, scheduleFence, request.idempotencyKey);
     const [alreadyQueued] = await tx.select().from(runs)
       .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, request.idempotencyKey))).limit(1);
     if (alreadyQueued) {
       if (alreadyQueued.requestHash !== requestHash) throw new IdempotencyConflictError();
+      if (scheduleFence) await completeScheduleOccurrence(tx, scheduleFence, alreadyQueued.id);
       return mapRun(alreadyQueued);
     }
     let approvedDecision: RunRecord["preflightDecision"] = null;
@@ -533,6 +542,7 @@ export async function enqueueDurableRun(request: CreateRunRequest): Promise<RunR
       .where(eq(runs.id, runId))
       .returning();
     if (!updated) throw new Error("Queued run could not be updated.");
+    if (scheduleFence) await completeScheduleOccurrence(tx, scheduleFence, runId);
     await tx.insert(runEvents).values({
       runId,
       sequence: updated.lastSequence,
@@ -549,6 +559,7 @@ export async function enqueueSelectedMemberRerun(input: {
   memberId: string;
   idempotencyKey: string;
 }): Promise<RunRecord> {
+  if (input.idempotencyKey.startsWith("schedule:")) throw new IdempotencyConflictError();
   const db = getDatabase();
   const requestHash = fingerprint(JSON.stringify({ version: "member-rerun-v1", sourceRunId: input.sourceRunId, memberId: input.memberId }));
   const boss = await getBoss();

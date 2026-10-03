@@ -145,3 +145,17 @@ test("oversize records are not read for confirmation and malformed receipts fail
   try { await expect(auditRestoredEncryption(client)).rejects.toThrow("Restored preflight deletion metadata is invalid"); }
   finally { await client.end(); }
 });
+
+ test("a deleted started draft blocks the existing-run retry fast path", async () => {
+  const { input, draft } = await fixture();
+  const prepared = await preparePreflightDraft(draft.id, "original");
+  const revised = createRunRequestSchema.parse({ ...input, question: prepared.question,
+    expectedPreflightFingerprint: prepared.promptPlan.fingerprint, expectedRiskFingerprint: prepared.riskPreflight.fingerprint,
+    preflightDecision: { draftId: draft.id, choice: "original" }, promptRevision: prepared.promptRevision });
+  const run = await enqueueDurableRun(revised); runIds.push(run.runId);
+  expect((await enqueueDurableRun(revised)).runId).toBe(run.runId);
+  const preview = (await previewPreflightDraftDeletion(draft.id))!;
+  await deletePreflightDraftContent(draft.id, preview.fingerprint!);
+  await expect(enqueueDurableRun(revised)).rejects.toBeInstanceOf(IdempotencyConflictError);
+  expect(await findDurableRunById(run.runId)).toBeDefined();
+});

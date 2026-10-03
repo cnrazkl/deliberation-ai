@@ -41,7 +41,7 @@ test("explains automatic risk and requires controls without changing the owner's
   expect(blocked.status()).toBe(422);
   expect(await blocked.json()).toMatchObject({ riskAssessment: { effectiveProfile: "high", requestedProfile: "standard" } });
   const schedule = await request.post("/api/local-schedules", { data: {
-    name: "Blocked risk fixture", question: "Yatırım hesabımı nasıl seçmeliyim?", providerMode: "fake", riskProfile: "standard",
+    requestId: crypto.randomUUID(), name: "Blocked risk fixture", question: "Yatırım hesabımı nasıl seçmeliyim?", providerMode: "fake", riskProfile: "standard",
     reviewRounds: 0, cadence: "daily", nextRunAt: new Date(Date.now() + 86400000).toISOString(),
     members: ["fake-a", "fake-b"].map((id) => ({ id, label: id, role: "Analist", provider: "fake", model: "fixture", perspective: "risk", councilRole: "analyst" })),
   } });

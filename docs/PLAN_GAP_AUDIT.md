@@ -1,5 +1,8 @@
 # Original PLAN.md versus the running local application
 
+**3 October 2026, DA-107:** paused local schedule templates gain bounded reviewed content removal and retained creation receipts. Dispatch validates exact snapshots and atomically commits run/job/cursor changes; previously queued work and historical copies remain. Saved council-template deletion is next (DA-108). Broader plan gates remain partial. [Contract](LOCAL_SCHEDULE_DELETION.md).
+
+
 **3 October 2026, DA-104:** reviewed preflight draft payload scrubbing and retained tombstone replay protection are verified, including exact-state/schema/concurrency guards and actual disposable archive restore. Linked runs, independent inputs, schedules and old backup/export copies remain. Next: DA-107 reviewed local schedule-template deletion/dispatch boundaries. Broad original-plan gates remain partial. [Contract](PREFLIGHT_DRAFT_DELETION.md), [acceptance](DA104_ACCEPTANCE.md).
 
 **3 October 2026, DA-103:** the lint-only dependency finding is resolved in the current graph by a reviewed scoped replacement/utility patch, preserving all lint rule settings and full audit/history checks. Frozen clean installation and local compatibility/type/lint/unit/build checks pass. This closes that dependency finding only; broad original-plan gates are unchanged. Next: DA-104 reviewed preflight draft deletion/replay protection. [Policy](DEPENDENCY_MITIGATION.md), [evidence](DA103_ACCEPTANCE.md). The DA-102 dependency-failure snapshot below is historical.
