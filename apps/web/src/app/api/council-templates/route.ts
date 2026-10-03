@@ -1,5 +1,6 @@
 import { saveCouncilTemplateSchema } from "@deliberation-ai/contracts";
 import {
+  CouncilTemplateConflictError,
   deleteCouncilTemplate,
   listCouncilTemplates,
   saveCouncilTemplate,
@@ -28,7 +29,10 @@ export async function POST(request: Request): Promise<Response> {
   }
   try {
     return Response.json(await saveCouncilTemplate(parsed.data));
-  } catch {
+  } catch (reason) {
+    if (reason instanceof CouncilTemplateConflictError) {
+      return Response.json({ error: "Şablon değişmiş, silinmiş veya bu ad farklı bir şablonda kullanılıyor. Listeyi yenileyin ya da farklı bir ad seçin." }, { status: 409 });
+    }
     return Response.json({ error: "Konsey şablonu kaydedilemedi." }, { status: 409 });
   }
 }

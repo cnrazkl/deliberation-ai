@@ -1,5 +1,14 @@
 # Architecture
 
+## DA-108 template save boundaries
+
+The persistence template service serializes save/delete through one owner-scoped
+transaction advisory lock. Id-less same-name requests compare description and ordered
+members before returning an unchanged row or refusing a conflict. Explicit updates
+require an owned existing row. The BFF exposes content-free conflict errors; no schema
+or provider boundary changes. Reviewed deletion/intent receipts remain open.
+[Lifecycle](COUNCIL_TEMPLATE_LIFECYCLE.md).
+
 **DA-104:** A separate persistence boundary inspects one owned preflight row, fingerprints exact database timestamps and scrubs it under existing owner serialization plus a draft-table lock. Existing JSON metadata holds the strict receipt; create/start/cancel and enqueue/rerun guards preserve tombstone ordering. No provider or queue work is dispatched by review/deletion. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-103 tooling boundary:** a parent/version-scoped pnpm alias and lock-hashed patch replace Next lint's single directory discovery dependency with tinyglobby, preserving exercised paths and all rule settings. The normal runtime/provider/DB dependency boundaries stay unchanged. Frozen clean installation and Linux CI compatibility checks protect this locally maintained integration. [Policy](DEPENDENCY_MITIGATION.md).

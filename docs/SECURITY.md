@@ -1,5 +1,11 @@
 # Security
 
+DA-108 preparation prevents a missing/foreign/deleted template update identity from
+creating another row and prevents implicit same-name content overwrite. Owner-scoped
+write serialization coordinates application saves/deletes. Physical template deletion
+still has no review/receipt, and an old id-less create may recreate it after deletion.
+These remaining boundaries are explicit in [the lifecycle](COUNCIL_TEMPLATE_LIFECYCLE.md).
+
 **DA-104:** Strict same-origin 4 KiB confirmations, schema/FK/trigger/unique-index checks, a 24 MiB inspection cap, exact-state fingerprints and owner/table serialization protect draft deletion. Ciphertexts are nulled, and original intent replay is denied. Receipts are plain content-free metadata; independent records, old backups and physical storage remain. Destructive acceptance uses generated fixtures only. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-103:** the active lockfile removes the lint-only fast-glob/micromatch/braces chain through an exact parent-scoped tinyglobby alias and reviewed utility compatibility patch. Full and production audits report no known vulnerabilities; no advisory is ignored. Security CI adds frozen install/compatibility tests and preserves full audit/history scanning. This closes the dependency finding, not all application-security or original-plan gates. [Maintenance](DEPENDENCY_MITIGATION.md), [checks](DA103_ACCEPTANCE.md).

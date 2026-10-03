@@ -5,7 +5,11 @@ reviewed compatibility patch, preserving all 113 lint rule settings. Full depend
 audit, 7 compatibility tests, frozen clean installation, 272 units, lint/type/build pass.
 [Evidence and maintenance](DA103_ACCEPTANCE.md). Security CI retains the full audit and
 history scan and adds installation/compatibility gates.
-Next task: DA-108 reviewed saved council-template deletion and creation retry boundaries.
+Active task: DA-108 reviewed saved council-template deletion and creation retry boundaries.
+Save-boundary preparation is verified: unchanged identical retries, conflicting-name
+refusal, no missing/deleted-id recreation and serialized save/delete. 274 units, 193
+isolated PostgreSQL cases, focused browser acceptance, type/lint/build/audit pass.
+Reviewed deletion and durable intent receipts remain open. [Scope](COUNCIL_TEMPLATE_LIFECYCLE.md).
 DA-102's bounded run-body deletion remains functionally verified; broader privacy gates stay open.
 
 Status: DA-097's bounded private delivery has passed local acceptance; the broad private chat/deletion/monetary gates remain partial. [The 1 October repository audit](REPO_AUDIT_2026_10_01.md) records DA-081 checks; [DA-082](PROVIDER_PRICING.md) adds token estimates, [DA-083](PROVIDER_BILLING.md) billing evidence, [DA-084](BILLING_CORRECTIONS.md) corrections, [DA-085](BILLING_STATEMENTS.md) statement inspection, [DA-086](BILLING_STATEMENT_HISTORY.md) durable statement history, [DA-087](BILLING_REALLOCATION.md) identity reallocation, [DA-088](BILLING_ACCOUNT.md) account invoice inspection and [DA-089](BILLING_PAYMENT.md) local payment-evidence inspection. [DA-090](CONVERSATION_CONTINUATION.md) adds explicit frozen report continuation; [DA-091](CONVERSATION_COMPACTION.md) adds reviewed manual compaction with private original archives. The original broad PLAN.md acceptance gates are not complete. See [the full gap audit](PLAN_GAP_AUDIT.md). TypeSafe/JEV remains excluded by the owner.

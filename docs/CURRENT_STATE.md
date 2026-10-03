@@ -1,8 +1,25 @@
 # Current state
 
-Updated: 3 October 2026 (DA-107 reviewed local schedule deletion; next DA-108 council templates)
+Updated: 3 October 2026 (DA-108 template save boundaries verified; reviewed deletion remains open)
 
-## Current increment — DA-107 reviewed local schedule-template deletion
+## Current preparation — DA-108 saved council-template lifecycle
+
+Identical same-name creation retries return unchanged rows; conflicting content returns
+409 rather than silently overwriting. Explicit updates require an existing owned id;
+missing/deleted/foreign identities cannot create replacements. Owner-scoped write locks
+serialize save/delete and concurrent creations.
+
+274 units, 193 isolated PostgreSQL cases (eight new template cases), one focused real-route
+browser case, workspace type checks, zero-warning lint, separate-output production build
+and full dependency audit pass. The initial fresh-checkout type check lacked generated
+Next types; build/dev generation precedes the successful repeat. No schema change,
+primary migration, real owner deletion or paid call. [Scope and evidence](COUNCIL_TEMPLATE_LIFECYCLE.md).
+
+DA-108 remains open: reviewed deletion, durable creation identity/tombstones, lost-delete
+response recovery, name reuse and populated receipt restore are still required. Existing
+physical deletion can permit old id-less creation replay. Next: implement those boundaries.
+
+## Previous verified increment — DA-107 reviewed local schedule-template deletion
 
 Paused schedules now use bounded deletion preview and explicit acknowledgement beneath the selected card. Content is scrubbed into authenticated empty encrypted payloads; the paused row retains an encrypted receipt and creation retry identity. Old create retries cannot resurrect it. Independently queued/historical run work and accounting remain intact. Exact occurrence fences and one run/job/cursor transaction prevent dispatch from a stale paused/deleted snapshot.
 

@@ -4,11 +4,19 @@ import {
   type CouncilMemberConfig,
   type SaveCouncilTemplateRequest,
 } from "@deliberation-ai/contracts";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { decryptJson, encryptJson } from "./crypto";
 import { getDatabase } from "./database";
 import { LOCAL_OWNER_ID } from "./owner";
 import { councilTemplates } from "./schema";
+
+export class CouncilTemplateConflictError extends Error {}
+
+async function lockTemplateWrites(tx: Parameters<Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]>[0]) {
+  await tx.execute(sql`set local lock_timeout='5s'`);
+  await tx.execute(sql`set local statement_timeout='10s'`);
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext('council-template-writes-v1'))`);
+}
 
 export type CouncilTemplate = {
   id: string;
@@ -48,6 +56,7 @@ export async function saveCouncilTemplate(
 ): Promise<CouncilTemplate> {
   const db = getDatabase();
   return db.transaction(async (tx) => {
+    await lockTemplateWrites(tx);
     const [existing] = request.id
       ? await tx
           .select()
@@ -69,6 +78,17 @@ export async function saveCouncilTemplate(
             ),
           )
           .limit(1);
+    // An explicit update identity must never fall back to creating a new row.
+    if (request.id && !existing) throw new CouncilTemplateConflictError();
+    if (!request.id && existing) {
+      const saved = mapTemplate(existing);
+      // A lost create response may be retried, but cannot overwrite another draft.
+      if (saved.description !== request.description ||
+          JSON.stringify(saved.members) !== JSON.stringify(request.members)) {
+        throw new CouncilTemplateConflictError();
+      }
+      return saved;
+    }
     const id = existing?.id ?? randomUUID();
     const values = {
       ownerId: LOCAL_OWNER_ID,
@@ -96,14 +116,17 @@ export async function saveCouncilTemplate(
 }
 
 export async function deleteCouncilTemplate(templateId: string): Promise<boolean> {
-  const deleted = await getDatabase()
-    .delete(councilTemplates)
-    .where(
-      and(
-        eq(councilTemplates.ownerId, LOCAL_OWNER_ID),
-        eq(councilTemplates.id, templateId),
-      ),
-    )
-    .returning({ id: councilTemplates.id });
-  return deleted.length > 0;
+  return getDatabase().transaction(async (tx) => {
+    await lockTemplateWrites(tx);
+    const deleted = await tx
+      .delete(councilTemplates)
+      .where(
+        and(
+          eq(councilTemplates.ownerId, LOCAL_OWNER_ID),
+          eq(councilTemplates.id, templateId),
+        ),
+      )
+      .returning({ id: councilTemplates.id });
+    return deleted.length > 0;
+  });
 }

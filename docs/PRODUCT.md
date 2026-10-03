@@ -1,5 +1,10 @@
 # Product
 
+**DA-108 preparation:** saved council templates reject conflicting same-name creation
+instead of silently overwriting content. Identical retries return the unchanged template;
+explicit updates require an existing owned id and cannot recreate a deleted row. Reviewed
+deletion and durable creation receipts remain open. [Scope](COUNCIL_TEMPLATE_LIFECYCLE.md).
+
 **DA-104:** Pending clarification tasks now offer a read-only draft deletion review and separate acknowledgement. Confirmed deletion clears the stored question/request while retaining a content-free tombstone; existing runs and the main council draft remain. Original-intent replay is refused. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-103 maintenance:** the Next lint dependency finding is removed from the current graph while preserving lint settings; product/provider/data behavior stays the same. Full dependency audit and local compatibility checks pass. Next bounded product work is reviewed preflight draft deletion. [Evidence](DA103_ACCEPTANCE.md).
