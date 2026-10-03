@@ -1,5 +1,7 @@
 # Orchestration
 
+**DA-104:** preflight tombstones are checked under the existing owner/intent locks before ordinary enqueue or selected-member rerun can create/return an intent. Draft creation/cancellation shares owner serialization with resumed start and reviewed deletion. If start wins, review must be refreshed; a later draft deletion preserves that independent run/job. [Retained boundary](PREFLIGHT_DRAFT_DELETION.md).
+
 **DA-102:** reviewed run removal tries the same council session advisory lease without waiting after the owner lock; active execution or unresolved receipts preserves content. Protected table locks and repeated inspection precede atomic audit/recorded-job/body removal. Stale delivery performs no call, and original enqueue/rerun intent replay is rejected. Decision aggregates are ineligible because that path has no equivalent fence. No remote cancellation, retry, JEV activation or change to age pruning. [Contract](RUN_DELETION.md).
 
 **DA-101:** reviewed private deletion takes the conversation owner lock, tries the same private-worker advisory lease without waiting, then locks/rechecks branch and audit tables. Prepared/submitted/unknown work blocks removal, and an active worker still blocks after acknowledged discard. Terminal queue identity jobs may remain until queue expiry; a stale worker finds no branch and performs no provider request. There is no remote cancellation, automatic retry or new council dispatch behavior. [Contract](PRIVATE_BRANCH_DELETION.md).

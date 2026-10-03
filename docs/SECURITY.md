@@ -1,5 +1,7 @@
 # Security
 
+**DA-104:** Strict same-origin 4 KiB confirmations, schema/FK/trigger/unique-index checks, a 24 MiB inspection cap, exact-state fingerprints and owner/table serialization protect draft deletion. Ciphertexts are nulled, and original intent replay is denied. Receipts are plain content-free metadata; independent records, old backups and physical storage remain. Destructive acceptance uses generated fixtures only. [Contract](PREFLIGHT_DRAFT_DELETION.md).
+
 **DA-103:** the active lockfile removes the lint-only fast-glob/micromatch/braces chain through an exact parent-scoped tinyglobby alias and reviewed utility compatibility patch. Full and production audits report no known vulnerabilities; no advisory is ignored. Security CI adds frozen install/compatibility tests and preserves full audit/history scanning. This closes the dependency finding, not all application-security or original-plan gates. [Maintenance](DEPENDENCY_MITIGATION.md), [checks](DA103_ACCEPTANCE.md).
 
 **DA-102:** strict same-origin 4 KiB confirmation, owned bounded copy inspection, exact affected-row fingerprints, worker/owner/table fencing, registered FK closure and checked immutable trigger bodies protect manual run deletion. Content-free usage/intent audit is encrypted; independent inputs and external copies remain. Its publication audit failed on the lint-only braces advisory; DA-103 resolves the current dependency graph. [Deletion policy](RUN_DELETION.md), [historical finding](DEPENDENCY_SECURITY_2026_10_03.md).

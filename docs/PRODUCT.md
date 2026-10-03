@@ -1,5 +1,7 @@
 # Product
 
+**DA-104:** Pending clarification tasks now offer a read-only draft deletion review and separate acknowledgement. Confirmed deletion clears the stored question/request while retaining a content-free tombstone; existing runs and the main council draft remain. Original-intent replay is refused. [Contract](PREFLIGHT_DRAFT_DELETION.md).
+
 **DA-103 maintenance:** the Next lint dependency finding is removed from the current graph while preserving lint settings; product/provider/data behavior stays the same. Full dependency audit and local compatibility checks pass. Next bounded product work is reviewed preflight draft deletion. [Evidence](DA103_ACCEPTANCE.md).
 
 **DA-102 functional scope:** reviewed removal of one owned terminal run body is available before retention age. Copies, unresolved provider work, the live worker fence and schema/ownership drift block deletion. Content-free usage/intent audit and conversation membership remain; independent billing, preflight/schedule inputs and external copies remain. Decision aggregates are excluded. The original dependency gate is resolved by DA-103. [Workflow](RUN_DELETION.md), [verification](DA102_ACCEPTANCE.md).

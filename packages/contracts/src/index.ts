@@ -218,6 +218,14 @@ export const runDeletionAuditSchema = z.object({
 export type RunDeletionAudit = z.infer<typeof runDeletionAuditSchema>;
 export const deleteRunBodySchema = z.object({ runId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   confirmContentDeletion: z.literal(true), acknowledgeRetainedRecords: z.literal(true) }).strict();
+export const deletePreflightDraftSchema = z.object({ draftId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  confirmContentDeletion: z.literal(true), acknowledgeRetainedRecords: z.literal(true) }).strict();
+export const preflightDraftDeletionReceiptSchema = z.object({
+  version: z.literal("preflight-draft-deletion-v1"), draftId: z.string().uuid(),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/), deletedAt: z.string().datetime(),
+  previousStatus: z.enum(["awaiting_input", "started", "cancelled"]), retainedRunId: z.string().uuid().nullable(),
+}).strict();
+export type PreflightDraftDeletionReceipt = z.infer<typeof preflightDraftDeletionReceiptSchema>;
 export const deletePrivateBranchSchema = z.object({ branchId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   confirmContentDeletion: z.literal(true), acknowledgeRetainedMetadata: z.literal(true) }).strict();
 export const sendPrivateDeliverySchema = z.object({ requestId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict();

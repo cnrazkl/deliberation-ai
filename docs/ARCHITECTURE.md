@@ -1,5 +1,7 @@
 # Architecture
 
+**DA-104:** A separate persistence boundary inspects one owned preflight row, fingerprints exact database timestamps and scrubs it under existing owner serialization plus a draft-table lock. Existing JSON metadata holds the strict receipt; create/start/cancel and enqueue/rerun guards preserve tombstone ordering. No provider or queue work is dispatched by review/deletion. [Contract](PREFLIGHT_DRAFT_DELETION.md).
+
 **DA-103 tooling boundary:** a parent/version-scoped pnpm alias and lock-hashed patch replace Next lint's single directory discovery dependency with tinyglobby, preserving exercised paths and all rule settings. The normal runtime/provider/DB dependency boundaries stay unchanged. Frozen clean installation and Linux CI compatibility checks protect this locally maintained integration. [Policy](DEPENDENCY_MITIGATION.md).
 
 **DA-102:** a separate run deletion boundary supplies bounded read-only inspection, exact affected-row fingerprints and atomic encrypted audit/job/body removal through the existing BFF. It reuses owner serialization and the council session fence, registers the cascade closure and inspects nested frozen provenance. Creation/rerun keys are tombstoned; conversation export adds retained audits. Decision execution remains outside deletion scope. [Contract](RUN_DELETION.md).

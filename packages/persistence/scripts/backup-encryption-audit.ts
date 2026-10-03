@@ -3,6 +3,7 @@ import { decryptText } from "../src/crypto";
 import { decodePrivateBranchBody } from "../src/private-branches";
 import { decodePrivateBranchDeletion } from "../src/private-branch-deletion";
 import { decodeRunDeletion } from "../src/run-deletion";
+import { readPreflightDraftDeletion } from "../src/preflight-draft-deletion";
 
 type EncryptedField = readonly [column: string, contextSuffix: string, format: "text" | "json"];
 interface EncryptedTable {
@@ -35,7 +36,7 @@ const encryptedTables: readonly EncryptedTable[] = [
   ] },
   { table: "preflight_drafts", keys: ["id"], contextPrefix: "preflight-draft", fields: [
     ["question_ciphertext", "question", "text"], ["request_ciphertext", "request", "json"],
-  ] },
+  ], metadata: [["status", "draftStatus"], ["questions", "draftQuestions"]] },
   { table: "model_runs", keys: ["id"], contextPrefix: "model-run", fields: [
     ["raw_text_ciphertext", "raw", "text"], ["parsed_output_ciphertext", "parsed", "json"],
   ] },
@@ -123,6 +124,11 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
         const key = keys.map((_, index) => row[`key_${index}`]);
         if (key.some((part) => typeof part !== "string")) throw new Error("Restored encrypted-row key is missing.");
         const contextBase = `${descriptor.contextPrefix}:${key.join(":")}`;
+        if (descriptor.table === "preflight_drafts") {
+          try { readPreflightDraftDeletion({ id: key[0]!, status: row.draftStatus!, questions: row.draftQuestions,
+            questionCiphertext: row.question_ciphertext ?? null, requestCiphertext: row.request_ciphertext ?? null }); }
+          catch { throw new Error("Restored preflight deletion metadata is invalid."); }
+        }
         for (const [column, suffix, format] of descriptor.fields) {
           const ciphertext = row[column];
           if (ciphertext === null) continue;

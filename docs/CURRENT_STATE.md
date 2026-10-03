@@ -1,8 +1,16 @@
 # Current state
 
-Updated: 3 October 2026 (DA-105/DA-106 provider connection UI verified; next DA-104 preflight draft deletion)
+Updated: 3 October 2026 (DA-104 preflight draft deletion verified; next DA-107 local schedule deletion)
 
-## Owner-requested UI increments — DA-105 and DA-106
+## Current increment — DA-104 reviewed preflight draft deletion
+
+Owned draft payloads now require read-only inspection and explicit acknowledgement before scrubbing. The existing row retains a strict, content-free tombstone; original intent reuse is blocked in creation/enqueue/rerun, and repeated matching confirmations return the same receipt. Exact timestamp fingerprints and bounded schema/FK/trigger/unique-index checks reject drift. Owner/table locking serializes creation, start, cancellation and deletion. Linked run work remains unchanged.
+
+273 unit tests and 177 isolated PostgreSQL cases pass. The full browser sweep passed 27 cases; one outdated immediate-delete test was updated, and it plus the new deletion case pass in the focused repeat. Type checks, zero-warning lint, separate-output build and full audit pass. A real custom archive of synthetic-only data was restored to a disposable database; receipt/null-payload equality, metadata/encryption auditing and replay blocking pass. No migration, paid call or real owner deletion occurred. [Contract](PREFLIGHT_DRAFT_DELETION.md), [acceptance](DA104_ACCEPTANCE.md).
+
+Next: DA-107 reviewed local schedule-template deletion and dispatch/replay boundaries. Broader settings, decision fences, retained copies, accounting and semantic/human acceptance remain open. Older next-task statements below are historical.
+
+## Previous owner-requested UI increments — DA-105 and DA-106
 
 - [x] DA-105: checked connection catalogs appear in a selectable dropdown; each completed check replaces its options. Selection opens an explicit default-model edit draft; saving does not change existing council member models. Catalog revision invalidation and member suggestions are preserved.
 - [x] DA-106: the shared connection editor opens inside the selected connection card, with one active form, cancellation, empty credential fields and responsive layout. Creation remains below the cards when no edit is active.

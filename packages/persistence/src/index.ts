@@ -35,3 +35,5 @@ export * from "./conversation-deletion";
 export * from "./private-branches";
 export * from "./private-branch-deletion";
 export * from "./private-deliveries";
+
+export * from "./preflight-draft-deletion";

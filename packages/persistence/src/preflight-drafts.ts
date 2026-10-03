@@ -11,6 +11,8 @@ import { LOCAL_OWNER_ID } from "./owner";
 import { validateRunAttachments } from "./run-attachments";
 import { enqueueDurableRun, findDurableRunById, loadRunContinuation, PreflightMismatchError } from "./run-repository";
 import { preflightDrafts } from "./schema";
+import { readPreflightDraftDeletion } from "./preflight-draft-deletion";
+import { lockConversationMembership } from "./conversation-membership";
 
 export class PreflightDraftError extends Error {
   constructor(message = "Bekleyen ön değerlendirme bulunamadı veya artık kullanılamıyor.") {
@@ -46,7 +48,7 @@ function summary(row: DraftRow): PreflightDraftSummary {
 async function awaitingRow(id: string): Promise<{ row: DraftRow; request: CreateRunRequest }> {
   const [row] = await getDatabase().select().from(preflightDrafts)
     .where(and(eq(preflightDrafts.id, id), eq(preflightDrafts.ownerId, LOCAL_OWNER_ID))).limit(1);
-  if (!row || row.status !== "awaiting_input" || !row.requestCiphertext) throw new PreflightDraftError();
+  if (!row || readPreflightDraftDeletion(row) || row.status !== "awaiting_input" || !row.requestCiphertext) throw new PreflightDraftError();
   const frozen = preflightQuestionsSchema.parse(row.questions);
   const request = createRunRequestSchema.parse(decryptJson<unknown>(row.requestCiphertext, `preflight-draft:${id}:request`));
   if (frozen.policyVersion !== PREFLIGHT_CONTEXT_POLICY_VERSION ||
@@ -58,21 +60,23 @@ async function awaitingRow(id: string): Promise<{ row: DraftRow; request: Create
 export async function createAwaitingPreflightDraft(request: CreateRunRequest): Promise<PreflightDraftSummary> {
   const questions = findCriticalMissingContext(request.promptRevision?.originalQuestion ?? request.question);
   if (questions.length === 0 || request.preflightDecision) throw new PreflightDraftError("Bu istek için bekleyen bir açıklama sorusu yok.");
-  const db = getDatabase();
-  const id = randomUUID();
-  const [created] = await db.insert(preflightDrafts).values({
-    id, ownerId: LOCAL_OWNER_ID, idempotencyKey: request.idempotencyKey,
-    requestHash: hashRunRequest(request),
-    questionCiphertext: encryptText(request.promptRevision?.originalQuestion ?? request.question, `preflight-draft:${id}:question`),
-    requestCiphertext: encryptJson(request, `preflight-draft:${id}:request`),
-    questions: { policyVersion: PREFLIGHT_CONTEXT_POLICY_VERSION, questions },
-  }).onConflictDoNothing().returning();
-  if (created) return summary(created);
-  const [existing] = await db.select().from(preflightDrafts).where(and(
-    eq(preflightDrafts.ownerId, LOCAL_OWNER_ID), eq(preflightDrafts.idempotencyKey, request.idempotencyKey),
-  )).limit(1);
-  if (!existing || existing.status !== "awaiting_input" || existing.requestHash !== hashRunRequest(request)) throw new IdempotencyConflictError();
-  return summary(existing);
+  return getDatabase().transaction(async (db) => {
+    await lockConversationMembership(db);
+    const id = randomUUID();
+    const [created] = await db.insert(preflightDrafts).values({
+      id, ownerId: LOCAL_OWNER_ID, idempotencyKey: request.idempotencyKey,
+      requestHash: hashRunRequest(request),
+      questionCiphertext: encryptText(request.promptRevision?.originalQuestion ?? request.question, `preflight-draft:${id}:question`),
+      requestCiphertext: encryptJson(request, `preflight-draft:${id}:request`),
+      questions: { policyVersion: PREFLIGHT_CONTEXT_POLICY_VERSION, questions },
+    }).onConflictDoNothing().returning();
+    if (created) return summary(created);
+    const [existing] = await db.select().from(preflightDrafts).where(and(
+      eq(preflightDrafts.ownerId, LOCAL_OWNER_ID), eq(preflightDrafts.idempotencyKey, request.idempotencyKey),
+    )).limit(1);
+    if (!existing || existing.status !== "awaiting_input" || existing.requestHash !== hashRunRequest(request)) throw new IdempotencyConflictError();
+    return summary(existing);
+  });
 }
 
 export async function listAwaitingPreflightDrafts(): Promise<PreflightDraftSummary[]> {
@@ -86,15 +90,18 @@ export async function findPreflightDraft(id: string): Promise<PreflightDraftSumm
   const [row] = await getDatabase().select().from(preflightDrafts).where(and(
     eq(preflightDrafts.id, id), eq(preflightDrafts.ownerId, LOCAL_OWNER_ID),
   )).limit(1);
-  return row ? summary(row) : undefined;
+  return row && !readPreflightDraftDeletion(row) ? summary(row) : undefined;
 }
 
 export async function cancelPreflightDraft(id: string): Promise<boolean> {
-  const rows = await getDatabase().update(preflightDrafts).set({
-    status: "cancelled", questionCiphertext: null, requestCiphertext: null, updatedAt: new Date(),
-  }).where(and(eq(preflightDrafts.id, id), eq(preflightDrafts.ownerId, LOCAL_OWNER_ID),
-    eq(preflightDrafts.status, "awaiting_input"))).returning({ id: preflightDrafts.id });
-  return rows.length > 0;
+  return getDatabase().transaction(async (tx) => {
+    await lockConversationMembership(tx);
+    const rows = await tx.update(preflightDrafts).set({
+      status: "cancelled", questionCiphertext: null, requestCiphertext: null, updatedAt: new Date(),
+    }).where(and(eq(preflightDrafts.id, id), eq(preflightDrafts.ownerId, LOCAL_OWNER_ID),
+      eq(preflightDrafts.status, "awaiting_input"))).returning({ id: preflightDrafts.id });
+    return rows.length > 0;
+  });
 }
 
 function applyDraftRevision(baseQuestion: string, supplied?: PromptRevisionRequest) {

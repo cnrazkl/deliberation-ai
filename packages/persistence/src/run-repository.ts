@@ -1,3 +1,4 @@
+import { isPreflightIntentClosed } from "./preflight-draft-deletion";
 import { createHash, randomUUID } from "node:crypto";
 import {
   executeFakeCouncil,
@@ -426,7 +427,7 @@ export async function enqueueDurableRun(request: CreateRunRequest): Promise<RunR
     // alone cannot replay two concurrent requests after both observe no run.
     await lockConversationMembership(tx);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext(${request.idempotencyKey}))`);
-    if (await isRunIntentDeleted(tx, request.idempotencyKey)) throw new IdempotencyConflictError();
+    if (await isPreflightIntentClosed(tx, request.idempotencyKey) || await isRunIntentDeleted(tx, request.idempotencyKey)) throw new IdempotencyConflictError();
     const [alreadyQueued] = await tx.select().from(runs)
       .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, request.idempotencyKey))).limit(1);
     if (alreadyQueued) {
@@ -554,7 +555,7 @@ export async function enqueueSelectedMemberRerun(input: {
   return db.transaction(async (tx) => {
     await lockConversationMembership(tx);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext(${input.idempotencyKey}))`);
-    if (await isRunIntentDeleted(tx, input.idempotencyKey)) throw new IdempotencyConflictError();
+    if (await isPreflightIntentClosed(tx, input.idempotencyKey) || await isRunIntentDeleted(tx, input.idempotencyKey)) throw new IdempotencyConflictError();
     const [existing] = await tx.select().from(runs)
       .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, input.idempotencyKey))).limit(1);
     if (existing) {
