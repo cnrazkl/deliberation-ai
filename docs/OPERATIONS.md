@@ -1,5 +1,32 @@
 # Local operations
 
+## DA-110 — separate interactive runtime from browser tests
+
+On 3 October PostgreSQL was listening on 5432, but port 3000 and the application
+worker were absent. The preceding Playwright `webServer` had owned `pnpm dev` and
+removed its temporary web/worker tree at teardown; no independent interactive server
+was left running. This explains the observed outage without evidence of a DB failure
+or application crash.
+
+Daily usage remains `pnpm db:start` then an independently running `pnpm dev` on 3000.
+A hidden detached Windows launcher now runs from this worktree, with ignored logs in
+`.local/runtime/dev.stdout.log` and `dev.stderr.log`. This is a current-session process,
+not login/reboot startup or an automatic crash supervisor.
+
+Playwright now owns `pnpm dev:e2e` on loopback 3100 with `.next-e2e/`. Its wrapper sets
+the matching APP_ORIGIN after local env loading and forces test output; origin validation
+is not relaxed. Generated output is excluded from Git/lint. PLAYWRIGHT_REUSE_SERVER,
+if explicitly set, applies only to 3100. The worker/database/queues remain shared with
+the configured local installation: this change separates process/output lifecycle,
+not database state.
+
+The first separate-port smoke failed with 403 due to the inherited 3000 origin. After
+correcting the test origin, the real-route browser smoke passes. At teardown 3100
+closes, while 3000 returns HTTP 200, the database/one interactive worker remain ready,
+and the detached launcher survives across tool calls. Type checks, zero-warning lint,
+script syntax check and separate production build pass. No schema migration, paid call
+or real owner deletion. Remaining DA-108 work stays next; broader supervision is open.
+
 DA-103 rollout: use `pnpm install --frozen-lockfile`, `pnpm test:lint-dependencies` and `pnpm lint` after checkout. The pinned alias and patch travel with source/lockfile; no database migration is needed. Preserve LF patch bytes and review both integration parts before upgrading Next lint. Full dependency audit is now clean. [Maintenance](DEPENDENCY_MITIGATION.md), [verification](DA103_ACCEPTANCE.md).
 
 DA-102 rollout: apply additive migration 0047 with `pnpm db:migrate` and restart old processes before exposing reviewed run deletion. Migration was applied locally; it deletes no rows. The operation is explicitly reviewed, independent of age-based `db:prune`, and preserves independent preflight/schedule inputs and billing. Populated deletion audit is covered by disposable restore. Its original dependency finding was resolved by DA-103. [Policy](RUN_DELETION.md), [historical finding](DEPENDENCY_SECURITY_2026_10_03.md).

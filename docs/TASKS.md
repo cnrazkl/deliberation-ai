@@ -1,5 +1,10 @@
 # Tasks
 
+- [x] DA-110 owner runtime recovery: isolate interactive port/output/process lifetime
+  from Playwright's temporary tree. Real-route 3100 smoke passes; after cleanup 3000
+  remains HTTP 200 with ready DB/worker. Type/lint/build/syntax pass.
+  [Evidence](OPERATIONS.md#da-110--separate-interactive-runtime-from-browser-tests).
+
 - [x] DA-109 owner-requested insertion before remaining DA-108: Markdown downloads for
   conversation history and selected report synthesis coverage, preserving provenance,
   minority/raw/private history and unavailable records. 279 units, two focused browser

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "node scripts/with-root-env.mjs pnpm --parallel --filter @deliberation-ai/web --filter @deliberation-ai/worker run dev",
+    "dev:e2e": "node scripts/with-root-env.mjs node scripts/e2e-server.mjs",
     "dev:worker": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/worker dev",
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",

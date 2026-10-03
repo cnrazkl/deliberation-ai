@@ -1,5 +1,12 @@
 # Architecture
 
+## DA-110 runtime/test lifecycle
+
+Interactive `pnpm dev` uses loopback 3000 and `.next/`; Playwright owns `dev:e2e` on
+3100 and `.next-e2e/`. The wrapper fixes APP_ORIGIN after local env loading. Test
+teardown owns its launched tree; database/queue sharing remains unchanged.
+[Operations and verification](OPERATIONS.md#da-110--separate-interactive-runtime-from-browser-tests).
+
 ## DA-109 Markdown exports
 
 Existing owner-scoped run/conversation export routes accept `format=md` and pass safe

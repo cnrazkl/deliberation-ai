@@ -53,6 +53,11 @@ Open `http://127.0.0.1:3000`. Save a reusable provider connection (a keyless loc
 
 ## Verify
 
+Keep `pnpm dev` running independently for daily use on port 3000. Browser tests start
+and stop their own server on 3100 with `.next-e2e/`; their completion is not an app
+startup step. Both workers still use the configured local database. See
+[runtime lifecycle](docs/OPERATIONS.md#da-110--separate-interactive-runtime-from-browser-tests).
+
 ```powershell
 pnpm test
 pnpm test:integration

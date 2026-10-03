@@ -1,6 +1,16 @@
 # Current state
 
-Updated: 3 October 2026 (DA-109 Markdown downloads verified; next remaining DA-108 deletion work)
+Updated: 3 October 2026 (DA-110 runtime restored/test lifecycle separated; next remaining DA-108)
+
+## Latest maintenance — DA-110 runtime/test lifecycle
+
+The unavailable UI had no web/worker process while PostgreSQL was running. The preceding
+Playwright runtime had ended with its test; no independent server was left. Interactive
+web/worker now run independently from this worktree. A real-route 3100 smoke passes;
+after teardown 3100 closes while 3000 returns HTTP 200, DB/one worker remain ready and
+the hidden launcher stays alive. Tests use `.next-e2e/` and a matching origin after env
+loading. Type/lint/build and script syntax checks pass. No migration, paid call or owner
+deletion. Reboot startup/crash supervision are not claimed. [Evidence](OPERATIONS.md#da-110--separate-interactive-runtime-from-browser-tests).
 
 ## Latest owner-requested increment — DA-109 Markdown history and synthesis
 
