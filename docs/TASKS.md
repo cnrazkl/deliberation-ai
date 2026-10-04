@@ -1,5 +1,10 @@
 # Tasks
 
+- [x] DA-114 private usage observability: branch-local provider counters, copied-receipt
+  exclusion, partial/unknown coverage and separate cache/reasoning conventions.
+  288 units, six focused browser flows plus a mobile visual repeat and type/lint/build
+  pass. Shared billing/settled-cost integration remains open. [Scope](PRIVATE_USAGE.md).
+
 - [x] DA-113 bounded private-settings follow-up: owner-reviewed per-send output cap,
   fingerprint/replay binding, encrypted retention and unchanged default/upper capacity.
   282 units, 204 isolated PostgreSQL cases with actual lower-cap archive restore, all

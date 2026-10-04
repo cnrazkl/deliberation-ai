@@ -111,6 +111,17 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await preview.getByRole("button", { name: "Kaydedilmiş mesajı modele gönder" }).click();
     await expect(panel).toContainText("A local fixture answer about SQL joins", { timeout: 30_000 });
     await expect(panel).toContainText("Girdi tokenı: 31");
+    const usageSummary = panel.getByRole("group", { name: "Özel dal kullanım özeti" });
+    await usageSummary.locator("summary").click();
+    await expect(usageSummary).toContainText("Sağlayıcıya gönderim kaydı: 1");
+    await expect(usageSummary).toContainText("Girdi tokenı");
+    await expect(usageSummary).toContainText("Sayaç kapsamı: 1/1 gönderim");
+    if (provider === "openai-compatible") {
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await usageSummary.screenshot({ path: "test-results/da114-mobile-private-usage.png" });
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
     expect(calls).toBe(1);
     expect(received[0]!.url).toBe(provider === "anthropic" ? "/v1/messages" : provider === "openai" ? "/v1/responses" : provider === "google" ? "/v1beta/models/offline-private:generateContent" : "/v1/chat/completions");
     expect(provider === "google" ? received[0]!.body.generationConfig!.maxOutputTokens : provider === "openai" ? received[0]!.body.max_output_tokens : received[0]!.body.max_tokens).toBe(512);
@@ -196,11 +207,19 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
       if (provider === "google") expect(saved.body.deliveries![2]!.usage!.tokenDetails).toMatchObject({ reasoningTokens: 1_024, totalTokens: 1_065, outputTokenKind: "candidates" });
       expect(saved.body.deliveries![3]).toMatchObject({ result: null, usage: { inputTokens: null, outputTokens: null } });
       expect(JSON.stringify(received[3]!.body)).not.toContain("opaque-browser-fixture-state");
+      await usageSummary.locator("summary").click();
+      await expect(usageSummary).toContainText("Sonucu belirsiz veya kapatılmış belirsiz kayıt: 1");
+      await expect(usageSummary).toContainText("Girdi tokenı: bilinmiyor");
     }
     await panel.getByLabel("Özel mesaj taslağı").fill("Preserve this unsaved follow-up");
     await panel.getByRole("button", { name: "Bu noktadan yeni özel dal aç" }).click();
     await expect(panel.getByLabel("Özel mesaj taslağı")).toHaveValue("Preserve this unsaved follow-up");
     await expect(panel).toContainText("önceki daldan kopya");
+    await usageSummary.locator("summary").click();
+    await expect(usageSummary).toContainText("Sağlayıcıya gönderim kaydı: 0");
+    await expect(usageSummary).toContainText(`Kopyalanan kayıt: ${calls}`);
+    await expect(usageSummary).toContainText("bu dalın kullanımına tekrar eklenmez");
+    await expect(usageSummary).toContainText("kullanım hesaplanmadı");
     expect((await getDatabase().select().from(branches).where(eq(branches.conversationId, conversationId)))).toHaveLength(2);
     expect(calls).toBe(provider === "openai" || provider === "google" ? 4 : provider === "anthropic" ? 2 : 1);
   } finally {

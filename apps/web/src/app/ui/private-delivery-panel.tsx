@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PrivateDelivery } from "@deliberation-ai/contracts";
 import type { PrivateBranchView, PrivateDeliveryPreview } from "@deliberation-ai/persistence";
+import { PrivateUsagePanel } from "./private-usage-panel";
 
 const reasons: Record<PrivateDeliveryPreview["blocks"][number], string> = {
   no_message: "Önce mesaj taslağını dala kaydedin.", already_requested: "Son mesaj için bir gönderim kaydı zaten var. Yeni bir mesaj kaydedebilirsiniz.",
@@ -58,6 +59,7 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
   }
   const deliveries = branch.body.deliveries ?? [];
   return <section aria-label="Özel model gönderimi">
+    <PrivateUsagePanel branchId={branch.id} deliveries={deliveries} />
     <p className="section-hint">Yalnız kaydedilen mesaj açık onayla tek modele gönderilir. Taslağı kaydetmek, dalı açmak veya yenilemek gönderim yapmaz.</p>
     {deliveries.map((operation) => <article key={operation.id} aria-label="Özel gönderim kaydı">
       <strong>{states[operation.status]}{operation.originBranchId !== branch.id ? " · önceki daldan kopya" : ""}</strong>

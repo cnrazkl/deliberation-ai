@@ -1,5 +1,8 @@
 # Selected-member private branches — DA-096 / DA-097 / DA-098 / DA-099 / DA-100 / DA-101
 
+DA-114 adds expandable branch-local provider usage. Copies do not inflate child usage;
+missing counters and unresolved outcomes stay explicit. [Counting policy](PRIVATE_USAGE.md).
+
 **DA-102 source boundary:** a surviving private branch, even with no owner messages, blocks reviewed source run-body removal because its seed is a content copy. Remove each private leaf through DA-101's separate review first. Content-free private deletion audits retain source/usage identifiers and do not block source-body removal. Age-based retention remains independent and can leave copied private content. [Run policy](RUN_DELETION.md).
 
 **DA-101:** reviewed leaf-first content deletion is now available with copy/pending/worker/schema guards, retained encrypted usage/provenance and replay protection. Old create/fork request IDs cannot restore removed content; external backups/exports retain their copies. [Deletion contract](PRIVATE_BRANCH_DELETION.md), [acceptance](DA101_ACCEPTANCE.md). Increment-specific next-task statements below are historical.

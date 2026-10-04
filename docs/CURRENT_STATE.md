@@ -1,8 +1,23 @@
 # Current state
 
-Updated: 4 October 2026 (DA-113 reviewed private output settings completed)
+Updated: 4 October 2026 (DA-114 private branch usage observability completed)
 
-## Latest owner-requested increment — DA-113
+## Latest owner-requested increment — DA-114
+
+Expandable branch-local usage counts its own recorded sends and excludes copied
+receipts. Connection/model/counter conventions stay separate; each counter shows its
+known subtotal and coverage, with missing totals unknown. Failed/textless usage,
+legacy result counters and unknown/discarded outcomes remain inspectable. This is
+provider-reported observability, not shared council/private billing or settled cost.
+[Counting policy](PRIVATE_USAGE.md).
+
+288 units, six focused real-worker private browser flows plus one mobile visual repeat,
+type checks, zero-warning lint and separate-output production build pass. Mobile 390px
+summary was visually inspected. No SQL migration, real deletion or paid provider call.
+After module-edit recovery, interactive 3000 returns HTTP 200 with ready DB and one
+ready worker; web and worker now run in separate hidden launchers from this checkout.
+
+## Previous owner-requested increment — DA-113
 
 Private sends expose a per-send 128/256/512/1024 output-token draft (default 1024).
 Edits clear review. Preview fingerprints bind the cap; encrypted receipts retain it and

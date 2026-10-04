@@ -1,5 +1,9 @@
 # Workspace design principles — DA-111 / DA-112
 
+DA-114 private usage is collapsed by default above the individual receipts. Reported
+subtotals show their denominators; copied history, pending work and uncertainty have
+separate counts. Counter conventions remain visible. [Scope](PRIVATE_USAGE.md).
+
 DA-113 adds a labelled per-send private output selector. Editing removes the old preview
 and approval; uncertain send retries lock editing and retain the reviewed cap. Stored
 receipts show their approved cap separately from observed usage. The setting is a draft,

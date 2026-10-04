@@ -1,5 +1,9 @@
 # Product
 
+**DA-114:** an expandable private-branch usage summary counts its own sends, excludes
+copied receipts and shows provider-reported counters with missing-value coverage.
+Cache/reasoning conventions remain separate. [Scope](PRIVATE_USAGE.md).
+
 **DA-113:** private model sends offer a reviewed 128/256/512/1024 output-token cap.
 Changing it clears approval; encrypted receipts retain the exact cap and retries cannot
 change it. The draft defaults to 1024 when reopened. [Scope](PRIVATE_DELIVERY_SETTINGS.md).

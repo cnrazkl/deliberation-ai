@@ -531,6 +531,8 @@ input[type="checkbox"], input[type="radio"] { width: auto; flex-shrink: 0; }
 .red-team-setup label { white-space: normal; }
 .execution-limits-fields { grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); }
 .attachment-select-button { display: block; margin: 10px 0; min-height: 44px; }
+.private-usage-summary p { margin: 8px 0; line-height: 1.5; font-size: 14px; }
+.private-usage-summary article { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-subtle); }
 .attachment-list span { max-width: 100%; border-radius: 12px; }
 .attachment-list .icon-button { min-width: 44px; min-height: 44px; }
 .status-row, .decision-connection-row, .decision-source-list article,

@@ -1,5 +1,12 @@
 # Architecture
 
+## DA-114 private usage projection
+
+A pure domain projection groups validated private receipts by connection/model and
+counter conventions. PrivateUsagePanel renders it from the existing owner-scoped
+branch DTO. No BFF, persistence, worker or adapter change; no external branch/audit
+aggregation. [Counting policy](PRIVATE_USAGE.md).
+
 ## DA-113 private output settings
 
 Shared strict contracts bound the optional per-send cap; domain rendering freezes it

@@ -1,5 +1,9 @@
 # Original PLAN.md versus the running local application
 
+**4 October 2026, DA-114:** branch-local private token observability advances accounting
+visibility, preserving copied provenance and missing/uncertain counters. This does not
+complete shared council/private billing or provider-authoritative settled cost. [Scope](PRIVATE_USAGE.md).
+
 **4 October 2026, DA-113:** reviewed per-send private output caps (128–1024, default
 1024) advance the broader settings gate. Caps are fingerprint-bound and frozen in
 encrypted receipts; exact retries preserve one intent. DA-108's saved-template lifecycle
