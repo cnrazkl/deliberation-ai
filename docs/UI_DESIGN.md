@@ -1,6 +1,25 @@
-# Workspace design principles — DA-111
+# Workspace design principles — DA-111 / DA-112
 
 Verified design scope: owner-requested layout and appearance, 3 October 2026.
+
+## Responsive corrections — DA-112, 4 October 2026
+
+- Form and result layouts respond to the **usable main column** through the named
+  `workspace` inline-size container. Viewport media queries govern the outer sidebar;
+  a visible sidebar must not leave desktop form grids squeezed into a narrow column.
+- Grid/flex children can shrink. Long filenames, URLs and labels wrap without hiding
+  page overflow. Checkboxes retain their native width instead of inheriting text-field width.
+- Attachments have a visible keyboard-accessible **Dosya seç** button invoking the
+  existing file input. Selection, validation, per-member consent and removal stay intact.
+- Mobile controls use 16px input text and 44px button/summary targets. Sidebar content
+  remains scrollable on short screens. Narrow cards reduce padding, not text size.
+- Acceptance includes expanded chat/settings/schedule panels at 320, 390, 640, 820,
+  1024 and 1440 CSS pixels, a 390px-high landscape layout and 2x CSS magnification.
+  Reduced CSS viewports also exercise browser-zoom reflow; CSS magnification is not
+  a claim of native browser zoom or physical iOS/Android device testing.
+- Check element-level overflow, long accepted filenames, native file chooser activation,
+  light/dark screenshots and draft/navigation behavior. A collapsed-home screenshot
+  alone is insufficient responsive acceptance.
 
 ## Information architecture
 

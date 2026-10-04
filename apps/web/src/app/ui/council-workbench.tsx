@@ -322,6 +322,7 @@ async function readReplay(response: Response): Promise<RunEventReplay> {
 
 export function CouncilWorkbench() {
   const configRef = useRef<HTMLDetailsElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [libraryDeletionId, setLibraryDeletionId] = useState<string>();
   const [privateConversationId, setPrivateConversationId] = useState<string>();
   const [view, setView] = useState<WorkspaceView>("chat");
@@ -2086,6 +2087,8 @@ export function CouncilWorkbench() {
           <label htmlFor="task-attachments">Görev ekleri (isteğe bağlı)</label>
           <input
             id="task-attachments"
+            ref={attachmentInputRef}
+            hidden
             type="file"
             accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,image/gif"
             multiple
@@ -2096,6 +2099,10 @@ export function CouncilWorkbench() {
               void selectAttachments(files);
             }}
           />
+          <button type="button" className="secondary-button attachment-select-button"
+            disabled={pending || preparingAttachments} onClick={() => attachmentInputRef.current?.click()}>
+            {preparingAttachments ? "Dosyalar hazırlanıyor…" : "＋ Dosya seç"}
+          </button>
           <small>
             En fazla 6 dosya; görsel başına 2 MiB, PDF başına 5 MiB, toplam 12 MiB. PDF’nin seçilebilir metni çıkarılır; taranmış PDF için OCR henüz yok. Ekler şifreli saklanır ve yalnızca “Bu üyeye gönder” seçili modellere iletilir.
           </small>

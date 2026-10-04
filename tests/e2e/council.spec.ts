@@ -386,6 +386,14 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   expect(exported.snapshotId).toBeUndefined();
   expect(exported.attachments).toBeUndefined();
   await expect(page.getByText("ORTAK ZEMİN")).toBeVisible();
+  // Responsive acceptance must also cover a populated report, not only empty forms.
+  const desktopViewport = page.viewportSize()!;
+  for (const width of [320, 820]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.locator("#council-result").screenshot({ path: `test-results/da112-report-${width}.png` });
+  }
+  await page.setViewportSize(desktopViewport);
   await expect(page.getByText("FARKLI GÖRÜŞLER")).toBeVisible();
   await expect(page.getByRole("region", { name: "Model ayrıntıları" })).toContainText("Analist A");
   await expect(page.getByRole("region", { name: "Model ayrıntıları" })).toContainText("Analist B");

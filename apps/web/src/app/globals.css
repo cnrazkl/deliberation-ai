@@ -80,7 +80,7 @@ button:disabled { cursor: not-allowed; }
 .theme-picker { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
 .theme-picker select { width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--ink); padding: 9px; border-radius: 8px; }
 .appearance-card .theme-picker { max-width: 260px; }
-.app-main { min-width: 0; width: min(1040px, 100%); margin: 0 auto; padding: 30px 36px; }
+.app-main { container: workspace / inline-size; min-width: 0; width: min(1040px, 100%); margin: 0 auto; padding: 30px 36px; }
 .workspace-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
 .workspace-topbar h1 { font-size: clamp(23px, 3vw, 32px); font-weight: 650; letter-spacing: -.045em; margin: 7px 0 0; }
 .workspace-topbar .eyebrow { font-size: 10px; }
@@ -492,7 +492,8 @@ footer { margin-top: 38px; color: var(--muted); font-size: 12px; text-align: cen
 .prompt-revision-editor { margin-top: 12px; border: 1px solid var(--line); border-radius: 11px; padding: 12px; background: var(--surface-subtle); }
 .prompt-revision-editor pre { max-height: 240px; overflow: auto; overflow-wrap: anywhere; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 10px; color: var(--ink); font: 11px/1.5 ui-monospace, Consolas, monospace; }
 
-@media (max-width: 760px) {
+/* Respond to usable space after the sidebar, including browser zoom. */
+@container workspace (max-width: 760px) {
   .page-shell { padding-top: 38px; }
   .diagnostics-grid { grid-template-columns: 1fr 1fr; }
   .report-grid, .member-grid, .review-grid, .red-team-comparison-grid, .synthesis-grid { grid-template-columns: 1fr; }
@@ -517,4 +518,42 @@ footer { margin-top: 38px; color: var(--muted); font-size: 12px; text-align: cen
   .red-team-setup { align-items: flex-start; flex-direction: column; }
   .template-controls { grid-template-columns: 1fr; }
   .form-row button { width: 100%; }
+}
+
+/* Allow intrinsic content (filenames, URLs, model names) to shrink and wrap. */
+.app-shell { overflow-wrap: anywhere; }
+.app-main :where(section, article, details, form, div, label, fieldset),
+.app-sidebar :where(section, article, details, div, label) { min-width: 0; }
+input, select, textarea, button { min-width: 0; max-width: 100%; }
+button { white-space: normal; }
+input[type="checkbox"], input[type="radio"] { width: auto; flex-shrink: 0; }
+.risk-profile-control select { width: 100%; }
+.red-team-setup label { white-space: normal; }
+.execution-limits-fields { grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); }
+.attachment-select-button { display: block; margin: 10px 0; min-height: 44px; }
+.attachment-list span { max-width: 100%; border-radius: 12px; }
+.attachment-list .icon-button { min-width: 44px; min-height: 44px; }
+.status-row, .decision-connection-row, .decision-source-list article,
+.decision-result-heading, .review-card-heading, .review-assessment > div,
+.connection-status .connection-actions { flex-wrap: wrap; }
+.app-sidebar { overflow-y: auto; }
+.app-sidebar > :not(.sidebar-history) { flex-shrink: 0; }
+.sidebar-history { flex-basis: 120px; }
+
+@container workspace (max-width: 480px) {
+  .question-card, .settings-card, .report-card, .member-card,
+  .review-section, .decision-assessment-section { padding: 14px; }
+  .diagnostics-grid { grid-template-columns: 1fr; }
+  .council-config > summary { flex-wrap: wrap; justify-content: flex-start; }
+  .council-config > summary span { flex-basis: 100%; margin-left: 0; }
+  .check-row { flex-wrap: wrap; }
+  .risk-profile-control label, .evidence-control select { min-width: 0; }
+  .schedule-outputs article { flex-direction: column; }
+}
+
+@media (max-width: 800px) {
+  /* 16px prevents focus-driven form zoom on mobile Safari. */
+  input, select, textarea { font-size: 16px; }
+  button, summary { min-height: 44px; }
+  .app-main { padding-inline: 12px; }
 }

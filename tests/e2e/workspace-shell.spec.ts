@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { RunRecord } from "@deliberation-ai/application";
-import { workspaceView } from "./workspace-navigation";
+import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 
 const runId = "11111111-1111-4111-8111-111111111111";
 const conversationId = "22222222-2222-4222-8222-222222222222";
@@ -32,6 +32,45 @@ async function fixtures(page: Page) {
     };
     // These fixtures never dispatch or mutate persisted data.
     await route.fulfill({ status: json[url.pathname] ? 200 : 404, json: json[url.pathname] ?? { error: "Fixture unavailable" } });
+  });
+}
+
+for (const { width, zoom } of [...[320, 390, 640, 820, 1024, 1440].map((width) => ({ width, zoom: 1 })), { width: 1440, zoom: 2 }]) {
+  test(`expanded workspace fits ${width}px at ${zoom}x with long attachments`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 820 ? 390 : 900 });
+    await fixtures(page); await page.goto("/");
+    await page.evaluate(({ width, zoom }) => {
+      document.body.style.zoom = String(zoom);
+      document.documentElement.dataset.theme = width === 390 ? "dark" : "light";
+    }, { width, zoom });
+    await revealCouncilControls(page);
+    const chooserEvent = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "＋ Dosya seç", exact: true }).click();
+    const chooser = await chooserEvent;
+    await chooser.setFiles({ name: `${"long-file-name-".repeat(7)}.png`, mimeType: "image/png",
+      buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "base64") });
+    await expect(page.locator(".attachment-list")).toContainText("long-file-name");
+    if (width === 390) await page.locator(".attachment-picker").screenshot({ path: "test-results/da112-mobile-attachments.png" });
+    for (const view of ["Sohbet", "Ayarlar", "Zamanlayıcı"] as const) {
+      await workspaceView(page, view);
+      // Include expanded settings/diagnostics, not just the initial collapsed shell.
+      await page.locator(".workspace-view:not([hidden]) details").evaluateAll((items) => {
+        for (const item of items) (item as HTMLDetailsElement).open = true;
+      });
+      const overflow = await page.locator(".app-main").evaluate((main) => {
+        return [...main.querySelectorAll("*")].filter((element) => {
+          const rect = element.getBoundingClientRect();
+          const css = getComputedStyle(element);
+          return rect.width > 0 && rect.height > 0 && css.visibility !== "hidden" &&
+            (rect.right > document.documentElement.clientWidth + 1 || rect.left < -1 ||
+              (element.clientWidth > 0 && element.scrollWidth > element.clientWidth + 2 && css.overflowX === "visible"));
+        }).map((element) => `${element.tagName}.${element.className}`).slice(0, 20);
+      });
+      expect(overflow, `${view} at ${width}px`).toEqual([]);
+      if (width === 390 || width === 820) {
+        await page.screenshot({ path: `test-results/da112-${width}-${view}.png`, fullPage: true });
+      }
+    }
   });
 }
 

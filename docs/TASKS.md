@@ -1,5 +1,9 @@
 # Tasks
 
+- [x] DA-112 owner-reported responsive defects: container-based panel layouts, wrapping
+  long content, native-width checkboxes, visible attachment button and mobile targets.
+  281 units, 40 browser cases, type/lint/build pass. [Scope](DA112_ACCEPTANCE.md).
+
 - [x] DA-111 owner-requested insertion: persistent left history, separate Sohbet/Zamanlayıcı/Ayarlar views, progressive disclosure and persistent dark/light/system appearance. 281 units, all 33 browser cases plus the focused unavailable-output repeat, type/lint/build pass. [Design](UI_DESIGN.md).
 
 - [x] DA-110 owner runtime recovery: isolate interactive port/output/process lifetime

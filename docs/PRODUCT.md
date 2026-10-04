@@ -1,5 +1,9 @@
 # Product
 
+**DA-112:** forms adapt to the available workspace column, including narrower screens
+and magnified content. Attachments expose a visible **Dosya seç** action; long names
+wrap, and mobile controls remain usable. [Responsive design](UI_DESIGN.md).
+
 **DA-111:** the owner-requested workspace opens in a simpler Sohbet view. Conversation/run history stays in a left sidebar; Zamanlayıcı groups scheduling and linked latest outputs, and Ayarlar contains provider/MCP/worker details. Navigation preserves drafts. Detailed task controls open on demand; light, dark and system themes share semantic colors and persist appearance locally. [Design principles](UI_DESIGN.md).
 
 **DA-109:** **Konuşmayı indir (MD)** exports retained history, raw replies, private branches

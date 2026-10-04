@@ -1,8 +1,22 @@
 # Current state
 
-Updated: 3 October 2026 (DA-111 workspace layout and appearance completed)
+Updated: 4 October 2026 (DA-112 responsive frontend corrections)
 
-## Latest owner-requested increment — DA-111
+## Latest owner-requested increment — DA-112
+
+Panel layouts follow usable main-column width, including the sidebar's space. Long
+content wraps, member checkboxes keep native widths, mobile controls remain usable,
+and a visible **Dosya seç** button opens the existing validated attachment picker.
+Expanded chat/settings/scheduling checks cover 320–1440 CSS px, short landscape and
+2x CSS magnification. Physical mobile/native browser-zoom testing remains unperformed.
+
+281 units, all 40 browser cases, an additional populated-report responsive run,
+type checks, zero-warning lint and separate-output production build pass. After test
+teardown, interactive 3000 returns HTTP 200 with ready DB and one ready worker.
+[Design](UI_DESIGN.md), [verification scope](DA112_ACCEPTANCE.md).
+No provider, database schema or orchestration changes.
+
+## Previous owner-requested increment — DA-111
 
 Persistent left conversation/run history accompanies three views: Sohbet, Zamanlayıcı and Ayarlar. Main chat starts with collapsed task details; provider/MCP/worker details live in settings. Schedule outputs open exact existing latest run identities and unavailable content produces a visible error. Navigation preserves question/model/attachment/retry state. Explicit new chat clears composer context while preserving council choices. Light/dark/system appearance uses semantic tokens and a non-sensitive browser preference.
 

@@ -1,5 +1,12 @@
 # Architecture
 
+## DA-112 responsive layout
+
+The main column is a named CSS inline-size container. Panel layout breakpoints follow
+its available width independently of the viewport-controlled sidebar. A visible attachment
+button delegates to the existing file input/ref and validation path; no API or persistence
+contract changes. [Design and responsive acceptance](UI_DESIGN.md).
+
 ## DA-111 workspace shell
 
 WorkspaceShell owns responsive navigation and appearance. CouncilWorkbench keeps the existing task/configuration state and mounted panels while switching hidden views. The sidebar reuses owner-scoped conversation/run discovery; private conversation reviews render in the main area. LocalSchedulesPanel opens an exact existing lastRunId through the same saved-run handler. Theme preference is a non-sensitive browser key, synchronized through a small external store and applied before paint. Existing BFF, queue and provider boundaries remain unchanged. [Design](UI_DESIGN.md).
