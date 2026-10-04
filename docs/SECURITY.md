@@ -1,5 +1,10 @@
 # Security
 
+DA-117 stores only an allow-listed numeric private output default in a versioned browser
+preference key. It stores no conversation identities/content/credentials. Invalid or
+inaccessible values fall back to 1024; failed writes are not reported as saved. The
+preference cannot change an existing branch selection or frozen review/retry intent.
+
 DA-115's private usage GET is owner-scoped and no-store. One bounded read-only snapshot
 authenticates branch/audit ciphertext and rejects foreign membership or conflicting
 receipts. Only usage/count metadata crosses the BFF; sensitive content and remote

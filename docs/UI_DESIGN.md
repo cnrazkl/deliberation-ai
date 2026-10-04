@@ -1,5 +1,10 @@
 # Workspace design principles — DA-111 / DA-112
 
+DA-117 places saved private output defaults in Ayarlar, with explicit save/reset,
+visible stored value and failed-save feedback. Only the numeric cap is stored in this
+browser. Future branch defaults are separate from open branch selections and frozen
+approved receipt caps. [Contract](PRIVATE_DELIVERY_SETTINGS.md#da-117-browser-local-default).
+
 DA-114 private usage is collapsed by default above the individual receipts. Reported
 subtotals show their denominators; copied history, pending work and uncertainty have
 separate counts. Counter conventions remain visible. [Scope](PRIVATE_USAGE.md).

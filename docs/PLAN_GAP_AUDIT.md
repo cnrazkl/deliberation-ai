@@ -1,5 +1,10 @@
 # Original PLAN.md versus the running local application
 
+**4 October 2026, DA-117:** a browser-local private output default extends persistent
+preferences with explicit save/reset and independent open-branch drafts. Server-account
+preferences, model/reasoning controls, provider-managed continuity and monetary
+accounting remain open. [Scope](PRIVATE_DELIVERY_SETTINGS.md#da-117-browser-local-default).
+
 **4 October 2026, DA-116:** private cap drafts now survive saves, replies, refresh and
 branch switching within an open panel. Fresh forks/reopened panels use the unchanged
 default; fresh send review remains required. Persistent preferences, model/reasoning

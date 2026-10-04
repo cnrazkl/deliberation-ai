@@ -89,7 +89,7 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy, maxO
         {[128, 256, 512, 1024].map((value) => <option key={value} value={value}>{value} token{value === 1024 ? " · Varsayılan" : ""}</option>)}
       </select>
     </label>
-    <p className="section-hint">Seçiminiz bu panel açıkken dal başına korunur. Yeni dal veya paneli yeniden açma 1024 token ile başlar.</p>
+    <p className="section-hint">Seçiminiz bu panel açıkken dal başına korunur. Yeni açılan dallar Ayarlar’daki bu tarayıcıya kaydedilen varsayılanla başlar.</p>
     <p className="section-hint">Bu gönderim için üst sınırdır; daha düşük sınır yanıtı kesebilir. Reasoning kullanan modellerde görünür metin oluşmadan dolabilir. Kullanım veya ücret tahmini değildir. Değişiklik yeni inceleme gerektirir.</p>
     <button type="button" disabled={disabled || busy} onClick={() => void act("preview")}>Gönderimi incele</button>
     {preview && <section aria-label="Özel gönderim önizlemesi">

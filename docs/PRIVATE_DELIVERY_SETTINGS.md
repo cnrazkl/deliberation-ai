@@ -1,10 +1,13 @@
 # Reviewed private output settings — DA-113
 
+DA-117 adds [browser-local defaults](#da-117-browser-local-default) to this contract.
+
 The owner can select 128, 256, 512 or 1024 output tokens for the next private model
 send. The default remains 1024. DA-116 keeps the selection separately for each branch
 while its private-branches panel is open, including saves, worker polling, refreshes
-and switching between branches. A new fork starts at 1024, independently of its parent.
-Closing/reopening the panel or reloading the page resets these drafts; they are not
+and switching between branches. DA-117 adds a browser-local saved default in Ayarlar:
+new forks and first-opened branches use that default (1024 when unset), independently
+of their parent. Closing/reopening the panel or reloading resets drafts to that default; they are not
 persisted branch/model defaults. Stored deliveries
 display their exact approved cap. Lower limits may truncate output or leave no visible
 text after reasoning. The value is not a usage estimate, invoice amount or money budget.
@@ -45,7 +48,39 @@ Loopback browser tests cover all four providers, editing after approval, lost re
 frozen 512-token delivery, malformed/duplicate query values and existing failure/fork paths.
 Current check results are recorded in CURRENT_STATE.md.
 
+## DA-117 browser-local default
+
+The Ayarlar panel provides a separate draft selector with an explicit **Varsayılanı bu
+tarayıcıya kaydet** action and reset to 1024. Selection alone does not save. Only an
+allow-listed decimal 128/256/512/1024 value enters the versioned localStorage key;
+no branch identifiers, messages, reports or credentials enter browser preferences.
+Unavailable storage reports a failed save; missing/malformed values read as 1024.
+
+A same-page event and browser storage events synchronize the displayed saved default.
+An unsaved settings draft remains local to its editor. Save/reset changes only future
+first-opened branches and new forks. Each opened branch snapshots its initial cap into
+DA-116's in-memory map. Changing the global default cannot alter an open branch, its
+reviewed preview or unresolved retry. Previously approved encrypted receipts remain
+unchanged. Reopening a panel/page picks up the current saved default.
+
+The initial seeded branch is created through a client action; its cap is initialized
+there. History branches initialize on explicit selection, and forks on successful
+creation. The default settings editor uses an SSR-safe external-store snapshot.
+There is no API, database, provider or server-account preference change. Separate
+browser profiles/devices have separate defaults. Every send still requires review.
+
+DA-117 acceptance: 294 units, six private browser flows and two settings flows,
+type checks, zero-warning lint and separate-output build pass. The first sweep was
+7/8 because the new mutation assertion counted the existing read-only token-preview
+POST; the corrected settings repetition passed 2/2. Coverage includes explicit save,
+reload, cross-tab reset, invalid stored cap, denied storage, open-draft independence,
+saved defaults on initial seed/fork/history opening and 390px width/visual inspection.
+No full integration/browser sweep, real deletion or paid provider call is claimed.
+
 ## DA-116 draft continuity
+
+DA-117 supersedes the previously fixed 1024 reopen/fork default when a browser default
+is saved; the active-draft and fresh-review boundaries below remain.
 
 PrivateBranchesPanel owns a branch-ID keyed in-memory output-cap draft map. The delivery
 selector is controlled by that map. Revision/delivery changes still remount the delivery

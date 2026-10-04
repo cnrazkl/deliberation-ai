@@ -1,5 +1,9 @@
 # Product
 
+**DA-117:** Ayarlar can save a private output-cap default for this browser, with reset
+to 1024. First-opened branches and new forks use it; open branch drafts and approved
+receipts remain unchanged. [Contract](PRIVATE_DELIVERY_SETTINGS.md#da-117-browser-local-default).
+
 **DA-116:** private output-cap drafts remain selected per branch while the panel is open,
 across saving, replies, refresh and branch navigation. New forks and reopened panels
 start at 1024. Every send still requires fresh review. [Scope](PRIVATE_DELIVERY_SETTINGS.md#da-116-draft-continuity).

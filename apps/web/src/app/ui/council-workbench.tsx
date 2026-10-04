@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { WorkspaceShell, ThemeSelect, type WorkspaceView } from "./workspace-shell";
 import { LocalDiagnosticsPanel } from "./local-diagnostics-panel";
+import { PrivateOutputDefaultPanel } from "./private-output-default-panel";
 import { CouncilTemplateDeletionPanel } from "./council-template-deletion-panel";
 import type { RunRecord } from "@deliberation-ai/application";
 import { auditPromptRevision, findCriticalMissingContext, PROMPT_REVISION_VERSION, suggestStructuredQuestion } from "@deliberation-ai/domain";
@@ -1593,6 +1594,7 @@ export function CouncilWorkbench() {
 
     </>}>
       <section className="workspace workspace-view" hidden={view !== "settings"} aria-label="Ayarlar alanı">
+        <PrivateOutputDefaultPanel />
         <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
         <section className="settings-card appearance-card" aria-label="Görünüm ayarları"><h2>Görünüm</h2><ThemeSelect /></section>
       <details className="settings-card">

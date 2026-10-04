@@ -5,6 +5,7 @@ import type { PrivateBranchSummary, PrivateBranchView } from "@deliberation-ai/p
 import { PrivateDeliveryPanel } from "./private-delivery-panel";
 import { PrivateBranchDeletionPanel } from "./private-branch-deletion-panel";
 import { ConversationPrivateUsagePanel } from "./conversation-private-usage-panel";
+import { readPrivateOutputDefault } from "../../lib/private-output-default";
 
 async function jsonRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...options, cache: "no-store" });
@@ -37,7 +38,7 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
   const alive = useRef(true); const working = useRef(false);
   const readGeneration = useRef(0);
   const drafts = useRef(new Map<string, string>());
-  const [outputCaps, setOutputCaps] = useState<Record<string, number>>({});
+  const [outputCaps, setOutputCaps] = useState<Record<string, number>>(() => initialBranch ? { [initialBranch.id]: readPrivateOutputDefault() } : {});
   const intent = useRef<{ key: string; body: CreatePrivateBranch | AppendPrivateDraft } | null>(null);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useEffect(() => {
@@ -68,6 +69,7 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
   function select(id: string) {
     if (working.current || deletionId || selectedId === id) return;
     if (selectedId) drafts.current.set(selectedId, text);
+    setOutputCaps((previous) => previous[id] === undefined ? { ...previous, [id]: readPrivateOutputDefault() } : previous);
     ++readGeneration.current; setSelectedId(id); setBranch(null); setText(drafts.current.get(id) ?? ""); setDetailLoading(true); setError(null); intent.current = null;
     setRefresh((value) => value + 1);
   }
@@ -83,7 +85,10 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
       if (!alive.current) return;
       intent.current = null;
       if (action === "append") { setText(""); drafts.current.delete(branch.id); }
-      else drafts.current.set(branch.id, text);
+      else {
+        drafts.current.set(branch.id, text);
+        setOutputCaps((previous) => ({ ...previous, [value.id]: readPrivateOutputDefault() }));
+      }
       setBranch(value); setSelectedId(value.id); reload();
     } catch (cause) {
       if (!alive.current) return;

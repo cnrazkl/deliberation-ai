@@ -1,5 +1,11 @@
 # Tasks
 
+- [x] DA-117 browser-local private output default: explicit Ayarlar save/reset, validated
+  numeric storage, cross-tab display synchronization and future-branch initialization
+  without changing active drafts/review/retries. 294 units, six private flows plus two
+  settings flows and type/lint/build pass. Initial settings assertion corrected and
+  focused repetition passed. [Scope](PRIVATE_DELIVERY_SETTINGS.md#da-117-browser-local-default).
+
 - [x] DA-116 private output-cap draft continuity: per-branch selections survive saves,
   replies, refresh and branch navigation within an open panel; fresh fork/reopen defaults
   and fresh send approval remain explicit. 294 units, six focused browser cases and

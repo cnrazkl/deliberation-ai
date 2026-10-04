@@ -1,8 +1,28 @@
 # Current state
 
-Updated: 4 October 2026 (DA-116 private setting draft continuity completed)
+Updated: 4 October 2026 (DA-117 browser-local private default completed)
 
-## Latest owner-requested increment — DA-116
+## Latest owner-requested increment — DA-117
+
+Ayarlar can explicitly save/reset a private output-cap default for this browser. New
+forks and first-opened branches snapshot that value into their own drafts. Existing
+open branches, frozen receipts and unresolved retry intents do not change. Only the
+allow-listed numeric value is stored; bad/inaccessible values fall back to 1024 and
+failed writes report failure. Saved values synchronize across same-origin tabs.
+[Contract](PRIVATE_DELIVERY_SETTINGS.md#da-117-browser-local-default).
+
+294 units, six private draft/delivery/deletion browser cases and two default-settings
+cases pass, with type checks, zero-warning lint and separate-output production build.
+The first eight-case sweep passed seven: its mutation assertion incorrectly included
+the existing read-only POST token preview. After narrowing that assertion, both settings
+cases passed in focused repetition. The 390px card was visually inspected and page-width
+check passed. No full DB/browser sweep, paid call, SQL migration or real owner deletion.
+
+Server-account preferences, model/reasoning controls, provider-managed continuity and
+monetary accounting remain open. Interactive 3000 stays available with ready DB/worker
+after browser teardown.
+
+## Previous owner-requested increment — DA-116
 
 Private output-cap drafts now survive message saves, successful replies, worker polling,
 refresh and switching branches within the same open panel. Each branch has a separate

@@ -1,5 +1,13 @@
 # Architecture
 
+## DA-117 browser-local private defaults
+
+An allow-listed non-sensitive localStorage value supplies private defaults. An SSR-safe
+external-store editor synchronizes saved values across tabs. PrivateBranchesPanel
+snapshots the default on branch opening/creation into its existing draft map; global
+updates cannot mutate active delivery review or retry intent. No server storage/API
+change. [Contract](PRIVATE_DELIVERY_SETTINGS.md#da-117-browser-local-default).
+
 ## DA-116 private setting draft continuity
 
 PrivateBranchesPanel owns ephemeral output-cap drafts by branch ID and controls the
