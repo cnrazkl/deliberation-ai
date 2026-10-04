@@ -1,5 +1,11 @@
 # Tasks
 
+- [x] DA-118 conversation council usage: bounded owned operation/audit projection,
+  explicit missing-history/counter coverage and independent council/private snapshots
+  beneath saved conversation reports. 297 units, 210 isolated DB cases, six focused
+  browser cases and type/lint/build pass. Monetary ledger remains open.
+  [Contract](CONVERSATION_COUNCIL_USAGE.md).
+
 - [x] DA-117 browser-local private output default: explicit Ayarlar save/reset, validated
   numeric storage, cross-tab display synchronization and future-branch initialization
   without changing active drafts/review/retries. 294 units, six private flows plus two

@@ -1,5 +1,10 @@
 # Security
 
+DA-118's council-usage GET enforces owned conversation/membership/run/audit boundaries,
+bounded metadata scans and authenticated audit/metadata decryption in one read-only
+snapshot. Raw texts, remote IDs, fingerprints and price/billing evidence are excluded
+from projection. Missing history is not zero usage. [Limits](CONVERSATION_COUNCIL_USAGE.md).
+
 DA-117 stores only an allow-listed numeric private output default in a versioned browser
 preference key. It stores no conversation identities/content/credentials. Invalid or
 inaccessible values fall back to 1024; failed writes are not reported as saved. The

@@ -1,5 +1,10 @@
 # Original PLAN.md versus the running local application
 
+**4 October 2026, DA-118:** conversation-level council usage joins private visibility
+through separate timestamped summaries, retaining deletion receipts and unknown history.
+This advances observability only; invoice/price/settled-cost unification remains open.
+[Scope](CONVERSATION_COUNCIL_USAGE.md).
+
 **4 October 2026, DA-117:** a browser-local private output default extends persistent
 preferences with explicit save/reset and independent open-branch drafts. Server-account
 preferences, model/reasoning controls, provider-managed continuity and monetary

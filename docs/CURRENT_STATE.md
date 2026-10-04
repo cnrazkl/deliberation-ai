@@ -1,8 +1,29 @@
 # Current state
 
-Updated: 4 October 2026 (DA-117 browser-local private default completed)
+Updated: 4 October 2026 (DA-118 conversation council usage completed)
 
-## Latest owner-requested increment — DA-117
+## Latest owner-requested increment — DA-118
+
+Saved conversation reports offer on-demand council operation usage beside private
+usage, each with its own snapshot time. Council groups separate provider/requested
+model/round/conventions, retain deletion audits and show record denominators, pending
+uncertainty and missing history. Prepared records are not represented as API calls.
+No grand total, reconstructed provider count or monetary/billing unification is claimed.
+[Contract](CONVERSATION_COUNCIL_USAGE.md).
+
+297 units, 210 isolated PostgreSQL cases including disposable archive restore, six
+focused real-worker private/council-usage browser cases, type checks, zero-warning lint
+and separate-output production build pass. The 390px council summary screenshot was
+visually inspected and page-width assertion passed. Checks cover metadata-only output,
+owned/missing/deleted histories, private/council separation, bounded text before decode,
+duplicates/invalid/overflowing counters and failed-refresh clearing. No full browser
+sweep, SQL migration, paid call or real owner deletion.
+
+Interactive 3000 returns HTTP 200 with ready database, one worker and no queued/running/
+unresolved work after tests. Shared prices/invoices/settled monetary cost, server-account
+preferences and richer provider continuity remain open.
+
+## Previous owner-requested increment — DA-117
 
 Ayarlar can explicitly save/reset a private output-cap default for this browser. New
 forks and first-opened branches snapshot that value into their own drafts. Existing

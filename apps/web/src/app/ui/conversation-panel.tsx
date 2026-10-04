@@ -1,9 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { ConversationView } from "@deliberation-ai/persistence";
+import { ConversationCouncilUsagePanel } from "./conversation-council-usage-panel";
+import { ConversationPrivateUsagePanel } from "./conversation-private-usage-panel";
 
 export function ConversationPanel({ runId, onOpenRun }: { runId: string; onOpenRun: (id: string) => Promise<void> }) {
-  const [conversation, setConversation] = useState<ConversationView | null>(null);
+  const [loaded, setLoaded] = useState<{ runId: string; value: ConversationView } | null>(null);
+  const conversation = loaded?.runId === runId ? loaded.value : null;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -12,7 +15,7 @@ export function ConversationPanel({ runId, onOpenRun }: { runId: string; onOpenR
     void fetch(`/api/runs/${runId}/conversation`, { signal: controller.signal, cache: "no-store" }).then(async (response) => {
       const body = await response.json() as ConversationView & { error?: string };
       if (!response.ok) throw new Error(body.error ?? "Konuşma yüklenemedi.");
-      if (!controller.signal.aborted) { setConversation(body); setError(null); }
+      if (!controller.signal.aborted) { setLoaded({ runId, value: body }); setError(null); }
     }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Konuşma yüklenemedi."); });
     return () => controller.abort();
   }, [runId, refresh]);
@@ -45,6 +48,8 @@ export function ConversationPanel({ runId, onOpenRun }: { runId: string; onOpenR
     {error && <p role="alert" className="error">{error}</p>}
     {conversation && <>
       <small>Konuşma kimliği: {conversation.conversationId}</small>
+      <ConversationCouncilUsagePanel key={`council:${conversation.conversationId}`} conversationId={conversation.conversationId} />
+      <ConversationPrivateUsagePanel key={`private:${conversation.conversationId}`} conversationId={conversation.conversationId} />
       <p>{conversation.runs.length} çalışma · {conversation.runs.filter((item) => item.detail === null).length} erişilemeyen çalışma</p>
       {conversation.origin === "legacy-reconstructed" && <p className="section-hint">Eski kayıtlar mevcut kaynak bağlantılarıyla birleştirildi. Aktarımdan önce silinen bağlantılar nedeniyle geçmişin tamamı yeniden kurulamayabilir.</p>}
       {conversation.unavailableSourceRunIds.length > 0 && <p className="section-hint">Kaydı bulunamayan önceki kaynaklar: {conversation.unavailableSourceRunIds.join(", ")}</p>}

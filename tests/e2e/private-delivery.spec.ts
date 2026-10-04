@@ -6,6 +6,7 @@ import { buildCouncilReport } from "@deliberation-ai/domain";
 import type { CouncilMemberConfig } from "@deliberation-ai/contracts";
 import { closeDatabase, getDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, conversations, conversationRuns, runs, providerConnections,
   conversationPrivateBranches as branches, type PrivateBranchView } from "@deliberation-ai/persistence";
+import { providerOperations } from "@deliberation-ai/persistence";
 
 for (const provider of ["openai-compatible", "anthropic", "openai", "google"] as const) {
 test(`${provider} reviewed private delivery survives a lost enqueue response, returns a local worker reply and forks its transcript`, async ({ page, request }) => {
@@ -60,6 +61,8 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
       reportCiphertext: encryptJson(report, `run:${sourceId}:report`), status: "completed", branchIndexVersion: 1, branchKind: "independent", finishedAt: new Date() });
     await getDatabase().insert(conversations).values({ id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: sourceId, origin: "native" });
     await getDatabase().insert(conversationRuns).values({ ownerId: LOCAL_OWNER_ID, conversationId, runId: sourceId, kind: "independent", createdAt: sql`(select created_at from runs where id = ${sourceId}::uuid)` });
+    await getDatabase().insert(providerOperations).values({ id: randomUUID(), runId: sourceId, memberId: "private-worker", provider,
+      model: "offline-council-fixture", status: "failed", requestFingerprint: "offline-usage", inputTokens: 9, outputTokens: null });
     await page.route("**/api/runs", (route) => { if (route.request().method() === "POST") throw new Error("Must not create a council"); return route.continue(); });
     await page.goto("/");
     const entry = page.getByRole("region", { name: "Kayıtlı konuşmalar", exact: true }).locator("article").filter({ hasText: sourceId });
@@ -69,6 +72,27 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await model.getByRole("button", { name: "Bu yanıtla özel dal taslağı aç" }).click();
     await page.getByRole("region", { name: "Özel dal kaynak önizlemesi" }).getByRole("button", { name: "Özel dalı kaydet" }).click();
     const panel = page.getByRole("region", { name: "Özel dal taslakları", exact: true });
+    const councilUsage = page.getByRole("group", { name: "Konuşmanın konsey kullanım özeti", exact: true });
+    await councilUsage.locator("summary").click();
+    await councilUsage.getByRole("button", { name: "Konsey kullanımını getir" }).click();
+    await expect(councilUsage).toContainText("Konsey işlem kaydı: 1");
+    await expect(councilUsage).toContainText("Girdi tokenı: 9");
+    await expect(councilUsage).toContainText("Çıktı tokenı: bilinmiyor");
+    const councilResponse = await request.get(`/api/conversations/${conversationId}/council-usage`);
+    expect(councilResponse.status()).toBe(200); expect(councilResponse.headers()["cache-control"]).toBe("no-store");
+    expect(await councilResponse.text()).not.toMatch(/requestFingerprint|remoteResponseId|Source SQL viewpoint/);
+    expect((await request.get("/api/conversations/invalid/council-usage")).status()).toBe(404);
+    if (provider === "openai-compatible") {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await councilUsage.screenshot({ path: "test-results/da118-mobile-council-usage.png" });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.route(`**/api/conversations/${conversationId}/council-usage`, (route) => route.fulfill({ status: 409, json: { error: "Fixture inconsistent usage" } }));
+      await councilUsage.getByRole("button", { name: "Konsey kullanımını getir" }).click();
+      await expect(councilUsage.getByRole("alert")).toContainText("Fixture inconsistent usage");
+      await expect(councilUsage).not.toContainText("Konsey işlem kaydı: 1");
+      await page.unroute(`**/api/conversations/${conversationId}/council-usage`);
+    }
     await panel.getByLabel("Özel yanıt çıktı sınırı").selectOption("256");
     await panel.getByLabel("Özel mesaj taslağı").fill("Explain SQL joins in this private follow-up");
     await panel.getByRole("button", { name: "Taslağı dala kaydet" }).click();

@@ -1,5 +1,9 @@
 # Workspace design principles — DA-111 / DA-112
 
+DA-118 keeps conversation council/private usage collapsed under the saved conversation
+record. Each is fetched explicitly with its own time, with record denominators and unknown
+history/counters visible. A failed refresh clears old results. [Scope](CONVERSATION_COUNCIL_USAGE.md).
+
 DA-117 places saved private output defaults in Ayarlar, with explicit save/reset,
 visible stored value and failed-save feedback. Only the numeric cap is stored in this
 browser. Future branch defaults are separate from open branch selections and frozen

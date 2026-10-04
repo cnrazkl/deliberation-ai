@@ -1,5 +1,9 @@
 # Product
 
+**DA-118:** saved conversation reports offer council operation usage beside private usage,
+with separate snapshot times. Retained deleted-run receipts contribute; missing histories
+and counters stay explicit. This is not a combined monetary ledger. [Scope](CONVERSATION_COUNCIL_USAGE.md).
+
 **DA-117:** Ayarlar can save a private output-cap default for this browser, with reset
 to 1024. First-opened branches and new forks use it; open branch drafts and approved
 receipts remain unchanged. [Contract](PRIVATE_DELIVERY_SETTINGS.md#da-117-browser-local-default).

@@ -1,5 +1,13 @@
 # Architecture
 
+## DA-118 conversation council usage
+
+A pure domain projection groups retained council operation counters. Persistence reads
+bounded indexed membership, metadata-only live receipts and authenticated deletion audits
+in one owned snapshot; a no-store BFF returns only counters. ConversationPanel renders
+independently timestamped council/private views and binds loaded data to its run ID.
+No schema/adapter/worker change. [Contract](CONVERSATION_COUNCIL_USAGE.md).
+
 ## DA-117 browser-local private defaults
 
 An allow-listed non-sensitive localStorage value supplies private defaults. An SSR-safe

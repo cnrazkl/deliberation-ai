@@ -526,3 +526,4 @@ export * from "./billing-statement";
 export * from "./billing-statement-history";
 export * from "./billing-account";
 export * from "./billing-payment";
+export { summarizeConversationCouncilUsage, type CouncilUsageRecord } from "./conversation-council-usage";

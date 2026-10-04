@@ -23,7 +23,8 @@ import { privateBranchDeletions } from "./schema";
 import { runDeletions, providerOperations } from "./schema";
 import { deleteRunBody, previewRunDeletion } from "./run-deletion";
 import { loadConversationPrivateUsage } from "./conversation-private-usage";
-import { ConversationIntegrityError } from "./conversation-membership";
+import { loadConversationCouncilUsage } from "./conversation-council-usage";
+import { ConversationIntegrityError, ConversationSizeError } from "./conversation-membership";
 
 const ids: string[] = []; const connections: string[] = []; const sources: string[] = [];
 afterEach(async () => {
@@ -138,6 +139,46 @@ test("conversation usage rejects an authenticated conflicting copied receipt", a
   const body = structuredClone(child.body); body.deliveries![0]!.usage!.inputTokens = 123;
   await getDatabase().update(branches).set({ bodyCiphertext: encryptJson(body, `private-branch:${child.id}:body`) }).where(eq(branches.id, child.id));
   await expect(loadConversationPrivateUsage(f.conversationId)).rejects.toBeInstanceOf(ConversationIntegrityError);
+});
+
+test("conversation council usage retains actual receipts across content deletion without private double counting", async () => {
+  const f = await fixture(); const operation = randomUUID();
+  await getDatabase().insert(providerOperations).values({ id: operation, runId: f.id, memberId: "private-selected", provider: "openai",
+    model: "requested-council", status: "succeeded", requestFingerprint: "fixture-council-usage", inputTokens: 0, outputTokens: 5,
+    submittedAt: new Date(), resultMetadataCiphertext: encryptJson({ model: "returned-model", secretFixture: "EXCLUDED METADATA",
+      tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "inclusive", outputTokenKind: "inclusive", reasoningTokens: 3 } },
+      `provider-operation:${operation}:metadata`) });
+  const privateOperation = (await send(f.branch!.id))!;
+  await executePrivateDelivery(f.branch!.id, privateOperation.operationId, async () => ({ result: reply }));
+  const before = (await loadConversationCouncilUsage(f.conversationId))!;
+  expect(before).toMatchObject({ indexedRuns: 1, operationCount: 1, deletedRuns: 0, unavailableRuns: 0 });
+  expect(before.groups[0]!.input.total).toBe(0); expect(before.groups[0]!.output.total).toBe(5);
+  expect(before.groups[0]!.model).toBe("requested-council");
+  expect(JSON.stringify(before)).not.toMatch(/EXCLUDED METADATA|returned-model|Private generated|Explain the selected|remoteResponseId|requestFingerprint/);
+  await deletePrivateBranch(f.branch!.id, (await previewPrivateBranchDeletion(f.branch!.id))!.fingerprint!);
+  await deleteRunBody(f.id, (await previewRunDeletion(f.id))!.fingerprint!);
+  const after = (await loadConversationCouncilUsage(f.conversationId))!;
+  expect(after).toMatchObject({ operationCount: 1, deletedRuns: 1, unavailableRuns: 0 });
+  expect(after.groups).toEqual(before.groups);
+  expect((await loadConversationPrivateUsage(f.conversationId))!.submittedAttempts).toBe(1);
+  await getDatabase().update(runDeletions).set({ ownerId: "foreign-council-owner" }).where(eq(runDeletions.id, f.id));
+  await expect(loadConversationCouncilUsage(f.conversationId)).rejects.toBeInstanceOf(ConversationIntegrityError);
+});
+
+test("conversation council usage separates missing history from zero usage and denies foreign/missing conversations", async () => {
+  expect(await loadConversationCouncilUsage(randomUUID())).toBeUndefined();
+  const foreign = await fixture({ owner: "foreign-council-owner" });
+  expect(await loadConversationCouncilUsage(foreign.conversationId)).toBeUndefined();
+  const f = await fixture();
+  await getDatabase().delete(runs).where(eq(runs.id, f.id));
+  expect(await loadConversationCouncilUsage(f.conversationId)).toMatchObject({ operationCount: 0, unavailableRuns: 1, runsWithoutReceipts: 1, groups: [] });
+});
+
+test("conversation council usage bounds projected text before loading metadata", async () => {
+  const f = await fixture();
+  await getDatabase().insert(providerOperations).values({ id: randomUUID(), runId: f.id, memberId: "oversized-fixture", provider: "openai",
+    model: "x".repeat(8_193), status: "failed", requestFingerprint: "fixture", resultMetadataCiphertext: "must-not-be-decoded" });
+  await expect(loadConversationCouncilUsage(f.conversationId)).rejects.toBeInstanceOf(ConversationSizeError);
 });
 test("preview is read-only, exact input is frozen, concurrent intents deduplicate and success replays without a second executor", async () => {
   const f = await fixture(); const id = f.branch!.id;
