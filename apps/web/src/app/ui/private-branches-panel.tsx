@@ -4,6 +4,7 @@ import type { CreatePrivateBranch, AppendPrivateDraft, PrivateBranchSeed } from 
 import type { PrivateBranchSummary, PrivateBranchView } from "@deliberation-ai/persistence";
 import { PrivateDeliveryPanel } from "./private-delivery-panel";
 import { PrivateBranchDeletionPanel } from "./private-branch-deletion-panel";
+import { ConversationPrivateUsagePanel } from "./conversation-private-usage-panel";
 
 async function jsonRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...options, cache: "no-store" });
@@ -102,6 +103,7 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
       <button type="button" className="secondary-button" disabled={busy || Boolean(deletionId)} onClick={onClose}>Özel dalları kapat</button>
     </div>
     <p className="section-hint">Burada seçilen üyenin ilk yanıtı ve sizin mesaj taslaklarınız saklanır. Taslaklar modele gönderilmez; göndermek için ayrıca önizlemeyi inceleyip onaylayın. Konsey sorusu ve raporu değişmez.</p>
+    <ConversationPrivateUsagePanel key={conversationId} conversationId={conversationId} />
     {error && <p role="alert" className="error">{error}</p>}
     {preservedDraft && <label>Silinen dalın kaydedilmemiş taslağı<textarea readOnly value={preservedDraft} /></label>}
     {loading ? <p>Dallar yükleniyor…</p> : <div className="run-history-list">

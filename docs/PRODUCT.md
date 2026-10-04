@@ -1,5 +1,9 @@
 # Product
 
+**DA-115:** an optional conversation-wide private usage summary includes retained and
+deleted-branch usage, counts each origin send once and marks missing provenance/model
+or counters explicitly. A manual fetch shows its snapshot time. [Scope](CONVERSATION_PRIVATE_USAGE.md).
+
 **DA-114:** an expandable private-branch usage summary counts its own sends, excludes
 copied receipts and shows provider-reported counters with missing-value coverage.
 Cache/reasoning conventions remain separate. [Scope](PRIVATE_USAGE.md).

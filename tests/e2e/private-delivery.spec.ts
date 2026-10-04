@@ -220,6 +220,23 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await expect(usageSummary).toContainText(`Kopyalanan kayıt: ${calls}`);
     await expect(usageSummary).toContainText("bu dalın kullanımına tekrar eklenmez");
     await expect(usageSummary).toContainText("kullanım hesaplanmadı");
+    const conversationUsage = panel.getByRole("group", { name: "Konuşmanın özel kullanım özeti" });
+    await conversationUsage.locator("summary").click();
+    await conversationUsage.getByRole("button", { name: "Konuşma kullanımını getir" }).click();
+    await expect(conversationUsage).toContainText(`Sağlayıcıya gönderim kaydı: ${calls}`);
+    await expect(conversationUsage).toContainText(`Kopyalanan kayıt: ${calls}`);
+    await expect(conversationUsage).toContainText("Saklanan dal: 2");
+    await expect(conversationUsage).toContainText("Özetin alındığı zaman:");
+    const metadataResponse = await request.get(`/api/conversations/${conversationId}/private-usage`);
+    expect(metadataResponse.status()).toBe(200);
+    expect(metadataResponse.headers()["cache-control"]).toBe("no-store");
+    expect(await metadataResponse.text()).not.toMatch(/Source SQL viewpoint|Explain SQL joins|offline-browser-key|A local fixture answer|remoteResponseId/);
+    expect((await request.get("/api/conversations/invalid/private-usage")).status()).toBe(404);
+    if (provider === "openai-compatible") {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await conversationUsage.screenshot({ path: "test-results/da115-mobile-conversation-usage.png" });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    }
     expect((await getDatabase().select().from(branches).where(eq(branches.conversationId, conversationId)))).toHaveLength(2);
     expect(calls).toBe(provider === "openai" || provider === "google" ? 4 : provider === "anthropic" ? 2 : 1);
   } finally {

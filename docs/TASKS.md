@@ -1,5 +1,11 @@
 # Tasks
 
+- [x] DA-115 conversation private usage: on-demand owner-scoped snapshot of retained
+  branches/deletion audits, origin deduplication, explicit missing provenance/counters,
+  metadata-only BFF and timestamped responsive summary. 294 units, 207 isolated DB
+  cases, six focused browser cases and type/lint/build pass. Council billing and settled
+  cost remain open. [Contract](CONVERSATION_PRIVATE_USAGE.md).
+
 - [x] DA-114 private usage observability: branch-local provider counters, copied-receipt
   exclusion, partial/unknown coverage and separate cache/reasoning conventions.
   288 units, six focused browser flows plus a mobile visual repeat and type/lint/build

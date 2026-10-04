@@ -39,3 +39,4 @@ export * from "./private-deliveries";
 export * from "./preflight-draft-deletion";
 
 export * from "./local-schedule-deletion";
+export { loadConversationPrivateUsage, type ConversationPrivateUsage } from "./conversation-private-usage";

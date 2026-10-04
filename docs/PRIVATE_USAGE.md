@@ -1,5 +1,8 @@
 # Private branch usage observability — DA-114
 
+DA-115 adds a separate [conversation-wide view](CONVERSATION_PRIVATE_USAGE.md), including
+deletion audits and deduplicated origins. The branch-local policy below is unchanged.
+
 Expandable **Bu dalın token kullanımı** reads the already loaded owner-scoped branch
 DTO. It creates no API call, job, stored ledger or provider request; no migration.
 

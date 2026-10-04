@@ -1,8 +1,27 @@
 # Current state
 
-Updated: 4 October 2026 (DA-114 private branch usage observability completed)
+Updated: 4 October 2026 (DA-115 conversation private usage completed)
 
-## Latest owner-requested increment — DA-114
+## Latest owner-requested increment — DA-115
+
+On-demand conversation private usage reads retained branches and deletion audits in
+one bounded owner-scoped snapshot. Each origin send counts once; copied receipts do
+not inflate usage. Missing origins/models/counters stay explicit; conflicting receipts
+fail closed. The panel shows its snapshot time and refresh action, with aborted/fenced
+client reads. Council accounting, invoices and settled monetary cost remain open.
+[Contract](CONVERSATION_PRIVATE_USAGE.md).
+
+294 units, 207 isolated PostgreSQL cases (including disposable archive restore), six
+focused real-worker private browser cases, type checks, zero-warning lint and separate
+production build pass. The conversation summary's 390px screenshot was visually checked
+and the page's width assertion passed. No full browser sweep, SQL migration, paid call
+or real owner deletion is claimed. After test teardown, interactive 3000 is HTTP 200
+with ready database, one ready worker and no queued/running/unresolved work.
+
+Next bounded work must specify the remaining settings/continuity or council/private
+accounting boundary before changing behavior; broader original-plan gates remain partial.
+
+## Previous owner-requested increment — DA-114
 
 Expandable branch-local usage counts its own recorded sends and excludes copied
 receipts. Connection/model/counter conventions stay separate; each counter shows its

@@ -1,5 +1,9 @@
 # Original PLAN.md versus the running local application
 
+**4 October 2026, DA-115:** conversation-wide private usage includes deletion audits and
+deduplicates copied receipts. Missing provenance and counters remain explicit. Council
+accounting, invoice reconciliation and settled monetary cost remain open. [Scope](CONVERSATION_PRIVATE_USAGE.md).
+
 **4 October 2026, DA-114:** branch-local private token observability advances accounting
 visibility, preserving copied provenance and missing/uncertain counters. This does not
 complete shared council/private billing or provider-authoritative settled cost. [Scope](PRIVATE_USAGE.md).

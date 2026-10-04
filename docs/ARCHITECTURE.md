@@ -1,5 +1,13 @@
 # Architecture
 
+## DA-115 conversation private usage
+
+A pure domain projection deduplicates origin receipts across retained branches and
+deletion audits. Persistence reuses bounded authenticated loaders in one owner-scoped
+read-only snapshot; a no-store BFF returns metadata only. Conversation-keyed client
+requests abort/fence stale responses and reuse the counter renderer. No schema, queue
+or provider changes. [Contract](CONVERSATION_PRIVATE_USAGE.md).
+
 ## DA-114 private usage projection
 
 A pure domain projection groups validated private receipts by connection/model and

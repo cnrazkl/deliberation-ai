@@ -1,5 +1,10 @@
 # Security
 
+DA-115's private usage GET is owner-scoped and no-store. One bounded read-only snapshot
+authenticates branch/audit ciphertext and rejects foreign membership or conflicting
+receipts. Only usage/count metadata crosses the BFF; sensitive content and remote
+response identifiers are excluded. [Limits](CONVERSATION_PRIVATE_USAGE.md).
+
 DA-113 binds the private output cap to the reviewed fingerprint, frozen encrypted request
 and retry identity. Invalid or changed caps are rejected before enqueue/submission.
 The maximum remains 1024 and the existing storage reservation is retained even for lower

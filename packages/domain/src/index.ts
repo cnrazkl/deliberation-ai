@@ -1,6 +1,7 @@
 export { assessRequestRisk, assertRiskConfiguration, RiskConfigurationError, type RiskInput } from "./risk-preflight";
 export { renderPrivateDelivery, assessPrivateDelivery } from "./private-delivery";
 export { summarizePrivateUsage, type PrivateUsageCounter } from "./private-usage";
+export { summarizeConversationPrivateUsage, PrivateUsageIntegrityError } from "./conversation-private-usage";
 export { plannedProviderCalls, executionPlanFits, executionReservationAllowed, ExecutionPlanLimitsError } from "./execution-limits";
 export { findCriticalMissingContext, composeClarifiedQuestion, PREFLIGHT_CONTEXT_POLICY_VERSION, preflightQuestionsSchema, missingContextQuestionSchema, MissingContextError, type MissingContextQuestion, type PreflightChoice } from "./missing-context";
 export { PROMPT_REVISION_VERSION, suggestStructuredQuestion, auditPromptRevision, type PromptRevision } from "./prompt-revision";

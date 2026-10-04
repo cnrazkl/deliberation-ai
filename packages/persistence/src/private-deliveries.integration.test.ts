@@ -22,6 +22,8 @@ import { previewPrivateBranchDeletion, deletePrivateBranch } from "./private-bra
 import { privateBranchDeletions } from "./schema";
 import { runDeletions, providerOperations } from "./schema";
 import { deleteRunBody, previewRunDeletion } from "./run-deletion";
+import { loadConversationPrivateUsage } from "./conversation-private-usage";
+import { ConversationIntegrityError } from "./conversation-membership";
 
 const ids: string[] = []; const connections: string[] = []; const sources: string[] = [];
 afterEach(async () => {
@@ -101,6 +103,42 @@ async function send(id: string) {
   const preview = (await previewPrivateDelivery(id))!;
   return enqueuePrivateDelivery(id, { requestId: randomUUID(), fingerprint: preview.fingerprint });
 }
+
+test("conversation usage reads one owned snapshot and survives copy deletion without double counting", async () => {
+  const f = await fixture(); const id = f.branch!.id; const operation = (await send(id))!;
+  await executePrivateDelivery(id, operation.operationId, async () => ({ result: reply }));
+  const root = (await loadPrivateBranch(id))!;
+  const child = (await createPrivateBranch({ action: "fork", parentBranchId: id, expectedRevision: root.revision,
+    expectedDeliveryVersion: root.body.deliveryVersion ?? 0, requestId: randomUUID() }))!;
+  const before = (await loadConversationPrivateUsage(f.conversationId))!;
+  expect(before).toMatchObject({ retainedBranches: 2, deletedBranches: 0, ownReceipts: 1, submittedAttempts: 1, copiedReceipts: 1, unattributedCopies: 0 });
+  expect(before.groups[0]!.input.total).toBe(17);
+  expect(JSON.stringify(before)).not.toMatch(/Private generated answer|Explain the selected|Selected copied answer|requestHash|fingerprint|remoteResponseId/);
+  await deletePrivateBranch(child.id, (await previewPrivateBranchDeletion(child.id))!.fingerprint!);
+  await deletePrivateBranch(id, (await previewPrivateBranchDeletion(id))!.fingerprint!);
+  const after = (await loadConversationPrivateUsage(f.conversationId))!;
+  expect(after).toMatchObject({ retainedBranches: 0, deletedBranches: 2, submittedAttempts: 1, copiedReceipts: 1, unattributedCopies: 0 });
+  expect(after.groups).toEqual(before.groups);
+});
+test("conversation usage denies missing/foreign conversations and foreign audit membership", async () => {
+  expect(await loadConversationPrivateUsage(randomUUID())).toBeUndefined();
+  const foreign = await fixture({ owner: "foreign-usage-owner" });
+  expect(await loadConversationPrivateUsage(foreign.conversationId)).toBeUndefined();
+  const f = await fixture(); const id = f.branch!.id;
+  await deletePrivateBranch(id, (await previewPrivateBranchDeletion(id))!.fingerprint!);
+  await getDatabase().update(privateBranchDeletions).set({ ownerId: "foreign-usage-owner" }).where(eq(privateBranchDeletions.id, id));
+  await expect(loadConversationPrivateUsage(f.conversationId)).rejects.toBeInstanceOf(ConversationIntegrityError);
+});
+test("conversation usage rejects an authenticated conflicting copied receipt", async () => {
+  const f = await fixture(); const operation = (await send(f.branch!.id))!;
+  await executePrivateDelivery(f.branch!.id, operation.operationId, async () => ({ result: reply }));
+  const root = (await loadPrivateBranch(f.branch!.id))!;
+  const child = (await createPrivateBranch({ action: "fork", parentBranchId: root.id, expectedRevision: root.revision,
+    expectedDeliveryVersion: root.body.deliveryVersion ?? 0, requestId: randomUUID() }))!;
+  const body = structuredClone(child.body); body.deliveries![0]!.usage!.inputTokens = 123;
+  await getDatabase().update(branches).set({ bodyCiphertext: encryptJson(body, `private-branch:${child.id}:body`) }).where(eq(branches.id, child.id));
+  await expect(loadConversationPrivateUsage(f.conversationId)).rejects.toBeInstanceOf(ConversationIntegrityError);
+});
 test("preview is read-only, exact input is frozen, concurrent intents deduplicate and success replays without a second executor", async () => {
   const f = await fixture(); const id = f.branch!.id;
   const preview = (await previewPrivateDelivery(id))!;
