@@ -1,5 +1,13 @@
 # Architecture
 
+## DA-113 private output settings
+
+Shared strict contracts bound the optional per-send cap; domain rendering freezes it
+into the existing private input. Persistence binds it to preview/replay fingerprints and
+the encrypted receipt. The BFF validates the read-only query and send payload; the UI
+invalidates review on edits. Adapter mappings use the existing request field. No new
+table or SDK boundary. [Contract](PRIVATE_DELIVERY_SETTINGS.md).
+
 ## DA-112 responsive layout
 
 The main column is a named CSS inline-size container. Panel layout breakpoints follow

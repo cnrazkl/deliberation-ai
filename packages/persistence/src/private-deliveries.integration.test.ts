@@ -6,11 +6,11 @@ import { spawnSync } from "node:child_process";
 import { afterAll, afterEach, expect, test } from "vitest";
 import { Client } from "pg";
 import { eq, inArray, sql } from "drizzle-orm";
-import type { CouncilMemberConfig, PrivateDeliveryResult } from "@deliberation-ai/contracts";
+import type { CouncilMemberConfig, PrivateDeliveryResult, PrivateBranchBody } from "@deliberation-ai/contracts";
 import { buildCouncilReport } from "@deliberation-ai/domain";
 import { closeDatabase, getDatabase } from "./database";
 import { closeBoss } from "./queue";
-import { encryptJson, encryptText } from "./crypto";
+import { decryptJson, encryptJson, encryptText } from "./crypto";
 import { LOCAL_OWNER_ID } from "./owner";
 import { runs, conversations, conversationRuns, conversationPrivateBranches as branches, providerConnections } from "./schema";
 import { createPrivateBranch, previewPrivateBranchSeed, appendPrivateDraft, loadPrivateBranch, exportPrivateBranch,
@@ -67,6 +67,36 @@ async function fixture({ owner = LOCAL_OWNER_ID, question = "Compare database qu
 }
 const reply: PrivateDeliveryResult = { text: "Private generated answer", model: "offline-private", remoteResponseId: "offline-response",
   inputTokens: 17, outputTokens: 5, tokenDetails: null, finishReason: "stop" };
+
+test("reviewed output settings bind the frozen request and replay identity without raising capacity", async () => {
+  const f = await fixture(); const id = f.branch!.id;
+  const original = (await previewPrivateDelivery(id))!;
+  const reduced = (await previewPrivateDelivery(id, { maxOutputTokens: 256 }))!;
+  expect(original.maxOutputTokens).toBe(1024);
+  expect(reduced.input.maxOutputTokens).toBe(256);
+  expect(reduced.fingerprint).not.toBe(original.fingerprint);
+  expect(reduced.input.messages).toEqual(original.input.messages);
+  for (const maxOutputTokens of [127, 1025, 256.5, NaN]) {
+    await expect(previewPrivateDelivery(id, { maxOutputTokens })).rejects.toThrow();
+  }
+  const requestId = randomUUID();
+  await expect(enqueuePrivateDelivery(id, { requestId, fingerprint: reduced.fingerprint, maxOutputTokens: 512 })).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  expect((await loadPrivateBranch(id))!.body.deliveries).toBeUndefined();
+  const intent = { requestId, fingerprint: reduced.fingerprint, maxOutputTokens: 256 };
+  await enqueuePrivateDelivery(id, intent);
+  await enqueuePrivateDelivery(id, intent);
+  await expect(enqueuePrivateDelivery(id, { ...intent, maxOutputTokens: 512 })).rejects.toBeInstanceOf(PrivateBranchConflictError);
+  const stored = (await loadPrivateBranch(id))!.body.deliveries!;
+  expect(stored).toHaveLength(1);
+  expect(stored[0]!.request.maxOutputTokens).toBe(256);
+  let calls = 0;
+  await executePrivateDelivery(id, requestId, async (operation) => {
+    calls++; expect(operation.request.maxOutputTokens).toBe(256); return { result: reply };
+  });
+  await executePrivateDelivery(id, requestId, async () => { calls++; return { result: reply }; });
+  expect(calls).toBe(1);
+  expect((await loadPrivateBranch(id))!.body.deliveries![0]!.request.maxOutputTokens).toBe(256);
+});
 async function send(id: string) {
   const preview = (await previewPrivateDelivery(id))!;
   return enqueuePrivateDelivery(id, { requestId: randomUUID(), fingerprint: preview.fingerprint });
@@ -265,7 +295,9 @@ test("a populated native private receipt survives an actual disposable archive r
   await executePrivateDelivery(id, op.operationId, async () => ({ result: { ...reply,
     tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "uncached", outputTokenKind: "inclusive", cachedInputTokens: 9, cacheWriteInputTokens: 3 } } }));
   const native = await fixture({ provider: "openai" }); const nativeId = native.branch!.id;
-  await executePrivateDelivery(nativeId, (await send(nativeId))!.operationId, async () => ({ result: { ...reply,
+  const reduced = (await previewPrivateDelivery(nativeId, { maxOutputTokens: 128 }))!;
+  const reducedIntent = await enqueuePrivateDelivery(nativeId, { requestId: randomUUID(), fingerprint: reduced.fingerprint, maxOutputTokens: 128 });
+  await executePrivateDelivery(nativeId, reducedIntent!.operationId, async () => ({ result: { ...reply,
     tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "inclusive", outputTokenKind: "inclusive", cachedInputTokens: 9, reasoningTokens: 3 } } }));
   const directory = await mkdtemp(join(tmpdir(), "da-private-restore-"));
   const google = await fixture({ provider: "google" }); const googleId = google.branch!.id;
@@ -300,6 +332,7 @@ test("a populated native private receipt survives an actual disposable archive r
       expect(value.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, id)))[0]!.bodyCiphertext);
       const nativeValue = await reader.query<{ body_ciphertext: string }>("select body_ciphertext from conversation_private_branches where id = $1", [nativeId]);
       expect(nativeValue.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, nativeId)))[0]!.bodyCiphertext);
+      expect(decryptJson<PrivateBranchBody>(nativeValue.rows[0]!.body_ciphertext, `private-branch:${nativeId}:body`).deliveries![0]!.request.maxOutputTokens).toBe(128);
       const googleValue = await reader.query<{ audit_ciphertext: string }>("select audit_ciphertext from private_branch_deletions where id = $1", [googleId]);
       expect(googleValue.rows[0]!.audit_ciphertext).toBe((await getDatabase().select().from(privateBranchDeletions).where(eq(privateBranchDeletions.id, googleId)))[0]!.auditCiphertext);
       expect((await reader.query("select 1 from conversation_private_branches where id = $1", [googleId])).rowCount).toBe(0);

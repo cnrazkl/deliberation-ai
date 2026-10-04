@@ -1,5 +1,9 @@
 # Product
 
+**DA-113:** private model sends offer a reviewed 128/256/512/1024 output-token cap.
+Changing it clears approval; encrypted receipts retain the exact cap and retries cannot
+change it. The draft defaults to 1024 when reopened. [Scope](PRIVATE_DELIVERY_SETTINGS.md).
+
 **DA-112:** forms adapt to the available workspace column, including narrower screens
 and magnified content. Attachments expose a visible **Dosya seç** action; long names
 wrap, and mobile controls remain usable. [Responsive design](UI_DESIGN.md).

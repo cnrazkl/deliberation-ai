@@ -1,5 +1,9 @@
 # Data model
 
+DA-113 widens the encrypted private request's `maxOutputTokens` validation from the
+legacy literal 1024 to integers 128–1024. Each stored receipt retains the approved cap;
+legacy requests remain readable. No SQL schema or migration change. [Contract](PRIVATE_DELIVERY_SETTINGS.md).
+
 **DA-104:** The existing preflight_drafts row becomes a cancelled tombstone after reviewed deletion. question_ciphertext and request_ciphertext are null; questions stores preflight-draft-deletion-v1 receipt metadata instead of missing-context-v1 clarification metadata. Identity, original key/hash/timestamps and nullable run link remain. Normal reads hide tombstones, receipt reads validate the strict shape, and backups validate both null payloads. No SQL migration or new ciphertext column. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-102:** additive migration 0047 adds `run_deletions`: deleted run ID, owner, logical conversation ID, hashed creation-intent key, deletion time and `audit_ciphertext`, with a unique owner/intent constraint and no FKs. Strict `run-deletion-audit-v1` retains nullable provider usage/identifiers and excludes removed text/content. AES-GCM context `run-deletion:<id>:audit` enters exhaustive restore inventory. Existing run-owned cascades remove content; memberships/billing remain and preflight/schedule pointers become null. [Details](RUN_DELETION.md).

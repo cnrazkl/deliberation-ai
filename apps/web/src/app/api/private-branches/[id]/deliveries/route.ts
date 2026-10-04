@@ -1,14 +1,17 @@
-import { sendPrivateDeliverySchema, controlPrivateDeliverySchema } from "@deliberation-ai/contracts";
+import { sendPrivateDeliverySchema, controlPrivateDeliverySchema, privateDeliverySettingsSchema } from "@deliberation-ai/contracts";
 import { previewPrivateDelivery, enqueuePrivateDelivery, controlPrivateDelivery } from "@deliberation-ai/persistence";
 import { privateBranchError, privateBranchJson, privateBranchOrigin, privateBranchRequest, privateBranchUuid } from "../../../../../lib/private-branches-http";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ id: string }> };
-export async function GET(_request: Request, context: Context) {
+export async function GET(request: Request, context: Context) {
   const { id } = await context.params;
   if (!privateBranchUuid.test(id)) return privateBranchJson({ error: "Geçersiz dal." }, 400);
+  const values = new URL(request.url).searchParams.getAll("maxOutputTokens");
+  const settings = privateDeliverySettingsSchema.safeParse(values.length === 0 ? {} : { maxOutputTokens: Number(values[0]) });
+  if (values.length > 1 || !settings.success) return privateBranchJson({ error: "Çıktı sınırı 128–1024 arasında bir tam sayı olmalı." }, 422);
   try {
-    const preview = await previewPrivateDelivery(id);
+    const preview = await previewPrivateDelivery(id, settings.data);
     return preview ? privateBranchJson(preview) : privateBranchJson({ error: "Dal bulunamadı." }, 404);
   } catch (error) { return privateBranchError(error); }
 }

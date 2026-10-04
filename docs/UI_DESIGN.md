@@ -1,5 +1,10 @@
 # Workspace design principles — DA-111 / DA-112
 
+DA-113 adds a labelled per-send private output selector. Editing removes the old preview
+and approval; uncertain send retries lock editing and retain the reviewed cap. Stored
+receipts show their approved cap separately from observed usage. The setting is a draft,
+not a persisted global preference. [Contract](PRIVATE_DELIVERY_SETTINGS.md).
+
 Verified design scope: owner-requested layout and appearance, 3 October 2026.
 
 ## Responsive corrections — DA-112, 4 October 2026

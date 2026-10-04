@@ -1,5 +1,10 @@
 # Security
 
+DA-113 binds the private output cap to the reviewed fingerprint, frozen encrypted request
+and retry identity. Invalid or changed caps are rejected before enqueue/submission.
+The maximum remains 1024 and the existing storage reservation is retained even for lower
+limits. This is not monetary enforcement. [Boundary](PRIVATE_DELIVERY_SETTINGS.md).
+
 DA-111 stores only light/dark/system appearance in localStorage. Navigation and theme controls dispatch no model requests and do not persist question/report/credential content in browser preferences. Existing owner/same-origin and reviewed deletion boundaries remain; collapsed/hidden views do not alter execution or retention. [Design](UI_DESIGN.md).
 
 DA-109 Markdown attachments reuse owned export DTOs and same-origin checks. Input-sized

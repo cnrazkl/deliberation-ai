@@ -33,10 +33,10 @@ async function connection(tx: ConversationTransaction, id: string | undefined, l
   const [value] = await (lock ? query.for("share") : query);
   return value;
 }
-async function preview(tx: ConversationTransaction, id: string, lock = false) {
+async function preview(tx: ConversationTransaction, id: string, lock = false, settings: { maxOutputTokens?: number } = {}) {
   const branch = await readPrivateBranch(tx, id, lock); if (!branch) return undefined;
   const body = branch.value.body; const deliveries = body.deliveries ?? []; const member = body.seed.member;
-  const input = renderPrivateDelivery(body); const risk = assessPrivateDelivery(body, input);
+  const input = renderPrivateDelivery(body, settings); const risk = assessPrivateDelivery(body, input);
   const target = await connection(tx, member.connectionId, lock);
   const blocks: PrivateDeliveryBlock[] = [];
   const message = body.messages.at(-1);
@@ -57,16 +57,16 @@ async function preview(tx: ConversationTransaction, id: string, lock = false) {
   const fingerprint = hash({ id, revision: branch.value.revision, deliveryVersion: body.deliveryVersion ?? 0, bodyHash: hash(body), connectionFingerprint, input });
   return { branchId: id, fingerprint, eligible: blocks.length === 0, blocks, input, risk,
     provider: member.provider, connectionId: target?.id ?? null, connectionFingerprint, connectionLabel: target?.label ?? null,
-    maximumProviderCalls: 1 as const, maxOutputTokens: 1_024 as const, remainingBranchRequests: Math.max(0, 8 - used), inputBytes };
+    maximumProviderCalls: 1 as const, maxOutputTokens: input.maxOutputTokens, remainingBranchRequests: Math.max(0, 8 - used), inputBytes };
 }
-export async function previewPrivateDelivery(id: string) {
-  return getDatabase().transaction((tx) => preview(tx, id), { isolationLevel: "repeatable read", accessMode: "read only" });
+export async function previewPrivateDelivery(id: string, settings: { maxOutputTokens?: number } = {}) {
+  return getDatabase().transaction((tx) => preview(tx, id, false, settings), { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 export type PrivateDeliveryPreview = NonNullable<Awaited<ReturnType<typeof previewPrivateDelivery>>>;
 function changed(body: PrivateBranchBody, deliveries: PrivateDelivery[]): PrivateBranchBody {
   return boundedPrivateBody({ ...body, deliveries, deliveryVersion: (body.deliveryVersion ?? 0) + 1 });
 }
-export async function enqueuePrivateDelivery(id: string, input: { requestId: string; fingerprint: string }) {
+export async function enqueuePrivateDelivery(id: string, input: { requestId: string; fingerprint: string; maxOutputTokens?: number }) {
   const request = sendPrivateDeliverySchema.parse(input); const boss = await getBoss();
   return getDatabase().transaction(async (tx) => {
     await tx.execute(sql`set local lock_timeout = '5s'`);
@@ -74,10 +74,10 @@ export async function enqueuePrivateDelivery(id: string, input: { requestId: str
     const current = await readPrivateBranch(tx, id, true); if (!current) return undefined;
     const existing = (current.value.body.deliveries ?? []).find((item) => item.id === request.requestId);
     if (existing) {
-      if (existing.originBranchId !== id || existing.fingerprint !== request.fingerprint) throw new PrivateBranchConflictError();
+      if (existing.originBranchId !== id || existing.fingerprint !== request.fingerprint || existing.request.maxOutputTokens !== request.maxOutputTokens) throw new PrivateBranchConflictError();
       return { operationId: existing.id };
     }
-    const value = (await preview(tx, id, true))!;
+    const value = (await preview(tx, id, true, { maxOutputTokens: request.maxOutputTokens }))!;
     if (value.fingerprint !== request.fingerprint) throw new PrivateBranchConflictError();
     if (!value.eligible) throw new PrivateDeliveryBlockedError();
     const operation: PrivateDelivery = { id: request.requestId, originBranchId: id, messageId: current.value.body.messages.at(-1)!.id,

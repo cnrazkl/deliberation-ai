@@ -1,5 +1,10 @@
 # Tasks
 
+- [x] DA-113 bounded private-settings follow-up: owner-reviewed per-send output cap,
+  fingerprint/replay binding, encrypted retention and unchanged default/upper capacity.
+  282 units, 204 isolated PostgreSQL cases with actual lower-cap archive restore, all
+  40 browser cases and type/lint/build pass. [Contract](PRIVATE_DELIVERY_SETTINGS.md).
+
 - [x] DA-112 owner-reported responsive defects: container-based panel layouts, wrapping
   long content, native-width checkboxes, visible attachment button and mobile targets.
   281 units, 40 browser cases, type/lint/build pass. [Scope](DA112_ACCEPTANCE.md).

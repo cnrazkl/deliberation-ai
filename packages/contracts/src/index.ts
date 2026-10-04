@@ -161,10 +161,12 @@ export const privateBranchSeedSchema = z.object({
   reusedFromRunId: z.string().uuid().nullable(),
 }).strict();
 export type PrivateBranchSeed = z.infer<typeof privateBranchSeedSchema>;
+export const privateOutputTokensSchema = z.number().int().min(128).max(1_024);
+export const privateDeliverySettingsSchema = z.object({ maxOutputTokens: privateOutputTokensSchema.default(1_024) }).strict();
 export const privateDeliveryRequestSchema = z.object({
   version: z.literal("private-text-v1"), model: z.string().min(1).max(120),
   messages: z.array(z.object({ role: z.enum(["system", "user", "assistant"]), content: z.string().max(262_144) }).strict()).min(4).max(132),
-  maxOutputTokens: z.literal(1_024),
+  maxOutputTokens: privateOutputTokensSchema,
 }).strict();
 export type PrivateDeliveryRequest = z.infer<typeof privateDeliveryRequestSchema>;
 export const privateDeliveryUsageSchema = z.object({
@@ -228,7 +230,8 @@ export const preflightDraftDeletionReceiptSchema = z.object({
 export type PreflightDraftDeletionReceipt = z.infer<typeof preflightDraftDeletionReceiptSchema>;
 export const deletePrivateBranchSchema = z.object({ branchId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   confirmContentDeletion: z.literal(true), acknowledgeRetainedMetadata: z.literal(true) }).strict();
-export const sendPrivateDeliverySchema = z.object({ requestId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict();
+export const sendPrivateDeliverySchema = z.object({ requestId: z.string().uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  maxOutputTokens: privateOutputTokensSchema.default(1_024) }).strict();
 export const controlPrivateDeliverySchema = z.object({ operationId: z.string().uuid(), action: z.enum(["cancel", "recover", "discard_unknown"]),
   acknowledgeUnknown: z.boolean().optional() }).strict();
 export const privateBranchBodySchema = z.object({

@@ -12,8 +12,8 @@ const reasons: Record<PrivateDeliveryPreview["blocks"][number], string> = {
 };
 const states: Record<PrivateDelivery["status"], string> = { prepared: "Kuyrukta", submitted: "Sağlayıcıya gönderildi", succeeded: "Yanıt alındı",
   failed: "Başarısız", outcome_unknown: "Sonuç belirsiz", cancelled: "Gönderilmeden iptal edildi", discarded: "Belirsiz kayıt kapatıldı" };
-async function request<T>(id: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/private-branches/${id}/deliveries`, { ...options, cache: "no-store" });
+async function request<T>(id: string, options?: RequestInit, maxOutputTokens?: number): Promise<T> {
+  const response = await fetch(`/api/private-branches/${id}/deliveries${maxOutputTokens === undefined ? "" : `?maxOutputTokens=${maxOutputTokens}`}`, { ...options, cache: "no-store" });
   const value = await response.json();
   if (!response.ok) throw Object.assign(new Error(value.error ?? "Özel gönderim tamamlanamadı."), { status: response.status });
   return value as T;
@@ -22,25 +22,28 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
   branch: PrivateBranchView; disabled: boolean; onChanged: () => void; onBusy: (value: boolean) => void;
 }) {
   const [preview, setPreview] = useState<PrivateDeliveryPreview | null>(null);
+  const [maxOutputTokens, setMaxOutputTokens] = useState(1_024);
+  const [retryLocked, setRetryLocked] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState<string | null>(null);
   const alive = useRef(true); const working = useRef(false);
-  const intent = useRef<{ requestId: string; fingerprint: string } | null>(null);
+  const intent = useRef<{ requestId: string; fingerprint: string; maxOutputTokens: number } | null>(null);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   async function act(action: "preview" | "send" | "cancel" | "recover" | "discard_unknown", operationId?: string) {
     if (working.current || disabled) return;
     working.current = true; setBusy(true); onBusy(true); setError(null);
     try {
       if (action === "preview") {
-        const value = await request<PrivateDeliveryPreview>(branch.id);
-        if (alive.current) { setPreview(value); setReviewed(false); intent.current = null; }
+        const value = await request<PrivateDeliveryPreview>(branch.id, undefined, maxOutputTokens);
+        if (alive.current) { setPreview(value); setReviewed(false); intent.current = null; setRetryLocked(false); }
       } else if (action === "send") {
         if (!preview?.eligible || !reviewed) return;
-        intent.current ??= { requestId: crypto.randomUUID(), fingerprint: preview.fingerprint };
+        intent.current ??= { requestId: crypto.randomUUID(), fingerprint: preview.fingerprint, maxOutputTokens: preview.maxOutputTokens };
+        setRetryLocked(true);
         await request(branch.id, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(intent.current) });
-        if (alive.current) { intent.current = null; setPreview(null); setReviewed(false); onChanged(); }
+        if (alive.current) { intent.current = null; setRetryLocked(false); setPreview(null); setReviewed(false); onChanged(); }
       } else {
         if (action === "discard_unknown" && acknowledged !== operationId) return;
         await request(branch.id, { method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -49,7 +52,7 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
       }
     } catch (cause) {
       if (!alive.current) return;
-      if (cause instanceof Error && "status" in cause && cause.status === 409) { intent.current = null; setPreview(null); setReviewed(false); }
+      if (cause instanceof Error && "status" in cause && cause.status === 409) { intent.current = null; setRetryLocked(false); setPreview(null); setReviewed(false); }
       setError(cause instanceof Error ? cause.message : "Özel gönderim tamamlanamadı.");
     } finally { working.current = false; onBusy(false); if (alive.current) setBusy(false); }
   }
@@ -58,6 +61,7 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
     <p className="section-hint">Yalnız kaydedilen mesaj açık onayla tek modele gönderilir. Taslağı kaydetmek, dalı açmak veya yenilemek gönderim yapmaz.</p>
     {deliveries.map((operation) => <article key={operation.id} aria-label="Özel gönderim kaydı">
       <strong>{states[operation.status]}{operation.originBranchId !== branch.id ? " · önceki daldan kopya" : ""}</strong>
+      <p>Onaylanan çıktı sınırı: {operation.request.maxOutputTokens} token</p>
       <details><summary>Gönderilen mesaj ve bağlam</summary><pre>{JSON.stringify(operation.request.messages, null, 2)}</pre></details>
       {operation.result && <><strong>Model yanıtı</strong><pre>{operation.result.text}</pre>
         {operation.result.finishReason === "length" && <p>Yanıt çıktı sınırına ulaştı; tamamlanmış yanıt olduğu varsayılmaz.</p>}</>}
@@ -76,17 +80,25 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
         <button type="button" disabled={disabled || busy || acknowledged !== operation.id} onClick={() => void act("discard_unknown", operation.id)}>Belirsiz kaydı kapat</button>
       </>}
     </article>)}
+    <label className="theme-picker">Özel yanıt çıktı sınırı
+      <select value={maxOutputTokens} disabled={disabled || busy || retryLocked} onChange={(event) => {
+        setMaxOutputTokens(Number(event.target.value)); setPreview(null); setReviewed(false); setError(null);
+      }}>
+        {[128, 256, 512, 1024].map((value) => <option key={value} value={value}>{value} token{value === 1024 ? " · Varsayılan" : ""}</option>)}
+      </select>
+    </label>
+    <p className="section-hint">Bu gönderim için üst sınırdır; daha düşük sınır yanıtı kesebilir. Reasoning kullanan modellerde görünür metin oluşmadan dolabilir. Kullanım veya ücret tahmini değildir. Değişiklik yeni inceleme gerektirir.</p>
     <button type="button" disabled={disabled || busy} onClick={() => void act("preview")}>Gönderimi incele</button>
     {preview && <section aria-label="Özel gönderim önizlemesi">
-      <p>{preview.connectionLabel ?? "Bağlantı yok"} · {preview.provider} · {preview.input.model} · En fazla 1 çağrı / 1024 çıktı tokenı · Kalan dal isteği: {preview.remainingBranchRequests}</p>
+      <p>{preview.connectionLabel ?? "Bağlantı yok"} · {preview.provider} · {preview.input.model} · En fazla 1 çağrı / {preview.maxOutputTokens} çıktı tokenı · Kalan dal isteği: {preview.remainingBranchRequests}</p>
       <p>Diğer üyeler, incelemeler, özgün ekler ve önceki konsey bağlamı gönderilmez. Bu sınırlar parasal bütçe veya token kullanım tahmini değildir.</p>
-      {preview.provider === "openai" && <p>1024 çıktı sınırına reasoning tokenları da dahildir; görünür yanıt oluşmadan sınır dolabilir. Bu gönderim kayıtlı metin geçmişini kullanır; sağlayıcının reasoning geçmişi taşınmaz.</p>}
+      {preview.provider === "openai" && <p>{preview.maxOutputTokens} çıktı sınırına reasoning tokenları da dahildir; görünür yanıt oluşmadan sınır dolabilir. Bu gönderim kayıtlı metin geçmişini kullanır; sağlayıcının reasoning geçmişi taşınmaz.</p>}
       {preview.provider === "google" && <p>Gemini gönderimi kayıtlı metin geçmişini kullanır; düşünce imzaları ve sağlayıcının reasoning geçmişi taşınmaz. Varsayılan düşünme görünür yanıt oluşmadan sınırı tüketebilir; kullanım sayaçları yanıt geldikten sonra ayrı gösterilir.</p>}
       <details><summary>Modele gönderilecek tam içerik</summary><pre>{JSON.stringify(preview.input.messages, null, 2)}</pre></details>
       {preview.blocks.map((reason) => <p key={reason}>{reasons[reason]}</p>)}
       <label><input type="checkbox" disabled={!preview.eligible || disabled || busy} checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} />Gönderilecek içeriği, seçili bağlantıyı ve sınırları inceledim.</label>
       <button type="button" disabled={!reviewed || !preview.eligible || disabled || busy} onClick={() => void act("send")}>Kaydedilmiş mesajı modele gönder</button>
-      <button type="button" disabled={disabled || busy} onClick={() => { setPreview(null); setReviewed(false); intent.current = null; }}>Önizlemeyi kapat</button>
+      <button type="button" disabled={disabled || busy} onClick={() => { setPreview(null); setReviewed(false); intent.current = null; setRetryLocked(false); }}>Önizlemeyi kapat</button>
     </section>}
     {error && <p role="alert" className="error">{error}</p>}
   </section>;

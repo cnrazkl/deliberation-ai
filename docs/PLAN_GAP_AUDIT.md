@@ -1,5 +1,12 @@
 # Original PLAN.md versus the running local application
 
+**4 October 2026, DA-113:** reviewed per-send private output caps (128–1024, default
+1024) advance the broader settings gate. Caps are fingerprint-bound and frozen in
+encrypted receipts; exact retries preserve one intent. DA-108's saved-template lifecycle
+and DA-109–112's export/workspace/responsive increments are complete. Richer private
+settings/continuity, accounting, copies and human/live acceptance remain partial.
+Earlier next-task statements below are historical. [Contract](PRIVATE_DELIVERY_SETTINGS.md).
+
 **3 October 2026, DA-107:** paused local schedule templates gain bounded reviewed content removal and retained creation receipts. Dispatch validates exact snapshots and atomically commits run/job/cursor changes; previously queued work and historical copies remain. Saved council-template deletion is next (DA-108). Broader plan gates remain partial. [Contract](LOCAL_SCHEDULE_DELETION.md).
 
 

@@ -1,5 +1,10 @@
 # Providers
 
+**DA-113 private output settings:** the existing private output-cap mappings now use
+the owner-reviewed 128–1024 integer request value (default 1024). Historical fixed-1024
+descriptions below describe the default. Reasoning/search and byte/time limits remain
+unchanged. [Contract and limits](PRIVATE_DELIVERY_SETTINGS.md).
+
 **DA-100 native private Gemini:** Google joins compatible/Anthropic/Responses delivery using generateContent, header-only credentials and exact reviewed text/order. One text candidate and `generationConfig.maxOutputTokens=1024` are requested without tools, thinking override or council JSON schema. Bounded validation accepts STOP/MAX_TOKENS text only, excludes opaque signatures from retained/future input, preserves candidate/thought/cache/total conventions and maps unfinished candidates to unknown without polling/retry. Earlier private-provider absence notes are historical. Interactions, richer settings and live acceptance remain separate. [Mapping and current official sources](PRIVATE_BRANCHES.md#da-100-native-gemini-generatecontent).
 
 **DA-099 native private Responses:** OpenAI joins Anthropic/compatible delivery with default reasoning/search off. Reviewed text enters `input`, archived assistant turns labelled final; `store/background/stream=false`, `truncation=disabled` and plain text keep the stateless scope. Validate output items/statuses instead of trusting an SDK text shortcut. Opaque empty-summary reasoning is excluded from saved/resubmitted context; visible reasoning/tool/refusal/unknown output fails. Partial text shows truncation; no-text cap failure keeps usage. Queued/in-progress stays unknown without a second request. Inclusive cache/reasoning counts are shown as subsets. Gemini and cloud acceptance remain open. [Mapping and official sources](PRIVATE_BRANCHES.md#da-099-native-openai-responses).

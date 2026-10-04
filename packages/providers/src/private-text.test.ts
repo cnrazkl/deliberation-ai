@@ -10,6 +10,17 @@ const googleCandidate = { content: { role: "model", parts: [{ text: "Private " }
 const googleReply = { modelVersion: "offline-gemini", responseId: "offline-google-reply", candidates: [googleCandidate],
   usageMetadata: { promptTokenCount: 21, candidatesTokenCount: 8, cachedContentTokenCount: 6, thoughtsTokenCount: 3, totalTokenCount: 32 } };
 
+test("private output allowance admits the lower bound and rejects invalid limits before network", async () => {
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(googleReply));
+  await generatePrivateText({ ...input, maxOutputTokens: 128 }, { ...googleOptions, fetch });
+  expect(JSON.parse(String(fetch.mock.calls[0]![1]!.body)).generationConfig.maxOutputTokens).toBe(128);
+  fetch.mockClear();
+  for (const maxOutputTokens of [127, 1025, 128.5, NaN]) {
+    await expect(generatePrivateText({ ...input, maxOutputTokens }, { ...googleOptions, fetch })).rejects.toThrow();
+  }
+  expect(fetch).not.toHaveBeenCalled();
+});
+
 test("Gemini sends exact stateless text/order and header credentials, preserves candidate/thought conventions and drops opaque state", async () => {
   const messages = [...input.messages, { role: "user" as const, content: "Another owner draft" }];
   const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(googleReply));

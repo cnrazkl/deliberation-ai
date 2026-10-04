@@ -78,6 +78,21 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await expect(preview).toContainText(provider);
     if (provider === "openai") await expect(preview).toContainText("1024 çıktı sınırına reasoning tokenları da dahildir");
     if (provider === "google") await expect(preview).toContainText("düşünce imzaları");
+    await preview.getByRole("checkbox").check();
+    await panel.getByLabel("Özel yanıt çıktı sınırı").selectOption("512");
+    await expect(preview).toHaveCount(0);
+    expect(calls).toBe(0);
+    await panel.getByRole("button", { name: "Gönderimi incele" }).click();
+    await expect(preview).toContainText("512 çıktı tokenı");
+    if (provider === "openai-compatible") {
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.getByLabel("Özel yanıt çıktı sınırı").screenshot({ path: "test-results/da113-mobile-output-setting.png" });
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+    for (const invalid of ["127", "1025", "512.5", "nope", "512&maxOutputTokens=256"]) {
+      expect((await request.get(`/api/private-branches/${(await getDatabase().select().from(branches).where(eq(branches.conversationId, conversationId)))[0]!.id}/deliveries?maxOutputTokens=${invalid}`)).status()).toBe(422);
+    }
     expect(calls).toBe(0);
     await expect(preview.getByRole("button", { name: "Kaydedilmiş mesajı modele gönder" })).toBeDisabled();
     const [root] = await getDatabase().select().from(branches).where(eq(branches.conversationId, conversationId));
@@ -92,12 +107,13 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await preview.getByRole("checkbox").check();
     await preview.getByRole("button", { name: "Kaydedilmiş mesajı modele gönder" }).click();
     await expect(panel.getByRole("alert")).toBeVisible();
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toBeDisabled();
     await preview.getByRole("button", { name: "Kaydedilmiş mesajı modele gönder" }).click();
     await expect(panel).toContainText("A local fixture answer about SQL joins", { timeout: 30_000 });
     await expect(panel).toContainText("Girdi tokenı: 31");
     expect(calls).toBe(1);
     expect(received[0]!.url).toBe(provider === "anthropic" ? "/v1/messages" : provider === "openai" ? "/v1/responses" : provider === "google" ? "/v1beta/models/offline-private:generateContent" : "/v1/chat/completions");
-    expect(provider === "google" ? received[0]!.body.generationConfig!.maxOutputTokens : provider === "openai" ? received[0]!.body.max_output_tokens : received[0]!.body.max_tokens).toBe(1_024);
+    expect(provider === "google" ? received[0]!.body.generationConfig!.maxOutputTokens : provider === "openai" ? received[0]!.body.max_output_tokens : received[0]!.body.max_tokens).toBe(512);
     expect(provider === "google" ? received[0]!.body.contents!.at(-1)!.parts[0]!.text : (received[0]!.body.input ?? received[0]!.body.messages)!.at(-1)!.content).toBe("Explain SQL joins in this private follow-up");
     const value = await (await request.get(`/api/private-branches/${root!.id}`)).json() as PrivateBranchView;
     expect(value.body.deliveries).toHaveLength(1);
@@ -105,7 +121,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
       const sent = value.body.deliveries![0]!.request;
       expect(received[0]!.body).toEqual({ systemInstruction: { parts: [{ text: sent.messages[0]!.content }] },
         contents: sent.messages.slice(1).map((item) => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] })),
-        generationConfig: { candidateCount: 1, maxOutputTokens: 1_024, responseMimeType: "text/plain" } });
+        generationConfig: { candidateCount: 1, maxOutputTokens: 512, responseMimeType: "text/plain" } });
       expect(received[0]!.headers["x-goog-api-key"]).toBe("offline-browser-key");
       expect(received[0]!.headers["x-goog-request-id"]).toBeTruthy();
       expect(received[0]!.headers.authorization).toBeUndefined();
@@ -117,7 +133,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     }
     if (provider === "anthropic") {
       const sent = value.body.deliveries![0]!.request;
-      expect(received[0]!.body).toEqual({ model: sent.model, system: sent.messages[0]!.content, messages: sent.messages.slice(1), max_tokens: 1_024 });
+      expect(received[0]!.body).toEqual({ model: sent.model, system: sent.messages[0]!.content, messages: sent.messages.slice(1), max_tokens: 512 });
       expect(received[0]!.headers["x-api-key"]).toBe("offline-browser-key");
       expect(received[0]!.headers["anthropic-version"]).toBe("2023-06-01");
       expect(received[0]!.headers.authorization).toBeUndefined();
@@ -128,7 +144,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     if (provider === "openai") {
       const sent = value.body.deliveries![0]!.request;
       expect(received[0]!.body).toEqual({ model: sent.model, input: sent.messages.map((item) => item.role === "assistant" ? { ...item, phase: "final_answer" } : item),
-        max_output_tokens: 1_024, store: false, background: false, stream: false, truncation: "disabled", text: { format: { type: "text" } } });
+        max_output_tokens: 512, store: false, background: false, stream: false, truncation: "disabled", text: { format: { type: "text" } } });
       expect(received[0]!.headers.authorization).toBe("Bearer offline-browser-key");
       expect(received[0]!.headers["anthropic-version"]).toBeUndefined();
       expect(JSON.stringify(value)).not.toContain("opaque-browser-fixture-state");

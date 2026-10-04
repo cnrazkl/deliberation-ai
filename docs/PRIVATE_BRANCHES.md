@@ -79,7 +79,10 @@ usage stays unknown. These receipts do not enter council-run price/billing total
 
 An origin branch admits eight permanent request slots, including cancelled/failed/unknown
 and discarded requests. Forks copy provenance and receive their own origin allowance.
-One request is capped at 1,024 output tokens, 64 KiB input, 128 KiB response and 16,384
+DA-113 lets the owner review a 128–1,024 output-token cap per request (default 1,024).
+The UI offers 128/256/512/1024; historical requests retain their approved limits.
+[Settings and replay contract](PRIVATE_DELIVERY_SETTINGS.md).
+One request is capped at 64 KiB input, 128 KiB response and 16,384
 reply characters. Pre-enqueue capacity reservation protects the 512 KiB encrypted-body
 plaintext limit. A branch holds at most 16 own/copied receipts. These are local limits,
 not input-token accounting or a monetary spending guarantee.

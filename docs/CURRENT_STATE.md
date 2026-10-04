@@ -1,8 +1,23 @@
 # Current state
 
-Updated: 4 October 2026 (DA-112 responsive frontend corrections)
+Updated: 4 October 2026 (DA-113 reviewed private output settings completed)
 
-## Latest owner-requested increment — DA-112
+## Latest owner-requested increment — DA-113
+
+Private sends expose a per-send 128/256/512/1024 output-token draft (default 1024).
+Edits clear review. Preview fingerprints bind the cap; encrypted receipts retain it and
+request-id replay rejects changed caps. Existing adapters carry the approved limit to
+all four private providers. The draft resets when the panel reopens; it is not a saved
+branch default or monetary budget. [Contract](PRIVATE_DELIVERY_SETTINGS.md).
+
+282 units, 204 isolated PostgreSQL cases including populated lower-cap archive restore,
+all 40 browser cases, type checks, zero-warning lint and separate-output production
+build pass. The first browser sweep had one queued timeout while older-code workers
+shared the queue; after switching interactive runtime to this checkout and removing
+old processes, the complete repeat passed. No SQL migration or paid provider call.
+Richer settings/continuity, council/private accounting and copy-erasure gates remain open.
+
+## Previous owner-requested increment — DA-112
 
 Panel layouts follow usable main-column width, including the sidebar's space. Long
 content wraps, member checkboxes keep native widths, mobile controls remain usable,
