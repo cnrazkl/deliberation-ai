@@ -1,5 +1,9 @@
 # Product
 
+**DA-116:** private output-cap drafts remain selected per branch while the panel is open,
+across saving, replies, refresh and branch navigation. New forks and reopened panels
+start at 1024. Every send still requires fresh review. [Scope](PRIVATE_DELIVERY_SETTINGS.md#da-116-draft-continuity).
+
 **DA-115:** an optional conversation-wide private usage summary includes retained and
 deleted-branch usage, counts each origin send once and marks missing provenance/model
 or counters explicitly. A manual fetch shows its snapshot time. [Scope](CONVERSATION_PRIVATE_USAGE.md).

@@ -1,8 +1,28 @@
 # Current state
 
-Updated: 4 October 2026 (DA-115 conversation private usage completed)
+Updated: 4 October 2026 (DA-116 private setting draft continuity completed)
 
-## Latest owner-requested increment — DA-115
+## Latest owner-requested increment — DA-116
+
+Private output-cap drafts now survive message saves, successful replies, worker polling,
+refresh and switching branches within the same open panel. Each branch has a separate
+selection; new forks and reopened panels/page reload use 1024. Only the cap survives
+receipt/revision remounts: previews and approval must be reviewed again. Lost-response
+retries retain their exact frozen identity/cap. Confirmed deletion clears the local draft.
+[Contract](PRIVATE_DELIVERY_SETTINGS.md#da-116-draft-continuity).
+
+294 units, six focused real-worker browser cases plus four-provider follow-up repetition,
+type checks, zero-warning lint and
+separate-output production build pass. Browser cases cover root/child independence,
+refresh/conflict/save/reply continuity, page reload, review invalidation and narrow-page
+width. No persistence/BFF/worker/provider change, migration, paid call or real deletion.
+No new full integration/browser sweep is claimed for this client-state change.
+
+Persistent preferences, model/reasoning controls, provider-managed continuity and
+council/private monetary accounting remain open. Interactive 3000 remains HTTP 200
+with ready database, one worker and no queued/running/unresolved work after tests.
+
+## Previous owner-requested increment — DA-115
 
 On-demand conversation private usage reads retained branches and deletion audits in
 one bounded owner-scoped snapshot. Each origin send counts once; copied receipts do

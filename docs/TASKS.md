@@ -1,5 +1,10 @@
 # Tasks
 
+- [x] DA-116 private output-cap draft continuity: per-branch selections survive saves,
+  replies, refresh and branch navigation within an open panel; fresh fork/reopen defaults
+  and fresh send approval remain explicit. 294 units, six focused browser cases and
+  type/lint/build pass. [Scope](PRIVATE_DELIVERY_SETTINGS.md#da-116-draft-continuity).
+
 - [x] DA-115 conversation private usage: on-demand owner-scoped snapshot of retained
   branches/deletion audits, origin deduplication, explicit missing provenance/counters,
   metadata-only BFF and timestamped responsive summary. 294 units, 207 isolated DB

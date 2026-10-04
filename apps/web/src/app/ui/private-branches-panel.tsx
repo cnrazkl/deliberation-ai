@@ -37,6 +37,7 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
   const alive = useRef(true); const working = useRef(false);
   const readGeneration = useRef(0);
   const drafts = useRef(new Map<string, string>());
+  const [outputCaps, setOutputCaps] = useState<Record<string, number>>({});
   const intent = useRef<{ key: string; body: CreatePrivateBranch | AppendPrivateDraft } | null>(null);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useEffect(() => {
@@ -130,10 +131,13 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
         <button type="button" disabled={busy || loading || Boolean(deletionId)} onClick={() => setDeletionId(branch.id)}>Dal içeriğini silmeyi incele</button>
       </div>
       <PrivateDeliveryPanel key={`${branch.id}:${branch.revision}:${branch.body.deliveryVersion ?? 0}`} branch={branch} disabled={busy || Boolean(deletionId) || loading || detailLoading}
+        maxOutputTokens={outputCaps[branch.id] ?? 1_024}
+        onOutputCapChanged={(value) => setOutputCaps((previous) => ({ ...previous, [branch.id]: value }))}
         onChanged={reload} onBusy={(value) => { working.current = value; setBusy(value); }} />
       {deletionId && <PrivateBranchDeletionPanel key={deletionId} branchId={deletionId} onCancel={() => setDeletionId(null)}
         onBusy={(value) => { working.current = value; setBusy(value); }} onDeleted={() => {
           setPreservedDraft((previous) => [previous, text].filter(Boolean).join("\n\n")); drafts.current.delete(deletionId);
+          setOutputCaps((previous) => Object.fromEntries(Object.entries(previous).filter(([id]) => id !== deletionId)));
           intent.current = null; ++readGeneration.current; setDeletionId(null); setSelectedId(null); setBranch(null); setText("");
           setLoading(true); setDetailLoading(false); setRefresh((value) => value + 1);
         }} />}

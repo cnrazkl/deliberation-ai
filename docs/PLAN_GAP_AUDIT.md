@@ -1,5 +1,10 @@
 # Original PLAN.md versus the running local application
 
+**4 October 2026, DA-116:** private cap drafts now survive saves, replies, refresh and
+branch switching within an open panel. Fresh forks/reopened panels use the unchanged
+default; fresh send review remains required. Persistent preferences, model/reasoning
+controls and provider-managed continuity remain open. [Scope](PRIVATE_DELIVERY_SETTINGS.md#da-116-draft-continuity).
+
 **4 October 2026, DA-115:** conversation-wide private usage includes deletion audits and
 deduplicates copied receipts. Missing provenance and counters remain explicit. Council
 accounting, invoice reconciliation and settled monetary cost remain open. [Scope](CONVERSATION_PRIVATE_USAGE.md).

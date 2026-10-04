@@ -69,9 +69,12 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await model.getByRole("button", { name: "Bu yanıtla özel dal taslağı aç" }).click();
     await page.getByRole("region", { name: "Özel dal kaynak önizlemesi" }).getByRole("button", { name: "Özel dalı kaydet" }).click();
     const panel = page.getByRole("region", { name: "Özel dal taslakları", exact: true });
+    await panel.getByLabel("Özel yanıt çıktı sınırı").selectOption("256");
     await panel.getByLabel("Özel mesaj taslağı").fill("Explain SQL joins in this private follow-up");
     await panel.getByRole("button", { name: "Taslağı dala kaydet" }).click();
     await expect(panel.getByLabel("Özel mesaj taslağı")).toHaveValue("");
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("256");
+    await panel.getByLabel("Özel yanıt çıktı sınırı").selectOption("1024");
     await panel.getByRole("button", { name: "Gönderimi incele" }).click();
     const preview = panel.getByRole("region", { name: "Özel gönderim önizlemesi" });
     await expect(preview).toContainText("En fazla 1 çağrı");
@@ -111,6 +114,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await preview.getByRole("button", { name: "Kaydedilmiş mesajı modele gönder" }).click();
     await expect(panel).toContainText("A local fixture answer about SQL joins", { timeout: 30_000 });
     await expect(panel).toContainText("Girdi tokenı: 31");
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("512");
     const usageSummary = panel.getByRole("group", { name: "Özel dal kullanım özeti" });
     await usageSummary.locator("summary").click();
     await expect(usageSummary).toContainText("Sağlayıcıya gönderim kaydı: 1");
@@ -167,7 +171,10 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
       await panel.getByLabel("Özel mesaj taslağı").fill("Explain a second SQL follow-up");
       await panel.getByRole("button", { name: "Taslağı dala kaydet" }).click();
       await expect(panel.getByLabel("Özel mesaj taslağı")).toHaveValue("");
+      await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("512");
       await panel.getByRole("button", { name: "Gönderimi incele" }).click();
+      await expect(preview).toContainText("512 çıktı tokenı");
+      await expect(preview.getByRole("checkbox")).not.toBeChecked();
       await preview.getByRole("checkbox").check();
       await preview.getByRole("button", { name: "Kaydedilmiş mesajı modele gönder" }).click();
       await expect(panel.getByRole("article", { name: "Özel gönderim kaydı" })).toHaveCount(2);
@@ -220,6 +227,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await expect(usageSummary).toContainText(`Kopyalanan kayıt: ${calls}`);
     await expect(usageSummary).toContainText("bu dalın kullanımına tekrar eklenmez");
     await expect(usageSummary).toContainText("kullanım hesaplanmadı");
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("1024");
     const conversationUsage = panel.getByRole("group", { name: "Konuşmanın özel kullanım özeti" });
     await conversationUsage.locator("summary").click();
     await conversationUsage.getByRole("button", { name: "Konuşma kullanımını getir" }).click();

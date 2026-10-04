@@ -55,6 +55,7 @@ test("private drafts preserve the council draft, retry one committed message, fo
     await expect(panel.getByRole("button", { name: "Taslağı dala kaydet" })).toBeDisabled();
     const [root] = await getDatabase().select().from(branches).where(eq(branches.conversationId, conversationId));
     const draftInput = panel.getByLabel("Özel mesaj taslağı");
+    await panel.getByLabel("Özel yanıt çıktı sınırı").selectOption("256");
     let loseReply = true;
     await page.route("**/api/private-branches/*/messages", async (route) => {
       if (loseReply) { loseReply = false; await route.fetch(); await route.abort("failed"); }
@@ -65,6 +66,7 @@ test("private drafts preserve the council draft, retry one committed message, fo
     await expect(panel.getByRole("alert")).toBeVisible();
     await panel.getByRole("button", { name: "Taslağı dala kaydet" }).click();
     await expect(draftInput).toHaveValue("");
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("256");
     expect((await request.get(`/api/private-branches/${root!.id}`)).status()).toBe(200);
     let rootView = await (await request.get(`/api/private-branches/${root!.id}`)).json() as PrivateBranchView;
     expect(rootView.body.messages).toHaveLength(1);
@@ -79,16 +81,23 @@ test("private drafts preserve the council draft, retry one committed message, fo
     await expect(panel.getByRole("alert")).toContainText("Kaynak veya dal değişti");
     await expect(draftInput).toHaveValue("Preserve this text after conflict");
     await panel.getByRole("button", { name: "Dalları yenile" }).click();
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("256");
     await panel.getByRole("button", { name: "Taslağı dala kaydet" }).click();
     await expect(draftInput).toHaveValue("");
     await draftInput.fill("Unsaved text follows the new branch");
     await panel.getByRole("button", { name: "Bu noktadan yeni özel dal aç" }).click();
     await expect(draftInput).toHaveValue("Unsaved text follows the new branch");
     await expect(panel).toContainText("3 taslağı kopyalandı");
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("1024");
+    await panel.getByLabel("Özel yanıt çıktı sınırı").selectOption("128");
     await panel.getByRole("button", { name: "Taslağı dala kaydet" }).click();
     await expect(draftInput).toHaveValue("");
     const all = await getDatabase().select().from(branches).where(eq(branches.conversationId, conversationId));
     const child = all.find((item) => item.parentBranchId === root!.id)!;
+    await panel.locator(`[data-private-branch-id="${root!.id}"]`).getByRole("button", { name: "Özel dalı aç", exact: true }).click();
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("256");
+    await panel.locator(`[data-private-branch-id="${child.id}"]`).getByRole("button", { name: "Özel dalı aç", exact: true }).click();
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("128");
     rootView = await (await request.get(`/api/private-branches/${root!.id}`)).json() as PrivateBranchView;
     expect(rootView.messageCount).toBe(3);
     const childView = await (await request.get(`/api/private-branches/${child.id}`)).json() as PrivateBranchView;
@@ -100,6 +109,7 @@ test("private drafts preserve the council draft, retry one committed message, fo
     panel = page.getByRole("region", { name: "Özel dal taslakları", exact: true });
     await panel.locator(`[data-private-branch-id="${child.id}"]`).getByRole("button", { name: "Özel dalı aç" }).click();
     await expect(panel).toContainText("Unsaved text follows the new branch");
+    await expect(panel.getByLabel("Özel yanıt çıktı sınırı")).toHaveValue("1024");
     const downloadEvent = page.waitForEvent("download");
     await panel.getByRole("button", { name: "Özel dalı indir (JSON)" }).click();
     const stream = await (await downloadEvent).createReadStream(); const chunks: Buffer[] = [];

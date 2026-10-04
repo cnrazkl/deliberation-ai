@@ -19,11 +19,11 @@ async function request<T>(id: string, options?: RequestInit, maxOutputTokens?: n
   if (!response.ok) throw Object.assign(new Error(value.error ?? "Özel gönderim tamamlanamadı."), { status: response.status });
   return value as T;
 }
-export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
+export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy, maxOutputTokens, onOutputCapChanged }: {
   branch: PrivateBranchView; disabled: boolean; onChanged: () => void; onBusy: (value: boolean) => void;
+  maxOutputTokens: number; onOutputCapChanged: (value: number) => void;
 }) {
   const [preview, setPreview] = useState<PrivateDeliveryPreview | null>(null);
-  const [maxOutputTokens, setMaxOutputTokens] = useState(1_024);
   const [retryLocked, setRetryLocked] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -84,11 +84,12 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy }: {
     </article>)}
     <label className="theme-picker">Özel yanıt çıktı sınırı
       <select value={maxOutputTokens} disabled={disabled || busy || retryLocked} onChange={(event) => {
-        setMaxOutputTokens(Number(event.target.value)); setPreview(null); setReviewed(false); setError(null);
+        onOutputCapChanged(Number(event.target.value)); setPreview(null); setReviewed(false); setError(null);
       }}>
         {[128, 256, 512, 1024].map((value) => <option key={value} value={value}>{value} token{value === 1024 ? " · Varsayılan" : ""}</option>)}
       </select>
     </label>
+    <p className="section-hint">Seçiminiz bu panel açıkken dal başına korunur. Yeni dal veya paneli yeniden açma 1024 token ile başlar.</p>
     <p className="section-hint">Bu gönderim için üst sınırdır; daha düşük sınır yanıtı kesebilir. Reasoning kullanan modellerde görünür metin oluşmadan dolabilir. Kullanım veya ücret tahmini değildir. Değişiklik yeni inceleme gerektirir.</p>
     <button type="button" disabled={disabled || busy} onClick={() => void act("preview")}>Gönderimi incele</button>
     {preview && <section aria-label="Özel gönderim önizlemesi">

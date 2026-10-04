@@ -1,5 +1,12 @@
 # Architecture
 
+## DA-116 private setting draft continuity
+
+PrivateBranchesPanel owns ephemeral output-cap drafts by branch ID and controls the
+delivery selector. Receipt/revision changes still remount the review/intent component;
+only the cap selection survives. Confirmed deletion removes its draft. No storage or
+provider boundary changes. [Contract](PRIVATE_DELIVERY_SETTINGS.md#da-116-draft-continuity).
+
 ## DA-115 conversation private usage
 
 A pure domain projection deduplicates origin receipts across retained branches and
