@@ -1,5 +1,7 @@
 # Local operations
 
+DA-120 migration 0050 was exercised in disposable databases only. The owner's DB needs a separately authorized, backed-up migration before using the new backend APIs. Generated-only restore verification: `node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/verify-knowledge-scope-restore.ts`. It verifies identical ciphertext/selection/revocation after custom-format restore in two disposable databases, then removes its generated databases/archive. Run retention preserves independent collection/grant/selection records. [Contract](KNOWLEDGE_SCOPE.md).
+
 ## DA-110 — separate interactive runtime from browser tests
 
 On 3 October PostgreSQL was listening on 5432, but port 3000 and the application

@@ -17,7 +17,7 @@ function conversation(): NonNullable<Awaited<ReturnType<typeof exportConversatio
   return {
     schemaVersion: "deliberationai-conversation-export-v1", exportedAt: run.createdAt,
     conversation: { conversationId: run.runId, anchorRunId: run.runId, createdAt: run.createdAt, origin: "legacy-reconstructed", runs: [], unavailableSourceRunIds: ["missing-source"] },
-    scope: "Generated snapshot scope", privateBranches: [], privateBranchDeletions: [], runDeletions: [],
+    scope: "Generated snapshot scope", privateBranches: [], privateBranchDeletions: [], runDeletions: [], knowledgeSelection: null,
     runs: [{ runId: run.runId, availability: "available", payload: { ...createRunExport(run), providerMode: "fake", reviewRounds: 0, executionLimits: null, followUp: null } },
       { runId: "missing-run", availability: "unavailable", payload: null }],
   };
@@ -59,6 +59,13 @@ test("private owner drafts, seed and source provenance remain visible", () => {
       messages: [{ id: run.runId, kind: "owner-draft", text: "Gönderilmemiş özel taslak", createdAt: run.createdAt, originBranchId: run.runId, acceptedRevision: 2 }] } }];
   const md = createConversationMarkdown(value);
   expect(md).toContain("Özel kaynak soru"); expect(md).toContain("Özel başlangıç yanıtı"); expect(md).toContain("Gönderilmemiş özel taslak");
+});
+test("knowledge topic and revoked grant provenance remain inspectable in Markdown", () => {
+  const value = conversation();
+  value.knowledgeSelection = { version: "conversation-knowledge-v1", revision: run.runId, topic: "Retained topic ``` <script>",
+    grants: [{ scope: { ownerId: "local-owner", accountId: "local", collectionId: run.runId, grantId: run.runId, grantRevision: 2 }, available: false }] };
+  const md = createConversationMarkdown(value);
+  expect(md).toContain("Retained topic ``` <script>"); expect(md).toContain('"available": false'); expect(md).toContain('"grantRevision": 2');
 });
 test("arbitrary saved fences and HTML stay inside literal text blocks", () => {
   const text = "```\n# injected\n``````\n<script>alert(1)</script>\nTürkçe";

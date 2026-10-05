@@ -665,6 +665,30 @@ export const workerHeartbeats = pgTable(
   (table) => [index("worker_heartbeats_heartbeat_idx").on(table.heartbeatAt)],
 );
 
+export const knowledgeCollections = pgTable("knowledge_collections", {
+  id: uuid("id").primaryKey(), ownerId: text("owner_id").notNull(), accountId: text("account_id").notNull(),
+  bodyCiphertext: text("body_ciphertext").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("knowledge_collections_owner_idx").on(table.ownerId)]);
+export const knowledgeGrants = pgTable("knowledge_grants", {
+  id: uuid("id").primaryKey(), ownerId: text("owner_id").notNull(),
+  collectionId: uuid("collection_id").notNull().references(() => knowledgeCollections.id),
+  revision: integer("revision").notNull().default(1), status: text("status").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("knowledge_grants_collection_uq").on(table.collectionId),
+  check("knowledge_grants_revision_positive", sql`${table.revision} > 0`),
+  check("knowledge_grants_status_valid", sql`${table.status} in ('active', 'revoked')`)]);
+export const conversationKnowledge = pgTable("conversation_knowledge", {
+  conversationId: uuid("conversation_id").primaryKey().references(() => conversations.id),
+  ownerId: text("owner_id").notNull(), revision: uuid("revision").notNull(),
+  selectionCiphertext: text("selection_ciphertext").notNull(),
+}, (table) => [index("conversation_knowledge_owner_idx").on(table.ownerId)]);
+export const conversationKnowledgeSelections = pgTable("conversation_knowledge_selections", {
+  conversationId: uuid("conversation_id").notNull().references(() => conversations.id), ownerId: text("owner_id").notNull(),
+  collectionId: uuid("collection_id").notNull().references(() => knowledgeCollections.id),
+  grantId: uuid("grant_id").notNull().references(() => knowledgeGrants.id), grantRevision: integer("grant_revision").notNull(),
+}, (table) => [primaryKey({ columns: [table.conversationId, table.collectionId] }),
+  check("conversation_knowledge_selections_revision_positive", sql`${table.grantRevision} > 0`)]);
+
 export const runEvents = pgTable(
   "run_events",
   {

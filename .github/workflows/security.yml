@@ -26,6 +26,8 @@ jobs:
         run: |
           pnpm exec vitest run packages/evaluation/src/knowledge-evaluation.test.ts
           pnpm knowledge:status
+      - name: Verify scoped knowledge boundary
+        run: pnpm exec vitest run packages/application/src/knowledge.test.ts apps/web/src/lib/markdown-export.test.ts
       - name: Check lint dependency compatibility
         run: pnpm test:lint-dependencies
       - name: Scan Git history for secrets

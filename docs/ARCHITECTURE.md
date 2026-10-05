@@ -1,5 +1,7 @@
 # Architecture
 
+DA-120 [scope foundation](KNOWLEDGE_SCOPE.md) places normalized schemas in contracts, the read-only port/policy gateway/offline fake in application and owned encrypted collections/grants/selections in persistence. Current grant/selection checks fence adapter reads before and after execution. DA-121 owns storage/extraction and DA-122 owns frozen packets/council dispatch. [ADR-0035](adr/0035-scoped-knowledge-foundation.md).
+
 ## DA-119 offline knowledge evaluation preparation
 
 The evaluation package validates frozen source/intake/protocol/binary digests and an

@@ -79,6 +79,7 @@ export function createConversationMarkdown(value: ConversationExport): string {
     else parts.push("Rapor henüz mevcut değil.");
   }
   parts.push("---\n\n# Özel dal konuşmaları");
+  if (value.knowledgeSelection) parts.push("## Bilgi koleksiyonu seçimi", json(value.knowledgeSelection));
   for (const branch of value.privateBranches ?? []) {
     parts.push(`## Özel dal ${branch.id}`, "### Kaynak soru", markdownBlock(branch.body.seed.question),
       `### Seçilen üyenin yanıtı · ${literal(branch.body.seed.member.label)}`, markdownBlock(branch.body.seed.rawText));

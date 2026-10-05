@@ -22,7 +22,8 @@ Never reset/discard unrelated changes. If remote history diverges, inspect and r
 
 The Security checks workflow audits dependency vulnerabilities, installs the frozen graph
 without lifecycle scripts, runs lint-dependency compatibility tests and scans full Git history
-with Gitleaks on each push or pull request. Checks are not a complete application-security
+with Gitleaks on each push or pull request. It also checks frozen knowledge preparation
+and the offline scoped knowledge/Markdown boundary tests. Checks are not a complete application-security
 assessment and do not establish functional or model-quality acceptance.
 
 ## Private local state

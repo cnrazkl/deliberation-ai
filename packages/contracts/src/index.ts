@@ -1,4 +1,5 @@
 import { z } from "zod";
+export * from "./knowledge";
 export * from "./pricing";
 export * from "./billing";
 export * from "./billing-statement";

@@ -1,4 +1,5 @@
 export * from "./database";
+export * from "./knowledge-scope";
 export * from "./run-deletion";
 export * from "./crypto";
 export * from "./council-templates";

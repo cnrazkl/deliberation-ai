@@ -1,4 +1,5 @@
 import type { Client } from "pg";
+import { knowledgeCollectionBodySchema, knowledgeSelectionSchema } from "@deliberation-ai/contracts";
 import { decryptText } from "../src/crypto";
 import { decodePrivateBranchBody } from "../src/private-branches";
 import { decodePrivateBranchDeletion } from "../src/private-branch-deletion";
@@ -20,6 +21,8 @@ interface EncryptedTable {
 // Keep this inventory exhaustive. A new ciphertext column must have an explicit
 // authenticated context here before another archive can be published.
 const encryptedTables: readonly EncryptedTable[] = [
+  { table: "knowledge_collections", keys: ["id"], contextPrefix: "knowledge-collection", fields: [["body_ciphertext", "body", "json"]], optional: true },
+  { table: "conversation_knowledge", keys: ["conversation_id", "revision"], contextPrefix: "conversation-knowledge", fields: [["selection_ciphertext", "selection", "json"]], optional: true },
   { table: "run_deletions", keys: ["id"], contextPrefix: "run-deletion", fields: [["audit_ciphertext", "audit", "json"]], optional: true,
     metadata: [["conversation_id", "conversationId"], ["deleted_at", "deletedAt"], ["intent_key_hash", "intentKeyHash"], ["owner_id", "ownerId"]] },
   { table: "private_branch_deletions", keys: ["id"], contextPrefix: "private-branch-deletion", fields: [["audit_ciphertext", "audit", "json"]], optional: true,
@@ -104,6 +107,16 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
   // Except for the explicit complete pre-DA107 schedule era below, missing/new ciphertext fields fail closed.
   const tables = await client.query<{ table_name: string }>("select table_name from information_schema.tables where table_schema = 'public'");
   const presentTables = new Set(tables.rows.map((row) => row.table_name));
+  const knowledgeTables = ["knowledge_collections", "knowledge_grants", "conversation_knowledge", "conversation_knowledge_selections"];
+  const knowledgeCount = knowledgeTables.filter((table) => presentTables.has(table)).length;
+  if (knowledgeCount !== 0 && knowledgeCount !== knowledgeTables.length) throw new Error("Restored knowledge scope schema is incomplete.");
+  if (knowledgeCount === knowledgeTables.length) {
+    const invalid = await client.query(`select 1 from knowledge_grants g left join knowledge_collections c on c.id = g.collection_id
+      where c.id is null or c.owner_id <> g.owner_id or c.account_id <> 'local' or g.revision < 1 or g.status not in ('active', 'revoked')
+      union all select 1 from conversation_knowledge_selections s left join conversation_knowledge h on h.conversation_id = s.conversation_id
+      where h.conversation_id is null or h.owner_id <> s.owner_id limit 1`);
+    if (invalid.rows.length) throw new Error("Restored knowledge scope relationships are invalid.");
+  }
   const scheduleColumns = new Set(actual.rows.filter((row) => row.table_name === "local_schedules").map((row) => row.column_name));
   const added = ["creation_request_id", "creation_request_hash", "deleted_at", "deletion_receipt_ciphertext"].filter((column) => scheduleColumns.has(column));
   if (added.length !== 0 && added.length !== 4) throw new Error("Restored schedule deletion schema is incomplete.");
@@ -159,6 +172,23 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
           try {
             const plaintext = decryptText(ciphertext, suffix ? `${contextBase}:${suffix}` : contextBase);
             if (format === "json") JSON.parse(plaintext);
+            if (descriptor.table === "knowledge_collections") knowledgeCollectionBodySchema.parse(JSON.parse(plaintext));
+            if (descriptor.table === "conversation_knowledge") {
+              const selection = knowledgeSelectionSchema.parse(JSON.parse(plaintext));
+              const head = await client.query<{ owner_id: string; conversation_owner: string }>(`select h.owner_id, c.owner_id as conversation_owner
+                from conversation_knowledge h join conversations c on c.id = h.conversation_id where h.conversation_id = $1`, [key[0]]);
+              const rows = await client.query<{ collection_id: string; grant_id: string; grant_revision: number; owner_id: string;
+                collection_owner: string; account_id: string; grant_owner: string; grant_collection: string; current_revision: number }>(
+                `select s.*, c.owner_id as collection_owner, c.account_id, g.owner_id as grant_owner, g.collection_id as grant_collection, g.revision as current_revision
+                 from conversation_knowledge_selections s join knowledge_collections c on c.id = s.collection_id join knowledge_grants g on g.id = s.grant_id
+                 where s.conversation_id = $1 limit 4`, [key[0]]);
+              const owner = head.rows[0]?.owner_id;
+              if (!owner || owner !== head.rows[0]?.conversation_owner || rows.rows.length !== selection.scopes.length
+                || selection.scopes.some((scope) => scope.ownerId !== owner || !rows.rows.some((row) => row.collection_id === scope.collectionId
+                  && row.grant_id === scope.grantId && row.grant_revision === scope.grantRevision && row.owner_id === owner
+                  && row.collection_owner === owner && row.grant_owner === owner && row.account_id === scope.accountId
+                  && row.grant_collection === scope.collectionId && row.current_revision >= scope.grantRevision))) throw new Error("Invalid knowledge selection metadata.");
+            }
             if (descriptor.table === "run_deletions") decodeRunDeletion({ id: key[0]!, conversationId: row.conversationId!,
               ownerId: row.ownerId!, intentKeyHash: row.intentKeyHash!, deletedAt: new Date(row.deletedAt!), auditCiphertext: ciphertext });
             if (descriptor.table === "private_branch_deletions") decodePrivateBranchDeletion({ id: key[0]!, conversationId: row.conversationId!,

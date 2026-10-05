@@ -1,6 +1,24 @@
 # Current state
 
-Updated: 5 October 2026 (DA-119 trial agreement and evaluation preparation)
+Updated: 5 October 2026 (DA-120 scoped knowledge foundation)
+
+## Current increment — DA-120 backend foundation complete
+
+Owned local collections start with revoked grants. Explicit revisioned grants and
+encrypted many-to-many conversation selections fence stale access; normalized read
+contracts and an offline fake gateway enforce exact owner/account/notebook/version
+scope. Revocation/regrant cannot revive old selections. Conversation JSON/Markdown
+exports retain current topic/scope availability, independent collection export is
+owner-scoped, run retention preserves library state, and empty-conversation deletion
+blocks retained selections. Backup auditing authenticates the complete schema era
+and selection relationships. [Contract](KNOWLEDGE_SCOPE.md), [verification](DA120_ACCEPTANCE.md).
+
+310 unit tests, 220 isolated PostgreSQL cases, all 42 browser cases, typecheck, lint,
+production build, dependency audit, seven lint compatibility checks and a populated
+custom archive restore pass. Migration 0050 was applied only in disposable databases.
+No owner migration, library UI, source ingestion, external adapter or model retrieval.
+DA-119 independent human labels/model-quality gates remain open; next technical task
+is DA-121 local source foundation under the accepted trial limits.
 
 ## Current increment — DA-119 partial; trial contract accepted
 
@@ -18,9 +36,9 @@ paid call or owner deletion. [Verification](DA119_ACCEPTANCE.md),
 [frozen protocol](evaluation/KNOWLEDGE_EVALUATION.md), [ADR-0034](adr/0034-local-knowledge-trial-contract.md).
 
 DA-119 remains open for independent source/format labels, adjudication and coordinator
-coverage/independence attestation. Next technical preparation is DA-120 contracts,
-grants and conversation bindings with fake adapters; those open acceptance dependencies
-remain visible. Knowledge ingestion and empirical rollout are not enabled.
+coverage/independence attestation. DA-120 technical contracts/grants/bindings are now
+verified above; those DA-119 acceptance dependencies remain visible. Knowledge ingestion
+and empirical rollout are not enabled.
 
 ## Reconciled application and planning baseline
 
@@ -39,7 +57,7 @@ was restored. No primary database migration, paid call or real owner deletion ra
 
 ## Proposed knowledge sources and NVIDIA — documentation only
 
-[Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable notebook-scoped sources, multi-notebook conversations, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-119 trial agreement/preparation is recorded above; full DA-119 acceptance and DA-120–DA-126 remain open. No connector or runtime ingestion is enabled. Existing attachment/MCP behavior is unchanged. DA-108 is complete in the integrated application chain through DA-118.
+[Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable notebook-scoped sources, multi-notebook conversations, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-119 trial agreement/preparation is recorded above; full DA-119 acceptance and DA-121–DA-126 remain open; DA-120 backend foundation is verified. No connector or runtime ingestion is enabled. Existing attachment/MCP behavior is unchanged. DA-108 is complete in the integrated application chain through DA-118.
 
 Owner refinement: prioritize security, quality and maintainability. The revised proposal excludes unofficial NotebookLM bridges and Notion, defers official NotebookLM pending stable required APIs, and proposes a bounded local-first library with optional admitted adapters. Open Notebook is not certified safe by this review. [Seven synthetic worked scenarios](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md) specify expected evidence, conflict, isolation, OCR, publication, recovery and cost behavior; they are documentation examples, not executed tests or live quality results.
 

@@ -1,5 +1,7 @@
 # Product
 
+DA-120 adds the backend [scoped knowledge foundation](KNOWLEDGE_SCOPE.md): owned local collections, explicit revisioned grants and encrypted conversation selections. Creation grants no retrieval; revoke invalidates old selections. Current topic/scope metadata remains inspectable in JSON/Markdown exports. Library UI, ingestion and provider retrieval are future tasks; DA-119 human quality acceptance remains open.
+
 **DA-119 preparation:** the owner accepted a local-first knowledge trial contract with
 explicitly selected files and bounded evidence preparation; folder/ZIP import is deferred.
 Offline source/format fixtures and blank independent review forms are prepared. No

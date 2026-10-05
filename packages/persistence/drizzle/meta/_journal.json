@@ -351,6 +351,13 @@
       "when": 1791035055931,
       "tag": "0049_amazing_captain_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1791206543168,
+      "tag": "0050_knowledge_scope",
+      "breakpoints": true
     }
   ]
 }

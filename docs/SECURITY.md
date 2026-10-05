@@ -1,5 +1,7 @@
 # Security
 
+DA-120 denies empty/unselected knowledge scopes and matches exact owner/account/collection/grant/revision before and after adapter reads. Persistence accepts only the derived local owner/account. Titles/topics use context-bound AES-GCM; relationships/grant state remain metadata. Revocation/regrant never revives old selections. No external adapter or model input is enabled. Exporting retained topic/scope metadata does not authorize retrieval. Conversation deletion blocks retained selections and registers exact schema/FK/trigger protections. Backup auditing verifies authenticated payloads and ownership/relationships. [Contract](KNOWLEDGE_SCOPE.md).
+
 DA-119 adds offline integrity checks and only public historical/synthetic fixtures.
 Human review forms stay under ignored `.local/`; prepare refuses existing destinations.
 No credentials, provider requests, database calls or runtime permissions are introduced.

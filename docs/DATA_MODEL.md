@@ -1,5 +1,7 @@
 # Data model
 
+DA-120 migration 0050 adds `knowledge_collections` (owned account/encrypted title), `knowledge_grants` (one per collection, active/revoked state/increasing revision), `conversation_knowledge` (owned UUID revision/encrypted topic and scopes) and `conversation_knowledge_selections` (many-to-many collection/grant/revision joins). Foreign keys use NO ACTION; run retention preserves these independent records. Explicit clearing removes current selection settings only. [Contract](KNOWLEDGE_SCOPE.md).
+
 DA-113 widens the encrypted private request's `maxOutputTokens` validation from the
 legacy literal 1024 to integers 128–1024. Each stored receipt retains the approved cap;
 legacy requests remain readable. No SQL schema or migration change. [Contract](PRIVATE_DELIVERY_SETTINGS.md).

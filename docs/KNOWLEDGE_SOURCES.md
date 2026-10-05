@@ -4,9 +4,10 @@ DA-119 update: the owner accepted the [frozen trial contract](evaluation/KNOWLED
 and selected individual files only. [Exact-plan approval](evaluation/KNOWLEDGE_CONTRACT_APPROVAL.json)
 ratifies trial scope/limits, not independent labels or measured model quality.
 [Technical preparation and open gates](DA119_ACCEPTANCE.md) supersede earlier pending
-agreement statements below. The broader runtime program remains unimplemented.
+agreement statements below. DA-120 now implements the [scoped backend foundation](KNOWLEDGE_SCOPE.md).
+Source ingestion and evidence packets remain future work.
 
-Status: runtime architecture proposal, 5 October 2026. DA-119 trial contract is owner-accepted; independent gold and runtime implementation acceptance are pending. Tasks DA-119–DA-126 are open. DA-108 is complete in the integrated application history through DA-118. The original planning IDs DA-109–DA-116 are superseded by DA-119–DA-126. This proposal does not enable a connector, change attachment limits, upload files or authorize model calls.
+Status: 5 October 2026. DA-119 trial contract is owner-accepted; independent gold/model acceptance is pending. DA-120 backend scope/grants/bindings are implemented and verified; DA-121–DA-126 remain open. DA-108 is complete in the integrated application history through DA-118. Original planning IDs DA-109–DA-116 are superseded by DA-119–DA-126. No connector, ingestion or model retrieval is enabled.
 
 Owner refinement, 5 October: security, output quality and maintainability take precedence over NotebookLM compatibility. This revision supersedes the earlier recommendation to experiment with cookie-based bridges. The policy is requested; the detailed implementation remains proposed.
 
