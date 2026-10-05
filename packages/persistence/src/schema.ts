@@ -689,6 +689,23 @@ export const conversationKnowledgeSelections = pgTable("conversation_knowledge_s
 }, (table) => [primaryKey({ columns: [table.conversationId, table.collectionId] }),
   check("conversation_knowledge_selections_revision_positive", sql`${table.grantRevision} > 0`)]);
 
+export const knowledgeSources = pgTable("knowledge_sources", {
+  id: uuid("id").primaryKey(), ownerId: text("owner_id").notNull(),
+  collectionId: uuid("collection_id").notNull().references(() => knowledgeCollections.id),
+  activeVersionId: uuid("active_version_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("knowledge_sources_collection_idx").on(table.ownerId, table.collectionId)]);
+export const knowledgeSourceVersions = pgTable("knowledge_source_versions", {
+  id: uuid("id").primaryKey(), sourceId: uuid("source_id").notNull().references(() => knowledgeSources.id), ownerId: text("owner_id").notNull(),
+  originalHash: text("original_hash").notNull(), parserVersion: text("parser_version").notNull(), status: text("status").notNull(),
+  originalBytes: integer("original_bytes").notNull(), textBytes: integer("text_bytes").notNull(),
+  originalCiphertext: text("original_ciphertext").notNull(), extractionCiphertext: text("extraction_ciphertext").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("knowledge_source_versions_bytes_parser_idx").on(table.sourceId, table.originalHash, table.parserVersion),
+  check("knowledge_source_versions_original_limit", sql`${table.originalBytes} between 1 and 5242880`),
+  check("knowledge_source_versions_text_limit", sql`${table.textBytes} between 0 and 256000`),
+  check("knowledge_source_versions_status_valid", sql`${table.status} in ('complete', 'extraction_unverified', 'failed')`)]);
+
 export const runEvents = pgTable(
   "run_events",
   {

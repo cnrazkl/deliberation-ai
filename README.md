@@ -1,10 +1,15 @@
 # DeliberationAI
 
+DA-120/121 provide the scoped local knowledge backend: encrypted immutable selected
+file versions, page-linked quotes and bounded lexical reads. Library UI and frozen
+council routing remain open. `pnpm knowledge:extraction:verify` checks mechanical
+format snapshots. [Contract](docs/LOCAL_KNOWLEDGE_SOURCES.md), [verification](docs/DA121_ACCEPTANCE.md).
+
 DA-119 has an owner-accepted local knowledge trial contract and reproducible offline
 evaluation preparation. `pnpm knowledge:status` verifies the frozen cohort, format
 fixtures and matching approval; `pnpm knowledge:prepare` creates new ignored human
-review forms without model/database calls. Independent labels and runtime knowledge
-features remain open. [Protocol and commands](docs/evaluation/KNOWLEDGE_EVALUATION.md),
+review forms without model/database calls. Independent labels and council knowledge
+integration remain open. [Protocol and commands](docs/evaluation/KNOWLEDGE_EVALUATION.md),
 [verification](docs/DA119_ACCEPTANCE.md).
 
 DeliberationAI is a provider-independent multi-model council that preserves disagreements and provenance instead of treating agreement as truth.

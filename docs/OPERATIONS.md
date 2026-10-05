@@ -1,5 +1,15 @@
 # Local operations
 
+DA-121 migration 0051 has been tested only in disposable databases; owner deployment
+still requires a separately authorized backed-up migration of 0050/0051. Verify frozen
+parser output with `pnpm knowledge:extraction:verify`. Generated-only restore/resource
+check: `node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/verify-knowledge-sources-restore.ts`.
+It creates/restores/removes two generated databases and measures bounded local scans;
+it never restores over owner data. Keep the separately managed encryption key and
+review parser upgrades explicitly. No service/GPU is required; clean setup/monthly
+maintenance time is unmeasured. [Operating limits](LOCAL_KNOWLEDGE_SOURCES.md),
+[measurements](DA121_ACCEPTANCE.md).
+
 DA-120 migration 0050 was exercised in disposable databases only. The owner's DB needs a separately authorized, backed-up migration before using the new backend APIs. Generated-only restore verification: `node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/verify-knowledge-scope-restore.ts`. It verifies identical ciphertext/selection/revocation after custom-format restore in two disposable databases, then removes its generated databases/archive. Run retention preserves independent collection/grant/selection records. [Contract](KNOWLEDGE_SCOPE.md).
 
 ## DA-110 — separate interactive runtime from browser tests

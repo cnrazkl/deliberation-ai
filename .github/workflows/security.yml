@@ -28,6 +28,10 @@ jobs:
           pnpm knowledge:status
       - name: Verify scoped knowledge boundary
         run: pnpm exec vitest run packages/application/src/knowledge.test.ts apps/web/src/lib/markdown-export.test.ts
+      - name: Verify local source integrity and frozen extraction
+        run: |
+          pnpm exec vitest run packages/domain/src/knowledge.test.ts packages/retrieval/src/knowledge-files.test.ts
+          pnpm knowledge:extraction:verify
       - name: Check lint dependency compatibility
         run: pnpm test:lint-dependencies
       - name: Scan Git history for secrets

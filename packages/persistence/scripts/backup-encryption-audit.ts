@@ -1,5 +1,6 @@
 import type { Client } from "pg";
 import { knowledgeCollectionBodySchema, knowledgeSelectionSchema } from "@deliberation-ai/contracts";
+import { validateKnowledgeExtraction, validateKnowledgeOriginal, type KnowledgeVersionMetadata } from "@deliberation-ai/domain";
 import { decryptText } from "../src/crypto";
 import { decodePrivateBranchBody } from "../src/private-branches";
 import { decodePrivateBranchDeletion } from "../src/private-branch-deletion";
@@ -16,11 +17,17 @@ interface EncryptedTable {
   fields: readonly EncryptedField[];
   optional?: boolean;
   metadata?: readonly (readonly [column: string, alias: string])[];
+  pageSize?: number;
 }
 
 // Keep this inventory exhaustive. A new ciphertext column must have an explicit
 // authenticated context here before another archive can be published.
 const encryptedTables: readonly EncryptedTable[] = [
+  { table: "knowledge_source_versions", keys: ["id"], contextPrefix: "knowledge-version", optional: true, pageSize: 1,
+    fields: [["original_ciphertext", "original", "json"], ["extraction_ciphertext", "extraction", "json"]],
+    metadata: [["source_id", "sourceId"], ["owner_id", "ownerId"], ["original_hash", "originalHash"], ["parser_version", "parserVersion"],
+      ["original_bytes::text", "originalBytes"], ["text_bytes::text", "textBytes"], ["status", "status"],
+      ["(select collection_id::text from public.knowledge_sources where id = knowledge_source_versions.source_id)", "collectionId"]] },
   { table: "knowledge_collections", keys: ["id"], contextPrefix: "knowledge-collection", fields: [["body_ciphertext", "body", "json"]], optional: true },
   { table: "conversation_knowledge", keys: ["conversation_id", "revision"], contextPrefix: "conversation-knowledge", fields: [["selection_ciphertext", "selection", "json"]], optional: true },
   { table: "run_deletions", keys: ["id"], contextPrefix: "run-deletion", fields: [["audit_ciphertext", "audit", "json"]], optional: true,
@@ -110,6 +117,16 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
   const knowledgeTables = ["knowledge_collections", "knowledge_grants", "conversation_knowledge", "conversation_knowledge_selections"];
   const knowledgeCount = knowledgeTables.filter((table) => presentTables.has(table)).length;
   if (knowledgeCount !== 0 && knowledgeCount !== knowledgeTables.length) throw new Error("Restored knowledge scope schema is incomplete.");
+  const sourceCount = ["knowledge_sources", "knowledge_source_versions"].filter((table) => presentTables.has(table)).length;
+  if (sourceCount !== 0 && (sourceCount !== 2 || knowledgeCount !== 4)) throw new Error("Restored knowledge source schema is incomplete.");
+  if (sourceCount === 2) {
+    const invalid = await client.query(`select 1 from knowledge_sources s left join knowledge_collections c on c.id = s.collection_id
+      left join knowledge_source_versions v on v.id = s.active_version_id and v.source_id = s.id
+      where c.id is null or v.id is null or s.owner_id <> c.owner_id or s.owner_id <> v.owner_id or c.account_id <> 'local'
+      union all select 1 from knowledge_source_versions v left join knowledge_sources s on s.id = v.source_id
+      where s.id is null or s.owner_id <> v.owner_id limit 1`);
+    if (invalid.rows.length) throw new Error("Restored knowledge source relationships are invalid.");
+  }
   if (knowledgeCount === knowledgeTables.length) {
     const invalid = await client.query(`select 1 from knowledge_grants g left join knowledge_collections c on c.id = g.collection_id
       where c.id is null or c.owner_id <> g.owner_id or c.account_id <> 'local' or g.revision < 1 or g.status not in ('active', 'revoked')
@@ -131,6 +148,7 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
 
   const audit: EncryptionAudit = { rows: 0, decryptedValues: 0, populatedTables: 0 };
   for (const descriptor of supportedTables) {
+    const pageSize = descriptor.pageSize ?? 100;
     let lastKey: string[] | undefined;
     let tableRows = 0;
     for (;;) {
@@ -139,7 +157,7 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
         ...(descriptor.metadata ?? []).map(([column, alias]) => `${column} AS "${alias}"`)];
       const where = lastKey ? `WHERE (${keys.join(", ")}) > (${keys.map((_, index) => `$${index + 1}`).join(", ")})` : "";
       const page = await client.query<Record<string, string | null>>(
-        `SELECT ${columns.join(", ")} FROM public.${descriptor.table} ${where} ORDER BY ${keys.join(", ")} LIMIT 100`,
+        `SELECT ${columns.join(", ")} FROM public.${descriptor.table} ${where} ORDER BY ${keys.join(", ")} LIMIT ${pageSize}`,
         lastKey,
       );
       if (page.rows.length === 0) break;
@@ -172,6 +190,16 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
           try {
             const plaintext = decryptText(ciphertext, suffix ? `${contextBase}:${suffix}` : contextBase);
             if (format === "json") JSON.parse(plaintext);
+            if (descriptor.table === "knowledge_source_versions") {
+              const metadata: KnowledgeVersionMetadata = { id: key[0]!, sourceId: row.sourceId!, collectionId: row.collectionId!, ownerId: row.ownerId!,
+                originalHash: row.originalHash!, parserVersion: row.parserVersion!, originalBytes: Number(row.originalBytes), textBytes: Number(row.textBytes), status: row.status! };
+              if (column === "original_ciphertext") validateKnowledgeOriginal(JSON.parse(plaintext), metadata);
+              else {
+                const body = validateKnowledgeExtraction(JSON.parse(plaintext), metadata);
+                const original = validateKnowledgeOriginal(JSON.parse(decryptText(row.original_ciphertext!, `${contextBase}:original`)), metadata);
+                if (body.name !== original.name || body.mediaType !== original.mediaType) throw new Error("Knowledge original and extraction disagree.");
+              }
+            }
             if (descriptor.table === "knowledge_collections") knowledgeCollectionBodySchema.parse(JSON.parse(plaintext));
             if (descriptor.table === "conversation_knowledge") {
               const selection = knowledgeSelectionSchema.parse(JSON.parse(plaintext));
@@ -207,7 +235,7 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
         audit.rows += 1;
       }
       lastKey = keys.map((_, index) => page.rows.at(-1)?.[`key_${index}`] ?? "");
-      if (page.rows.length < 100) break;
+      if (page.rows.length < pageSize) break;
     }
     if (tableRows > 0) audit.populatedTables += 1;
   }

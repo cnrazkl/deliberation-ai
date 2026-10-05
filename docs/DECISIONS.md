@@ -1,5 +1,9 @@
 # Decisions
 
+DA-121 accepts encrypted immutable local source versions, page/hash-bound old quotes,
+bounded transient lexical reads and explicit immutable transient-failure retries.
+No external service is required or admitted. [ADR-0036](adr/0036-local-knowledge-source-versions.md).
+
 DA-119 accepts a local-first trial contract and individual-file-only initial import,
 with exact-plan owner approval and independent human/model acceptance still open.
 The offline preparation does not enable ingestion or admit a connector.

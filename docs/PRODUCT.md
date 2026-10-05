@@ -1,11 +1,17 @@
 # Product
 
-DA-120 adds the backend [scoped knowledge foundation](KNOWLEDGE_SCOPE.md): owned local collections, explicit revisioned grants and encrypted conversation selections. Creation grants no retrieval; revoke invalidates old selections. Current topic/scope metadata remains inspectable in JSON/Markdown exports. Library UI, ingestion and provider retrieval are future tasks; DA-119 human quality acceptance remains open.
+DA-121 adds a bounded local source backend: selected TXT/Markdown/PDF/PNG/JPEG bytes,
+encrypted immutable originals/extraction, page-linked manual quotes and inspectable
+lexical search. Failed/unverified files retain status and cannot supply evidence.
+Old quotes survive source updates; revocation blocks reads. Library UI and council
+packet routing remain DA-122 work. [Contract](LOCAL_KNOWLEDGE_SOURCES.md).
+
+DA-120 adds the backend [scoped knowledge foundation](KNOWLEDGE_SCOPE.md): owned local collections, explicit revisioned grants and encrypted conversation selections. Creation grants no retrieval; revoke invalidates old selections. Current topic/scope metadata remains inspectable in JSON/Markdown exports. Library UI and provider retrieval are future tasks; DA-119 human quality acceptance remains open.
 
 **DA-119 preparation:** the owner accepted a local-first knowledge trial contract with
 explicitly selected files and bounded evidence preparation; folder/ZIP import is deferred.
 Offline source/format fixtures and blank independent review forms are prepared. No
-knowledge collection, extraction/retrieval UI or connector is implemented; independent
+extraction/retrieval UI or connector was implemented in that increment; independent
 labels and real quality measurements remain open. [Scope](DA119_ACCEPTANCE.md).
 
 **DA-118:** saved conversation reports offer council operation usage beside private usage,

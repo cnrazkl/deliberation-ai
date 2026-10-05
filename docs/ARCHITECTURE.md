@@ -1,6 +1,14 @@
 # Architecture
 
-DA-120 [scope foundation](KNOWLEDGE_SCOPE.md) places normalized schemas in contracts, the read-only port/policy gateway/offline fake in application and owned encrypted collections/grants/selections in persistence. Current grant/selection checks fence adapter reads before and after execution. DA-121 owns storage/extraction and DA-122 owns frozen packets/council dispatch. [ADR-0035](adr/0035-scoped-knowledge-foundation.md).
+DA-121 implements [local source versions](LOCAL_KNOWLEDGE_SOURCES.md): contracts
+define encrypted body schemas; domain validates identity/hash/page spans and exact
+quote locators; retrieval validates selected files and bounds the disposable PDF
+parser; persistence owns versioned encryption, intake atomicity and scoped transient
+lexical scans. The normalized application port has a local read adapter. No persistent
+plaintext index or provider SDK dependency in domain is added. HTTP/UI and frozen
+council packets remain separate. [ADR-0036](adr/0036-local-knowledge-source-versions.md).
+
+DA-120 [scope foundation](KNOWLEDGE_SCOPE.md) places normalized schemas in contracts, the read-only port/policy gateway/offline fake in application and owned encrypted collections/grants/selections in persistence. Current grant/selection checks fence adapter reads before and after execution. DA-121 storage/extraction is implemented above; DA-122 owns frozen packets/council dispatch. [ADR-0035](adr/0035-scoped-knowledge-foundation.md).
 
 ## DA-119 offline knowledge evaluation preparation
 
@@ -86,9 +94,9 @@ provider mutation. [Contract](MARKDOWN_EXPORTS.md).
 
 Persistence owns request identity/hash, exact-row review and encrypted deletion receipts. Owner advisory and table locks serialize save/delete. Active-name uniqueness permits fresh name reuse while owner/request uniqueness preserves deleted intent. The BFF exposes bounded same-origin preview/confirmation; UI retains retry identity and fences review responses. Run/schedule snapshots and provider/queue boundaries remain independent. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md), [ADR-0033](adr/0033-reviewed-council-template-deletion.md).
 
-## Proposed knowledge boundary (not implemented)
+## Remaining proposed knowledge boundary
 
-[Scoped knowledge sources](KNOWLEDGE_SOURCES.md) proposes a local-first `KnowledgeSource` boundary separate from `TextProvider`, reusing encrypted persistence/extraction and adding bounded source retrieval. Optional documented adapters must pass admission gates; cookie/private-API bridges are excluded and no notebook vendor is required. Exact grants and immutable excerpts precede enqueue; models cannot dispatch tools/writes. Many-to-many bindings, reviewed saves, portable evidence and rebuildable indexes preserve independence from vendors. MCP is optional. NVIDIA reuses the compatible adapter. DA-119–DA-126 remain open; existing boundaries below describe implemented behavior.
+[Scoped knowledge sources](KNOWLEDGE_SOURCES.md) proposes a local-first `KnowledgeSource` boundary separate from `TextProvider`, reusing encrypted persistence/extraction and adding bounded source retrieval. Optional documented adapters must pass admission gates; cookie/private-API bridges are excluded and no notebook vendor is required. Exact grants and immutable excerpts precede enqueue; models cannot dispatch tools/writes. Many-to-many bindings, reviewed saves, portable evidence and rebuildable indexes preserve independence from vendors. MCP is optional. NVIDIA reuses the compatible adapter. DA-120/121 backend foundations are verified; DA-119 human acceptance and DA-122–126 remain open; existing boundaries below describe implemented behavior.
 
 **DA-104:** A separate persistence boundary inspects one owned preflight row, fingerprints exact database timestamps and scrubs it under existing owner serialization plus a draft-table lock. Existing JSON metadata holds the strict receipt; create/start/cancel and enqueue/rerun guards preserve tombstone ordering. No provider or queue work is dispatched by review/deletion. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

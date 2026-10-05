@@ -1,12 +1,20 @@
 # Data model
 
+DA-121 migration 0051 adds `knowledge_sources` (owned collection/active-version heads)
+and `knowledge_source_versions` (immutable original/extraction ciphertext, hashes,
+parser/status and bounded counters). NO ACTION source/collection foreign keys keep
+versions independent of runs. SQL triggers prohibit version updates and validate
+active-version/source/owner relationships at transaction commit. Quote locators bind
+exact retained versions without an excerpt table. Both ciphertext fields and source
+relationships join the exhaustive backup audit. [Contract](LOCAL_KNOWLEDGE_SOURCES.md).
+
 DA-120 migration 0050 adds `knowledge_collections` (owned account/encrypted title), `knowledge_grants` (one per collection, active/revoked state/increasing revision), `conversation_knowledge` (owned UUID revision/encrypted topic and scopes) and `conversation_knowledge_selections` (many-to-many collection/grant/revision joins). Foreign keys use NO ACTION; run retention preserves these independent records. Explicit clearing removes current selection settings only. [Contract](KNOWLEDGE_SCOPE.md).
 
 DA-113 widens the encrypted private request's `maxOutputTokens` validation from the
 legacy literal 1024 to integers 128–1024. Each stored receipt retains the approved cap;
 legacy requests remain readable. No SQL schema or migration change. [Contract](PRIVATE_DELIVERY_SETTINGS.md).
 
-**Proposed only, DA-120–124:** [Knowledge aggregates](KNOWLEDGE_SOURCES.md#proposed-persistence-no-migration-in-this-change) include local collections/grants, conversation bindings, encrypted original/extracted source versions with page/parser provenance, context packets, candidates and optional publication receipts. Remote mappings are optional; canonical evidence is portable and indexes rebuildable. Link existing review states and extend backup/retention/export inventories. No migration is introduced here.
+**Remaining proposed aggregates, DA-122–124:** [Knowledge aggregates](KNOWLEDGE_SOURCES.md#proposed-persistence-no-migration-in-this-change) include local collections/grants, conversation bindings, encrypted original/extracted source versions with page/parser provenance, context packets, candidates and optional publication receipts. Remote mappings are optional; canonical evidence is portable and indexes rebuildable. Link existing review states and extend backup/retention/export inventories. Source/selection foundations are recorded above; packets/candidates/publication remain proposed.
 
 **DA-104:** The existing preflight_drafts row becomes a cancelled tombstone after reviewed deletion. question_ciphertext and request_ciphertext are null; questions stores preflight-draft-deletion-v1 receipt metadata instead of missing-context-v1 clarification metadata. Identity, original key/hash/timestamps and nullable run link remain. Normal reads hide tombstones, receipt reads validate the strict shape, and backups validate both null payloads. No SQL migration or new ciphertext column. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

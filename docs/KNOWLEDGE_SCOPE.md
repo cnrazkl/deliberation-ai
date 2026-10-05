@@ -1,5 +1,9 @@
 # DA-120: scoped knowledge foundation
 
+DA-121 now adds [source versions and local reads](LOCAL_KNOWLEDGE_SOURCES.md).
+The ingestion-absence statements below describe the original DA-120 increment;
+source export remains a separate explicit, currently authorized operation.
+
 Implemented backend foundation, 5 October 2026. The owner authorized this next
 technical increment after accepting the DA-119 trial agreement. Independent human
 gold/model-quality acceptance remain open. No ingestion, council retrieval, external

@@ -41,7 +41,7 @@ export async function exportKnowledgeCollection(collectionId: string) {
       scope: "Collection metadata and current grant only; source storage is not implemented in DA-120." };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
-async function authorizeInSnapshot(tx: ConversationTransaction, scope: KnowledgeScope) {
+export async function authorizeKnowledgeScopeInSnapshot(tx: ConversationTransaction, scope: KnowledgeScope) {
   if (!knowledgeScopeSchema.safeParse(scope).success || scope.ownerId !== LOCAL_OWNER_ID || scope.accountId !== "local") return false;
   const [row] = await tx.select({ id: knowledgeGrants.id }).from(knowledgeGrants).innerJoin(knowledgeCollections,
     and(eq(knowledgeCollections.id, knowledgeGrants.collectionId), eq(knowledgeCollections.ownerId, LOCAL_OWNER_ID), eq(knowledgeCollections.accountId, scope.accountId)))
@@ -50,7 +50,7 @@ async function authorizeInSnapshot(tx: ConversationTransaction, scope: Knowledge
   return !!row;
 }
 export async function authorizeKnowledgeScope(scope: KnowledgeScope) {
-  return getDatabase().transaction((tx) => authorizeInSnapshot(tx, scope), { isolationLevel: "repeatable read", accessMode: "read only" });
+  return getDatabase().transaction((tx) => authorizeKnowledgeScopeInSnapshot(tx, scope), { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 export async function changeKnowledgeGrant(collectionId: string, expectedRevision: number, status: "active" | "revoked"): Promise<KnowledgeScope> {
   if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 1 || expectedRevision >= 2_147_483_647
@@ -103,7 +103,7 @@ export async function setConversationKnowledge(conversationId: string, expectedR
     await lock(tx);
     const current = await exportConversationKnowledgeInSnapshot(tx, conversationId);
     if ((current?.revision ?? null) !== expectedRevision) throw new KnowledgeSelectionConflictError();
-    if (selection) for (const scope of selection.scopes) if (!await authorizeInSnapshot(tx, scope)) throw new KnowledgeAccessError();
+    if (selection) for (const scope of selection.scopes) if (!await authorizeKnowledgeScopeInSnapshot(tx, scope)) throw new KnowledgeAccessError();
     await tx.delete(conversationKnowledgeSelections).where(and(eq(conversationKnowledgeSelections.conversationId, conversationId), eq(conversationKnowledgeSelections.ownerId, LOCAL_OWNER_ID)));
     await tx.delete(conversationKnowledge).where(and(eq(conversationKnowledge.conversationId, conversationId), eq(conversationKnowledge.ownerId, LOCAL_OWNER_ID)));
     if (!selection) return null;

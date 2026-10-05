@@ -1,0 +1,71 @@
+{
+  "version": "knowledge-format-extraction-v1",
+  "scope": "Mechanical extraction only; independent format/citation quality labels remain pending.",
+  "fixtures": [
+    {
+      "name": "selectable-sun.pdf",
+      "mediaType": "application/pdf",
+      "originalHash": "885caa27b302189cd1c05b14784006c6a823ca1373b5b0ed9f1e47cc80425cce",
+      "parserVersion": "knowledge-pdf-v1/pdfjs-6.3.289",
+      "status": "complete",
+      "reason": null,
+      "text": "Frozen source fixture - Sun\nMeasuring a “day” on the Sun is complicated. The Sun is made of super-hot,\nelectrically charged gas called plasma. This plasma rotates at different\nspeeds on different parts of the Sun. At its equator, the Sun completes one\nrotation in 25 Earth days. At its poles, the Sun rotates once on its axis\nevery 36 Earth days.\nThe part of the Sun we see from Earth – the part we call the surface – is the\nphotosphere. The Sun doesn’t actually have a solid surface because it’s a\nball of plasma.\nHistorical snapshot; derivative layout, not a live webpage or an independent source.\nPage 1 - source identity: sun; same family/split as the text snapshot.",
+      "pages": [
+        {
+          "page": 1,
+          "start": 0,
+          "end": 670,
+          "textHash": "f8a16fbc59e1171f3ca2ed296e0e2312d93e1ac195208a2da7e4dc7415c9f034"
+        }
+      ],
+      "textHash": "f8a16fbc59e1171f3ca2ed296e0e2312d93e1ac195208a2da7e4dc7415c9f034"
+    },
+    {
+      "name": "support-table.pdf",
+      "mediaType": "application/pdf",
+      "originalHash": "0a239c96c5343187d2c531b773ca4f1c7f2d79d2088255e31ba77a511b8eedf0",
+      "parserVersion": "knowledge-pdf-v1/pdfjs-6.3.289",
+      "status": "complete",
+      "reason": null,
+      "text": "Sentetik destek hedefleri - kaynak tablosu\nBu tablo gerçek bir kurum politikası değildir. Bağımsız etiketleme bekliyor.\nSürüm Belge durumu İlk yanıt hedefi\nv1 Yürürlükteki sentetik örnek 4 saat\ntaslak Onaylanmamış öneri 8 saat\nv2 Sonraki sentetik sürüm 6 saat\nHiçbir satır kesin çözüm süresi veya SLA cezası belirtmez.\nPage 1 - synthetic family: support-targets; development-only fixture.",
+      "pages": [
+        {
+          "page": 1,
+          "start": 0,
+          "end": 388,
+          "textHash": "8e7d3c1c25955d28b82c90641f7afe6db917ee9aacf8377fff85f3da9b546eb9"
+        }
+      ],
+      "textHash": "8e7d3c1c25955d28b82c90641f7afe6db917ee9aacf8377fff85f3da9b546eb9"
+    },
+    {
+      "name": "scanned-support.pdf",
+      "mediaType": "application/pdf",
+      "originalHash": "b6332163c6fc10874ac8cc04c03ef9f5f73bd717722ccd514078d180cabf58a2",
+      "parserVersion": "knowledge-pdf-v1/pdfjs-6.3.289",
+      "status": "extraction_unverified",
+      "reason": "missing_text_pages",
+      "text": "",
+      "pages": [
+        {
+          "page": 1,
+          "start": 0,
+          "end": 0,
+          "textHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ],
+      "textHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "ambiguous-support.png",
+      "mediaType": "image/png",
+      "originalHash": "8bef07233bdefd6bbe98d81c55c79643440018d53f377472b0105e2dbed6a598",
+      "parserVersion": "knowledge-image-original-v1",
+      "status": "extraction_unverified",
+      "reason": "image_unverified",
+      "text": "",
+      "pages": [],
+      "textHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

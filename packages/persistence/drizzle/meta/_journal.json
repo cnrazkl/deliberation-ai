@@ -358,6 +358,13 @@
       "when": 1791206543168,
       "tag": "0050_knowledge_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1791228190890,
+      "tag": "0051_local_knowledge_sources",
+      "breakpoints": true
     }
   ]
 }

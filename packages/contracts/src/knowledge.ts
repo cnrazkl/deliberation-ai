@@ -23,3 +23,20 @@ export const knowledgeExcerptSchema = z.object({
   textHash: digest,
 }).strict().refine((value) => value.end - value.start === value.text.length);
 export type KnowledgeExcerpt = z.infer<typeof knowledgeExcerptSchema>;
+
+export const knowledgeFileMediaSchema = z.enum(["text/plain", "text/markdown", "application/pdf", "image/png", "image/jpeg"]);
+const identity = { ownerId: z.string().min(1).max(100), collectionId: knowledgeObjectIdSchema,
+  sourceId: knowledgeObjectIdSchema, versionId: knowledgeObjectIdSchema };
+export const knowledgeVersionOriginalSchema = z.object({ ...identity, name: z.string().min(1).max(200), mediaType: knowledgeFileMediaSchema,
+  originalHash: digest, dataBase64: z.string().min(1).max(7 * 1_048_576) }).strict();
+export const knowledgeVersionExtractionSchema = z.object({ ...identity, name: z.string().min(1).max(200), mediaType: knowledgeFileMediaSchema,
+  originalHash: digest, parserVersion: z.string().min(1).max(100),
+  deadlineMs: z.number().int().min(1).max(10_000).optional(),
+  status: z.enum(["complete", "extraction_unverified", "failed"]),
+  reason: z.enum(["missing_text_pages", "image_unverified", "empty_text", "invalid_pdf", "active_content", "page_limit", "character_limit", "timeout", "parser_unavailable"]).nullable(),
+  text: z.string().max(64_000), textHash: digest,
+  pages: z.array(z.object({ page: z.number().int().min(1).max(100).nullable(), start: z.number().int().min(0).max(64_000),
+    end: z.number().int().min(0).max(64_000), textHash: digest }).strict()).max(100),
+}).strict();
+export type KnowledgeVersionOriginal = z.infer<typeof knowledgeVersionOriginalSchema>;
+export type KnowledgeVersionExtraction = z.infer<typeof knowledgeVersionExtractionSchema>;

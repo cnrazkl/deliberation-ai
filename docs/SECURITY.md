@@ -1,5 +1,14 @@
 # Security
 
+DA-121 stores originals/names and extraction/pages as separate AES-GCM payloads with
+version/payload-kind AAD. Current grants fence every source read/export and final
+intake publication; a revoked scope cannot read old quotes. Lexical search decrypts
+only bounded extraction in memory and persists no plaintext/embedding index. PDFs
+run in a time/output/heap-bounded child with application secrets omitted; this is not
+an OS sandbox. Images/scans/failures cannot provide usable excerpts. Explicit exports
+contain plaintext and do not grant access. No library HTTP route or remote adapter is
+enabled. [Contract and threat limits](LOCAL_KNOWLEDGE_SOURCES.md).
+
 DA-120 denies empty/unselected knowledge scopes and matches exact owner/account/collection/grant/revision before and after adapter reads. Persistence accepts only the derived local owner/account. Titles/topics use context-bound AES-GCM; relationships/grant state remain metadata. Revocation/regrant never revives old selections. No external adapter or model input is enabled. Exporting retained topic/scope metadata does not authorize retrieval. Conversation deletion blocks retained selections and registers exact schema/FK/trigger protections. Backup auditing verifies authenticated payloads and ownership/relationships. [Contract](KNOWLEDGE_SCOPE.md).
 
 DA-119 adds offline integrity checks and only public historical/synthetic fixtures.
@@ -40,7 +49,7 @@ retain existing export exclusions. [Contract](MARKDOWN_EXPORTS.md).
 
 DA-108 uses strict same-origin 4 KiB confirmations, bounded inspection and exact-state fingerprints. Schema/FK/trigger/check/index drift blocks mutation. Receipts use context-authenticated encryption and exhaustive restore auditing. Names/descriptions are cleared and encrypted members become empty. Creation identity/hash and member count remain as replay metadata; independent snapshots, exports, backups and storage copies remain. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md).
 
-**Proposed only, DA-120–126:** [Knowledge security](KNOWLEDGE_SOURCES.md#access-and-threat-model) enforces grants before calls and on sources, authenticated gateway access, revocation-aware caches and separate write consent. Cookie/private-API bridges are excluded; warning labels do not waive effective isolation. Require local encrypted originals/excerpts and a separately reviewed design for persisted search indexes; no implicit plaintext/embedding exception. Optional backends require auth and approved-data isolation, with empty grants denying all access. No connector or transport change is implemented here.
+**Remaining proposed work, DA-122–126:** [Knowledge security](KNOWLEDGE_SOURCES.md#access-and-threat-model) enforces grants before calls and on sources, authenticated gateway access, revocation-aware caches and separate write consent. Cookie/private-API bridges are excluded; warning labels do not waive effective isolation. Require local encrypted originals/excerpts and a separately reviewed design for persisted search indexes; no implicit plaintext/embedding exception. Optional backends require auth and approved-data isolation, with empty grants denying all access. No connector or transport change is implemented here.
 
 **DA-104:** Strict same-origin 4 KiB confirmations, schema/FK/trigger/unique-index checks, a 24 MiB inspection cap, exact-state fingerprints and owner/table serialization protect draft deletion. Ciphertexts are nulled, and original intent replay is denied. Receipts are plain content-free metadata; independent records, old backups and physical storage remain. Destructive acceptance uses generated fixtures only. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+export * from "./knowledge-files";
 import { lookup as dnsLookup } from "node:dns/promises";
 import { request as httpRequest, type RequestOptions } from "node:http";
 import { request as httpsRequest } from "node:https";
