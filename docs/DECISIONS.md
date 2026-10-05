@@ -1,5 +1,9 @@
 # Decisions
 
+## Proposed knowledge-service decision — 5 October 2026
+
+Owner-directed reliability policy: exclude brittle cookie/private-API notebook bridges; security, quality and maintainability outrank a vendor choice. Proposed implementation remains unbuilt: local-first reusable evidence behind a separate knowledge boundary, exact grants, frozen excerpts and reviewed publication. Notion is outside scope; official NotebookLM is deferred; Open Notebook/RAGFlow must pass optional adapter admission. Preserve portable originals/evidence, upgrade/recovery tests and a vendor-independent local path. NVIDIA remains on the compatible protocol. [Proposal](KNOWLEDGE_SOURCES.md), [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md); DA-119–DA-126 stay open.
+
 DA-103 implements [ADR-0030](adr/0030-next-lint-glob-mitigation.md): exact Next lint parent-scoped dependency replacement and lock-hashed utility adaptation, with complete rule-settings preservation and clean-install/path/violation regressions. Keep full dependency and secret gates; remove/adapt alias and patch together after upstream review. This is a tooling maintenance obligation, not a runtime security certification.
 
 DA-102 implements [ADR-0029](adr/0029-reviewed-run-body-deletion.md): owned terminal leaf content removal with retained usage/intent audit, existing worker fence and exact cascade review. Preserve memberships and independent inputs/billing; exclude decision aggregates without a fence. Its original full dependency gate is resolved by DA-103 without an advisory exception.

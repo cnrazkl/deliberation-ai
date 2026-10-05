@@ -30,6 +30,10 @@ and DA-109–112's export/workspace/responsive increments are complete. Richer p
 settings/continuity, accounting, copies and human/live acceptance remain partial.
 Earlier next-task statements below are historical. [Contract](PRIVATE_DELIVERY_SETTINGS.md).
 
+**5 October 2026, proposed extension:** DA-119–DA-126 cover reusable notebook sources, multi-notebook bindings, frozen retrieval, reviewed publication/manual fallback and NVIDIA. Local MCP text results and compatible endpoints are partial foundations, not completed features. [Architecture](KNOWLEDGE_SOURCES.md), [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md), [tasks](TASKS.md). DA-108 is complete in the integrated application chain; broader correctness/privacy gates remain open; this is documentation preparation only.
+
+**Reliability refinement:** unofficial NotebookLM bridges and Notion are removed from implementation scope; official NotebookLM is deferred. Local-first reusable evidence is the proposed baseline, optional adapters face admission/upgrade/recovery gates, and [synthetic examples](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md) are not measured acceptance. No external notebook product blocks the local milestone.
+
 **3 October 2026, DA-107:** paused local schedule templates gain bounded reviewed content removal and retained creation receipts. Dispatch validates exact snapshots and atomically commits run/job/cursor changes; previously queued work and historical copies remain. Saved council-template deletion is next (DA-108). Broader plan gates remain partial. [Contract](LOCAL_SCHEDULE_DELETION.md).
 
 

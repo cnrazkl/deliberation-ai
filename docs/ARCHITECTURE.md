@@ -75,6 +75,10 @@ provider mutation. [Contract](MARKDOWN_EXPORTS.md).
 
 Persistence owns request identity/hash, exact-row review and encrypted deletion receipts. Owner advisory and table locks serialize save/delete. Active-name uniqueness permits fresh name reuse while owner/request uniqueness preserves deleted intent. The BFF exposes bounded same-origin preview/confirmation; UI retains retry identity and fences review responses. Run/schedule snapshots and provider/queue boundaries remain independent. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md), [ADR-0033](adr/0033-reviewed-council-template-deletion.md).
 
+## Proposed knowledge boundary (not implemented)
+
+[Scoped knowledge sources](KNOWLEDGE_SOURCES.md) proposes a local-first `KnowledgeSource` boundary separate from `TextProvider`, reusing encrypted persistence/extraction and adding bounded source retrieval. Optional documented adapters must pass admission gates; cookie/private-API bridges are excluded and no notebook vendor is required. Exact grants and immutable excerpts precede enqueue; models cannot dispatch tools/writes. Many-to-many bindings, reviewed saves, portable evidence and rebuildable indexes preserve independence from vendors. MCP is optional. NVIDIA reuses the compatible adapter. DA-119–DA-126 remain open; existing boundaries below describe implemented behavior.
+
 **DA-104:** A separate persistence boundary inspects one owned preflight row, fingerprints exact database timestamps and scrubs it under existing owner serialization plus a draft-table lock. Existing JSON metadata holds the strict receipt; create/start/cancel and enqueue/rerun guards preserve tombstone ordering. No provider or queue work is dispatched by review/deletion. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-103 tooling boundary:** a parent/version-scoped pnpm alias and lock-hashed patch replace Next lint's single directory discovery dependency with tinyglobby, preserving exercised paths and all rule settings. The normal runtime/provider/DB dependency boundaries stay unchanged. Frozen clean installation and Linux CI compatibility checks protect this locally maintained integration. [Policy](DEPENDENCY_MITIGATION.md).

@@ -1,6 +1,29 @@
 # Current state
 
-Updated: 4 October 2026 (DA-118 conversation council usage completed)
+Updated: 5 October 2026 (application/planning branch reconciliation)
+
+## Reconciled application and planning baseline
+
+The completed application chain through DA-118 and the independent knowledge planning
+branch are integrated here. Planning identities are now DA-119–DA-126; completed
+DA-108–DA-118 retain their identities. Clean-install web typechecking now generates
+Next route types before TypeScript, removing its dependency on a prior dev/build run.
+
+297 units, 210 isolated PostgreSQL cases (including archive restore), all 42 browser
+cases, workspace typecheck, zero-warning lint, separate-output production build, full
+dependency audit and seven lint-compatibility checks pass. The 675 existing relative
+documentation file links resolve; full-history and staged secret scans are publication
+gates. Disposable test databases were removed and the ignored workspace environment
+was restored. No primary database migration, paid call or real owner deletion ran.
+[Review and remaining gates](REPO_RECONCILIATION_2026_10_05.md).
+
+## Proposed knowledge sources and NVIDIA — documentation only
+
+[Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable notebook-scoped sources, multi-notebook conversations, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-119–DA-126 remain open, pending agreement and later coding. No connector installation, connection, model call, upload, runtime code, dependency or schema change occurred. Existing attachment/MCP behavior is unchanged. DA-108 is complete in the integrated application chain through DA-118. Next proposed feature: DA-119 knowledge contract and evaluation agreement.
+
+Owner refinement: prioritize security, quality and maintainability. The revised proposal excludes unofficial NotebookLM bridges and Notion, defers official NotebookLM pending stable required APIs, and proposes a bounded local-first library with optional admitted adapters. Open Notebook is not certified safe by this review. [Seven synthetic worked scenarios](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md) specify expected evidence, conflict, isolation, OCR, publication, recovery and cost behavior; they are documentation examples, not executed tests or live quality results.
+
+The planning branch originally reviewed `ed47915`. This integrated worktree includes the completed application chain through `ebb9e38`; the primary checkout and origin/main still point to DA-107 at reconciliation. Current verification is recorded above; historical counts and interactive-runtime observations below remain evidence of their original sessions. No interactive server is claimed for this worktree.
 
 ## Latest owner-requested increment — DA-118
 

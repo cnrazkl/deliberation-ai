@@ -1,5 +1,7 @@
 # Orchestration
 
+**Proposed only, DA-121–124:** [Preparation](KNOWLEDGE_SOURCES.md#frozen-context-and-lifecycle) is a separate bounded operation before enqueue. Frozen granted packets enter prompt/risk fingerprints; round 0 remains independent and models never invoke connectors. Query/publication unknown outcomes need reconciliation, not polling-driven resubmission. Schedules do not silently refresh sources and cross-review gains no autonomous retrieval.
+
 **DA-104:** preflight tombstones are checked under the existing owner/intent locks before ordinary enqueue or selected-member rerun can create/return an intent. Draft creation/cancellation shares owner serialization with resumed start and reviewed deletion. If start wins, review must be refreshed; a later draft deletion preserves that independent run/job. [Retained boundary](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-102:** reviewed run removal tries the same council session advisory lease without waiting after the owner lock; active execution or unresolved receipts preserves content. Protected table locks and repeated inspection precede atomic audit/recorded-job/body removal. Stale delivery performs no call, and original enqueue/rerun intent replay is rejected. Decision aggregates are ineligible because that path has no equivalent fence. No remote cancellation, retry, JEV activation or change to age pruning. [Contract](RUN_DELETION.md).

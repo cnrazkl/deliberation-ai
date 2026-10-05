@@ -1,5 +1,11 @@
 # Tasks
 
+5 October reconciliation: completed application DA-108–DA-118 and knowledge planning
+are integrated. 297 units, 210 isolated PostgreSQL cases, all 42 browser cases and
+type/lint/build/audit pass. Clean-install typecheck now generates Next route types.
+Proposed knowledge IDs are DA-119–DA-126; DA-119 is the next feature agreement gate.
+[Verification and scope](REPO_RECONCILIATION_2026_10_05.md).
+
 - [x] DA-118 conversation council usage: bounded owned operation/audit projection,
   explicit missing-history/counter coverage and independent council/private snapshots
   beneath saved conversation reports. 297 units, 210 isolated DB cases, six focused
@@ -48,6 +54,21 @@
   conversation history and selected report synthesis coverage, preserving provenance,
   minority/raw/private history and unavailable records. 279 units, two focused browser
   flows, type/lint/build pass. [Acceptance](MARKDOWN_EXPORTS.md).
+
+## Proposed knowledge-source program — 5 October 2026
+
+Documentation preparation is complete; detailed agreement, implementation and empirical acceptance remain open. Owner refinement prioritizes security, quality and maintainability: unofficial NotebookLM bridges and Notion are excluded; official NotebookLM is deferred. Local-first delivery cannot depend on a third-party notebook. [Architecture and acceptance](KNOWLEDGE_SOURCES.md), [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md), [synthetic worked examples](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md). DA-108–DA-118 are complete in the integrated application history. Knowledge tasks are renumbered DA-119–DA-126 to preserve existing identities. Next proposed feature is DA-119; agreement and independent labels remain required.
+
+- [ ] **DA-119 — agree the knowledge contract and evaluation plan.** Ratify local-first scope, notebook grants, frozen preparation, review, limits and quality gates; clarify directory import. Set measurable setup/maintenance/latency limits and freeze the comparison corpus and independent labels. Synthetic examples are expected behavior, not empirical acceptance.
+- [ ] **DA-120 — scoped contracts and conversation bindings.** Add owned notebook grants, many-to-many conversation selections, normalized source/excerpt types and fake adapters. Verify account/notebook isolation, revocation, encryption, retention/export and backup coverage. Depends on DA-119.
+- [ ] **DA-121 — local source foundation and optional adapter admission.** Add bounded encrypted source versions, original/page mappings, parser provenance and inspectable manual/lexical retrieval behind DA-120. Verify limits, no plaintext index leakage, revoke, outage and restore behavior. Optionally evaluate isolated Open Notebook/RAGFlow documented APIs; require auth, empty-scope denial, source-level isolation, exact citations, pinned schema and upgrade/exit procedures. Reject unknown admission results. No cookie/private-API bridge or Notion work; official NotebookLM requires a fresh admission decision. External evaluation cannot block the local increment.
+- [ ] **DA-122 — evidence preparation and input routing.** Add scoped retrieval, citation-preserving budgets, cache/freshness rules, exact prompt/risk preview and immutable packets. Route large/repeated files to local collections first; explicit external routing requires an admitted adapter. Keep unsupported OCR/images visibly unverified. Test scope leakage, silent truncation, hidden resends and unauthorized tools. Depends on DA-120/121.
+- [ ] **DA-123 — candidate inbox and human review.** Capture owner submissions and model citations, retain original passages/conflicts and separate content/freshness decisions. Test false, stale, inaccessible and changed sources; no automatic evidence promotion. Depends on DA-120 and existing research/evidence boundaries.
+- [ ] **DA-124 — reviewed reusable save and optional publication.** Save approved evidence to local collections first. For an admitted external adapter bind payload/destination consent, durable intent, deduplication and read-back; reconcile unknown outcomes without blind retry. Export/manual handoff is generic and owner-selected. Test wrong destination, crash, indexing and external copies. Local acceptance has no remote-product dependency. Depends on DA-121–123.
+- [ ] **DA-125 — distinct NVIDIA preset.** Reuse compatible protocol with NVIDIA service identity, hosted URL, explicit key/model and conservative capabilities. Verify catalogs/manual entry, revision binding, output validation, usage and unknown outcomes with fixtures; live acceptance is opt-in. Independent of notebook implementation after agreement.
+- [ ] **DA-126 — quality, cost and recovery acceptance.** Compare full-source/local retrieval and any admitted adapter; review citation entailment/critical omissions, run access/injection/cache/backup/deletion/upgrade/outage tests and measure usage/latency/maintenance duties. Execute the worked scenarios with real fixtures; examples alone cannot pass this task. Unknown cost stays unknown. Depends on DA-122–124; NVIDIA claims also require DA-125. No supported rollout or savings claim before passing.
+
+Likely boundaries: contracts/domain/application, tools/providers adapters, persistence, worker and web workbench. Select exact files/migrations per bounded task after local instructions. This planning increment changes no runtime behavior.
 
 DA-103 removes DA-102's vulnerable lint dependency chain with a scoped replacement and
 reviewed compatibility patch, preserving all 113 lint rule settings. Full dependency
