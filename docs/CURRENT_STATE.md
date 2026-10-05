@@ -1,6 +1,26 @@
 # Current state
 
-Updated: 5 October 2026 (application/planning branch reconciliation)
+Updated: 5 October 2026 (DA-119 trial agreement and evaluation preparation)
+
+## Current increment — DA-119 partial; trial contract accepted
+
+The owner chose individual files (no directory/ZIP import) and accepted the concrete
+local-first trial limits/quality protocol. Approval is bound to the exact frozen plan;
+it does not accept independent labels or measured quality. Forty historical source-bound
+questions, ten synthetic boundary challenges, eight format questions and four binary
+fixtures are hashed. Two blank text/format reviewer sets remain local and ignored.
+`knowledge:status` verifies inputs/approval and explicitly blocks release acceptance.
+
+303 unit tests, workspace typecheck, zero-warning lint and dependency audit pass.
+PDF visual/text-layer checks and actual CLI preparation/no-overwrite/blank-review
+rejections pass. No DB/browser/build rerun, runtime ingestion, connector, migration,
+paid call or owner deletion. [Verification](DA119_ACCEPTANCE.md),
+[frozen protocol](evaluation/KNOWLEDGE_EVALUATION.md), [ADR-0034](adr/0034-local-knowledge-trial-contract.md).
+
+DA-119 remains open for independent source/format labels, adjudication and coordinator
+coverage/independence attestation. Next technical preparation is DA-120 contracts,
+grants and conversation bindings with fake adapters; those open acceptance dependencies
+remain visible. Knowledge ingestion and empirical rollout are not enabled.
 
 ## Reconciled application and planning baseline
 
@@ -19,7 +39,7 @@ was restored. No primary database migration, paid call or real owner deletion ra
 
 ## Proposed knowledge sources and NVIDIA — documentation only
 
-[Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable notebook-scoped sources, multi-notebook conversations, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-119–DA-126 remain open, pending agreement and later coding. No connector installation, connection, model call, upload, runtime code, dependency or schema change occurred. Existing attachment/MCP behavior is unchanged. DA-108 is complete in the integrated application chain through DA-118. Next proposed feature: DA-119 knowledge contract and evaluation agreement.
+[Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable notebook-scoped sources, multi-notebook conversations, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-119 trial agreement/preparation is recorded above; full DA-119 acceptance and DA-120–DA-126 remain open. No connector or runtime ingestion is enabled. Existing attachment/MCP behavior is unchanged. DA-108 is complete in the integrated application chain through DA-118.
 
 Owner refinement: prioritize security, quality and maintainability. The revised proposal excludes unofficial NotebookLM bridges and Notion, defers official NotebookLM pending stable required APIs, and proposes a bounded local-first library with optional admitted adapters. Open Notebook is not certified safe by this review. [Seven synthetic worked scenarios](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md) specify expected evidence, conflict, isolation, OCR, publication, recovery and cost behavior; they are documentation examples, not executed tests or live quality results.
 

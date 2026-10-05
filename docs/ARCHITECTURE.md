@@ -1,5 +1,14 @@
 # Architecture
 
+## DA-119 offline knowledge evaluation preparation
+
+The evaluation package validates frozen source/intake/protocol/binary digests and an
+exact-plan owner trial approval without database, adapter or provider calls. A local CLI
+prepares immutable-source reviewer forms and reuses existing text/adjudication compilers;
+format labels remain a separate human requirement. Preparation cannot grant runtime
+source access or set quality/release acceptance. [Protocol](evaluation/KNOWLEDGE_EVALUATION.md),
+[verification](DA119_ACCEPTANCE.md).
+
 ## DA-118 conversation council usage
 
 A pure domain projection groups retained council operation counters. Persistence reads

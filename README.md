@@ -1,5 +1,12 @@
 # DeliberationAI
 
+DA-119 has an owner-accepted local knowledge trial contract and reproducible offline
+evaluation preparation. `pnpm knowledge:status` verifies the frozen cohort, format
+fixtures and matching approval; `pnpm knowledge:prepare` creates new ignored human
+review forms without model/database calls. Independent labels and runtime knowledge
+features remain open. [Protocol and commands](docs/evaluation/KNOWLEDGE_EVALUATION.md),
+[verification](docs/DA119_ACCEPTANCE.md).
+
 DeliberationAI is a provider-independent multi-model council that preserves disagreements and provenance instead of treating agreement as truth.
 
 DA-103 removes the vulnerable Next lint glob chain with a version-scoped replacement and reviewed compatibility patch. Full dependency audit passes, all 113 lint rule settings remain unchanged and frozen clean installation passes. Next: reviewed preflight draft content deletion. [Maintenance](docs/DEPENDENCY_MITIGATION.md), [verification](docs/DA103_ACCEPTANCE.md).

@@ -22,6 +22,10 @@ jobs:
         run: pnpm audit --audit-level=moderate
       - name: Install reviewed dependency graph
         run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify frozen knowledge preparation
+        run: |
+          pnpm exec vitest run packages/evaluation/src/knowledge-evaluation.test.ts
+          pnpm knowledge:status
       - name: Check lint dependency compatibility
         run: pnpm test:lint-dependencies
       - name: Scan Git history for secrets

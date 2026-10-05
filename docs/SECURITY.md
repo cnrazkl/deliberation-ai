@@ -1,5 +1,14 @@
 # Security
 
+DA-119 adds offline integrity checks and only public historical/synthetic fixtures.
+Human review forms stay under ignored `.local/`; prepare refuses existing destinations.
+No credentials, provider requests, database calls or runtime permissions are introduced.
+Exact-plan owner approval cannot accept human labels/model quality; empty reviews and
+source/fixture/split drift block compilation. Local-file-only import is a future
+contract, not an implemented filesystem access boundary. Linux CI checks the frozen
+knowledge plan/fixtures and metadata-only status without network model calls.
+[Evidence](DA119_ACCEPTANCE.md).
+
 DA-118's council-usage GET enforces owned conversation/membership/run/audit boundaries,
 bounded metadata scans and authenticated audit/metadata decryption in one read-only
 snapshot. Raw texts, remote IDs, fingerprints and price/billing evidence are excluded

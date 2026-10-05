@@ -1,1 +1,6 @@
 patches/*.patch text eol=lf
+docs/evaluation/COUNCIL_EXTERNAL_SUITE.json text eol=lf
+docs/evaluation/KNOWLEDGE_EVALUATION.md text eol=lf
+docs/evaluation/KNOWLEDGE_EVALUATION_PLAN.json text eol=lf
+docs/evaluation/knowledge-fixtures/*.pdf binary
+docs/evaluation/knowledge-fixtures/*.png binary

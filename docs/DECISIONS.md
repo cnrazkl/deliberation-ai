@@ -1,5 +1,10 @@
 # Decisions
 
+DA-119 accepts a local-first trial contract and individual-file-only initial import,
+with exact-plan owner approval and independent human/model acceptance still open.
+The offline preparation does not enable ingestion or admit a connector.
+[ADR-0034](adr/0034-local-knowledge-trial-contract.md), [evidence](DA119_ACCEPTANCE.md).
+
 ## Proposed knowledge-service decision — 5 October 2026
 
 Owner-directed reliability policy: exclude brittle cookie/private-API notebook bridges; security, quality and maintainability outrank a vendor choice. Proposed implementation remains unbuilt: local-first reusable evidence behind a separate knowledge boundary, exact grants, frozen excerpts and reviewed publication. Notion is outside scope; official NotebookLM is deferred; Open Notebook/RAGFlow must pass optional adapter admission. Preserve portable originals/evidence, upgrade/recovery tests and a vendor-independent local path. NVIDIA remains on the compatible protocol. [Proposal](KNOWLEDGE_SOURCES.md), [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md); DA-119–DA-126 stay open.

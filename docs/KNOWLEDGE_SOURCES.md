@@ -1,6 +1,12 @@
 # Scoped knowledge sources and NVIDIA connections
 
-Status: proposed architecture, 5 October 2026. Documentation only; owner agreement and implementation acceptance are pending. Tasks DA-119–DA-126 are open. DA-108 is complete in the integrated application history through DA-118. The original planning IDs DA-109–DA-116 are superseded by DA-119–DA-126. This proposal does not enable a connector, change attachment limits, upload files or authorize model calls.
+DA-119 update: the owner accepted the [frozen trial contract](evaluation/KNOWLEDGE_EVALUATION.md)
+and selected individual files only. [Exact-plan approval](evaluation/KNOWLEDGE_CONTRACT_APPROVAL.json)
+ratifies trial scope/limits, not independent labels or measured model quality.
+[Technical preparation and open gates](DA119_ACCEPTANCE.md) supersede earlier pending
+agreement statements below. The broader runtime program remains unimplemented.
+
+Status: runtime architecture proposal, 5 October 2026. DA-119 trial contract is owner-accepted; independent gold and runtime implementation acceptance are pending. Tasks DA-119–DA-126 are open. DA-108 is complete in the integrated application history through DA-118. The original planning IDs DA-109–DA-116 are superseded by DA-119–DA-126. This proposal does not enable a connector, change attachment limits, upload files or authorize model calls.
 
 Owner refinement, 5 October: security, output quality and maintainability take precedence over NotebookLM compatibility. This revision supersedes the earlier recommendation to experiment with cookie-based bridges. The policy is requested; the detailed implementation remains proposed.
 
@@ -111,7 +117,7 @@ Deduplicate by destination plus source/content identity, without collapsing diff
 
 ## Input and cost policy proposed for evaluation
 
-Small ad hoc text/images remain possible. Large/repeated PDF and image inputs offer “Add to a knowledge notebook” before enqueue. The owner sees selected files, extraction support, upload destination and estimated repeated council cost. Upload requires a separate action; nothing is silently redirected. Unsupported formats and scanned PDFs offer bounded OCR/manual import with original-page verification. The spoken `DIR` request is treated as possible directory import, not assumed to be a supported file format; exact scope remains to agree.
+Small ad hoc text/images remain possible. Large/repeated PDF and image inputs offer “Add to a knowledge notebook” before enqueue. The owner sees selected files, extraction support, upload destination and estimated repeated council cost. Upload requires a separate action; nothing is silently redirected. Unsupported formats and scanned PDFs remain extraction_unverified; OCR/manual transcription requires a later accepted path and original-page verification. The owner clarified `DIR`: the first increment accepts individually selected files only; directory traversal and ZIP expansion are deferred.
 
 Initial configurable trial ceilings: three notebooks per run, six excerpts total, 1,500 characters per excerpt, 9,000 source characters total and 4,000 characters of optional ad hoc text. These are proposal values, not implemented limits or tokenizer equivalents. Also enforce bytes, retrieval calls, elapsed time and estimated tokens per receiving model; use the smallest applicable context budget after reserving question/history/instructions/output. Show exclusions and request narrower scope when over budget; never silently slice a citation. User-approved exceptions require a fresh preview. Image estimates remain provider-specific.
 
@@ -146,6 +152,6 @@ The next coding chat should read this document and its research, confirm which o
 
 - Owner-required policy: exclude brittle private-API/browser-cookie dependencies; prioritize security, quality and maintainability. Proposed implementation: local-first bounded source library; optional documented adapters only after acceptance. NotebookLM and Notion are not required dependencies or benchmarks.
 - Recommended: preparation before round 0, exact notebook grants, source excerpts preferred, and separately reviewed write-back with manual fallback.
-- Proposed trial limits, the meaning of `DIR`, quality thresholds and first implementation task remain open. The NVIDIA preset can proceed independently after agreement.
+- The owner accepted the DA-119 trial limits/quality protocol and individual-file scope; independent gold/model measurements remain open. DA-120 is the next contract/fake-adapter preparation. NVIDIA remains separately bounded DA-125 work.
 
 See [dated research and primary sources](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) and [task list](TASKS.md).

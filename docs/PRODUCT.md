@@ -1,5 +1,11 @@
 # Product
 
+**DA-119 preparation:** the owner accepted a local-first knowledge trial contract with
+explicitly selected files and bounded evidence preparation; folder/ZIP import is deferred.
+Offline source/format fixtures and blank independent review forms are prepared. No
+knowledge collection, extraction/retrieval UI or connector is implemented; independent
+labels and real quality measurements remain open. [Scope](DA119_ACCEPTANCE.md).
+
 **DA-118:** saved conversation reports offer council operation usage beside private usage,
 with separate snapshot times. Retained deleted-run receipts contribute; missing histories
 and counters stay explicit. This is not a combined monetary ledger. [Scope](CONVERSATION_COUNCIL_USAGE.md).

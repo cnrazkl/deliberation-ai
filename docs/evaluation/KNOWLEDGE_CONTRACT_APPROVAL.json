@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "knowledge-contract-approval-v1",
+  "planSha256": "d42f71b19dd180a8fff3b2fbf80fafe1f6dbe8e8a05da3ba3560ca944f5adee3",
+  "acceptedAt": "2026-10-05T13:05:22.000Z",
+  "decisionSource": "explicit_owner_reply_in_da119_chat",
+  "selectedFilesOnly": true,
+  "trialContractAccepted": true,
+  "independentLabelsAccepted": false,
+  "modelQualityAccepted": false
+}

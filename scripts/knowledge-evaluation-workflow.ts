@@ -1,0 +1,90 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { createHash } from "node:crypto";
+import {
+  inspectKnowledgeEvaluationPlan,
+  createCouncilCoverageReviewWorksheet,
+  compileCouncilCoverageReviewWorksheet,
+  createCouncilCoverageAdjudicationWorksheet,
+  compileCouncilCoverageAdjudicationWorksheet,
+  knowledgeFixtureNames,
+} from "@deliberation-ai/evaluation";
+
+const root = resolve(import.meta.dirname, "..");
+const output = resolve(root, ".local/knowledge-evaluation");
+const [mode, ...extra] = process.argv.slice(2);
+if (extra.length) throw new Error("Only one knowledge workflow mode is supported.");
+const { plan, intake, status } = inspectKnowledgeEvaluationPlan(
+  JSON.parse(readFileSync(resolve(root, "docs/evaluation/KNOWLEDGE_EVALUATION_PLAN.json"), "utf8")) as unknown,
+  readFileSync(resolve(root, "docs/evaluation/COUNCIL_EXTERNAL_SUITE.json"), "utf8"),
+  readFileSync(resolve(root, "docs/evaluation/KNOWLEDGE_EVALUATION.md"), "utf8"),
+  Object.fromEntries(knowledgeFixtureNames.map((name) => [name, createHash("sha256").update(
+    readFileSync(resolve(root, "docs/evaluation/knowledge-fixtures", name)),
+  ).digest("hex")])),
+  existsSync(resolve(root, "docs/evaluation/KNOWLEDGE_CONTRACT_APPROVAL.json"))
+    ? JSON.parse(readFileSync(resolve(root, "docs/evaluation/KNOWLEDGE_CONTRACT_APPROVAL.json"), "utf8")) as unknown
+    : undefined,
+);
+const writeBatch = (files: { path: string; value: unknown }[]) => {
+  if (files.some((file) => existsSync(file.path))) throw new Error("Existing knowledge review files are preserved.");
+  for (const file of files) {
+    mkdirSync(resolve(file.path, ".."), { recursive: true });
+    writeFileSync(file.path, `${JSON.stringify(file.value, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  }
+};
+const readJson = (path: string): unknown => JSON.parse(readFileSync(path, "utf8")) as unknown;
+const readReviews = () => (["a", "b"] as const).map((slot) => {
+  const worksheet = readJson(resolve(output, `reviewer-${slot}/worksheet.json`));
+  if (typeof worksheet !== "object" || worksheet === null || !("slot" in worksheet) || worksheet.slot !== slot) {
+    throw new Error("Knowledge reviewer worksheet has the wrong slot.");
+  }
+  return compileCouncilCoverageReviewWorksheet(intake, worksheet);
+});
+const checkedReviews = () => {
+  const reviews = readReviews();
+  if (reviews[0]!.reviewerId === reviews[1]!.reviewerId) throw new Error("Two distinct human reviewers are required.");
+  return reviews as [typeof reviews[number], typeof reviews[number]];
+};
+
+if (mode === "status") {
+  console.log(JSON.stringify(status, null, 2));
+} else if (mode === "prepare") {
+  writeBatch([
+    ...(["a", "b"] as const).map((slot) => ({
+      path: resolve(output, `reviewer-${slot}/worksheet.json`),
+      value: createCouncilCoverageReviewWorksheet(intake, slot),
+    })),
+    ...(["a", "b"] as const).map((slot) => ({
+      path: resolve(output, `reviewer-${slot}/format-worksheet.json`),
+      value: { schemaVersion: "knowledge-format-review-v1", planSha256: status.planSha256,
+        slot, reviewerId: "", cases: plan.formatCases.map((item) => ({ ...item,
+          fixtureSha256: plan.formatFixtures.find((file) => file.name === item.fixture)!.sha256,
+          claims: [], extractionVerified: null, noAnswerRequired: null, rationale: "",
+        })) },
+    })),
+    { path: resolve(output, "owner-review.json"), value: {
+      schemaVersion: "knowledge-owner-review-v1", planSha256: status.planSha256,
+      ownerId: "", reviewedAt: null, scopeApproved: null, trialLimitsApproved: null,
+      qualityProtocolApproved: null, corpusCoverageApproved: null, rationale: "",
+    } },
+  ]);
+  console.log("Two blank text/format reviewer sets and a pending owner form created; no acceptance claimed.");
+} else if (mode === "compile-reviews") {
+  const reviews = checkedReviews();
+  writeBatch(reviews.map((review, index) => ({
+    path: resolve(output, `compiled/review-${index === 0 ? "a" : "b"}.json`), value: review,
+  })));
+  console.log("Source-bound reviews compiled; human independence and acceptance still require attestation.");
+} else if (mode === "adjudication-prepare") {
+  writeBatch([{ path: resolve(output, "adjudicator/worksheet.json"),
+    value: createCouncilCoverageAdjudicationWorksheet(intake, checkedReviews()) }]);
+  console.log("Blank knowledge adjudication form created.");
+} else if (mode === "adjudication-compile") {
+  const result = compileCouncilCoverageAdjudicationWorksheet(
+    intake, checkedReviews(), readJson(resolve(output, "adjudicator/worksheet.json")),
+  );
+  writeBatch([{ path: resolve(output, "compiled/adjudication.json"), value: result }]);
+  console.log("Knowledge adjudication compiled; format coverage, independence and model study remain separate gates.");
+} else {
+  throw new Error("Use status, prepare, compile-reviews, adjudication-prepare or adjudication-compile.");
+}
