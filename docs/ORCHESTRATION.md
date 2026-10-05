@@ -103,3 +103,7 @@ Missing/oversized input and failed calls remain visibly unassessed. Unknown outc
 ## DA-107 reviewed local schedule deletion
 
 Due schedules carry exact row fingerprints and microsecond occurrence timestamps. Enqueue validates the active undeleted snapshot under a lock and advances its cursor in the same run/job transaction; stale pause/deletion snapshots cannot dispatch. Previously queued work is not cancelled by template deletion. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).
+
+## DA-122 reviewed local source packets
+
+Preparation is an explicit local atomic operation, separate from council execution. Enqueue freezes the reviewed packet and current prompt/risk fingerprints. Each new round-0 submission rechecks current grant/selection under the owner lock; revoke cannot recall an already submitted call. First rounds receive identical excerpts independently; reviews never resend original sources. Continuations do not inherit packets automatically. [Contract](KNOWLEDGE_PACKETS.md).

@@ -44,6 +44,10 @@ async function supportsMetadataDeletion(tx: ConversationTransaction): Promise<bo
   const expectedColumns = Object.entries(expected).flatMap(([table, fields]) => Object.entries(fields)
     .sort(([left], [right]) => left.localeCompare(right)).map(([column, type]) => ({ table, column, type })));
   if (JSON.stringify(columns.rows) !== JSON.stringify(expectedColumns)) return false;
+  const packetColumns = await tx.execute<{ column: string; type: string }>(sql`select a.attname as "column", format_type(a.atttypid, a.atttypmod) as "type"
+    from pg_attribute a where a.attrelid = 'public.knowledge_preparations'::regclass and a.attnum > 0 and not a.attisdropped order by a.attname`);
+  const packetExpected = { conversation_id: "uuid", created_at: "timestamp with time zone", id: "uuid", owner_id: "text", packet_ciphertext: "text", request_hash: "text" };
+  if (JSON.stringify(packetColumns.rows) !== JSON.stringify(Object.entries(packetExpected).map(([column, type]) => ({ column, type })))) return false;
   const dependencies = await tx.execute<{ allowed: boolean }>(sql`
     select (k.conrelid in ('public.conversation_runs'::regclass, 'public.conversation_private_branches'::regclass,
       'public.conversation_knowledge'::regclass, 'public.conversation_knowledge_selections'::regclass)
@@ -84,11 +88,13 @@ async function inspect(tx: ConversationTransaction, conversationId: string): Pro
         and not exists(select 1 from conversation_runs cr where cr.owner_id = ${LOCAL_OWNER_ID} and cr.run_id = r.id)) as pending,
       exists(select 1 from conversation_private_branches b where b.conversation_id = ${conversationId}::uuid) as private,
       (exists(select 1 from conversation_knowledge k where k.conversation_id = ${conversationId}::uuid)
-       or exists(select 1 from conversation_knowledge_selections k where k.conversation_id = ${conversationId}::uuid)) as knowledge,
+       or exists(select 1 from conversation_knowledge_selections k where k.conversation_id = ${conversationId}::uuid)
+       or exists(select 1 from knowledge_preparations k where k.conversation_id = ${conversationId}::uuid)) as knowledge,
       (exists(select 1 from conversation_runs cr where cr.conversation_id = ${conversationId}::uuid and cr.owner_id <> ${LOCAL_OWNER_ID})
        or exists(select 1 from conversation_private_branches b where b.conversation_id = ${conversationId}::uuid and b.owner_id <> ${LOCAL_OWNER_ID})
        or exists(select 1 from conversation_knowledge k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${LOCAL_OWNER_ID})
        or exists(select 1 from conversation_knowledge_selections k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${LOCAL_OWNER_ID})
+       or exists(select 1 from knowledge_preparations k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${LOCAL_OWNER_ID})
        or exists(select 1 from runs r join conversation_runs cr on cr.run_id = r.id
          where cr.conversation_id = ${conversationId}::uuid and cr.owner_id = ${LOCAL_OWNER_ID} and r.owner_id <> ${LOCAL_OWNER_ID})) as foreign,
       (exists(select 1 from conversation_private_branches b where b.owner_id = ${LOCAL_OWNER_ID} and b.conversation_id <> ${conversationId}::uuid and
@@ -133,7 +139,7 @@ export async function deleteEmptyConversation(conversationId: string, fingerprin
     await tx.execute(sql`lock table public.conversations, public.conversation_runs in share row exclusive mode`);
     await tx.execute(sql`lock table public.runs in share mode`);
     await tx.execute(sql`lock table public.conversation_private_branches in share mode`);
-    await tx.execute(sql`lock table public.conversation_knowledge, public.conversation_knowledge_selections in share mode`);
+    await tx.execute(sql`lock table public.conversation_knowledge, public.conversation_knowledge_selections, public.knowledge_preparations in share mode`);
     const preview = await inspect(tx, conversationId);
     if (!preview) return undefined;
     if (!preview.eligible) throw new ConversationDeletionBlockedError();

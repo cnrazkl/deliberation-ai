@@ -140,6 +140,9 @@ importers:
       '@deliberation-ai/providers':
         specifier: workspace:*
         version: link:../providers
+      js-tiktoken:
+        specifier: 1.0.21
+        version: 1.0.21
     devDependencies:
       typescript:
         specifier: 5.9.3

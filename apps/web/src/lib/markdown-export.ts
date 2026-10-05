@@ -64,7 +64,8 @@ function reportHistory(report: CouncilReport): string[] {
 export function createSynthesisMarkdown(run: RunExport): string {
   return bounded(["# DeliberationAI sentez kapsamı", `Çalışma: ${run.runId}`, `Durum: ${literal(run.status)} · Oluşturulma: ${run.createdAt} · Dışa aktarım: ${run.exportedAt}`,
     "## Soru", markdownBlock(run.question), ...synthesis(run.report), "## İstem ve risk kaynağı",
-    json({ promptVersion: run.promptVersion, promptFingerprint: run.promptFingerprint, riskProfile: run.riskProfile, riskAssessment: run.riskAssessment })]);
+    json({ promptVersion: run.promptVersion, promptFingerprint: run.promptFingerprint, riskProfile: run.riskProfile, riskAssessment: run.riskAssessment }),
+    "## Dondurulmuş kaynak paketi", json(run.knowledgePacket)]);
 }
 export function createConversationMarkdown(value: ConversationExport): string {
   const parts = ["# DeliberationAI konuşma geçmişi", `Konuşma: ${value.conversation.conversationId}`, `Dışa aktarım: ${value.exportedAt}`,

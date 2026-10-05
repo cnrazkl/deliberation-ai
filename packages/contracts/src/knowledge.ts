@@ -40,3 +40,21 @@ export const knowledgeVersionExtractionSchema = z.object({ ...identity, name: z.
 }).strict();
 export type KnowledgeVersionOriginal = z.infer<typeof knowledgeVersionOriginalSchema>;
 export type KnowledgeVersionExtraction = z.infer<typeof knowledgeVersionExtractionSchema>;
+
+export const knowledgePacketReferenceSchema = z.object({ id: knowledgeObjectIdSchema, fingerprint: digest, reviewed: z.literal(true) }).strict();
+export const knowledgePacketSchema = z.object({
+  version: z.literal("knowledge-packet-v1"), id: knowledgeObjectIdSchema, ownerId: z.string().min(1).max(100),
+  conversationId: knowledgeObjectIdSchema, selectionRevision: knowledgeObjectIdSchema,
+  query: z.string().min(1).max(4_000), topic: z.string().max(4_000), createdAt: z.string().datetime(),
+  scopes: z.array(knowledgeScopeSchema).min(1).max(3),
+  policy: z.literal("lexical-fair-coverage-v1"),
+  inventory: z.array(z.object({ sourceId: knowledgeObjectIdSchema, versionId: knowledgeObjectIdSchema }).strict()).max(30),
+  excerpts: z.array(knowledgeExcerptSchema).max(6),
+  omissions: z.array(z.object({ collectionId: knowledgeObjectIdSchema, sourceId: knowledgeObjectIdSchema,
+    versionId: knowledgeObjectIdSchema, title: z.string().max(200), reason: z.enum(["budget", "duplicate"]) }).strict()).max(30),
+  coverage: z.array(z.object({ collectionId: knowledgeObjectIdSchema, inspected: z.number().int().min(0).max(30),
+    unavailable: z.number().int().min(0).max(30), matches: z.number().int().min(0).max(30), selected: z.number().int().min(0).max(6),
+    omitted: z.number().int().min(0).max(30) }).strict()).min(1).max(3),
+  withoutEvidence: z.boolean(), fingerprint: digest,
+}).strict();
+export type KnowledgePacket = z.infer<typeof knowledgePacketSchema>;

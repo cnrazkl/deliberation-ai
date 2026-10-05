@@ -15,7 +15,7 @@ export async function lockConversationMembership(tx: ConversationTransaction) {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext('conversation-membership-v1'))`);
 }
 
-export async function attachRunToConversation(tx: ConversationTransaction, row: typeof runs.$inferSelect) {
+export async function attachRunToConversation(tx: ConversationTransaction, row: typeof runs.$inferSelect, selectedConversationId?: string) {
   const branch = projectRunBranch(row);
   let conversationId: string;
   if (row.branchSourceRunId) {
@@ -24,6 +24,14 @@ export async function attachRunToConversation(tx: ConversationTransaction, row: 
       .where(and(eq(conversationRuns.ownerId, LOCAL_OWNER_ID), eq(conversationRuns.runId, row.branchSourceRunId))).limit(1);
     if (!parent) throw new ConversationPendingError();
     conversationId = parent.conversationId;
+    if (selectedConversationId && conversationId !== selectedConversationId) throw new ConversationIntegrityError();
+  } else if (selectedConversationId) {
+    const [selected] = await tx.select({ id: conversations.id }).from(conversations)
+      .where(and(eq(conversations.id, selectedConversationId), eq(conversations.ownerId, LOCAL_OWNER_ID))).limit(1);
+    if (!selected) throw new ConversationIntegrityError(); conversationId = selected.id;
+    const [membership] = await tx.select({ id: conversationRuns.runId }).from(conversationRuns)
+      .where(eq(conversationRuns.conversationId, selected.id)).limit(1);
+    if (!membership) await tx.update(conversations).set({ anchorRunId: row.id }).where(eq(conversations.id, selected.id));
   } else {
     conversationId = randomUUID();
     await tx.insert(conversations).values({ id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: row.id, origin: "native",

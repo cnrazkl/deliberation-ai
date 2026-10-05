@@ -1,8 +1,30 @@
 # Current state
 
-Updated: 5 October 2026 (DA-121 local source foundation)
+Updated: 5 October 2026 (DA-122 reviewed local knowledge packets)
 
-## Current increment — DA-121 local source backend complete
+## Current increment — DA-122 local packet implementation complete
+
+Explicit local collection/grant/conversation/file UI prepares a scoped lexical packet
+with up to six intact page-linked quotes/9,000 characters, inspectable coverage and
+named exclusions. Owner review and exact prompt/risk fingerprints precede enqueue.
+Immutable encrypted preparation and run copies preserve historical source versions;
+current selection/grants fence each new round-0 submission. All first-round members
+receive the same packet independently; reviews and new-question continuations do not
+automatically resend it. Repeated full attachments alongside a packet are refused.
+Unsupported OCR/images remain visibly unavailable. [Contract](KNOWLEDGE_PACKETS.md),
+[verification](DA122_ACCEPTANCE.md).
+
+321 unit and 240 isolated PostgreSQL tests, actual source-bearing browser/local-mock
+transport, production build/packaged parser routes and populated packet/source
+archive restore pass. Typecheck, lint, frozen install, dependency audit, extraction
+snapshots and seven lint compatibility checks pass. Final browser/publication evidence
+is recorded in the verification file. Migration 0052 was applied only in generated
+databases; owner data and main remain unchanged. Local 24,000-token text estimates
+are planning ceilings, not guaranteed provider context fit or billing. Independent
+human labels, source/preparation erasure, optional adapters and DA-126 empirical
+acceptance remain open. Next implementation task: DA-123 candidate inbox/human review.
+
+## Previous increment — DA-121 local source backend complete
 
 Bounded selected TXT/Markdown/PDF/PNG/JPEG intake stores immutable encrypted
 originals and page/hash/parser-linked extraction. Manual quotes/export and transient

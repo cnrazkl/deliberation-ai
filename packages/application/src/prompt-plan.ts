@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { CouncilMemberConfig, FrozenMemoryEntry, FrozenToolContext, FrozenContinuation } from "@deliberation-ai/contracts";
 import { inputFor, instructionsFor, type ProviderRequest } from "@deliberation-ai/providers";
+import type { KnowledgePacket } from "@deliberation-ai/contracts";
 
 export const COUNCIL_PROMPT_VERSION = "council-v1";
 
@@ -25,6 +26,7 @@ export type RoundZeroPromptPlan = {
 
 export function buildRoundZeroPromptPlan(input: {
   question: string;
+  knowledgePacket?: KnowledgePacket | null | undefined;
   continuationContext?: FrozenContinuation | null | undefined;
   members: CouncilMemberConfig[];
   memoryContext: FrozenMemoryEntry[];
@@ -43,6 +45,7 @@ export function buildRoundZeroPromptPlan(input: {
       input: {
         snapshotId: "prompt-plan",
         question: input.question,
+        knowledgePacket: input.knowledgePacket,
         continuationContext: input.continuationContext,
         memoryContext: input.memoryContext,
         toolContext: input.toolContext,
@@ -66,10 +69,10 @@ export function buildRoundZeroPromptPlan(input: {
     };
   });
   const fingerprint = createHash("sha256")
-    .update(JSON.stringify({ version: COUNCIL_PROMPT_VERSION, members }))
+    .update(JSON.stringify({ version: input.knowledgePacket ? "council-knowledge-v1" : COUNCIL_PROMPT_VERSION, members }))
     .digest("hex");
   return {
-    version: COUNCIL_PROMPT_VERSION,
+    version: input.knowledgePacket ? "council-knowledge-v1" : COUNCIL_PROMPT_VERSION,
     fingerprint,
     members: members.map(({ imageDigests: _imageDigests, ...member }) => member),
   };

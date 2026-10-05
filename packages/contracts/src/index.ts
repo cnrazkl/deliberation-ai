@@ -1,5 +1,6 @@
 import { z } from "zod";
 export * from "./knowledge";
+import { knowledgePacketReferenceSchema } from "./knowledge";
 export * from "./pricing";
 export * from "./billing";
 export * from "./billing-statement";
@@ -424,6 +425,7 @@ export const continuationArchiveSchema = z.object({
 export type ContinuationArchive = z.infer<typeof continuationArchiveSchema>;
 
 export const createRunRequestSchema = z.object({
+  knowledgePacket: knowledgePacketReferenceSchema.optional(),
   continuationSource: continuationSourceSchema.optional(),
   question: z.string().trim().min(10).max(4_000),
   idempotencyKey: z.string().min(8).max(128),
@@ -444,6 +446,8 @@ export const createRunRequestSchema = z.object({
   promptRevision: promptRevisionSchema.optional(),
   members: councilMembersSchema.optional(),
 }).superRefine((request, context) => {
+  if (request.knowledgePacket && (!request.expectedPreflightFingerprint || !request.expectedRiskFingerprint))
+    context.addIssue({ code: "custom", message: "Kaynak paketi için güncel istem ve risk incelemesi gerekli.", path: ["knowledgePacket"] });
   if (request.selfRevisionEnabled && request.reviewRounds === 0) context.addIssue({
     code: "custom", message: "Öz düzeltme için en az bir çapraz inceleme turu gerekli.", path: ["selfRevisionEnabled"],
   });

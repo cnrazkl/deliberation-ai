@@ -103,6 +103,7 @@ export async function exportConversation(conversationId: string) {
           promptVersion: run.promptVersion, promptFingerprint: run.promptFingerprint,
           executionLimits: run.executionLimits ?? null, followUp: run.followUp ?? null,
           continuationContext: run.continuationContext ?? null, continuationArchive: run.continuationArchive ?? null,
+          knowledgePacket: run.knowledgePacket ?? null,
           memberCount: run.memberCount, memoryEntryCount: run.memoryEntryCount,
           attachmentCount: run.attachmentCount, toolResultCount: run.toolResultCount, report: run.report,
         } };

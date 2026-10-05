@@ -8,6 +8,20 @@ import { LOCAL_OWNER_ID } from "./owner";
 import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
 import { conversations, conversationKnowledge, conversationKnowledgeSelections, knowledgeCollections, knowledgeGrants } from "./schema";
 
+export async function listKnowledgeCollections() {
+  const rows = await getDatabase().select({ id: knowledgeCollections.id }).from(knowledgeCollections)
+    .where(and(eq(knowledgeCollections.ownerId, LOCAL_OWNER_ID), eq(knowledgeCollections.accountId, "local"))).orderBy(asc(knowledgeCollections.id)).limit(21);
+  return { items: await Promise.all(rows.slice(0, 20).map((row) => exportKnowledgeCollection(row.id))), hasMore: rows.length > 20 };
+}
+export async function createKnowledgeConversation() {
+  return getDatabase().transaction(async (tx) => {
+    await lock(tx);
+    const id = randomUUID();
+    await tx.insert(conversations).values({ id, ownerId: LOCAL_OWNER_ID, anchorRunId: randomUUID(), origin: "native" });
+    return { conversationId: id };
+  });
+}
+
 export class KnowledgeSelectionConflictError extends Error {
   constructor() { super("Knowledge selection has changed."); }
 }

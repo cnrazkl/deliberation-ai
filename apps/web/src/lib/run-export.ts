@@ -19,6 +19,7 @@ export function createRunExport(run: RunRecord) {
     promptVersion: run.promptVersion,
     promptFingerprint: run.promptFingerprint,
     continuationContext: run.continuationContext ?? null,
+    knowledgePacket: run.knowledgePacket ?? null,
     continuationArchive: run.continuationArchive ?? null,
     memberCount: run.memberCount,
     memoryEntryCount: run.memoryEntryCount,

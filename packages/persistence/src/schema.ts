@@ -117,6 +117,7 @@ export const runs = pgTable(
     attachmentsCiphertext: text("attachments_ciphertext"),
     attachmentCount: integer("attachment_count").notNull().default(0),
     toolContextCiphertext: text("tool_context_ciphertext"),
+    knowledgePacketCiphertext: text("knowledge_packet_ciphertext"),
     toolResultCount: integer("tool_result_count").notNull().default(0),
     snapshotId: uuid("snapshot_id").notNull(),
     queueJobId: text("queue_job_id"),
@@ -688,6 +689,13 @@ export const conversationKnowledgeSelections = pgTable("conversation_knowledge_s
   grantId: uuid("grant_id").notNull().references(() => knowledgeGrants.id), grantRevision: integer("grant_revision").notNull(),
 }, (table) => [primaryKey({ columns: [table.conversationId, table.collectionId] }),
   check("conversation_knowledge_selections_revision_positive", sql`${table.grantRevision} > 0`)]);
+
+// Logical conversation identity: retained packets block reviewed metadata deletion.
+export const knowledgePreparations = pgTable("knowledge_preparations", {
+  id: uuid("id").primaryKey(), ownerId: text("owner_id").notNull(), conversationId: uuid("conversation_id").notNull(),
+  requestHash: text("request_hash").notNull(), packetCiphertext: text("packet_ciphertext").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("knowledge_preparations_owner_conversation_idx").on(table.ownerId, table.conversationId)]);
 
 export const knowledgeSources = pgTable("knowledge_sources", {
   id: uuid("id").primaryKey(), ownerId: text("owner_id").notNull(),

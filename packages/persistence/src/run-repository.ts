@@ -10,6 +10,7 @@ import {
   validateContinuationArchive,
   hashRunRequest,
   buildRoundZeroPromptPlan,
+  assertKnowledgeInputBudget,
   buildRiskPreflight,
   IdempotencyConflictError,
   resolveRunMembers,
@@ -79,10 +80,12 @@ import { loadFrozenMemoryEntries } from "./memory-entries";
 import { loadFrozenToolContexts, loadRelevantToolContexts } from "./mcp-connections";
 import { claimOccurrences, claims, evidenceSources, modelRuns, preflightDrafts, providerConnections, providerOperations, runEvents, runs } from "./schema";
 import * as schema from "./schema";
+import { loadKnowledgePacket, readRunKnowledgePacket, authorizeKnowledgePacketInSnapshot, assertKnowledgePacketAttachmentRouting } from "./knowledge-packets";
 
 export { LOCAL_OWNER_ID } from "./owner";
 
 export type DurableRunWork = {
+  knowledgePacket?: import("@deliberation-ai/contracts").KnowledgePacket | null;
   runId: string;
   question: string;
   snapshotId: string;
@@ -157,6 +160,7 @@ export class PreflightMismatchError extends Error {
 }
 
 function promptPlanForRun(input: {
+  knowledgePacket?: import("@deliberation-ai/contracts").KnowledgePacket | null | undefined;
   question: string;
   continuationContext?: FrozenContinuation | null | undefined;
   members: CouncilMemberConfig[];
@@ -166,6 +170,7 @@ function promptPlanForRun(input: {
 }) {
   return buildRoundZeroPromptPlan({
     question: input.question,
+    knowledgePacket: input.knowledgePacket,
     continuationContext: input.continuationContext,
     members: input.members,
     memoryContext: input.memoryContext,
@@ -254,6 +259,7 @@ export function mapStoredRun(row: RunRow): RunRecord {
     : null;
   return {
     runId: row.id,
+    knowledgePacket: readRunKnowledgePacket(row),
     idempotencyKey: row.idempotencyKey,
     requestHash: row.requestHash,
     question,
@@ -396,6 +402,7 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
     throw new ExecutionPlanLimitsError();
   }
   const memoryContext = await loadFrozenMemoryEntries(request.memoryEntryIds);
+  const knowledgePacket = request.knowledgePacket ? await loadKnowledgePacket(request.knowledgePacket) : null;
   const continuationSelection = request.continuationSource
     ? await loadContinuationSelection(request.continuationSource.runId, request.continuationSource.expectedSha256, request.continuationSource.compaction) : null;
   const continuationContext = continuationSelection?.context ?? null;
@@ -409,7 +416,9 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
     [...selectedToolContext, ...retrievedToolContext].map((item) => [item.id, item]),
   ).values()].slice(0, 3);
   await validateRunAttachments(attachments);
-  const promptPlan = promptPlanForRun({ question: request.question, members, memoryContext, toolContext, attachments, continuationContext });
+  if (knowledgePacket) await assertKnowledgePacketAttachmentRouting(knowledgePacket, attachments.map((attachment) => attachment.sha256));
+  const promptPlan = promptPlanForRun({ question: request.question, members, memoryContext, toolContext, attachments, continuationContext, knowledgePacket });
+  if (knowledgePacket) assertKnowledgeInputBudget(promptPlan);
   if (request.expectedPreflightFingerprint && request.expectedPreflightFingerprint !== promptPlan.fingerprint) {
     throw new PreflightMismatchError();
   }
@@ -417,7 +426,7 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
   const risk = buildRiskPreflight({
     question: request.question, requestedProfile: request.riskProfile,
     continuationContext,
-    documents: receivesAttachments ? attachments.filter((item) => item.mimeType === "application/pdf").map((item) => ({ content: item.extractedText })) : [],
+    documents: [...(receivesAttachments ? attachments.filter((item) => item.mimeType === "application/pdf").map((item) => ({ content: item.extractedText })) : []), ...(knowledgePacket?.excerpts.map((item) => ({ content: item.text })) ?? [])],
     imageCount: receivesAttachments ? attachments.filter((item) => item.mimeType !== "application/pdf").length : 0,
     memoryContext, toolContext, promptFingerprint: promptPlan.fingerprint, reviewRounds: request.reviewRounds,
   });
@@ -443,6 +452,7 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
       if (scheduleFence) await completeScheduleOccurrence(tx, scheduleFence, alreadyQueued.id);
       return mapRun(alreadyQueued);
     }
+    if (knowledgePacket) await authorizeKnowledgePacketInSnapshot(tx, knowledgePacket, true);
     let approvedDecision: RunRecord["preflightDecision"] = null;
     if (continuationContext) {
       // Same row lock as retention and report edits. Snapshot remains independent
@@ -509,13 +519,14 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
         attachmentsCiphertext: encryptJson(attachments, `run:${runId}:attachments`),
         attachmentCount: attachments.length,
         toolContextCiphertext: encryptJson(toolContext, `run:${runId}:tool-context`),
+        knowledgePacketCiphertext: knowledgePacket ? encryptJson(knowledgePacket, `run:${runId}:knowledge-packet`) : null,
         toolResultCount: toolContext.length,
         snapshotId,
         status: "queued",
       })
       .returning();
     if (!inserted) throw new Error("Run could not be inserted.");
-    await attachRunToConversation(tx, inserted);
+    await attachRunToConversation(tx, inserted, knowledgePacket?.conversationId);
 
     const jobId = await boss.send(
       RUN_COUNCIL_QUEUE,
@@ -617,7 +628,10 @@ export async function enqueueSelectedMemberRerun(input: {
       ? decryptJson<RunAttachment[]>(source.attachmentsCiphertext, `run:${source.id}:attachments`) : [];
     const toolContext = source.toolContextCiphertext
       ? decryptJson<FrozenToolContext[]>(source.toolContextCiphertext, `run:${source.id}:tool-context`) : [];
-    const promptPlan = promptPlanForRun({ question, members, memoryContext, toolContext, attachments, continuationContext });
+    const knowledgePacket = readRunKnowledgePacket(source);
+    if (knowledgePacket) await authorizeKnowledgePacketInSnapshot(tx, knowledgePacket);
+    const promptPlan = promptPlanForRun({ question, members, memoryContext, toolContext, attachments, continuationContext, knowledgePacket });
+    if (knowledgePacket) assertKnowledgeInputBudget(promptPlan);
     if (promptPlan.version !== source.promptVersion || promptPlan.fingerprint !== source.promptFingerprint) {
       throw new FollowUpUnavailableError("Kaynak çalışmanın istem parmak izi artık doğrulanamıyor.");
     }
@@ -625,7 +639,7 @@ export async function enqueueSelectedMemberRerun(input: {
     const currentRisk = buildRiskPreflight({
       question, requestedProfile: source.riskProfile === "high" ? "high" : "standard",
       continuationContext,
-      documents: receivesAttachments ? attachments.filter((item) => item.mimeType === "application/pdf").map((item) => ({ content: item.extractedText })) : [],
+      documents: [...(receivesAttachments ? attachments.filter((item) => item.mimeType === "application/pdf").map((item) => ({ content: item.extractedText })) : []), ...(knowledgePacket?.excerpts.map((item) => ({ content: item.text })) ?? [])],
       imageCount: receivesAttachments ? attachments.filter((item) => item.mimeType !== "application/pdf").length : 0,
       memoryContext, toolContext, promptFingerprint: promptPlan.fingerprint,
       reviewRounds: reviewRoundCountSchema.parse(source.reviewRounds),
@@ -668,6 +682,7 @@ export async function enqueueSelectedMemberRerun(input: {
       memoryContextCiphertext: encryptJson(memoryContext, `run:${runId}:memory-context`), memoryEntryCount: memoryContext.length,
       attachmentsCiphertext: encryptJson(attachments, `run:${runId}:attachments`), attachmentCount: attachments.length,
       toolContextCiphertext: encryptJson(toolContext, `run:${runId}:tool-context`), toolResultCount: toolContext.length,
+      knowledgePacketCiphertext: knowledgePacket ? encryptJson(knowledgePacket, `run:${runId}:knowledge-packet`) : null,
       snapshotId: source.snapshotId, status: "queued",
     }).returning();
     if (!inserted) throw new Error("Follow-up run could not be inserted.");
@@ -862,6 +877,7 @@ async function executeDurableRunLocked(
     readContinuationArchive(row);
     return {
       runId: row.id,
+      knowledgePacket: readRunKnowledgePacket(row),
       question: row.questionCiphertext
         ? decryptText(row.questionCiphertext, `run:${row.id}:question`)
         : row.question,
@@ -925,12 +941,17 @@ async function executeDurableRunLocked(
       !work.members.some((member) => member.id === result.memberId && member.label === result.label && member.councilRole === result.councilRole) ||
       result.reusedFromRunId !== work.followUp?.sourceRunId)
   ) : work.reusedInitialResults.length > 0;
-  const rawReport = promptMismatch || riskMismatch || followUpMismatch
+  let knowledgeDenied = false;
+  if (work.knowledgePacket) {
+    try { await db.transaction(async (tx) => { await lockConversationMembership(tx); await authorizeKnowledgePacketInSnapshot(tx, work.knowledgePacket!); }); }
+    catch { knowledgeDenied = true; }
+  }
+  const rawReport = promptMismatch || riskMismatch || followUpMismatch || knowledgeDenied
     ? buildCouncilReport([], work.members.map((member) => ({
         memberId: member.id,
         label: member.label,
         councilRole: member.councilRole,
-        code: riskMismatch ? "risk_snapshot_mismatch" : followUpMismatch ? "follow_up_snapshot_mismatch" : "prompt_snapshot_mismatch",
+        code: knowledgeDenied ? "knowledge_scope_revoked" : riskMismatch ? "risk_snapshot_mismatch" : followUpMismatch ? "follow_up_snapshot_mismatch" : "prompt_snapshot_mismatch",
         message: "Kaydedilen istem veya risk kontrolleri değişti; modele istek gönderilmedi.",
       })))
     : executor
@@ -943,6 +964,7 @@ async function executeDurableRunLocked(
           memoryContext: work.memoryContext,
           attachments: work.attachments,
           toolContext: work.toolContext,
+          knowledgePacket: work.knowledgePacket,
         },
         work.scenario,
         work.members,

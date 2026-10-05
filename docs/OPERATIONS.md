@@ -123,3 +123,7 @@ Generated-only populated restore: node scripts/with-root-env.mjs pnpm --filter @
 ## DA-111 — settings and appearance location
 
 Provider connections, local MCP configuration/results and DB/worker diagnostics are reached through Ayarlar in the sidebar. Zamanlayıcı contains scheduling and latest linked run outputs; older runs remain in sidebar history. Appearance is selectable in the sidebar or Ayarlar and stored only as a non-sensitive browser preference. Menu changes do not stop a worker or pause schedules. Runtime health endpoints and independent 3000/3100 lifecycle remain unchanged. [Design](UI_DESIGN.md).
+
+## DA-122 reviewed local source packets
+
+Migration 0052 has been exercised only in generated databases. A generated-only packet/source archive rehearsal runs with node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/verify-knowledge-packets-restore.ts. It migrates, prepares/freezes/cancels a synthetic run, revokes the grant, dumps/restores, verifies exact historical quotations and revoked denial, then removes only generated databases/archive. Keep the encryption key separately; preserve the immutable preparation trigger. [Contract](KNOWLEDGE_PACKETS.md).

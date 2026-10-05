@@ -1,6 +1,8 @@
 import { continuationSourceSchema, councilMembersSchema, MAX_RUN_ATTACHMENTS, riskProfileSchema } from "@deliberation-ai/contracts";
 import { ContinuationUnavailableError, PreflightMismatchError, loadRunContinuation, loadFrozenMemoryEntries, loadFrozenToolContexts, loadRelevantToolContexts } from "@deliberation-ai/persistence";
 import { z } from "zod";
+import { knowledgePacketReferenceSchema } from "@deliberation-ai/contracts";
+import { loadKnowledgePacket, assertKnowledgePacketAttachmentRouting } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../../lib/request-security";
 import { estimateTokenPreview } from "../../../../lib/token-preview";
 
@@ -8,6 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const previewSchema = z.object({
+  knowledgePacket: knowledgePacketReferenceSchema.optional(),
   continuationSource: continuationSourceSchema.optional(),
   question: z.string().trim().max(4_000),
   riskProfile: riskProfileSchema.default("standard"),
@@ -46,12 +49,15 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Önizleme bilgileri geçersiz." }, { status: 422 });
   try {
     const value = parsed.data;
+    const knowledgePacket = value.knowledgePacket ? await loadKnowledgePacket(value.knowledgePacket) : null;
     const continuationContext = value.continuationSource ? await loadRunContinuation(value.continuationSource.runId, value.continuationSource.expectedSha256, value.continuationSource.compaction) : null;
     const memoryContext = await loadFrozenMemoryEntries(value.memoryEntryIds);
     const selected = await loadFrozenToolContexts(value.toolResultIds);
     const retrieved = value.retrieveToolContext ? await loadRelevantToolContexts(value.question, 3) : [];
     const toolContext = [...new Map([...selected, ...retrieved].map((item) => [item.id, item])).values()].slice(0, 3);
-    const result = estimateTokenPreview({ question: value.question, continuationContext, members: value.members, images: value.images, documents: value.documents, memoryContext, toolContext, riskProfile: value.riskProfile, reviewRounds: value.reviewRounds });
+    if (knowledgePacket) await assertKnowledgePacketAttachmentRouting(knowledgePacket, [...value.documents, ...value.images].map((item) => item.sha256));
+    const result = estimateTokenPreview({ question: value.question, continuationContext, members: value.members, images: value.images, documents: value.documents, memoryContext, toolContext, riskProfile: value.riskProfile, reviewRounds: value.reviewRounds, knowledgePacket });
+    if (knowledgePacket && result.members.some((item) => item.totalTokens > 24_000)) return Response.json({ error: "Kaynak paketli girdi 24.000 tahmini token sınırını aşıyor; bağlamı daraltın." }, { status: 422, headers: { "Cache-Control": "no-store" } });
     return Response.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof PreflightMismatchError || error instanceof ContinuationUnavailableError) return Response.json({ error: error.message }, { status: error instanceof PreflightMismatchError ? 409 : 422 });

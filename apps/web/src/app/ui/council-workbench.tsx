@@ -36,6 +36,7 @@ import { DecisionAssessmentPanel } from "./decision-assessment-panel";
 import { ClaimContextPanel } from "./claim-context-panel";
 import { ResearchCapturePanel } from "./research-capture-panel";
 import { LocalToolsPanel } from "./local-tools-panel";
+import { KnowledgePanel } from "./knowledge-panel";
 import { LocalSchedulesPanel } from "./local-schedules-panel";
 import { PromptRevisionEditor } from "./prompt-revision-editor";
 import { PreflightDraftsPanel } from "./preflight-drafts-panel";
@@ -365,6 +366,9 @@ export function CouncilWorkbench() {
   const [memoryEntries, setMemoryEntries] = useState<SharedMemoryEntry[]>([]);
   const [selectedMemoryEntryIds, setSelectedMemoryEntryIds] = useState<string[]>([]);
   const [attachments, setAttachments] = useState<RunAttachment[]>([]);
+  const [knowledgePacket, setKnowledgePacket] = useState<CreateRunRequest["knowledgePacket"] | null>(null);
+  const [knowledgeBlocked, setKnowledgeBlocked] = useState(false);
+  const [knowledgePanelGeneration, setKnowledgePanelGeneration] = useState(0);
   const [attachmentDimensions, setAttachmentDimensions] = useState<PreviewImage[]>([]);
   const [preparingAttachments, setPreparingAttachments] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string>();
@@ -414,6 +418,7 @@ export function CouncilWorkbench() {
     compaction: { version: "manual-continuation-compaction-v1", summary: compactionDraft.summary.trim(), reviewed: true },
   } : continuationContext ? { runId: continuationContext.sourceRunId, expectedSha256: continuationContext.sha256 } : undefined;
   const previewRequestKey = JSON.stringify({
+    ...(knowledgePacket ? { knowledgePacket } : {}),
     ...(continuationSource ? { continuationSource } : {}),
     question: selectedQuestion, members, providerMode: "remote",
     riskProfile: selectedRiskProfile, reviewRounds,
@@ -899,7 +904,7 @@ export function CouncilWorkbench() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submittingRef.current || preparingAttachments || loadingContinuation || (continuationSource && !continuationReviewed) || limitsError || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.riskPreflight || currentPreviewError) return;
+    if (knowledgeBlocked || submittingRef.current || preparingAttachments || loadingContinuation || (continuationSource && !continuationReviewed) || limitsError || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.riskPreflight || currentPreviewError) return;
     submittingRef.current = true;
     setPending(true);
     setError(undefined);
@@ -908,6 +913,7 @@ export function CouncilWorkbench() {
     setRun(undefined);
     try {
       const attempt = submissionAttemptsRef.current.prepare("council", {
+        ...(knowledgePacket ? { knowledgePacket } : {}),
         ...(continuationSource ? { continuationSource } : {}),
         question: selectedQuestion,
         ...(!needsContext ? { promptRevision } : {}),
@@ -994,6 +1000,7 @@ export function CouncilWorkbench() {
         setCompactionDraft(undefined);
       }
       setContinuationReviewed(false);
+      setKnowledgePacket(null); setKnowledgeBlocked(false); setKnowledgePanelGeneration((value) => value + 1);
       setQuestion("");
       setPromptCandidate("");
       setPromptChoice("original");
@@ -1579,6 +1586,7 @@ export function CouncilWorkbench() {
     setContinuationContext(undefined); setCompactionDraft(undefined); setContinuationReviewed(false);
     setAttachments([]); setAttachmentDimensions([]); setAttachmentError(undefined);
     setSelectedMemoryEntryIds([]); setSelectedToolResultIds([]); setView("chat");
+    setKnowledgePacket(null); setKnowledgeBlocked(false); setKnowledgePanelGeneration((value) => value + 1);
     window.requestAnimationFrame(() => document.getElementById("question")?.focus());
   }
 
@@ -1756,7 +1764,7 @@ export function CouncilWorkbench() {
         <p className="view-intro">Sohbette hazırladığınız soru ve konsey ile tekrar eden çalışmalar oluşturun.</p>
         <div className="schedule-draft-summary"><strong>Zamanlanacak soru</strong><p>{question || "Önce Sohbet bölümünde bir soru yazın."}</p><button type="button" className="secondary-button" onClick={() => setView("chat")}>Soruyu ve konseyi düzenle</button></div>
       <LocalSchedulesPanel onOpenRun={openSavedRun}
-        creationBlockedReason={continuationSource ? "Geçmiş rapor içeren devam çalışmaları henüz zamanlanamaz. Önce geçmiş bağlamı kaldırın." : undefined}
+        creationBlockedReason={knowledgePacket || knowledgeBlocked ? "Kaynak paketli çalışmalar henüz zamanlanamaz. Kaynak paketini açıkça kaldırın." : continuationSource ? "Geçmiş rapor içeren devam çalışmaları henüz zamanlanamaz. Önce geçmiş bağlamı kaldırın." : undefined}
         question={question}
         members={members}
         reviewRounds={reviewRounds}
@@ -2050,7 +2058,7 @@ export function CouncilWorkbench() {
           onReviewedChange={setContinuationReviewed} onRemove={() => { setCompactionDraft(undefined); setContinuationReviewed(false); }} /> : null}
         {continuationContext ? <section aria-label="Yeni çalışmanın geçmiş bağlamı">
           <h3>Önceki rapordan devam</h3>
-          <p>Kaynak çalışma: {continuationContext.sourceRunId}. Kaynak soru, raporun tamamı ve varsa önceki devam bağlamı bütün üyelere gönderilir. Eski ekler, bellek ve araç girdileri ayrıca gönderilmez. Yeni soru için tüm üyeler yeni yanıt verir; geçmiş uzlaşı doğruluk onayı değildir.</p>
+          <p>Kaynak çalışma: {continuationContext.sourceRunId}. Kaynak soru, raporun tamamı ve varsa önceki devam bağlamı bütün üyelere gönderilir. Eski ekler, bellek, araç girdileri ve kaynak paketi ayrıca gönderilmez. Kaynak alıntılarını yeniden göndermek için Yerel bilgi kaynakları bölümünde yeni paketi hazırlayıp inceleyin. Yeni soru için tüm üyeler yeni yanıt verir; geçmiş uzlaşı doğruluk onayı değildir.</p>
           <details><summary>Gönderilecek geçmiş bağlamın tamamını incele</summary><pre>{continuationContext.content}</pre></details>
           <label><input type="checkbox" checked={continuationReviewed} onChange={(event) => setContinuationReviewed(event.target.checked)} />Geçmiş bağlamı inceledim; yeni soruma dahil et</label>
           <button type="button" className="secondary-button" disabled={pending || loadingContinuation} onClick={() => { setContinuationContext(undefined); setContinuationReviewed(false); }}>Geçmiş bağlamı kaldır</button>
@@ -2076,7 +2084,7 @@ export function CouncilWorkbench() {
         />
         <div className="form-row">
           <div className="composer-council-summary"><strong>{members.length} üye · {reviewRounds} inceleme turu</strong><button type="button" className="secondary-button" onClick={() => { if (configRef.current) { configRef.current.open = true; configRef.current.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } }}>Konseyi düzenle</button></div>
-          <button disabled={pending || loadingContinuation || (Boolean(continuationSource) && !continuationReviewed) || preparingAttachments || Boolean(limitsError) || selectedQuestion.length < 10 || (!needsContext && promptChoice === "candidate" && !revisionAudit.canSelectCandidate) || !memberConfigurationValid || !highRiskReady || (attachments.length > 0 && !members.some((member) => member.receiveAttachments === true)) || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.promptPlan || !tokenPreview.value.riskPreflight || Boolean(currentPreviewError)} type="submit">
+          <button disabled={knowledgeBlocked || pending || loadingContinuation || (Boolean(continuationSource) && !continuationReviewed) || preparingAttachments || Boolean(limitsError) || selectedQuestion.length < 10 || (!needsContext && promptChoice === "candidate" && !revisionAudit.canSelectCandidate) || !memberConfigurationValid || !highRiskReady || (attachments.length > 0 && !members.some((member) => member.receiveAttachments === true)) || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.promptPlan || !tokenPreview.value.riskPreflight || Boolean(currentPreviewError)} type="submit">
             {pending ? "Değerlendiriliyor…" : (tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0) ? "Açıklama sorularını aç" : "Konseyi çalıştır"}
           </button>
         </div>
@@ -2085,7 +2093,10 @@ export function CouncilWorkbench() {
         {originalQuestion.length >= 10 ? <details className="composer-disclosure"><summary>İstemi düzenle ve karşılaştır</summary><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
           choice={promptChoice} disabled={needsContext} onCandidateChange={setPromptCandidate} onChoiceChange={setPromptChoice} /></details> : null}
         {needsContext ? <p className="hint">Önce eksik bilgi sorularını yanıtlayın; istem sürümü seçimi bu yanıttan sonra açılır.</p> : null}
+        <KnowledgePanel key={knowledgePanelGeneration} question={selectedQuestion} runId={run?.runId} onChange={(reference, blocked) => { setKnowledgePacket(reference); setKnowledgeBlocked(blocked); }} />
+        {knowledgeBlocked && <p role="status">Kaynak paketini inceleyin veya açıkça paketsiz devam etmeyi seçin.</p>}
         <details className="attachment-picker composer-disclosure"><summary>Dosya ekle{attachments.length > 0 ? ` · ${attachments.length} ek` : ""}</summary>
+        <p>Büyük (1 MiB üzeri PDF) veya tekrar kullanılan TXT/Markdown/PDF/PNG/JPEG dosyalarını Yerel bilgi kaynakları bölümüne kaydedin. Kaynak paketi seçiliyken aynı kütüphane dosyasını ayrıca tam ek olarak göndermeyin.</p>
           <label htmlFor="task-attachments">Görev ekleri (isteğe bağlı)</label>
           <input
             id="task-attachments"
@@ -2258,6 +2269,7 @@ export function CouncilWorkbench() {
             <small>Çalışma sorusu: {run.question}</small>
             {run.continuationContext ? <details><summary>Bu çalışmaya gönderilen geçmiş bağlam · {run.continuationContext.sourceRunId}</summary><p>Başlangıçta donduruldu; kaynak rapordaki sonraki değişikliklerden etkilenmez. JSON rapor indirmesi bu metni de içerir.</p><pre>{run.continuationContext.content}</pre></details> : null}
             {run.continuationArchive ? <ContinuationArchiveDetails archive={run.continuationArchive} /> : null}
+            {run.knowledgePacket ? <details><summary>Bu çalışmaya gönderilen kaynak alıntıları</summary><p>Başlangıçta donduruldu; güncel erişim izni veya içerik doğrulaması değildir. Yeni soruda otomatik gönderilmez.</p><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{JSON.stringify(run.knowledgePacket, null, 2)}</pre></details> : null}
             <small>İlk tur istem sürümü: {run.promptVersion}.</small>
             {run.followUp ? <small>Takip çalışması: {run.followUp.sourceRunId} kaydındaki {run.followUp.reusedMemberIds.length} ilk yanıt korundu; yalnız {run.followUp.rerunMemberId} ilk turda yeniden istendi. Çapraz incelemeler yeni birleşimle tekrar yapıldı veya yapılacak. Bu, doğrulanmış nihai sentez değildir.</small> : null}
             {run.executionLimits ? <small>Kaydedilen gönderim sınırları: en fazla {run.executionLimits.maxProviderCalls} API çağrısı · çağrı başına {run.executionLimits.maxOutputTokensPerCall.toLocaleString("tr-TR")} yanıt tokenı kotası · toplam {run.executionLimits.maxReservedOutputTokens.toLocaleString("tr-TR")} yanıt tokenı rezervasyonu. {run.followUp ? "Kaynak çalışmanın sınırları devralındı; bu takip çalışması kendi rezervasyonunu tutar." : "Bu çalışmanın sınırları görev formundaki sonraki değişikliklerden etkilenmez."}</small> : null}

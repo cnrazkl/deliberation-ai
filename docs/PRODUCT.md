@@ -3,10 +3,10 @@
 DA-121 adds a bounded local source backend: selected TXT/Markdown/PDF/PNG/JPEG bytes,
 encrypted immutable originals/extraction, page-linked manual quotes and inspectable
 lexical search. Failed/unverified files retain status and cannot supply evidence.
-Old quotes survive source updates; revocation blocks reads. Library UI and council
-packet routing remain DA-122 work. [Contract](LOCAL_KNOWLEDGE_SOURCES.md).
+Old quotes survive source updates; revocation blocks reads. DA-122 adds reviewed
+library UI and council packet routing. [Contract](KNOWLEDGE_PACKETS.md).
 
-DA-120 adds the backend [scoped knowledge foundation](KNOWLEDGE_SCOPE.md): owned local collections, explicit revisioned grants and encrypted conversation selections. Creation grants no retrieval; revoke invalidates old selections. Current topic/scope metadata remains inspectable in JSON/Markdown exports. Library UI and provider retrieval are future tasks; DA-119 human quality acceptance remains open.
+DA-120 adds the backend [scoped knowledge foundation](KNOWLEDGE_SCOPE.md): owned local collections, explicit revisioned grants and encrypted conversation selections. Creation grants no retrieval; revoke invalidates old selections. Current topic/scope metadata remains inspectable in JSON/Markdown exports. DA-122 provides explicit local retrieval and reviewed packets; DA-119 human quality acceptance remains open.
 
 **DA-119 preparation:** the owner accepted a local-first knowledge trial contract with
 explicitly selected files and bounded evidence preparation; folder/ZIP import is deferred.
@@ -234,3 +234,7 @@ A successful model-catalog check exposes its model IDs in a connection-card drop
 ## DA-107 reviewed local schedule deletion
 
 Recurring schedule deletion now requires a paused-template preview and explicit content/retained-run acknowledgement. The review opens beneath the selected card. Lost-response creation retries reuse a request identity; template removal keeps already queued and historical runs. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).
+
+## DA-122 reviewed local source packets
+
+DA-122 adds explicitly selected local collections, file intake and owner-reviewed bounded source packets. Exact quote/version/page/span and exclusions are visible before sharing with every independent first-round seat. Unsupported OCR/images remain unavailable; no source becomes verified automatically. [Packet contract](KNOWLEDGE_PACKETS.md).

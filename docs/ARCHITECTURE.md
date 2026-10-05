@@ -96,7 +96,7 @@ Persistence owns request identity/hash, exact-row review and encrypted deletion 
 
 ## Remaining proposed knowledge boundary
 
-[Scoped knowledge sources](KNOWLEDGE_SOURCES.md) proposes a local-first `KnowledgeSource` boundary separate from `TextProvider`, reusing encrypted persistence/extraction and adding bounded source retrieval. Optional documented adapters must pass admission gates; cookie/private-API bridges are excluded and no notebook vendor is required. Exact grants and immutable excerpts precede enqueue; models cannot dispatch tools/writes. Many-to-many bindings, reviewed saves, portable evidence and rebuildable indexes preserve independence from vendors. MCP is optional. NVIDIA reuses the compatible adapter. DA-120/121 backend foundations are verified; DA-119 human acceptance and DA-122–126 remain open; existing boundaries below describe implemented behavior.
+[Scoped knowledge sources](KNOWLEDGE_SOURCES.md) proposes a local-first `KnowledgeSource` boundary separate from `TextProvider`, reusing encrypted persistence/extraction and adding bounded source retrieval. Optional documented adapters must pass admission gates; cookie/private-API bridges are excluded and no notebook vendor is required. Exact grants and immutable excerpts precede enqueue; models cannot dispatch tools/writes. Many-to-many bindings, reviewed saves, portable evidence and rebuildable indexes preserve independence from vendors. MCP is optional. NVIDIA reuses the compatible adapter. DA-120–122 local foundations and reviewed packets are implemented; DA-119 human acceptance and DA-123–126 remain open; existing boundaries below describe implemented behavior.
 
 **DA-104:** A separate persistence boundary inspects one owned preflight row, fingerprints exact database timestamps and scrubs it under existing owner serialization plus a draft-table lock. Existing JSON metadata holds the strict receipt; create/start/cancel and enqueue/rerun guards preserve tombstone ordering. No provider or queue work is dispatched by review/deletion. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
@@ -260,3 +260,7 @@ CouncilWorkbench reuses one controlled connection form, rendering it inside the 
 ## DA-107 reviewed local schedule deletion
 
 The schedule deletion service owns bounded inspection, exact-row fingerprints, authenticated receipts and owner/table serialization. An internal occurrence fence coordinates run/job enqueue and cursor advancement in one persistence transaction; HTTP cannot submit reserved schedule occurrence keys. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).
+
+## DA-122 reviewed local source packets
+
+Contracts/domain own strict packet identity and integrity; persistence owns scoped preparation, encryption, freshness, run copying and per-submission authorization. Application/provider rendering treats frozen excerpts as untrusted inputs. A bounded no-store knowledge BFF and explicit collection/review panel connect DA-120/121 foundations. No model tools or external adapter is admitted. [ADR-0037](adr/0037-reviewed-local-knowledge-packets.md).

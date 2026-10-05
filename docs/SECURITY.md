@@ -187,3 +187,7 @@ Decision keys, assessment inputs/results and successful operation results use co
 ## DA-107 reviewed local schedule deletion
 
 Schedule template removal requires read-only bounded review, paused status, exact confirmation, same-origin mutation and strict 4 KiB bodies. Schema/FK/trigger/index drift blocks removal. Authenticated encrypted receipts retain no template content and prevent original creation replay; backup auditing validates their semantic integrity. Historical runs, WAL/backups/exports remain. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).
+
+## DA-122 reviewed local source packets
+
+The strict knowledge BFF accepts only explicit owned local operations, caps streamed JSON/base64 intake and returns no-store results. Reviewed packets require current exact grants, selection revision, active-version inventory and 15-minute freshness; enqueue repeats authorization under the owner lock. Each new round-0 submission rechecks scope. Backups authenticate source-linked quotations and historical packet ownership. Revocation is prospective, and run deletion preserves independent preparations/library versions. [Contract](KNOWLEDGE_PACKETS.md).

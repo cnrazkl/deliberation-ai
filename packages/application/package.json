@@ -10,7 +10,8 @@
   "dependencies": {
     "@deliberation-ai/contracts": "workspace:*",
     "@deliberation-ai/domain": "workspace:*",
-    "@deliberation-ai/providers": "workspace:*"
+    "@deliberation-ai/providers": "workspace:*",
+    "js-tiktoken": "1.0.21"
   },
   "devDependencies": {
     "typescript": "5.9.3"

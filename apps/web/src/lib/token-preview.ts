@@ -18,6 +18,7 @@ function imageTokens(image: PreviewImage, provider: RemoteProvider): number {
 }
 
 export function estimateTokenPreview(input: {
+  knowledgePacket?: import("@deliberation-ai/contracts").KnowledgePacket | null;
   question: string;
   continuationContext?: FrozenContinuation | null | undefined;
   members: CouncilMemberConfig[];
@@ -33,6 +34,7 @@ export function estimateTokenPreview(input: {
   }
   const promptPlan = buildRoundZeroPromptPlan({
     question: input.question,
+    knowledgePacket: input.knowledgePacket,
     continuationContext: input.continuationContext,
     members: input.members,
     memoryContext: input.memoryContext,
@@ -59,12 +61,12 @@ export function estimateTokenPreview(input: {
     members,
     imageCount: input.images.length,
     documentCount: input.documents.length,
-    contextEntryCount: input.memoryContext.length + input.toolContext.length + (input.continuationContext ? 1 : 0),
+    contextEntryCount: input.memoryContext.length + input.toolContext.length + (input.continuationContext ? 1 : 0) + (input.knowledgePacket?.excerpts.length ?? 0),
     promptPlan,
     riskPreflight: buildRiskPreflight({
       question: input.question, requestedProfile: input.riskProfile,
       continuationContext: input.continuationContext,
-      documents: input.members.some((member) => member.receiveAttachments) ? input.documents : [],
+      documents: [...(input.members.some((member) => member.receiveAttachments) ? input.documents : []), ...(input.knowledgePacket?.excerpts.map((item) => ({ content: item.text })) ?? [])],
       imageCount: input.members.some((member) => member.receiveAttachments) ? input.images.length : 0,
       memoryContext: input.memoryContext, toolContext: input.toolContext,
       promptFingerprint: promptPlan.fingerprint, reviewRounds: input.reviewRounds ?? 1,

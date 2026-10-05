@@ -1,6 +1,7 @@
 export * from "./database";
 export * from "./knowledge-scope";
 export * from "./knowledge-sources";
+export * from "./knowledge-packets";
 export * from "./run-deletion";
 export * from "./crypto";
 export * from "./council-templates";

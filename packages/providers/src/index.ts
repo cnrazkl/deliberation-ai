@@ -13,6 +13,7 @@ import {
   type ProviderCitation,
   type RunAttachment,
   type FrozenToolContext,
+  type KnowledgePacket,
   type ProviderTokenDetails,
 } from "@deliberation-ai/contracts";
 
@@ -24,6 +25,7 @@ export type FrozenInputSnapshot = {
   attachments?: RunAttachment[];
   documents?: Array<{ name: string; sha256: string; content: string }>;
   toolContext?: FrozenToolContext[];
+  knowledgePacket?: KnowledgePacket | null | undefined;
 };
 
 export type ProviderRequest = {

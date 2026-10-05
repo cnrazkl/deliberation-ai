@@ -13,6 +13,7 @@ import { enqueueDurableRun, findDurableRunById, loadRunContinuation, PreflightMi
 import { preflightDrafts } from "./schema";
 import { readPreflightDraftDeletion } from "./preflight-draft-deletion";
 import { lockConversationMembership } from "./conversation-membership";
+import { loadKnowledgePacket, assertKnowledgePacketAttachmentRouting } from "./knowledge-packets";
 
 export class PreflightDraftError extends Error {
   constructor(message = "Bekleyen ön değerlendirme bulunamadı veya artık kullanılamıyor.") {
@@ -120,12 +121,14 @@ export async function preparePreflightDraft(id: string, choice: PreflightChoice,
   const question = audit.selectedQuestion;
   const members = resolveRunMembers(request);
   const memoryContext = await loadFrozenMemoryEntries(request.memoryEntryIds);
+  const knowledgePacket = request.knowledgePacket ? await loadKnowledgePacket(request.knowledgePacket) : null;
   const continuationContext = request.continuationSource ? await loadRunContinuation(request.continuationSource.runId, request.continuationSource.expectedSha256, request.continuationSource.compaction) : null;
   const selected = await loadFrozenToolContexts(request.toolResultIds ?? []);
   const retrieved = request.retrieveToolContext ? await loadRelevantToolContexts(question, 3) : [];
   const toolContext = [...new Map([...selected, ...retrieved].map((item) => [item.id, item])).values()].slice(0, 3);
   const attachments = request.attachments ?? [];
   await validateRunAttachments(attachments);
+  if (knowledgePacket) await assertKnowledgePacketAttachmentRouting(knowledgePacket, attachments.map((attachment) => attachment.sha256));
   const receivesAttachments = members.some((member) => member.receiveAttachments);
   const documents = receivesAttachments ? attachments.filter((item) => item.mimeType === "application/pdf")
     .map((item) => ({ name: item.name, sha256: item.sha256, content: item.extractedText })) : [];
@@ -134,13 +137,13 @@ export async function preparePreflightDraft(id: string, choice: PreflightChoice,
   const imageDimensionsEstimated = images.some((image) => !request.previewImages?.some((item) => item.sha256 === image.sha256 && item.mimeType === image.mimeType));
   const previewImages = images.map((image) => request.previewImages?.find((item) => item.sha256 === image.sha256 && item.mimeType === image.mimeType)
     ?? { ...image, width: 1024, height: 1024 });
-  const promptPlan = buildRoundZeroPromptPlan({ question, members, memoryContext, toolContext, documents, images, continuationContext });
+  const promptPlan = buildRoundZeroPromptPlan({ question, members, memoryContext, toolContext, documents, images, continuationContext, knowledgePacket });
   const riskPreflight = buildRiskPreflight({ question, requestedProfile: request.riskProfile,
     continuationContext,
-    documents: documents.map(({ content }) => ({ content })), imageCount: images.length,
+    documents: [...documents.map(({ content }) => ({ content })), ...(knowledgePacket?.excerpts.map((item) => ({ content: item.text })) ?? [])], imageCount: images.length,
     memoryContext, toolContext, promptFingerprint: promptPlan.fingerprint, reviewRounds: request.reviewRounds });
   return { draft: summary(row), baseQuestion, question, promptRevision: revision, revisionAudit: audit,
-    members, memoryContext, toolContext, documents, previewImages, imageDimensionsEstimated, continuationContext,
+    members, memoryContext, toolContext, documents, previewImages, imageDimensionsEstimated, continuationContext, knowledgePacket,
     promptPlan, riskPreflight, riskProfile: request.riskProfile ?? "standard", reviewRounds: request.reviewRounds };
 }
 

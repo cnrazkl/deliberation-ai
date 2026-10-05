@@ -25,6 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const preview = estimateTokenPreview({
       question: prepared.question, members: prepared.members, documents: prepared.documents,
       continuationContext: prepared.continuationContext,
+      knowledgePacket: prepared.knowledgePacket,
       images: prepared.previewImages, memoryContext: prepared.memoryContext, toolContext: prepared.toolContext,
       riskProfile: prepared.riskProfile, reviewRounds: prepared.reviewRounds,
     });

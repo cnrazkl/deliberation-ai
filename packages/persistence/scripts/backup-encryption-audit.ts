@@ -1,6 +1,7 @@
 import type { Client } from "pg";
 import { knowledgeCollectionBodySchema, knowledgeSelectionSchema } from "@deliberation-ai/contracts";
 import { validateKnowledgeExtraction, validateKnowledgeOriginal, type KnowledgeVersionMetadata } from "@deliberation-ai/domain";
+import { validateKnowledgePacket, readKnowledgeExcerpt } from "@deliberation-ai/domain";
 import { decryptText } from "../src/crypto";
 import { decodePrivateBranchBody } from "../src/private-branches";
 import { decodePrivateBranchDeletion } from "../src/private-branch-deletion";
@@ -23,6 +24,8 @@ interface EncryptedTable {
 // Keep this inventory exhaustive. A new ciphertext column must have an explicit
 // authenticated context here before another archive can be published.
 const encryptedTables: readonly EncryptedTable[] = [
+  { table: "knowledge_preparations", keys: ["id"], contextPrefix: "knowledge-preparation", optional: true,
+    fields: [["packet_ciphertext", "packet", "json"]], metadata: [["owner_id", "ownerId"], ["conversation_id", "conversationId"]] },
   { table: "knowledge_source_versions", keys: ["id"], contextPrefix: "knowledge-version", optional: true, pageSize: 1,
     fields: [["original_ciphertext", "original", "json"], ["extraction_ciphertext", "extraction", "json"]],
     metadata: [["source_id", "sourceId"], ["owner_id", "ownerId"], ["original_hash", "originalHash"], ["parser_version", "parserVersion"],
@@ -45,7 +48,8 @@ const encryptedTables: readonly EncryptedTable[] = [
     ["execution_limits_ciphertext", "execution-limits", "json"],
     ["continuation_context_ciphertext", "continuation-context", "json"],
     ["continuation_archive_ciphertext", "continuation-archive", "json"],
-  ] },
+    ["knowledge_packet_ciphertext", "knowledge-packet", "json"],
+  ], metadata: [["owner_id", "ownerId"]] },
   { table: "preflight_drafts", keys: ["id"], contextPrefix: "preflight-draft", fields: [
     ["question_ciphertext", "question", "text"], ["request_ciphertext", "request", "json"],
   ], metadata: [["status", "draftStatus"], ["questions", "draftQuestions"]] },
@@ -118,6 +122,8 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
   const knowledgeCount = knowledgeTables.filter((table) => presentTables.has(table)).length;
   if (knowledgeCount !== 0 && knowledgeCount !== knowledgeTables.length) throw new Error("Restored knowledge scope schema is incomplete.");
   const sourceCount = ["knowledge_sources", "knowledge_source_versions"].filter((table) => presentTables.has(table)).length;
+  const packetColumn = actual.rows.some((row) => row.table_name === "runs" && row.column_name === "knowledge_packet_ciphertext");
+  if (presentTables.has("knowledge_preparations") !== packetColumn || packetColumn && sourceCount !== 2) throw new Error("Restored knowledge packet schema is incomplete.");
   if (sourceCount !== 0 && (sourceCount !== 2 || knowledgeCount !== 4)) throw new Error("Restored knowledge source schema is incomplete.");
   if (sourceCount === 2) {
     const invalid = await client.query(`select 1 from knowledge_sources s left join knowledge_collections c on c.id = s.collection_id
@@ -139,7 +145,8 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
   if (added.length !== 0 && added.length !== 4) throw new Error("Restored schedule deletion schema is incomplete.");
   const supportedTables = encryptedTables.filter((descriptor) => !descriptor.optional || presentTables.has(descriptor.table)).map((descriptor) =>
     descriptor.table === "local_schedules" && added.length === 0
-      ? { ...descriptor, fields: descriptor.fields.filter(([column]) => column !== "deletion_receipt_ciphertext"), metadata: [] } : descriptor);
+      ? { ...descriptor, fields: descriptor.fields.filter(([column]) => column !== "deletion_receipt_ciphertext"), metadata: [] }
+      : descriptor.table === "runs" && !packetColumn ? { ...descriptor, fields: descriptor.fields.filter(([column]) => column !== "knowledge_packet_ciphertext") } : descriptor);
   const expected = new Set(supportedTables.flatMap(({ table, fields }) => fields.map(([column]) => `${table}.${column}`)));
   const found = new Set(actual.rows.filter(({ column_name }) => column_name.endsWith("_ciphertext")).map(({ table_name, column_name }) => `${table_name}.${column_name}`));
   if (expected.size !== found.size || [...expected].some((column) => !found.has(column))) {
@@ -190,6 +197,27 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
           try {
             const plaintext = decryptText(ciphertext, suffix ? `${contextBase}:${suffix}` : contextBase);
             if (format === "json") JSON.parse(plaintext);
+            if (descriptor.table === "knowledge_preparations" || descriptor.table === "runs" && column === "knowledge_packet_ciphertext") {
+              const packet = validateKnowledgePacket(JSON.parse(plaintext));
+              if (descriptor.table === "knowledge_preparations" && (packet.id !== key[0] || packet.ownerId !== row.ownerId || packet.conversationId !== row.conversationId)) throw new Error("Invalid packet identity.");
+              if (packet.ownerId !== row.ownerId) throw new Error("Invalid packet owner.");
+              const conversation = await client.query("select 1 from conversations where id = $1 and owner_id = $2", [packet.conversationId, packet.ownerId]);
+              if (conversation.rows.length !== 1) throw new Error("Invalid packet conversation.");
+              if (descriptor.table === "runs") {
+                const membership = await client.query("select 1 from conversation_runs where run_id = $1 and owner_id = $2 and conversation_id = $3", [key[0], packet.ownerId, packet.conversationId]);
+                if (membership.rows.length !== 1) throw new Error("Invalid packet run membership.");
+              }
+              for (const excerpt of packet.excerpts) {
+                const version = await client.query<{ extraction_ciphertext: string }>(`select v.extraction_ciphertext from knowledge_source_versions v
+                  join knowledge_sources s on s.id = v.source_id where v.id = $1 and v.source_id = $2 and v.owner_id = $3 and s.owner_id = $3 and s.collection_id = $4`,
+                  [excerpt.source.versionId, excerpt.source.sourceId, packet.ownerId, excerpt.source.scope.collectionId]);
+                if (version.rows.length !== 1) throw new Error("Invalid packet version.");
+                const body = JSON.parse(decryptText(version.rows[0]!.extraction_ciphertext, `knowledge-version:${excerpt.source.versionId}:extraction`));
+                const quote = readKnowledgeExcerpt(body, excerpt.excerptId);
+                if (body.originalHash !== excerpt.source.originalHash || body.textHash !== excerpt.source.textHash || body.parserVersion !== excerpt.source.parserVersion
+                  || body.name !== excerpt.source.title || body.mediaType !== excerpt.source.mediaType || quote.text !== excerpt.text || quote.textHash !== excerpt.textHash) throw new Error("Invalid packet quote provenance.");
+              }
+            }
             if (descriptor.table === "knowledge_source_versions") {
               const metadata: KnowledgeVersionMetadata = { id: key[0]!, sourceId: row.sourceId!, collectionId: row.collectionId!, ownerId: row.ownerId!,
                 originalHash: row.originalHash!, parserVersion: row.parserVersion!, originalBytes: Number(row.originalBytes), textBytes: Number(row.textBytes), status: row.status! };

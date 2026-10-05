@@ -103,3 +103,7 @@ DA-068 decision, 27 September 2026: the first broad correctness group separates 
 ## DA-107 reviewed local schedule deletion
 
 ADR-0032 retains reviewed schedule tombstones, reserves occurrence keys to fenced dispatch and makes enqueue/cursor advancement atomic. [Contract](LOCAL_SCHEDULE_DELETION.md), [ADR-0032](adr/0032-reviewed-local-schedule-deletion.md).
+
+## DA-122 reviewed local source packets
+
+[ADR-0037](adr/0037-reviewed-local-knowledge-packets.md) accepts reviewed bounded local packets with visible omissions, freshness and prospective authorization fencing for the trial. Independent human/model acceptance remains open.

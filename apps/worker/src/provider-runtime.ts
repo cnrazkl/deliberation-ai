@@ -199,6 +199,7 @@ export async function executeWorkerCouncil(work: DurableRunWork) {
         content: attachment.extractedText,
       })),
     toolContext: work.toolContext,
+    knowledgePacket: work.knowledgePacket,
   };
   if (work.providerMode === "fake") {
     return executeFakeCouncil(snapshot, work.scenario, work.members, work.reviewRounds, work.selfRevisionEnabled, work.reusedInitialResults);

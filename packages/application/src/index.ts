@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { buildRoundZeroPromptPlan } from "./prompt-plan";
 export { buildRiskPreflight } from "./risk-preflight";
+export { assertKnowledgeInputBudget } from "./knowledge-budget";
 export { freezeContinuation, validateContinuation } from "./continuation";
 export { prepareContinuationCompaction, buildCompactedContinuation, validateContinuationArchive } from "./continuation-compaction";
 export { RiskConfigurationError } from "@deliberation-ai/domain";
@@ -50,6 +51,7 @@ import {
 } from "@deliberation-ai/providers";
 
 export type RunRecord = {
+  knowledgePacket?: import("@deliberation-ai/contracts").KnowledgePacket | null;
   runId: string;
   idempotencyKey: string;
   requestHash: string;
@@ -113,6 +115,7 @@ export const hashRunRequest = (request: CreateRunRequest): string =>
         ...(request.selfRevisionEnabled ? { selfRevisionEnabled: true } : {}),
         ...(request.executionLimits ? { executionLimits: request.executionLimits } : {}),
         memoryEntryIds: request.memoryEntryIds,
+        ...(request.knowledgePacket ? { knowledgePacket: request.knowledgePacket } : {}),
         toolResultIds: request.toolResultIds ?? [],
         retrieveToolContext: request.retrieveToolContext === true,
         expectedPreflightFingerprint: request.expectedPreflightFingerprint ?? null,
@@ -130,7 +133,7 @@ export async function createFakeCouncilRun(
   request: CreateRunRequest,
   repository: RunRepository,
 ): Promise<RunRecord> {
-  if (request.continuationSource) throw new Error("Devam bağlamı kalıcı çalışma deposunda çözülmeli.");
+  if (request.continuationSource || request.knowledgePacket) throw new Error("Devam veya kaynak bağlamı kalıcı çalışma deposunda çözülmeli.");
   const requestHash = hashRunRequest(request);
   const existing = await repository.findByIdempotencyKey(request.idempotencyKey);
   if (existing) {

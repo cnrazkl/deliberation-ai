@@ -4,7 +4,7 @@ Implemented backend increment, 5 October 2026. [DA-120 scope](KNOWLEDGE_SCOPE.md
 and the owner-accepted [trial protocol](evaluation/KNOWLEDGE_EVALUATION.md) remain
 prerequisites. This adds selected-byte intake and read APIs, without library UI,
 HTTP upload routes, council context packets, OCR or an external service. DA-122 owns
-input routing, immutable evidence packets and the six-excerpt/9,000-character budget.
+input routing, immutable evidence packets and the six-excerpt/9,000-character budget, now implemented in [the packet contract](KNOWLEDGE_PACKETS.md).
 
 ## Selected files and extraction
 
@@ -104,6 +104,6 @@ Existing local Node/PostgreSQL tools suffice; no service, GPU or external adapte
 needed. Clean-machine setup time and monthly maintenance burden are unmeasured.
 Operators must retain the separate encryption key, rehearse restore and explicitly
 review parser/dependency upgrades. The owner database was not migrated. Backend
-HTTP/UI integration must verify packaged worker assets before enabling intake.
+DA-122 HTTP/UI verification exercises packaged worker assets before enabling intake.
 Independent human format/source reviews and live quality/cost acceptance remain open.
 [Verification](DA121_ACCEPTANCE.md), [ADR-0036](adr/0036-local-knowledge-source-versions.md).

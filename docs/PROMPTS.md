@@ -51,3 +51,7 @@ The offline `contradiction-shadow-v1` prompt asks for pairwise contradiction/com
 The separate decision evaluator uses the frozen `source-support-v1` closed-label rubric in [EVALUATION](EVALUATION.md). Its instructions, criteria, option ordering and selected input are versioned in the assessment snapshot. Each request explicitly embeds the claim and immutable excerpt as labeled data instead of relying on an opaque question key. Excerpts are declared untrusted data, never instructions; peer votes, owner evidence labels and preferred answers are excluded.
 
 The first rubric is manually defined, not generated or optimized live by another model. The adapter returns only the provider's typed choice, probability distribution, confidence metadata, model and usage; it does not invent a free-text justification. Rubric/model changes invalidate prior calibration until regression evaluation. Existing council prompt contracts remain unchanged.
+
+## DA-122 reviewed local source packets
+
+council-knowledge-v1 binds exact untrusted excerpt JSON, query/topic/creation provenance and coverage to the ordinary question and council instructions. Embedded instructions cannot authorize scope/tool/network/write operations. Reviews never resend the packet; source verification is not inferred from peer agreement. Excluded source titles/inventory remain owner-visible metadata and do not enter the model projection. [Contract](KNOWLEDGE_PACKETS.md).

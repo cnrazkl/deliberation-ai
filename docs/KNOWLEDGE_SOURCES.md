@@ -6,9 +6,9 @@ ratifies trial scope/limits, not independent labels or measured model quality.
 [Technical preparation and open gates](DA119_ACCEPTANCE.md) supersede earlier pending
 agreement statements below. DA-120 now implements the [scoped backend foundation](KNOWLEDGE_SCOPE.md).
 DA-121 implements [local source versions and reads](LOCAL_KNOWLEDGE_SOURCES.md).
-Library UI and evidence packets remain future work.
+DA-122 implements [explicit library UI and reviewed evidence packets](KNOWLEDGE_PACKETS.md).
 
-Status: 5 October 2026. DA-119 trial contract is owner-accepted; independent gold/model acceptance is pending. DA-120 backend scope/grants/bindings are implemented and verified; DA-121 local source foundation is verified; DA-122–DA-126 remain open. DA-108 is complete in the integrated application history through DA-118. Original planning IDs DA-109–DA-116 are superseded by DA-119–DA-126. Selected-byte backend intake is implemented; no connector, library UI or model retrieval is enabled.
+Status: 5 October 2026. DA-119 trial contract is owner-accepted; independent gold/model acceptance is pending. DA-120 backend scope/grants/bindings are implemented and verified; DA-121 local source foundation is verified; DA-122 implements reviewed local packets; DA-123–DA-126 remain open. DA-108 is complete in the integrated application history through DA-118. Original planning IDs DA-109–DA-116 are superseded by DA-119–DA-126. Selected-file intake, explicit library UI and frozen council packets are implemented. No external connector or autonomous model retrieval is enabled.
 
 Owner refinement, 5 October: security, output quality and maintainability take precedence over NotebookLM compatibility. This revision supersedes the earlier recommendation to experiment with cookie-based bridges. The policy is requested; the detailed implementation remains proposed.
 

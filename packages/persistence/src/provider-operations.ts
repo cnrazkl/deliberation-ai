@@ -12,6 +12,8 @@ import type {
 } from "@deliberation-ai/contracts";
 import { executionLimitsSchema, reviewRoundCountSchema } from "@deliberation-ai/contracts";
 import { executionReservationAllowed, estimateTokenCost, picoUsdToUsd, usdToPico } from "@deliberation-ai/domain";
+import { readRunKnowledgePacket, authorizeKnowledgePacketInSnapshot } from "./knowledge-packets";
+import { lockConversationMembership } from "./conversation-membership";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { fromDrizzle } from "pg-boss";
 import { getDatabase } from "./database";
@@ -287,8 +289,8 @@ export async function prepareProviderOperation(input: {
 
 /** Only the caller that atomically claims a prepared receipt may contact the provider. */
 export class ExecutionLimitsExceededError extends Error {
-  constructor(readonly code: "execution_limit_exhausted" | "output_limit_mismatch" | "run_not_active") {
-    super(code === "run_not_active" ? "Çalışma artık çağrı başlatmaya uygun değil." : code === "output_limit_mismatch"
+  constructor(readonly code: "execution_limit_exhausted" | "output_limit_mismatch" | "run_not_active" | "knowledge_scope_revoked") {
+    super(code === "knowledge_scope_revoked" ? "Kaynak erişimi iptal edildi; yeni gönderim engellendi." : code === "run_not_active" ? "Çalışma artık çağrı başlatmaya uygun değil." : code === "output_limit_mismatch"
       ? "İsteğin yanıt kotası çalışma için dondurulan kotayla eşleşmiyor." : "Çalışmanın çağrı veya toplam yanıt kotası tükendi.");
     this.name = "ExecutionLimitsExceededError";
   }
@@ -296,6 +298,7 @@ export class ExecutionLimitsExceededError extends Error {
 
 export async function claimProviderOperationSubmission(id: string, maxOutputTokens?: number, pricingConnection?: { id: string; revision: number }): Promise<boolean> {
   return getDatabase().transaction(async (tx) => {
+    await lockConversationMembership(tx);
     const [candidate] = await tx.select({ runId: providerOperations.runId }).from(providerOperations)
       .where(eq(providerOperations.id, id)).limit(1);
     if (!candidate) return false;
@@ -305,6 +308,11 @@ export async function claimProviderOperationSubmission(id: string, maxOutputToke
     const [operation] = await tx.select().from(providerOperations).where(eq(providerOperations.id, id)).for("update").limit(1);
     if (!operation || operation.status !== "prepared") return false;
     if (!["queued", "running"].includes(run.status)) throw new ExecutionLimitsExceededError("run_not_active");
+    const packet = readRunKnowledgePacket(run);
+    if (packet && operation.round === 0) {
+      try { await authorizeKnowledgePacketInSnapshot(tx, packet); }
+      catch { throw new ExecutionLimitsExceededError("knowledge_scope_revoked"); }
+    }
     const limits = run.executionLimitsCiphertext
       ? executionLimitsSchema.parse(decryptJson(run.executionLimitsCiphertext, `run:${run.id}:execution-limits`)) : null;
     if (limits) {
