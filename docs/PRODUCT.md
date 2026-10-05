@@ -2,7 +2,7 @@
 
 ## Proposed reusable topic libraries (not implemented)
 
-The owner requests exact notebook selection per conversation, including multiple notebooks. Large/repeated documents should offer explicit library ingestion or manual handoff; council input should use bounded source-linked excerpts. New evidence requires human review before separately authorized notebook publication. Small ad hoc inputs remain under reviewed limits. NotebookLM is an experimental candidate and quality benchmark; open-source alternatives face the same quality gates. NVIDIA should appear as a distinct compatible inference option. Pending agreement and DA-109–DA-116. [Proposal](KNOWLEDGE_SOURCES.md).
+The owner requests exact notebook selection per conversation, including multiple notebooks, with security, quality and maintainability first. Propose local reusable collections and bounded source-linked excerpts; large/repeated files need not depend on an external service. New evidence is reviewed before reusable save or separately authorized external publication. Unofficial NotebookLM bridges and Notion are excluded; official NotebookLM is deferred until stable required capabilities are verified. Other adapters are optional and must pass admission tests. Small inputs and the distinct NVIDIA proposal remain. Pending implementation in DA-109–DA-116. [Proposal](KNOWLEDGE_SOURCES.md), [worked examples](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md).
 
 **DA-104:** Pending clarification tasks now offer a read-only draft deletion review and separate acknowledgement. Confirmed deletion clears the stored question/request while retaining a content-free tombstone; existing runs and the main council draft remain. Original-intent replay is refused. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

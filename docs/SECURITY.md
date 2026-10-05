@@ -1,6 +1,6 @@
 # Security
 
-**Proposed only, DA-110–116:** [Knowledge security](KNOWLEDGE_SOURCES.md#access-and-threat-model) enforces notebook/account grants before calls and on returned sources, authenticated local gateway access, revocation-aware caches, untrusted-content handling and separate write consent. UI selection cannot restrict upstream browser-cookie permissions; disclose residual scope and prefer dedicated/least-privilege credentials. No connector or transport change is implemented here.
+**Proposed only, DA-110–116:** [Knowledge security](KNOWLEDGE_SOURCES.md#access-and-threat-model) enforces grants before calls and on sources, authenticated gateway access, revocation-aware caches and separate write consent. Cookie/private-API bridges are excluded; warning labels do not waive effective isolation. Require local encrypted originals/excerpts and a separately reviewed design for persisted search indexes; no implicit plaintext/embedding exception. Optional backends require auth and approved-data isolation, with empty grants denying all access. No connector or transport change is implemented here.
 
 **DA-104:** Strict same-origin 4 KiB confirmations, schema/FK/trigger/unique-index checks, a 24 MiB inspection cap, exact-state fingerprints and owner/table serialization protect draft deletion. Ciphertexts are nulled, and original intent replay is denied. Receipts are plain content-free metadata; independent records, old backups and physical storage remain. Destructive acceptance uses generated fixtures only. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

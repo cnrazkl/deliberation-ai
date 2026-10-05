@@ -6,6 +6,8 @@ Updated: 5 October 2026 (documentation proposal; runtime remains DA-107)
 
 [Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable notebook-scoped sources, multi-notebook conversations, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-109–DA-116 remain open, pending agreement and later coding. No connector installation, connection, model call, upload, runtime code, dependency or schema change occurred. Existing attachment/MCP behavior is unchanged. DA-108 remains open; the owner will choose the next coding task.
 
+Owner refinement: prioritize security, quality and maintainability. The revised proposal excludes unofficial NotebookLM bridges and Notion, defers official NotebookLM pending stable required APIs, and proposes a bounded local-first library with optional admitted adapters. Open Notebook is not certified safe by this review. [Seven synthetic worked scenarios](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md) specify expected evidence, conflict, isolation, OCR, publication, recovery and cost behavior; they are documentation examples, not executed tests or live quality results.
+
 This worktree and the primary checkout started at `ed47915`; fetched `origin/main` matched. Planning validation covers documentation diff, local links and task/status consistency. Historical application acceptance below was not rerun for this documentation change.
 
 ## Current increment — DA-107 reviewed local schedule-template deletion

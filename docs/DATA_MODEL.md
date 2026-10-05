@@ -1,6 +1,6 @@
 # Data model
 
-**Proposed only, DA-110–114:** [Knowledge aggregates](KNOWLEDGE_SOURCES.md#proposed-persistence-no-migration-in-this-change) include notebook grants, conversation bindings, source versions/context packets, candidates and publication receipts. Link existing evidence review states; encrypt sensitive content and extend backup/retention/export inventories. No migration is introduced here.
+**Proposed only, DA-110–114:** [Knowledge aggregates](KNOWLEDGE_SOURCES.md#proposed-persistence-no-migration-in-this-change) include local collections/grants, conversation bindings, encrypted original/extracted source versions with page/parser provenance, context packets, candidates and optional publication receipts. Remote mappings are optional; canonical evidence is portable and indexes rebuildable. Link existing review states and extend backup/retention/export inventories. No migration is introduced here.
 
 **DA-104:** The existing preflight_drafts row becomes a cancelled tombstone after reviewed deletion. question_ciphertext and request_ciphertext are null; questions stores preflight-draft-deletion-v1 receipt metadata instead of missing-context-v1 clarification metadata. Identity, original key/hash/timestamps and nullable run link remain. Normal reads hide tombstones, receipt reads validate the strict shape, and backups validate both null payloads. No SQL migration or new ciphertext column. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

@@ -2,7 +2,7 @@
 
 ## Proposed knowledge-service decision — 5 October 2026
 
-Pending owner agreement, not implemented: separate knowledge adapters from council providers; enforce exact notebook grants, freeze source excerpts before deliberation and separately review publication. Treat NotebookLM bridges as experimental; compare Open Notebook and optionally RAGFlow under the same quality/isolation gates. Add NVIDIA service identity over the compatible protocol. [Proposal](KNOWLEDGE_SOURCES.md), [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md); DA-109–DA-116 track future work.
+Owner-directed reliability policy: exclude brittle cookie/private-API notebook bridges; security, quality and maintainability outrank a vendor choice. Proposed implementation remains unbuilt: local-first reusable evidence behind a separate knowledge boundary, exact grants, frozen excerpts and reviewed publication. Notion is outside scope; official NotebookLM is deferred; Open Notebook/RAGFlow must pass optional adapter admission. Preserve portable originals/evidence, upgrade/recovery tests and a vendor-independent local path. NVIDIA remains on the compatible protocol. [Proposal](KNOWLEDGE_SOURCES.md), [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md); DA-109–DA-116 stay open.
 
 DA-103 implements [ADR-0030](adr/0030-next-lint-glob-mitigation.md): exact Next lint parent-scoped dependency replacement and lock-hashed utility adaptation, with complete rule-settings preservation and clean-install/path/violation regressions. Keep full dependency and secret gates; remove/adapt alias and patch together after upstream review. This is a tooling maintenance obligation, not a runtime security certification.
 
