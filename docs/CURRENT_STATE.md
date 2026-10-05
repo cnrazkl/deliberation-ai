@@ -1,6 +1,12 @@
 # Current state
 
-Updated: 3 October 2026 (DA-107 reviewed local schedule deletion; next DA-108 council templates)
+Updated: 5 October 2026 (documentation proposal; runtime remains DA-107)
+
+## Proposed knowledge sources and NVIDIA — documentation only
+
+[Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable notebook-scoped sources, multi-notebook conversations, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-109–DA-116 remain open, pending agreement and later coding. No connector installation, connection, model call, upload, runtime code, dependency or schema change occurred. Existing attachment/MCP behavior is unchanged. DA-108 remains open; the owner will choose the next coding task.
+
+This worktree and the primary checkout started at `ed47915`; fetched `origin/main` matched. Planning validation covers documentation diff, local links and task/status consistency. Historical application acceptance below was not rerun for this documentation change.
 
 ## Current increment — DA-107 reviewed local schedule-template deletion
 

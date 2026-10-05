@@ -1,5 +1,9 @@
 # Architecture
 
+## Proposed knowledge boundary (not implemented)
+
+[Scoped knowledge sources](KNOWLEDGE_SOURCES.md) proposes a `KnowledgeSource` application port separate from `TextProvider`, normalized adapters and a gateway enforcing exact notebook grants. Preparation freezes source excerpts before enqueue; models cannot dispatch tools or writes. Conversation bindings are many-to-many and publication has a separate reviewed receipt. MCP is optional transport, not a cost guarantee. NVIDIA reuses the compatible adapter with distinct service identity. DA-109–DA-116 remain open; existing boundaries below describe implemented behavior.
+
 **DA-104:** A separate persistence boundary inspects one owned preflight row, fingerprints exact database timestamps and scrubs it under existing owner serialization plus a draft-table lock. Existing JSON metadata holds the strict receipt; create/start/cancel and enqueue/rerun guards preserve tombstone ordering. No provider or queue work is dispatched by review/deletion. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-103 tooling boundary:** a parent/version-scoped pnpm alias and lock-hashed patch replace Next lint's single directory discovery dependency with tinyglobby, preserving exercised paths and all rule settings. The normal runtime/provider/DB dependency boundaries stay unchanged. Frozen clean installation and Linux CI compatibility checks protect this locally maintained integration. [Policy](DEPENDENCY_MITIGATION.md).

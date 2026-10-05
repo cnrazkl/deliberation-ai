@@ -1,5 +1,9 @@
 # Product
 
+## Proposed reusable topic libraries (not implemented)
+
+The owner requests exact notebook selection per conversation, including multiple notebooks. Large/repeated documents should offer explicit library ingestion or manual handoff; council input should use bounded source-linked excerpts. New evidence requires human review before separately authorized notebook publication. Small ad hoc inputs remain under reviewed limits. NotebookLM is an experimental candidate and quality benchmark; open-source alternatives face the same quality gates. NVIDIA should appear as a distinct compatible inference option. Pending agreement and DA-109–DA-116. [Proposal](KNOWLEDGE_SOURCES.md).
+
 **DA-104:** Pending clarification tasks now offer a read-only draft deletion review and separate acknowledgement. Confirmed deletion clears the stored question/request while retaining a content-free tombstone; existing runs and the main council draft remain. Original-intent replay is refused. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-103 maintenance:** the Next lint dependency finding is removed from the current graph while preserving lint settings; product/provider/data behavior stays the same. Full dependency audit and local compatibility checks pass. Next bounded product work is reviewed preflight draft deletion. [Evidence](DA103_ACCEPTANCE.md).

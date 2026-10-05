@@ -1,5 +1,20 @@
 # Tasks
 
+## Proposed knowledge-source program — 5 October 2026
+
+Documentation preparation is complete; agreement, implementation and empirical acceptance remain open. [Architecture and acceptance](KNOWLEDGE_SOURCES.md), [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md). DA-108 remains open; the owner will choose the next increment in a separate coding chat.
+
+- [ ] **DA-109 — agree the knowledge contract and evaluation plan.** Ratify notebook grants, frozen preparation, separate evidence/publication review, provisional limits and quality gates; clarify directory import. Freeze the representative comparison corpus and independent labels.
+- [ ] **DA-110 — scoped contracts and conversation bindings.** Add owned notebook grants, many-to-many conversation selections, normalized source/excerpt types and fake adapters. Verify account/notebook isolation, revocation, encryption, retention/export and backup coverage. Depends on DA-109.
+- [ ] **DA-111 — read-only connector feasibility.** Compare pinned NotebookLM bridges and Open Notebook behind DA-110; consider RAGFlow if needed. Verify auth scope, transport, citations, query side effects and deadlines on authorized sample accounts. Deliver a capability matrix and fallback decision, not a presumed quality winner.
+- [ ] **DA-112 — evidence preparation and input routing.** Add scoped retrieval, citation-preserving budgets, cache/freshness rules, exact prompt/risk preview and immutable run packets. Route large/repeated files to explicitly selected libraries with manual fallback. Test scope leakage, silent truncation, hidden resends and unauthorized runtime tools. Depends on DA-110/111.
+- [ ] **DA-113 — candidate inbox and human review.** Capture owner submissions and model citations, retain original passages/conflicts and separate content/freshness decisions. Test false, stale, inaccessible and changed sources; no automatic evidence promotion. Depends on DA-110 and existing research/evidence boundaries.
+- [ ] **DA-114 — reviewed notebook publication.** Bind payload/destination consent, durable intent, deduplication and read-back; reconcile unknown outcomes without blind retry. Unsupported writes create manual-addition tasks. Test wrong destination, crash, partial indexing and external copies. Depends on DA-111–113.
+- [ ] **DA-115 — distinct NVIDIA preset.** Reuse compatible protocol with NVIDIA service identity, hosted URL, explicit key/model and conservative capabilities. Verify catalogs/manual entry, revision binding, output validation, usage and unknown outcomes with fixtures; live acceptance is opt-in. Independent of notebook implementation after agreement.
+- [ ] **DA-116 — quality, cost and recovery acceptance.** Compare full-source/retrieval/notebook paths, review citations/critical omissions, run access/injection/cache and backup/deletion tests, and measure available ingestion/retrieval/council usage and latency. Unknown cost remains unknown. Depends on DA-112–114; NVIDIA-specific claims also require DA-115 acceptance. No supported rollout or savings claim before passing.
+
+Likely boundaries: contracts/domain/application, tools/providers adapters, persistence, worker and web workbench. Select exact files/migrations per bounded task after local instructions. This planning increment changes no runtime behavior.
+
 DA-103 removes DA-102's vulnerable lint dependency chain with a scoped replacement and
 reviewed compatibility patch, preserving all 113 lint rule settings. Full dependency
 audit, 7 compatibility tests, frozen clean installation, 272 units, lint/type/build pass.

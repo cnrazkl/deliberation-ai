@@ -1,5 +1,7 @@
 # Security
 
+**Proposed only, DA-110–116:** [Knowledge security](KNOWLEDGE_SOURCES.md#access-and-threat-model) enforces notebook/account grants before calls and on returned sources, authenticated local gateway access, revocation-aware caches, untrusted-content handling and separate write consent. UI selection cannot restrict upstream browser-cookie permissions; disclose residual scope and prefer dedicated/least-privilege credentials. No connector or transport change is implemented here.
+
 **DA-104:** Strict same-origin 4 KiB confirmations, schema/FK/trigger/unique-index checks, a 24 MiB inspection cap, exact-state fingerprints and owner/table serialization protect draft deletion. Ciphertexts are nulled, and original intent replay is denied. Receipts are plain content-free metadata; independent records, old backups and physical storage remain. Destructive acceptance uses generated fixtures only. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 
 **DA-103:** the active lockfile removes the lint-only fast-glob/micromatch/braces chain through an exact parent-scoped tinyglobby alias and reviewed utility compatibility patch. Full and production audits report no known vulnerabilities; no advisory is ignored. Security CI adds frozen install/compatibility tests and preserves full audit/history scanning. This closes the dependency finding, not all application-security or original-plan gates. [Maintenance](DEPENDENCY_MITIGATION.md), [checks](DA103_ACCEPTANCE.md).
