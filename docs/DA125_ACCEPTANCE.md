@@ -30,6 +30,13 @@ Passing local results:
 The remote Security checks workflow includes the offline NVIDIA test file.
 Final audit, secret-scan, publication and runtime observations are recorded below.
 
+All 810 local documentation links resolve. Staged and full-history Gitleaks scans
+found no secrets. Implementation commit `fcde7b6` was fast-forward published to
+remote `main`; no feature branch or PR was pushed. Remote
+[Security checks 37445554970](https://github.com/cnrazkl/deliberation-ai/actions/runs/37445554970)
+passed, including the new offline NVIDIA boundary, dependency audit, frozen
+knowledge integrity, compatibility tests and full-history secret scan.
+
 `pnpm audit --audit-level=moderate` reports no known vulnerabilities; seven lint
 dependency compatibility cases pass. Interactive `http://127.0.0.1:3000/` returned
 HTTP 200 at 12:47 Istanbul; diagnostics showed the database and one worker ready,

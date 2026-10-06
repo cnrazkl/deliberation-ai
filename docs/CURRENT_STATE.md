@@ -20,6 +20,13 @@ an empirical acceptance task requiring independent human labels and real measure
 fixtures do not close DA-119 or DA-126. Remote/runtime evidence is recorded in the
 verification document when publication completes.
 
+Implementation `fcde7b6` is published on remote `main`; Security checks
+`37445554970` passed, including the offline NVIDIA boundary. All 810 local
+documentation links and staged/full-history secret scans pass. Interactive
+`http://127.0.0.1:3000/` returns HTTP 200; database and one worker are ready, with
+zero queued/running runs, unresolved attempts or active schedules. No new migration
+is needed. [Publication/runtime evidence](DA125_ACCEPTANCE.md).
+
 ## Previous increment — DA-124 reusable evidence complete
 
 Approved/current candidates can be saved only after separate exact-payload and
