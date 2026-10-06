@@ -1,5 +1,10 @@
 # Security
 
+Worker migration mismatches/database-read errors expose only a fixed explanation
+and class name before queue startup. Logical history matching does not certify DDL,
+SQL hashes, restored job reconciliation or historical executable safety.
+[Scope](WORKER_MIGRATION_COMPATIBILITY.md).
+
 6 October 2026 dependency maintenance: MCP client/core 2.2.0 and transitive sharp
 0.35.5 replace affected versions without overrides or suppressions. The
 [MCP OAuth advisory](https://github.com/advisories/GHSA-6qxp-vccf-f47h) and

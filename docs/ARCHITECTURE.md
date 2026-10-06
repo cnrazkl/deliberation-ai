@@ -1,5 +1,10 @@
 # Architecture
 
+Persistence compares bounded migration-ledger timestamps with its imported journal.
+Worker startup awaits that gate before getBoss, work registration, schedules and
+heartbeat creation; a read-only operator command reuses it. Domain and web APIs are
+unchanged. [Boundary](WORKER_MIGRATION_COMPATIBILITY.md).
+
 An opt-in clean source installation verifier archives the reviewed Git index tree
 into a generated checkout/home/store and runs frozen offline checks without owner
 configuration. No runtime API/schema or installer service is added.

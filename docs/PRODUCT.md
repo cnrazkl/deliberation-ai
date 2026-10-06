@@ -1,5 +1,9 @@
 # Product
 
+The worker now checks logical migration history before starting queue/schedule work.
+An incompatible or unreadable history blocks startup with a fixed explanation;
+no automatic migration or restore is performed. [Scope](WORKER_MIGRATION_COMPATIBILITY.md).
+
 Knowledge preparation now requires explicit search words, shows the existing limits
 and explains a no-match result without confusing it with source access failure.
 Blank input never reuses the council question. [Behavior](KNOWLEDGE_QUERY_FEEDBACK.md).

@@ -42,6 +42,12 @@ run selection; the final run still records every refusal and empty packet.
 
 ## Validation and remaining gates
 
+The [worker startup history gate](WORKER_MIGRATION_COMPATIBILITY.md) refuses mismatched
+logical journal history before queue/schedule/heartbeat startup. Actual current
+worker processes exit on behind/ahead generated ledgers; populated baseline/rollback
+history is denied. Existing binaries without the gate, DDL/hash compatibility,
+web/already running processes and real cutover remain outside this evidence.
+
 The [clean source installation rehearsal](KNOWLEDGE_INSTALL_REHEARSAL.md) verifies
 a generated checkout/home/store with no owner environment or existing dependencies.
 Frozen installation, actual extraction, 390 unit cases and lint compatibility pass;

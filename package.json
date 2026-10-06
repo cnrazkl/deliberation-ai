@@ -75,6 +75,7 @@
     "db:stop": "pnpm --filter @deliberation-ai/persistence db:stop",
     "db:generate": "pnpm --filter @deliberation-ai/persistence db:generate",
     "db:migrate": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence db:migrate",
+    "db:compatibility:check": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/verify-worker-migrations.ts",
     "db:encrypt-existing": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence db:encrypt-existing",
     "db:branches:index": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence db:branches:index",
     "db:conversations:index": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence db:conversations:index",

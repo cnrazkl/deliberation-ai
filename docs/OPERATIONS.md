@@ -1,5 +1,11 @@
 # Local operations
 
+Before worker startup, logical migration history must match the current journal.
+Use `pnpm db:compatibility:check` for a read-only check without queue initialization.
+Stop all web/worker processes before migrations or version replacement; the gate
+does not protect already running processes or historical binaries without it.
+[Procedure](WORKER_MIGRATION_COMPATIBILITY.md).
+
 Clean source/dependency installation on the current host:
 `pnpm knowledge:install:rehearse`. Stage the reviewed increment first; the command
 uses the exact index tree, isolated home/store and no owner environment/database.

@@ -1,5 +1,10 @@
 # Orchestration
 
+Worker startup verifies migration history before queue initialization/handlers,
+schedule dispatch or heartbeat writes. Mismatch/unreadable history exits without
+starting those operations. This is a startup gate, not continuous schema monitoring.
+[Contract](WORKER_MIGRATION_COMPATIBILITY.md).
+
 DA-125 freezes NVIDIA connection revisions in queued member snapshots and refuses
 changed or unbound NVIDIA targets at worker load. Already executing settings stay
 immutable. Hosted 202 is an unknown result under the existing no-blind-resend

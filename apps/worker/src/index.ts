@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
+  assertDatabaseMigrationCompatibility,
+  DatabaseMigrationCompatibilityError,
   closeBoss,
   closeDatabase,
   dispatchDueLocalSchedules,
@@ -20,6 +22,7 @@ type DecisionAssessmentJob = { assessmentId: string };
 const workerInstanceId = randomUUID();
 
 async function main(): Promise<void> {
+  await assertDatabaseMigrationCompatibility();
   const boss = await getBoss();
   await boss.work<{ branchId: string; operationId: string }>(PRIVATE_DELIVERY_QUEUE, {
     batchSize: 1, localConcurrency: 1, pollingIntervalSeconds: 0.5, notifyPollingIntervalSeconds: 1,
@@ -96,6 +99,7 @@ process.once("SIGINT", () => void handleSignal());
 process.once("SIGTERM", () => void handleSignal());
 
 main().catch(async (error: unknown) => {
+  if (error instanceof DatabaseMigrationCompatibilityError) console.error(error.message);
   // Startup failures may include database/HTTP details with private values.
   console.error("Worker başlatılamadı", { name: error instanceof Error ? error.name : "UnknownError" });
   try {

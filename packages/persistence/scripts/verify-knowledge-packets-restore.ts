@@ -8,6 +8,7 @@ import { asc, eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 
 import { closeDatabase, getDatabase } from "../src/database";
+import { assertDatabaseMigrationCompatibility } from "../src/migration-compatibility";
 import { conversations, knowledgeCollections, conversationKnowledge, knowledgeSourceVersions } from "../src/schema";
 import { createKnowledgeCollection, changeKnowledgeGrant, setConversationKnowledge, exportConversationKnowledge, exportKnowledgeCollection, authorizeKnowledgeScope } from "../src/knowledge-scope";
 import { importKnowledgeFiles, exportKnowledgeVersion, searchLocalKnowledge, selectKnowledgeExcerpt, LocalKnowledgeSource } from "../src/knowledge-sources";
@@ -77,6 +78,8 @@ async function main() {
       await migrate(getDatabase(), { migrationsFolder: baselineFolder });
       assert.equal((await getDatabase().execute("select to_regclass('public.evidence_publications') as relation")).rows[0]?.relation, null);
     } else migrateCurrent();
+    if (upgrade) await assert.rejects(assertDatabaseMigrationCompatibility());
+    else await assertDatabaseMigrationCompatibility();
     verificationPhase = "populate-fixtures";
     const collection = await createKnowledgeCollection("Synthetic archive collection");
     const scope = await changeKnowledgeGrant(collection.id, 1, "active");
@@ -112,6 +115,7 @@ async function main() {
       await closeBoss(); await closeDatabase();
       pgTool("pg_dump", ["--format=custom", "--no-owner", "--file", baselineArchive, sourceName], sourceName); baselineWritten = true;
       migrateCurrent();
+      await assertDatabaseMigrationCompatibility();
       assert.deepEqual(await getDatabase().select().from(knowledgeSourceVersions).orderBy(asc(knowledgeSourceVersions.id)), baseline!.versions);
       assert.deepEqual(await exportKnowledgeCollection(collection.id), baseline!.collection);
       assert.deepEqual(await exportConversationKnowledge(conversationId), baseline!.selection);
@@ -193,6 +197,7 @@ async function main() {
       assert.deepEqual((await findDurableRunById(run.runId))!.knowledgePacket, packet);
       assert.deepEqual(await exportKnowledgeVersion(scope, sourceId, imported[0]!.versionId), originalExport);
       assert.equal(await authorizeKnowledgeScope(scope), true);
+      await assert.rejects(assertDatabaseMigrationCompatibility());
       verificationPhase = "rollback-reconcile-revocation";
       // Explicit synthetic operator action: the older archive lost the later revoke.
       // Never start a worker or replay publication operations while reconciling it.
@@ -212,6 +217,7 @@ async function main() {
       assert.deepEqual(reconciledCandidate.candidateProvenance, baseline!.candidates![0]!.candidateProvenance);
       verificationPhase = "rollback-forward-migration";
       await closeDatabase(); migrateCurrent();
+      await assertDatabaseMigrationCompatibility();
       assert.deepEqual(await listEvidencePublications(run.runId), []);
       await assert.rejects(previewEvidencePublication(localSave));
       await assert.rejects(previewEvidencePublication(manualSave));

@@ -1,4 +1,5 @@
 export * from "./database";
+export * from "./migration-compatibility";
 export * from "./knowledge-scope";
 export * from "./knowledge-sources";
 export * from "./knowledge-packets";

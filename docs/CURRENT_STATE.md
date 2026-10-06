@@ -1,8 +1,36 @@
 # Current state
 
-Updated: 6 October 2026 (clean source installation rehearsal; DA-126 remains open)
+Updated: 6 October 2026 (worker migration history gate; DA-126 remains open)
 
-## Current increment — isolated clean source/dependency installation
+## Current increment — worker migration history startup gate
+
+The worker compares ordered logical migration timestamps with its bundled journal
+before queue initialization, handlers, schedules or heartbeat creation. Missing/
+additional/duplicate/substituted/unreadable history blocks startup with a fixed
+operator explanation. A bounded read-only db:compatibility:check command reuses the
+gate without queue initialization. No schema or owner migration is added.
+[Contract](WORKER_MIGRATION_COMPATIBILITY.md).
+
+This is a startup-only worker gate. It does not compare SQL hashes/DDL, fence web
+APIs or already running processes, retrofit historical binaries, reconcile restored
+jobs or approve a real cutover. Stop web/workers before changing schema/versions.
+Independent human/model/cost and operational acceptance remain open; DA-126 is
+incomplete. No provider or stored council/evidence behavior is changed.
+
+Two offline cases pass with current/older simulated manifests and invalid histories.
+The isolated PostgreSQL suite passes 250 cases / 31 files, including actual worker
+exit on behind/ahead ledger without queue/heartbeat changes. The populated recovery
+rehearsal rejects 0053 baseline/rollback and accepts current/forward-migrated 0054.
+392 unit cases / 62 files, workspace/scripts typecheck, zero-warning lint and full
+dependency audit pass. The personal database read-only compatibility check passes.
+Normal CI adds the two offline cases; generated PostgreSQL evidence remains local.
+
+The final focused actual-worker test also passes independently in a new disposable
+database, including unchanged queue configuration. Production build passes. At 23:58
+Istanbul, HTTP 200, database and one worker were ready with no queued/running runs,
+unresolved provider attempts or active schedules. No personal migration was needed.
+
+## Previous increment — isolated clean source/dependency installation
 
 knowledge:install:rehearse archives the exact reviewed Git index into a generated
 checkout/home/package store, excluding owner environment, local state and existing
