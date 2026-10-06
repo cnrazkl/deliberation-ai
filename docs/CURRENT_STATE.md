@@ -1,8 +1,27 @@
 # Current state
 
-Updated: 6 October 2026 (read-only human evidence status; DA-126 remains open)
+Updated: 6 October 2026 (generated upgrade/rollback rehearsal; DA-126 remains open)
 
-## Current increment — read-only human evidence status
+## Current increment — generated knowledge upgrade/rollback rehearsal
+
+The generated-only verifier tests populated 0053→0054 migration, current archive
+restoration and separate pre-upgrade snapshot rollback in three disposable databases.
+Exact encrypted versions, selections, candidates and frozen packet survive upgrade;
+current receipts/revoked denial and baseline rollback encryption/ledger/state are
+checked separately. Fetch is forbidden. [Scope](KNOWLEDGE_RECOVERY_REHEARSAL.md).
+
+Rollback restores earlier grant/receipt state; later changes require reconciliation.
+No old executable, clean-machine install or real replacement cutover was tested.
+Owner data and frozen cohort are unchanged. Human reviews and model/cost/operational
+acceptance remain open; DA-126 is incomplete. No runtime route/schema change is added.
+
+Upgraded/rollback and standard restore modes pass; generated databases and archives
+are removed. 390 unit cases / 61 files, workspace/scripts typecheck, zero-warning lint
+and dependency audit pass. A pre-existing lexical-hit ordering assumption in the
+verifier was corrected to check original source identity alongside its matching saved
+copy. Earlier failed attempts do not count as successful recovery evidence.
+
+## Previous increment — read-only human evidence status
 
 knowledge:review-status checks current original human files through existing
 compilers after frozen plan/intake/protocol and actual binary extraction verification.

@@ -1,5 +1,10 @@
 # Architecture
 
+The generated knowledge archive verifier has an opt-in 0053→0054 upgrade mode.
+A temporary baseline migration inventory and three disposable databases check
+migration preservation and pre-upgrade archive rollback. No runtime API or schema
+migration is added. [Scope](KNOWLEDGE_RECOVERY_REHEARSAL.md).
+
 A pure readiness projection validates current local human review inputs through
 the existing compilers. The read-only CLI rechecks actual extraction and reports
 only gate states and declaration flags, preserving missing/invalid/dependency-blocked

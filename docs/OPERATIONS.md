@@ -1,5 +1,11 @@
 # Local operations
 
+Generated-only 0053→0054 upgrade and pre-upgrade snapshot rollback:
+`pnpm knowledge:recovery:rehearse`. It checks three temporary databases without
+owner-data writes or provider calls. Rollback restores earlier grant/receipt state;
+later changes need reconciliation before real cutover. No old executable or clean
+machine is verified. [Procedure](KNOWLEDGE_RECOVERY_REHEARSAL.md).
+
 ## DA-124 — backed-up owner deployment, 6 October 2026
 
 The owner separately authorized applying pending additive migrations through 0054.

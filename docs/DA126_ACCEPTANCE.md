@@ -42,6 +42,13 @@ run selection; the final run still records every refusal and empty packet.
 
 ## Validation and remaining gates
 
+The [generated upgrade/rollback rehearsal](KNOWLEDGE_RECOVERY_REHEARSAL.md)
+exercises populated 0053→0054 preservation, current archive restore and pre-upgrade
+snapshot rollback in three disposable databases. Current storage APIs verify encryption
+and exact historical state; no old executable or clean-machine cutover is exercised.
+Later revocations/receipts are absent from the earlier archive and require reconciliation
+before real cutover. Operational acceptance remains partial.
+
 The [format review compiler](KNOWLEDGE_FORMAT_REVIEW.md) now validates completed
 human format worksheets against fresh extraction of the frozen binaries. Exact
 page quotes, case/original identities and abstention remain inspectable. Local
