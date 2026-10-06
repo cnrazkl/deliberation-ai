@@ -1,8 +1,25 @@
 # Current state
 
-Updated: 6 October 2026 (explicit knowledge query feedback; DA-126 remains open)
+Updated: 6 October 2026 (human format review compiler; DA-126 remains open)
 
-## Current increment — explicit knowledge query feedback
+## Current increment — human format review compiler
+
+The offline format workflow validates completed human worksheets against actual
+re-extraction of all four frozen binaries, eight case/question identities, exact
+page quote spans and two distinct declared reviewer slots/IDs. Original inspection
+must be declared; unsupported extraction must abstain. Blank forms and existing
+outputs are refused. [Workflow and boundaries](KNOWLEDGE_FORMAT_REVIEW.md).
+
+No human labels or decisions have been generated. Format adjudication, human
+independence, semantic quality, real model/cost and operational acceptance remain
+open. The frozen plan/protocol and owner trial agreement are unchanged. No runtime
+UI, schema, provider call or owner-data migration is introduced.
+
+360 unit cases / 59 files, workspace/scripts typecheck, zero-warning lint, frozen
+plan status, four actual extraction fixtures and dependency audit pass. The CLI
+rejects current incomplete local forms without creating compiled review files.
+
+## Previous increment — explicit knowledge query feedback
 
 Blank search input no longer silently substitutes the council question. The field
 requires owner-selected words, shows normalized distinct-word limits and explains

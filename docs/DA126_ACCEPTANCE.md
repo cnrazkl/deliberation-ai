@@ -42,6 +42,12 @@ run selection; the final run still records every refusal and empty packet.
 
 ## Validation and remaining gates
 
+The [format review compiler](KNOWLEDGE_FORMAT_REVIEW.md) now validates completed
+human format worksheets against fresh extraction of the frozen binaries. Exact
+page quotes, case/original identities and abstention remain inspectable. Local
+blank forms are preserved and no human decisions have been supplied or generated;
+format adjudication, independence and quality acceptance remain open.
+
 Four unit cases reject missing/duplicate/substituted pairs, fabricated failure counts,
 unchecked citations, non-finite durations and invalid memory samples. They verify p95
 denominators and preserve unknown price/usage/peak memory and blocked acceptance.

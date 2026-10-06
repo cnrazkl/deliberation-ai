@@ -8,7 +8,10 @@ import {
   createCouncilCoverageAdjudicationWorksheet,
   compileCouncilCoverageAdjudicationWorksheet,
   knowledgeFixtureNames,
+  createKnowledgeFormatWorksheet,
+  compileKnowledgeFormatReviewPair,
 } from "@deliberation-ai/evaluation";
+import { verifyKnowledgeExtractionSnapshot } from "./knowledge-extraction-snapshot";
 
 const root = resolve(import.meta.dirname, "..");
 const output = resolve(root, ".local/knowledge-evaluation");
@@ -46,45 +49,57 @@ const checkedReviews = () => {
   return reviews as [typeof reviews[number], typeof reviews[number]];
 };
 
-if (mode === "status") {
-  console.log(JSON.stringify(status, null, 2));
-} else if (mode === "prepare") {
-  writeBatch([
-    ...(["a", "b"] as const).map((slot) => ({
-      path: resolve(output, `reviewer-${slot}/worksheet.json`),
-      value: createCouncilCoverageReviewWorksheet(intake, slot),
-    })),
-    ...(["a", "b"] as const).map((slot) => ({
-      path: resolve(output, `reviewer-${slot}/format-worksheet.json`),
-      value: { schemaVersion: "knowledge-format-review-v1", planSha256: status.planSha256,
-        slot, reviewerId: "", cases: plan.formatCases.map((item) => ({ ...item,
-          fixtureSha256: plan.formatFixtures.find((file) => file.name === item.fixture)!.sha256,
-          claims: [], extractionVerified: null, noAnswerRequired: null, rationale: "",
-        })) },
-    })),
-    { path: resolve(output, "owner-review.json"), value: {
-      schemaVersion: "knowledge-owner-review-v1", planSha256: status.planSha256,
-      ownerId: "", reviewedAt: null, scopeApproved: null, trialLimitsApproved: null,
-      qualityProtocolApproved: null, corpusCoverageApproved: null, rationale: "",
-    } },
-  ]);
-  console.log("Two blank text/format reviewer sets and a pending owner form created; no acceptance claimed.");
-} else if (mode === "compile-reviews") {
-  const reviews = checkedReviews();
-  writeBatch(reviews.map((review, index) => ({
-    path: resolve(output, `compiled/review-${index === 0 ? "a" : "b"}.json`), value: review,
-  })));
-  console.log("Source-bound reviews compiled; human independence and acceptance still require attestation.");
-} else if (mode === "adjudication-prepare") {
-  writeBatch([{ path: resolve(output, "adjudicator/worksheet.json"),
-    value: createCouncilCoverageAdjudicationWorksheet(intake, checkedReviews()) }]);
-  console.log("Blank knowledge adjudication form created.");
-} else if (mode === "adjudication-compile") {
-  const result = compileCouncilCoverageAdjudicationWorksheet(
-    intake, checkedReviews(), readJson(resolve(output, "adjudicator/worksheet.json")),
-  );
-  writeBatch([{ path: resolve(output, "compiled/adjudication.json"), value: result }]);
-  console.log("Knowledge adjudication compiled; format coverage, independence and model study remain separate gates.");
-} else {
-  throw new Error("Use status, prepare, compile-reviews, adjudication-prepare or adjudication-compile.");
+async function main() {
+  if (mode === "status") {
+    console.log(JSON.stringify(status, null, 2));
+  } else if (mode === "prepare") {
+    writeBatch([
+      ...(["a", "b"] as const).map((slot) => ({
+        path: resolve(output, `reviewer-${slot}/worksheet.json`),
+        value: createCouncilCoverageReviewWorksheet(intake, slot),
+      })),
+      ...(["a", "b"] as const).map((slot) => ({
+        path: resolve(output, `reviewer-${slot}/format-worksheet.json`),
+        value: createKnowledgeFormatWorksheet(plan, slot),
+      })),
+      { path: resolve(output, "owner-review.json"), value: {
+        schemaVersion: "knowledge-owner-review-v1", planSha256: status.planSha256,
+        ownerId: "", reviewedAt: null, scopeApproved: null, trialLimitsApproved: null,
+        qualityProtocolApproved: null, corpusCoverageApproved: null, rationale: "",
+      } },
+    ]);
+    console.log("Two blank text/format reviewer sets and a pending owner form created; no acceptance claimed.");
+  } else if (mode === "compile-reviews") {
+    const reviews = checkedReviews();
+    writeBatch(reviews.map((review, index) => ({
+      path: resolve(output, `compiled/review-${index === 0 ? "a" : "b"}.json`), value: review,
+    })));
+    console.log("Source-bound reviews compiled; human independence and acceptance still require attestation.");
+  } else if (mode === "format-compile") {
+    const extractionText = readFileSync(resolve(root, "docs/evaluation/KNOWLEDGE_EXTRACTION_SNAPSHOT.json"), "utf8");
+    await verifyKnowledgeExtractionSnapshot(root, extractionText);
+    const reviews = compileKnowledgeFormatReviewPair(plan, extractionText, [
+      readJson(resolve(output, "reviewer-a/format-worksheet.json")),
+      readJson(resolve(output, "reviewer-b/format-worksheet.json")),
+    ]);
+    writeBatch(reviews.map((review) => ({ path: resolve(output, `compiled/format-review-${review.slot}.json`), value: review })));
+    console.log("Page-bound format reviews compiled; adjudication, independence and release acceptance remain pending.");
+  } else if (mode === "adjudication-prepare") {
+    writeBatch([{ path: resolve(output, "adjudicator/worksheet.json"),
+      value: createCouncilCoverageAdjudicationWorksheet(intake, checkedReviews()) }]);
+    console.log("Blank knowledge adjudication form created.");
+  } else if (mode === "adjudication-compile") {
+    const result = compileCouncilCoverageAdjudicationWorksheet(
+      intake, checkedReviews(), readJson(resolve(output, "adjudicator/worksheet.json")),
+    );
+    writeBatch([{ path: resolve(output, "compiled/adjudication.json"), value: result }]);
+    console.log("Knowledge adjudication compiled; format coverage, independence and model study remain separate gates.");
+  } else {
+    throw new Error("Use status, prepare, compile-reviews, format-compile, adjudication-prepare or adjudication-compile.");
+  }
 }
+void main().catch((error: unknown) => {
+  if (mode !== "format-compile") throw error;
+  console.error("Format review compilation refused: verify frozen extraction, complete both original worksheets and preserve existing outputs. No acceptance recorded.");
+  process.exitCode = 1;
+});

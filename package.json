@@ -25,6 +25,7 @@
     "knowledge:extraction:verify": "tsx scripts/knowledge-extraction-fixtures.mts",
     "knowledge:prepare": "tsx scripts/knowledge-evaluation-workflow.ts prepare",
     "knowledge:compile-reviews": "tsx scripts/knowledge-evaluation-workflow.ts compile-reviews",
+    "knowledge:compile-format-reviews": "tsx scripts/knowledge-evaluation-workflow.ts format-compile",
     "knowledge:adjudication:prepare": "tsx scripts/knowledge-evaluation-workflow.ts adjudication-prepare",
     "knowledge:adjudication:compile": "tsx scripts/knowledge-evaluation-workflow.ts adjudication-compile",
     "labeling:prepare": "tsx scripts/council-review-workflow.ts prepare",

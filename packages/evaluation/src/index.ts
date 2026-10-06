@@ -11,6 +11,7 @@ export * from "./contradiction-review";
 export * from "./contradiction-labeling";
 export * from "./knowledge-evaluation";
 export * from "./knowledge-benchmark";
+export * from "./knowledge-format-review";
 
 export const evaluationLabelSchema = z.enum([
   "supports",

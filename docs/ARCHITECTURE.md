@@ -1,5 +1,10 @@
 # Architecture
 
+Human PDF/image review declarations are compiled in the pure evaluation package.
+The offline CLI first re-extracts actual frozen binaries using retrieval, then
+validates page-bound quotes and writes ignored local review artifacts. No runtime
+route or provider call is introduced. [Contract](KNOWLEDGE_FORMAT_REVIEW.md).
+
 Knowledge query normalization/limits are shared by the contracts, browser and local
 search. Typed query/no-match errors preserve the access boundary while the BFF maps
 public feedback; lexical retrieval and authorization semantics are unchanged.
