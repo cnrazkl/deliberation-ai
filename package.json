@@ -28,6 +28,8 @@
     "knowledge:compile-format-reviews": "tsx scripts/knowledge-evaluation-workflow.ts format-compile",
     "knowledge:format-adjudication:prepare": "tsx scripts/knowledge-evaluation-workflow.ts format-adjudication-prepare",
     "knowledge:format-adjudication:compile": "tsx scripts/knowledge-evaluation-workflow.ts format-adjudication-compile",
+    "knowledge:attestation:prepare": "tsx scripts/knowledge-evaluation-workflow.ts attestation-prepare",
+    "knowledge:attestation:compile": "tsx scripts/knowledge-evaluation-workflow.ts attestation-compile",
     "knowledge:adjudication:prepare": "tsx scripts/knowledge-evaluation-workflow.ts adjudication-prepare",
     "knowledge:adjudication:compile": "tsx scripts/knowledge-evaluation-workflow.ts adjudication-compile",
     "labeling:prepare": "tsx scripts/council-review-workflow.ts prepare",

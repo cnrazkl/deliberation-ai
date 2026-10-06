@@ -73,6 +73,10 @@ independent work. Coordinator coverage/independence attestation and empirical
 acceptance remain separate requirements. No reviewer identity, rationale or claim
 is printed in CLI failure messages.
 
+The [coordinator workflow](KNOWLEDGE_REVIEW_ATTESTATION.md) can bind both completed
+text/format tracks to explicit human independence/coverage declarations. Its blank
+form requires completed adjudications and never grants gold or release acceptance.
+
 Adjudication compiler verification: 374 unit cases / 60 files, workspace/scripts
 typecheck, zero-warning lint, frozen plan status, actual extraction verification and
 dependency audit pass. Fourteen new offline cases exercise blank decisions, third

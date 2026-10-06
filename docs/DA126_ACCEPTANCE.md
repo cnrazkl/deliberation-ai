@@ -50,6 +50,9 @@ human format adjudication, independence and quality acceptance remain open. The
 third-person compiler now prepares blank resolutions, binds the original review
 pair and preserves conflicting originals beside source-validated final declarations;
 it cannot generate decisions or certify gold/independence.
+The [coordinator compiler](KNOWLEDGE_REVIEW_ATTESTATION.md) can now bind both
+completed tracks to explicit independence/coverage declarations. No completed human
+evidence or coordinator declaration has been supplied; gold/quality acceptance stays open.
 
 Four unit cases reject missing/duplicate/substituted pairs, fabricated failure counts,
 unchecked citations, non-finite durations and invalid memory samples. They verify p95

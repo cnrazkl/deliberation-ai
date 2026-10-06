@@ -1,8 +1,27 @@
 # Current state
 
-Updated: 6 October 2026 (third-person format adjudication compiler; DA-126 remains open)
+Updated: 6 October 2026 (coordinator review attestation compiler; DA-126 remains open)
 
-## Current increment — third-person format adjudication compiler
+## Current increment — coordinator review attestation compiler
+
+The offline workflow now binds both completed text/format review and adjudication
+tracks to blank coordinator declarations. It revalidates exact plan/intake/extraction
+and human evidence digests before preparation/compilation. Positive and negative
+independence/coverage declarations remain explicit; changed evidence and existing
+outputs are refused. [Workflow](KNOWLEDGE_REVIEW_ATTESTATION.md).
+
+No actual human reviews, adjudication or coordinator decisions have been generated
+or supplied. Owner gold review, representative coverage and real model/cost/recovery
+acceptance remain open. DA-119 and DA-126 remain incomplete. No runtime UI/schema,
+migration or model call is introduced; frozen protocol/cohort/approval are unchanged.
+
+386 unit cases / 61 files, workspace/scripts typecheck, zero-warning lint, frozen
+plan status, four actual extraction fixtures and dependency audit pass. Both CLI
+commands reject incomplete human evidence without changing original file hashes or
+creating coordinator outputs. At 14:04 Istanbul, web returns HTTP 200; the database
+and one worker are ready, with no queued/running runs or unresolved attempts.
+
+## Previous increment — third-person format adjudication compiler
 
 The offline format workflow now prepares blank third-person adjudication forms
 from two completed original reviews, retaining both originals and mechanically

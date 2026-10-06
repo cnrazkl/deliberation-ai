@@ -1,5 +1,10 @@
 # Architecture
 
+The pure evaluation coordinator compiler binds both validated text/format review
+and adjudication tracks. The offline CLI verifies frozen intake and binary extraction
+before creating a blank attestation or compiling explicit human declarations. Positive
+declarations do not certify gold or release. [Contract](KNOWLEDGE_REVIEW_ATTESTATION.md).
+
 Human PDF/image review declarations are compiled in the pure evaluation package.
 The offline CLI first re-extracts actual frozen binaries using retrieval, then
 validates page-bound quotes and writes ignored local review artifacts. Third-person

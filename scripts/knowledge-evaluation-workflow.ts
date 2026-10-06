@@ -12,6 +12,8 @@ import {
   compileKnowledgeFormatReviewPair,
   createKnowledgeFormatAdjudicationWorksheet,
   compileKnowledgeFormatAdjudicationWorksheet,
+  createKnowledgeReviewAttestationWorksheet,
+  compileKnowledgeReviewAttestationWorksheet,
 } from "@deliberation-ai/evaluation";
 import { verifyKnowledgeExtractionSnapshot } from "./knowledge-extraction-snapshot";
 
@@ -98,6 +100,24 @@ async function main() {
       writeBatch([{ path: resolve(output, "compiled/format-adjudication.json"), value: result }]);
       console.log("Source-bound format adjudication declarations compiled; independence, gold and release acceptance remain pending.");
     }
+  } else if (mode === "attestation-prepare" || mode === "attestation-compile") {
+    const extractionText = readFileSync(resolve(root, "docs/evaluation/KNOWLEDGE_EXTRACTION_SNAPSHOT.json"), "utf8");
+    await verifyKnowledgeExtractionSnapshot(root, extractionText);
+    const inputs = {
+      textReviews: [readJson(resolve(output, "reviewer-a/worksheet.json")), readJson(resolve(output, "reviewer-b/worksheet.json"))] as const,
+      textAdjudication: readJson(resolve(output, "adjudicator/worksheet.json")),
+      formatReviews: [readJson(resolve(output, "reviewer-a/format-worksheet.json")), readJson(resolve(output, "reviewer-b/format-worksheet.json"))] as const,
+      formatAdjudication: readJson(resolve(output, "adjudicator/format-worksheet.json")),
+    };
+    if (mode === "attestation-prepare") {
+      writeBatch([{ path: resolve(output, "coordinator/worksheet.json"),
+        value: createKnowledgeReviewAttestationWorksheet(plan, intake, extractionText, inputs) }]);
+      console.log("Blank coordinator attestation created; no independence, coverage or acceptance decision generated.");
+    } else {
+      writeBatch([{ path: resolve(output, "compiled/attestation.json"), value: compileKnowledgeReviewAttestationWorksheet(
+        plan, intake, extractionText, inputs, readJson(resolve(output, "coordinator/worksheet.json"))) }]);
+      console.log("Bound human coordinator declarations recorded; owner gold review and empirical release acceptance remain pending.");
+    }
   } else if (mode === "adjudication-prepare") {
     writeBatch([{ path: resolve(output, "adjudicator/worksheet.json"),
       value: createCouncilCoverageAdjudicationWorksheet(intake, checkedReviews()) }]);
@@ -109,11 +129,11 @@ async function main() {
     writeBatch([{ path: resolve(output, "compiled/adjudication.json"), value: result }]);
     console.log("Knowledge adjudication compiled; format coverage, independence and model study remain separate gates.");
   } else {
-    throw new Error("Use status, prepare, compile-reviews, format-compile, format-adjudication-prepare, format-adjudication-compile, adjudication-prepare or adjudication-compile.");
+    throw new Error("Use status, prepare, compile-reviews, format-compile, format-adjudication-prepare, format-adjudication-compile, attestation-prepare, attestation-compile, adjudication-prepare or adjudication-compile.");
   }
 }
 void main().catch((error: unknown) => {
-  if (!mode?.startsWith("format-")) throw error;
-  console.error("Format workflow refused: verify frozen extraction, complete the required human worksheets and preserve existing outputs. No acceptance recorded.");
+  if (!mode?.startsWith("format-") && !mode?.startsWith("attestation-")) throw error;
+  console.error("Human evidence workflow refused: verify frozen extraction, complete the required human worksheets and preserve existing outputs. No acceptance recorded.");
   process.exitCode = 1;
 });
