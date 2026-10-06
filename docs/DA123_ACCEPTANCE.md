@@ -53,4 +53,7 @@ all consumers to the patched 1.2.2, with no other package versions changed.
 The fresh local audit reports no known vulnerabilities and frozen installation passes.
 All 325 unit cases, seven lint compatibility checks, typecheck, zero-warning lint,
 production build and four frozen extraction fixtures pass again with this graph.
-Publication checks for this correction must pass separately.
+Security checks run [37439567739](https://github.com/cnrazkl/deliberation-ai/actions/runs/37439567739)
+completed successfully for correction commit `aac95dc`: dependency audit, frozen
+installation, knowledge integrity, lint compatibility and full-history secret scan
+all passed. The failed initial run remains part of the publication record.

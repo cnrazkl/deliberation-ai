@@ -24,7 +24,8 @@ publication is the next implementation task.
 The initial DA-123 publication failed the remote dependency audit in run
 `37438922429` on GHSA-68fv-2mgg-jv7q. All transitive `source-map-js` consumers are
 now pinned to patched version 1.2.2; fresh local audit and frozen installation pass.
-Remote verification of this dependency correction is tracked in
+Remote Security checks run `37439567739` passed for correction commit `aac95dc`.
+Publication evidence is tracked in
 [DA123_ACCEPTANCE.md](DA123_ACCEPTANCE.md).
 
 ## Previous increment — DA-122 local packet implementation complete
