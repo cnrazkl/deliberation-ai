@@ -1,5 +1,10 @@
 # Architecture
 
+An opt-in clean source installation verifier archives the reviewed Git index tree
+into a generated checkout/home/store and runs frozen offline checks without owner
+configuration. No runtime API/schema or installer service is added.
+[Procedure](KNOWLEDGE_INSTALL_REHEARSAL.md).
+
 The generated archive verifier also exercises known synthetic post-backup revoke/
 review reconciliation and forward migration. Existing scope/packet APIs require fresh
 selection/packet after renewal; no publication replay or new recovery service is added.

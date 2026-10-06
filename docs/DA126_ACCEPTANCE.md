@@ -42,6 +42,12 @@ run selection; the final run still records every refusal and empty packet.
 
 ## Validation and remaining gates
 
+The [clean source installation rehearsal](KNOWLEDGE_INSTALL_REHEARSAL.md) verifies
+a generated checkout/home/store with no owner environment or existing dependencies.
+Frozen installation, actual extraction, 390 unit cases and lint compatibility pass;
+download/install and subsequent steps have separate timings. This is same-host
+evidence, not clean-machine prerequisites/DB setup or full setup/monthly acceptance.
+
 The [generated upgrade/rollback rehearsal](KNOWLEDGE_RECOVERY_REHEARSAL.md)
 exercises populated 0053→0054 preservation, current archive restore and pre-upgrade
 snapshot rollback in three disposable databases. Current storage APIs verify encryption

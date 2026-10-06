@@ -1,5 +1,11 @@
 # Local operations
 
+Clean source/dependency installation on the current host:
+`pnpm knowledge:install:rehearse`. Stage the reviewed increment first; the command
+uses the exact index tree, isolated home/store and no owner environment/database.
+It does not provision a new machine or certify total setup/maintenance targets.
+[Scope](KNOWLEDGE_INSTALL_REHEARSAL.md).
+
 The generated recovery command also exercises explicit synthetic reconciliation of
 its known later revocation/rejected review. Old packets remain denied after renewal;
 fresh selection/packet review is required. Lost publication receipts are not replayed.

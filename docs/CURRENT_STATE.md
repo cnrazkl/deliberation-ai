@@ -1,8 +1,31 @@
 # Current state
 
-Updated: 6 October 2026 (synthetic rollback reconciliation; DA-126 remains open)
+Updated: 6 October 2026 (clean source installation rehearsal; DA-126 remains open)
 
-## Current increment — synthetic rollback reconciliation and dependency maintenance
+## Current increment — isolated clean source/dependency installation
+
+knowledge:install:rehearse archives the exact reviewed Git index into a generated
+checkout/home/package store, excluding owner environment, local state and existing
+dependencies. Frozen installation disables lifecycle scripts; frozen status, actual
+binary extraction, unit tests and lint compatibility run in that copy. Unstaged
+tracked edits, private paths, symlinks and unexpected arguments are refused. Child
+logs are not exposed; cleanup checks the generated target identity.
+[Procedure and limits](KNOWLEDGE_INSTALL_REHEARSAL.md).
+
+The final tested tree is f50b06e496961ab0c767babeb7a7c92c076a5367 on Windows with
+Node 24.19.0 and pnpm 11.25.0. Fresh-store download/install took 53,946 ms; subsequent
+checks took 13,403 ms, with 390 unit cases passing. Intermediate failed verification
+is not acceptance evidence; terminal color codes are now normalized before requiring
+a positive test-count summary. The first earlier clean run passed without that count
+report. Final cleanup succeeded. Workspace/scripts typecheck, zero-warning lint,
+script syntax and full dependency audit pass; unexpected arguments are refused.
+
+This is same-host source/dependency evidence, not new-machine prerequisite/DB setup,
+full 30-minute owner setup, monthly maintenance or historical executable compatibility.
+No runtime/schema/provider/owner database change is added. Human evidence and real
+model/cost/cutover acceptance remain open; DA-119/DA-126 are incomplete.
+
+## Previous increment — synthetic rollback reconciliation and dependency maintenance
 
 The generated recovery command now reapplies its known post-backup revocation and
 rejected/stale candidate decision after proving exact baseline rollback. Existing
