@@ -16,10 +16,16 @@ encrypted provenance. [Contract](EVIDENCE_CANDIDATES.md), [verification](DA123_A
 dump/restore, typecheck, lint, production build, dependency audit, extraction/cohort
 integrity and secret scans passed. Browser coverage and the final passing candidate/
 workspace/mobile reruns are recorded in the verification file; one initial mobile
-sidebar failure is retained honestly. All 776 documentation links resolve. Migration
+sidebar failure is retained honestly. All 777 documentation links resolve. Migration
 0053 has been applied only in generated databases. Owner database migration, DA-119
 independent labels and DA-126 empirical acceptance stay open. DA-124 reusable save/
 publication is the next implementation task.
+
+The initial DA-123 publication failed the remote dependency audit in run
+`37438922429` on GHSA-68fv-2mgg-jv7q. All transitive `source-map-js` consumers are
+now pinned to patched version 1.2.2; fresh local audit and frozen installation pass.
+Remote verification of this dependency correction is tracked in
+[DA123_ACCEPTANCE.md](DA123_ACCEPTANCE.md).
 
 ## Previous increment — DA-122 local packet implementation complete
 

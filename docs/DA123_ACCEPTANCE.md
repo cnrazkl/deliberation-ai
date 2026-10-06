@@ -36,9 +36,21 @@ separate content/freshness review. [Contract](EVIDENCE_CANDIDATES.md).
   provenance column and extended freshness constraint. Domain/provider prompts are
   unchanged by candidate intake.
 
-Production build, all 776 documentation links, staged-content and full-history secret
+Production build, all 777 documentation links, staged-content and full-history secret
 scans pass. The previous main Security checks run `37372170575` completed successfully;
 remote checks for the new publication are separate from these local results.
 Migration 0053 is applied only to generated test databases. No owner data migration,
 paid model call, automatic evidence promotion or external publication is performed.
 DA-119 independent human labels and DA-126 empirical quality acceptance stay open.
+
+## Publication dependency correction
+
+The first DA-123 main publication (`17a0c98`) failed Security checks run
+`37438922429` at the dependency audit: GHSA-68fv-2mgg-jv7q affects transitive
+`source-map-js` versions below 1.2.2. The earlier local audit reported no advisories;
+that result did not establish a passing remote check. A workspace override now pins
+all consumers to the patched 1.2.2, with no other package versions changed.
+The fresh local audit reports no known vulnerabilities and frozen installation passes.
+All 325 unit cases, seven lint compatibility checks, typecheck, zero-warning lint,
+production build and four frozen extraction fixtures pass again with this graph.
+Publication checks for this correction must pass separately.

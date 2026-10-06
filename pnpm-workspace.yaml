@@ -3,6 +3,8 @@ packages:
   - packages/*
 
 overrides:
+  # GHSA-68fv-2mgg-jv7q: patch every transitive source-map consumer.
+  "source-map-js": "1.2.2"
   "@esbuild-kit/core-utils>esbuild": "0.25.12"
   # DA-103: Next 16.3.6 only consumes globSync(..., { onlyDirectories: true }).
   # Keep this version-scoped and run test:lint-dependencies before upgrades.
