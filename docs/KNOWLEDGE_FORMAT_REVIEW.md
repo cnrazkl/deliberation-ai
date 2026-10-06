@@ -82,6 +82,12 @@ Both CLI commands reject the current incomplete human forms without changing the
 hashes or creating adjudication forms/results. No runtime/browser/database change
 requires additional integration acceptance in this increment.
 
+Adjudication implementation `69ede73` is on remote main;
+[Security checks 37453289246](https://github.com/cnrazkl/deliberation-ai/actions/runs/37453289246)
+passed. All 835 documentation links and staged/full-history secret scans pass.
+At 13:57 Istanbul, interactive web returned HTTP 200, database and one worker were
+ready, and no queued/running runs or unresolved provider attempts were reported.
+
 Offline regression tests use explicitly synthetic declarations only. They check
 blank refusal, exact quotes, frozen identities, unsupported extraction, abstention,
 distinct slots/IDs, tampered spans and rehashed invented extraction. No model,
