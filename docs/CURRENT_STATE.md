@@ -18,6 +18,13 @@ upgrade/rollback acceptance remain open. The current lexical keyword/manual work
 must not be represented as general question retrieval. No migration or model consent
 is introduced, and the frozen protocol/cohort is unchanged.
 
+339 unit cases / 57 files, 249 isolated PostgreSQL cases / 30 files, focused final
+diagnostic, type/lint/audit, four extraction fixtures, 819 documentation links and
+secret scans pass. Implementation `ab3d301` is on remote main; Security checks
+`37447218780` passed. Interactive web returns HTTP 200 with the database and one
+worker ready, and no queued/running runs or unresolved provider attempts.
+[Validation and runtime evidence](DA126_ACCEPTANCE.md).
+
 ## Previous increment — DA-125 NVIDIA hosted preset
 
 The distinct NVIDIA hosted connection fixes the official destination and conservative
