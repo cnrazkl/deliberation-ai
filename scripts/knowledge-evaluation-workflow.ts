@@ -14,6 +14,7 @@ import {
   compileKnowledgeFormatAdjudicationWorksheet,
   createKnowledgeReviewAttestationWorksheet,
   compileKnowledgeReviewAttestationWorksheet,
+  inspectKnowledgeReviewReadiness,
 } from "@deliberation-ai/evaluation";
 import { verifyKnowledgeExtractionSnapshot } from "./knowledge-extraction-snapshot";
 
@@ -40,6 +41,11 @@ const writeBatch = (files: { path: string; value: unknown }[]) => {
   }
 };
 const readJson = (path: string): unknown => JSON.parse(readFileSync(path, "utf8")) as unknown;
+const readOptionalJson = (path: string): unknown => {
+  if (!existsSync(path)) return undefined;
+  try { return readJson(path); }
+  catch { return null; } // Invalid/unreadable input must not expose file content or become missing.
+};
 const readReviews = () => (["a", "b"] as const).map((slot) => {
   const worksheet = readJson(resolve(output, `reviewer-${slot}/worksheet.json`));
   if (typeof worksheet !== "object" || worksheet === null || !("slot" in worksheet) || worksheet.slot !== slot) {
@@ -56,6 +62,18 @@ const checkedReviews = () => {
 async function main() {
   if (mode === "status") {
     console.log(JSON.stringify(status, null, 2));
+  } else if (mode === "review-status") {
+    const extractionText = readFileSync(resolve(root, "docs/evaluation/KNOWLEDGE_EXTRACTION_SNAPSHOT.json"), "utf8");
+    await verifyKnowledgeExtractionSnapshot(root, extractionText);
+    const inputs = {
+      textReviews: [readOptionalJson(resolve(output, "reviewer-a/worksheet.json")), readOptionalJson(resolve(output, "reviewer-b/worksheet.json"))] as const,
+      textAdjudication: readOptionalJson(resolve(output, "adjudicator/worksheet.json")),
+      formatReviews: [readOptionalJson(resolve(output, "reviewer-a/format-worksheet.json")), readOptionalJson(resolve(output, "reviewer-b/format-worksheet.json"))] as const,
+      formatAdjudication: readOptionalJson(resolve(output, "adjudicator/format-worksheet.json")),
+      coordinator: readOptionalJson(resolve(output, "coordinator/worksheet.json")),
+    };
+    console.log(JSON.stringify({ planSha256: status.planSha256,
+      ...inspectKnowledgeReviewReadiness(plan, intake, extractionText, inputs) }, null, 2));
   } else if (mode === "prepare") {
     writeBatch([
       ...(["a", "b"] as const).map((slot) => ({
@@ -129,11 +147,11 @@ async function main() {
     writeBatch([{ path: resolve(output, "compiled/adjudication.json"), value: result }]);
     console.log("Knowledge adjudication compiled; format coverage, independence and model study remain separate gates.");
   } else {
-    throw new Error("Use status, prepare, compile-reviews, format-compile, format-adjudication-prepare, format-adjudication-compile, attestation-prepare, attestation-compile, adjudication-prepare or adjudication-compile.");
+    throw new Error("Use status, review-status, prepare, compile-reviews, format-compile, format-adjudication-prepare, format-adjudication-compile, attestation-prepare, attestation-compile, adjudication-prepare or adjudication-compile.");
   }
 }
 void main().catch((error: unknown) => {
-  if (!mode?.startsWith("format-") && !mode?.startsWith("attestation-")) throw error;
+  if (mode !== "review-status" && !mode?.startsWith("format-") && !mode?.startsWith("attestation-")) throw error;
   console.error("Human evidence workflow refused: verify frozen extraction, complete the required human worksheets and preserve existing outputs. No acceptance recorded.");
   process.exitCode = 1;
 });

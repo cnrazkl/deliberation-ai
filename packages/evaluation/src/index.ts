@@ -14,6 +14,7 @@ export * from "./knowledge-benchmark";
 export * from "./knowledge-format-review";
 export * from "./knowledge-format-adjudication";
 export * from "./knowledge-review-attestation";
+export * from "./knowledge-review-readiness";
 
 export const evaluationLabelSchema = z.enum([
   "supports",

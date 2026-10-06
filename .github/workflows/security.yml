@@ -30,6 +30,7 @@ jobs:
           pnpm exec vitest run packages/evaluation/src/knowledge-format-adjudication.test.ts
           pnpm exec vitest run packages/evaluation/src/knowledge-review-attestation.test.ts
           pnpm knowledge:status
+          pnpm knowledge:review-status
       - name: Verify scoped knowledge boundary
         run: pnpm exec vitest run packages/application/src/knowledge.test.ts packages/application/src/knowledge-packet.test.ts packages/contracts/src/evidence-candidates.test.ts packages/contracts/src/evidence-publications.test.ts apps/web/src/lib/markdown-export.test.ts
       - name: Verify local source integrity and frozen extraction

@@ -5,6 +5,7 @@ import { createCouncilCoverageReviewWorksheet, compileCouncilCoverageReviewWorks
 import { createKnowledgeFormatWorksheet } from "./knowledge-format-review";
 import { createKnowledgeFormatAdjudicationWorksheet } from "./knowledge-format-adjudication";
 import { createKnowledgeReviewAttestationWorksheet, compileKnowledgeReviewAttestationWorksheet } from "./knowledge-review-attestation";
+import { inspectKnowledgeReviewReadiness } from "./knowledge-review-readiness";
 
 const read = (name: string) => readFileSync(new URL(`../../../docs/evaluation/${name}`, import.meta.url), "utf8");
 const plan = JSON.parse(read("KNOWLEDGE_EVALUATION_PLAN.json"));
@@ -44,6 +45,34 @@ function complete(inputs = evidence()) {
     limitationsAcknowledged: true, rationale: "Synthetic attestation, not independent human acceptance." };
 }
 describe("frozen human review coordinator declarations", () => {
+  it("reports missing, invalid and dependency-blocked evidence without leaking content", () => {
+    const inputs = evidence();
+    inputs.textReviews[0].reviewerId = "";
+    const result = inspectKnowledgeReviewReadiness(plan, intake, extraction, { ...inputs, formatAdjudication: undefined });
+    expect(result.gates).toMatchObject({ textReviewerA: "invalid", textReviewerB: "validated", textReviewPair: "blocked",
+      textAdjudication: "blocked", formatAdjudication: "missing", coordinator: "missing" });
+    expect(JSON.stringify(result)).not.toContain("synthetic");
+    expect(JSON.stringify(result)).not.toContain("Synthetic");
+  });
+  it("validates complete declarations while retaining negative decisions and blocked release", () => {
+    const inputs = evidence();
+    const result = inspectKnowledgeReviewReadiness(plan, intake, extraction,
+      { ...inputs, coordinator: { ...complete(inputs), coverageAdequate: false } });
+    expect(Object.values(result.gates).every((state) => state === "validated")).toBe(true);
+    expect(result).toMatchObject({ coverage: "not_accepted", humanIndependence: "human_declared", releaseAcceptance: "blocked" });
+  });
+  it("does not trust a stale coordinator or duplicate reviewer identity", () => {
+    const inputs = evidence(), coordinator = complete(inputs);
+    inputs.textAdjudication.cases[0]!.goldClaims[0]!.statement += " changed";
+    expect(inspectKnowledgeReviewReadiness(plan, intake, extraction, { ...inputs, coordinator }).gates.coordinator).toBe("invalid");
+    inputs.textReviews[1].reviewerId = inputs.textReviews[0].reviewerId;
+    expect(inspectKnowledgeReviewReadiness(plan, intake, extraction, inputs).gates.textReviewPair).toBe("invalid");
+  });
+  it("treats malformed inputs as invalid rather than missing", () => {
+    const inputs = evidence();
+    expect(inspectKnowledgeReviewReadiness(plan, intake, extraction, { ...inputs, textReviews: [null, undefined] }).gates)
+      .toMatchObject({ textReviewerA: "invalid", textReviewerB: "missing" });
+  });
   it("requires both completed review/adjudication tracks and leaves decisions blank", () => {
     const inputs = evidence(), before = JSON.stringify(inputs);
     const form = createKnowledgeReviewAttestationWorksheet(plan, intake, extraction, inputs);

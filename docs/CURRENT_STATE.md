@@ -1,8 +1,27 @@
 # Current state
 
-Updated: 6 October 2026 (coordinator review attestation compiler; DA-126 remains open)
+Updated: 6 October 2026 (read-only human evidence status; DA-126 remains open)
 
-## Current increment — coordinator review attestation compiler
+## Current increment — read-only human evidence status
+
+knowledge:review-status checks current original human files through existing
+compilers after frozen plan/intake/protocol and actual binary extraction verification.
+It reports missing, invalid, dependency-blocked or validated gates without identities,
+source/claim text, generated decisions or file writes. Negative coordinator
+declarations and blocked release remain explicit. [Command](KNOWLEDGE_REVIEW_ATTESTATION.md#read-only-evidence-status).
+
+Current local evidence contains four blank/incomplete reviewer forms, two blocked
+pair gates and missing text/format adjudication/coordinator forms. Independent human
+reviews are the next dependency. DA-119/DA-126 remain open; gold, real model/cost and
+operational acceptance are not established. No runtime UI/schema/migration/provider
+call is introduced and frozen study inputs are unchanged.
+
+390 unit cases / 61 files, workspace/scripts typecheck, zero-warning lint and
+dependency audit pass. Read-only CLI execution revalidates four actual extraction
+fixtures and preserves reviewer file hashes. Web returns HTTP 200, database and one
+worker are ready, with no queued/running runs or unresolved attempts.
+
+## Previous increment — coordinator review attestation compiler
 
 The offline workflow now binds both completed text/format review and adjudication
 tracks to blank coordinator declarations. It revalidates exact plan/intake/extraction

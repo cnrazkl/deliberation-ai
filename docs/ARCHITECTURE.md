@@ -1,5 +1,10 @@
 # Architecture
 
+A pure readiness projection validates current local human review inputs through
+the existing compilers. The read-only CLI rechecks actual extraction and reports
+only gate states and declaration flags, preserving missing/invalid/dependency-blocked
+evidence without exposing content. [Contract](KNOWLEDGE_REVIEW_ATTESTATION.md#read-only-evidence-status).
+
 The pure evaluation coordinator compiler binds both validated text/format review
 and adjudication tracks. The offline CLI verifies frozen intake and binary extraction
 before creating a blank attestation or compiling explicit human declarations. Positive

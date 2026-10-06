@@ -4,6 +4,43 @@ The offline knowledge workflow binds completed text and format reviews and their
 third-person adjudications to a coordinator's explicit independence and coverage
 declarations. It prepares no human decisions and cannot accept model quality or release.
 
+## Read-only evidence status
+
+`pnpm knowledge:review-status` inspects current local human worksheets, revalidating
+the frozen plan/intake/protocol and actual binary extraction first. Unlike
+`knowledge:status`, which only inspects public frozen preparation, this command
+checks both original reviewer pairs, adjudications and coordinator declarations.
+It does not consume compiled outputs as authoritative evidence or write any files.
+
+Each gate is `missing` for an absent file, `invalid` for a present incomplete,
+malformed, unreadable, stale or inconsistent input, `blocked` when a present input
+cannot be checked until its prerequisites pass, or `validated` for structural
+validation against current sources. Pair gates expose duplicate identities/slots;
+they are blocked until both individual forms validate. An absent dependent form
+remains missing even if its prerequisites are blocked. A blank form is incomplete,
+not a successful review.
+
+The report contains gate states and declared independence/coverage flags only,
+without participant IDs, rationales, questions, source text or claims. A structurally
+valid coordinator can still report inadequate coverage or unconfirmed independence.
+Even all validated gates retain pending owner gold review, unassessed model results
+and blocked release acceptance. This command does not assess cost/recovery evidence
+or establish that the declared participants are independent humans.
+
+On the current local files, four blank reviewer forms are invalid, both pair gates
+are blocked, and text/format adjudication plus coordinator forms are missing. The
+next human work is completing the two independent source/format reviews; existing
+files must be preserved. Structural validation cannot replace those judgments.
+
+Readiness verification: 390 unit cases / 61 files, workspace/scripts typecheck,
+zero-warning lint and dependency audit pass. Four new offline cases cover mixed
+missing/invalid/blocked states, complete negative declarations, stale coordinators,
+duplicate reviewer identities and content-free output. Actual CLI execution validates
+the frozen binary extraction and preserves original reviewer file hashes. Normal CI
+runs the same command without local evidence, retaining missing inputs.
+
+## Coordinator workflow
+
 Complete the original reviewer text/format worksheets and both adjudicator worksheets
 first. `pnpm knowledge:attestation:prepare` revalidates the frozen plan/intake/protocol,
 actual binary extraction, both original reviewer pairs and both adjudications. It
