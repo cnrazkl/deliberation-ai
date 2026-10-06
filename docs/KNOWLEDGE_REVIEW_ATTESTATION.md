@@ -39,6 +39,12 @@ duplicate reviewer identities and content-free output. Actual CLI execution vali
 the frozen binary extraction and preserves original reviewer file hashes. Normal CI
 runs the same command without local evidence, retaining missing inputs.
 
+Readiness implementation `797b161` is on remote main;
+[Security checks 37455649148](https://github.com/cnrazkl/deliberation-ai/actions/runs/37455649148)
+passed. All 845 documentation links and staged/full-history secret scans pass.
+At 14:19 Istanbul, interactive web returned HTTP 200, database and one worker were
+ready, and no queued/running runs or unresolved provider attempts were reported.
+
 ## Coordinator workflow
 
 Complete the original reviewer text/format worksheets and both adjudicator worksheets
