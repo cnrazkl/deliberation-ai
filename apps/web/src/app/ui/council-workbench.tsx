@@ -209,6 +209,7 @@ const endpointPresets: Record<
   ollama: { label: "Ollama (yerel)", baseUrl: "http://127.0.0.1:11434/v1", reasoningProtocol: "none", structuredOutputMode: "json-object", guide: "Ollama çalışıyor olmalı; model alanına ollama list çıktısındaki adı yazın.", modelExample: "qwen3" },
   litellm: { label: "LiteLLM (yerel)", baseUrl: "http://127.0.0.1:4000/v1", reasoningProtocol: "openai", structuredOutputMode: "json-object", guide: "LiteLLM Proxy’yi çalıştırın; model alanına config.yaml içindeki model_name takma adını yazın.", modelExample: "konsey-modeli" },
   openrouter: { label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", reasoningProtocol: "openai", structuredOutputMode: "json-object", guide: "OpenRouter anahtarını ve sağlayıcı/model biçimindeki model slug’ını girin. Web arama bu bağlantıda görev bazında açılabilir.", modelExample: "openai/gpt-5.6-sol" },
+  nvidia: { label: "NVIDIA hosted", baseUrl: "https://integrate.api.nvidia.com/v1", reasoningProtocol: "none", structuredOutputMode: "prompt-only", guide: "NVIDIA hosted API anahtarınızı ve tam model kimliğini girin. Katalog isteğe bağlıdır; model erişimi, düşünme, görsel ve şema desteği doğrulanmış sayılmaz. Bu sürüm metin kullanır; yönetilen web arama kapalıdır. Kendi NIM sunucunuz için Özel uç nokta seçin.", modelExample: "meta/llama-3.1-70b-instruct" },
 };
 
 const nativeProviderGuides: Record<Exclude<RemoteProvider, "openai-compatible">, { guide: string; modelExample: string }> = {
@@ -1459,6 +1460,7 @@ export function CouncilWorkbench() {
             onChange={(event) => {
               const preset = event.target.value as EndpointPreset;
               const settings = endpointPresets[preset];
+              if (preset !== endpointPreset && (preset === "nvidia" || endpointPreset === "nvidia")) setApiKey("");
               setEndpointPreset(preset);
               setBaseUrl(settings.baseUrl);
               setReasoningProtocol(settings.reasoningProtocol);
@@ -1525,6 +1527,7 @@ export function CouncilWorkbench() {
           <input
             type="url"
             aria-label="Temel URL"
+            readOnly={connectionProvider === "openai-compatible" && endpointPreset === "nvidia"}
             value={baseUrl}
             placeholder={endpointPreset === "qwen" ? "Bölgenize ait Model Studio uyumlu URL" : "https://…/v1"}
             onChange={(event) => setBaseUrl(event.target.value)}
@@ -1537,6 +1540,7 @@ export function CouncilWorkbench() {
         <select
           aria-label="Düşünme parametresi"
           value={reasoningProtocol}
+          disabled={connectionProvider === "openai-compatible" && endpointPreset === "nvidia"}
           onChange={(event) => setReasoningProtocol(event.target.value as ReasoningProtocol)}
         >
           <option value="none">Gönderme</option>
@@ -1558,6 +1562,7 @@ export function CouncilWorkbench() {
         Yapılandırılmış çıktı
         <select
           aria-label="Yapılandırılmış çıktı"
+          disabled={connectionProvider === "openai-compatible" && endpointPreset === "nvidia"}
           value={structuredOutputMode}
           onChange={(event) => setStructuredOutputMode(event.target.value as StructuredOutputMode)}
         >

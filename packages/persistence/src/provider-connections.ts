@@ -4,7 +4,7 @@ import type {
   RemoteProvider,
   SaveProviderConnectionRequest,
 } from "@deliberation-ai/contracts";
-import { modelCatalogCheckSchema } from "@deliberation-ai/contracts";
+import { modelCatalogCheckSchema, saveProviderConnectionSchema } from "@deliberation-ai/contracts";
 import { and, eq } from "drizzle-orm";
 import { encryptText, decryptText, encryptJson, decryptJson } from "./crypto";
 import { getDatabase } from "./database";
@@ -54,6 +54,7 @@ function summary(row: typeof providerConnections.$inferSelect): ProviderConnecti
 export async function saveProviderConnection(
   request: SaveProviderConnectionRequest,
 ): Promise<ProviderConnectionSummary> {
+  request = saveProviderConnectionSchema.parse(request);
   const db = getDatabase();
   return db.transaction(async (tx) => {
     const [existing] = request.id
@@ -66,7 +67,7 @@ export async function saveProviderConnection(
               eq(providerConnections.id, request.id),
             ),
           )
-          .limit(1)
+          .for("update").limit(1)
       : await tx
           .select()
           .from(providerConnections)
@@ -76,11 +77,12 @@ export async function saveProviderConnection(
               eq(providerConnections.label, request.label),
             ),
           )
-          .limit(1);
+          .for("update").limit(1);
     const id = existing?.id ?? randomUUID();
     const localPreset = ["ollama", "vllm", "litellm"].includes(request.endpointPreset);
     if ((!existing && !localPreset && !request.apiKey) ||
-        (existing && existing.provider !== request.provider && !request.apiKey)) {
+        (existing && (existing.provider !== request.provider || existing.endpointPreset !== request.endpointPreset
+          && (existing.endpointPreset === "nvidia" || request.endpointPreset === "nvidia")) && !request.apiKey)) {
       throw new ProviderConnectionSecretRequiredError();
     }
     const values = {

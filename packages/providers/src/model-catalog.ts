@@ -1,4 +1,5 @@
 import type { CatalogModelDetail, ModelCatalogCheck, SaveProviderConnectionRequest } from "@deliberation-ai/contracts";
+import { NVIDIA_HOSTED_BASE_URL } from "@deliberation-ai/contracts";
 
 export type { CatalogModelDetail, ModelCatalogCheck } from "@deliberation-ai/contracts";
 
@@ -63,6 +64,7 @@ function catalogDetail(model: Record<string, unknown>, id: string, connection: C
 }
 
 function catalogRequest(connection: CatalogConnection): { url: string; headers: Record<string, string>; verification: ModelCatalogCheck["verification"] } | undefined {
+  if (connection.endpointPreset === "nvidia" && (connection.provider !== "openai-compatible" || connection.baseUrl !== NVIDIA_HOSTED_BASE_URL || !connection.apiKey.trim())) return undefined;
   const headers: Record<string, string> = { accept: "application/json" };
   if (connection.provider === "anthropic") {
     const base = (connection.baseUrl ?? "https://api.anthropic.com").replace(/\/+$/, "");

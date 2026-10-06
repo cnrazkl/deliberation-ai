@@ -1,5 +1,10 @@
 # Data model
 
+DA-125 adds optional positive `nvidiaConnectionRevision` to the encrypted council
+member snapshot. It freezes hosted identity at enqueue and fences worker loading;
+legacy members remain valid. Existing connection revision/ciphertext columns are
+reused; no SQL migration or owner-data rewrite is required. [Contract](NVIDIA_PRESET.md).
+
 DA-124 migration 0054 adds independent `evidence_publications` (owner/run/candidate IDs, request/dedup digests, encrypted frozen body, status and acknowledgement timestamp). Snapshot fields are immutable; only awaiting_manual_addition to manual_acknowledged is allowed. Local source/version rows use existing storage; publication copies block reviewed run erasure. [Contract](EVIDENCE_PUBLICATION.md).
 
 DA-123 migration 0053 adds nullable `evidence_sources.candidate_provenance_ciphertext`

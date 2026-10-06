@@ -5,6 +5,7 @@ import type {
   WebSearchMode,
 } from "@deliberation-ai/contracts";
 import { extractTokenUsage } from "./token-usage";
+import { NVIDIA_HOSTED_BASE_URL } from "@deliberation-ai/contracts";
 import {
   NormalizedProviderError,
   type ProviderRequest,
@@ -63,6 +64,11 @@ export class OpenAICompatibleProvider implements TextProvider {
   }
 
   async generate(request: ProviderRequest): Promise<ProviderResult> {
+    if (this.#options.endpointPreset === "nvidia" && (this.#options.baseUrl !== NVIDIA_HOSTED_BASE_URL || !this.#options.apiKey.trim() || !this.#options.model.trim()
+      || this.#options.reasoningProtocol !== "none" || this.#options.structuredOutputMode !== "prompt-only"
+      || !["default", "none"].includes(this.#options.reasoningLevel) || this.receivesAttachments && imageAttachmentsFor(request).length > 0)) {
+      throw new NormalizedProviderError("NVIDIA hosted bağlantısında bu ayarlar veya görsel giriş doğrulanmış değil.", "nvidia_settings_not_supported", "known", false);
+    }
     const maxOutputTokens = outputTokenLimitFor(request);
     const operationId = requireOperationId(request, "OpenAI uyumlu sağlayıcı");
     const body: Record<string, unknown> = {
@@ -147,6 +153,7 @@ export class OpenAICompatibleProvider implements TextProvider {
           `${this.#options.baseUrl.replace(/\/$/, "")}/chat/completions`,
           {
             method: "POST",
+            ...(this.#options.endpointPreset === "nvidia" ? { redirect: "error" as const } : {}),
             headers: {
               "content-type": "application/json",
               ...(this.#options.apiKey
@@ -158,6 +165,7 @@ export class OpenAICompatibleProvider implements TextProvider {
             signal,
           },
         );
+        if (this.#options.endpointPreset === "nvidia" && response.status === 202) throw providerNetworkError("NVIDIA hosted (pending)");
         if (!response.ok) throw providerHttpError("OpenAI uyumlu sağlayıcı", response.status);
         return response.json() as Promise<typeof json>;
       }, this.#options.timeoutMs);

@@ -34,6 +34,8 @@ jobs:
           pnpm knowledge:extraction:verify
       - name: Check lint dependency compatibility
         run: pnpm test:lint-dependencies
+      - name: Verify offline NVIDIA hosted boundary
+        run: pnpm exec vitest run packages/providers/src/nvidia-provider.test.ts
       - name: Scan Git history for secrets
         shell: bash
         run: |

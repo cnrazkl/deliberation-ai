@@ -129,6 +129,12 @@ Show ingestion/OCR/embedding usage, notebook-query usage, council input/output a
 
 ## NVIDIA provider preset
 
+DA-125 now implements the bounded hosted preset described in
+[NVIDIA_PRESET.md](NVIDIA_PRESET.md), verified with offline transport, PostgreSQL
+and browser fixtures in [DA125_ACCEPTANCE.md](DA125_ACCEPTANCE.md). The original
+design below remains the broader acceptance direction; live model capabilities
+and cost/recovery measurements are still open.
+
 Propose a distinct **NVIDIA API Catalog** card/preset (`nvidia`) while retaining `provider = openai-compatible`. Default hosted base URL: `https://integrate.api.nvidia.com/v1`; credentials are required, and the exact model ID is selected explicitly. Locally hosted NIM stays a separate editable compatible connection. Do not infer hosted capabilities from self-hosted NIM documentation.
 
 Represent service identity, wire protocol, endpoint and model capabilities separately. Preserve the service/preset in connection and run provenance, catalog revision binding, usage and pricing records. A catalog check is optional and makes no generation call; failure preserves manual model entry. NVIDIA hosting does not make two instances of the same underlying model independent votes.

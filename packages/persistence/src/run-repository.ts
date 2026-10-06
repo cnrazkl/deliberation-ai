@@ -454,6 +454,16 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
       return mapRun(alreadyQueued);
     }
     if (knowledgePacket) await authorizeKnowledgePacketInSnapshot(tx, knowledgePacket, true);
+    const connectionIds = members.flatMap((member) => member.connectionId ? [member.connectionId] : []);
+    const selectedConnections = connectionIds.length ? await tx.select().from(providerConnections)
+      .where(and(eq(providerConnections.ownerId, LOCAL_OWNER_ID), inArray(providerConnections.id, connectionIds))).for("share") : [];
+    for (const member of members) {
+      const connection = selectedConnections.find((item) => item.id === member.connectionId);
+      if (connection?.endpointPreset === "nvidia") {
+        if (member.nvidiaConnectionRevision && member.nvidiaConnectionRevision !== connection.revision) throw new PreflightMismatchError();
+        member.nvidiaConnectionRevision = connection.revision;
+      } else if (member.nvidiaConnectionRevision) throw new PreflightMismatchError();
+    }
     let approvedDecision: RunRecord["preflightDecision"] = null;
     if (continuationContext) {
       // Same row lock as retention and report edits. Snapshot remains independent

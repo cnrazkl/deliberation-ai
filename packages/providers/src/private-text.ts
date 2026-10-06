@@ -1,4 +1,4 @@
-import { privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult } from "@deliberation-ai/contracts";
+import { NVIDIA_HOSTED_BASE_URL, privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult } from "@deliberation-ai/contracts";
 import { NormalizedProviderError } from "./index";
 import { providerHttpError, providerNetworkError, withProviderNetworkDeadline } from "./provider-utils";
 import { extractTokenUsage } from "./token-usage";
@@ -53,6 +53,9 @@ export async function generatePrivateText(request: PrivateDeliveryRequest, optio
   const input = privateDeliveryRequestSchema.parse(request);
   if (!options.operationKey) throw new NormalizedProviderError("İşlem kimliği gerekli.", "missing_operation_id", "known", false);
   const provider = options.provider ?? "openai-compatible";
+  if (options.endpointPreset === "nvidia" && (provider !== "openai-compatible" || options.baseUrl !== NVIDIA_HOSTED_BASE_URL || !options.apiKey.trim())) {
+    throw new NormalizedProviderError("NVIDIA hosted bağlantısı geçersiz.", "nvidia_settings_not_supported", "known", false);
+  }
   if (provider !== "openai-compatible" && provider !== "anthropic" && provider !== "openai" && provider !== "google") {
     throw new NormalizedProviderError("Özel gönderim sağlayıcısı desteklenmiyor.", "unsupported_private_provider", "known", false);
   }
@@ -90,6 +93,7 @@ export async function generatePrivateText(request: PrivateDeliveryRequest, optio
             : options.apiKey ? { authorization: `Bearer ${options.apiKey}` } : {}) },
         body: JSON.stringify(body),
       });
+      if (options.endpointPreset === "nvidia" && response.status === 202) throw providerNetworkError("NVIDIA hosted (pending)");
       if (!response.ok) throw providerHttpError(label, response.status);
       const reader = response.body?.getReader(); if (!reader) throw new NormalizedProviderError("Yanıt boş.", "empty_response", "known", false);
       const chunks: Uint8Array[] = []; let bytes = 0;

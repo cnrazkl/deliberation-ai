@@ -1,5 +1,11 @@
 # Security
 
+DA-125 fixes the NVIDIA hosted destination, refuses redirects and requires an
+explicit replacement credential when switching to/from that service. Its queued
+connection revision is frozen and checked before worker execution; catalog writes
+remain revision-fenced and encrypted. No live key is used in normal tests.
+[Boundaries](NVIDIA_PRESET.md).
+
 DA-124 rechecks source review/current grant/version and exact target consent under owner serialization. Encrypted immutable receipts use `evidence-publication:<id>:body`; exhaustive archive audit checks identities and exact copied source text. The byte-bounded same-origin route never fetches target URLs or sends a tool/provider request. Manual confirmation is not remote read-back. Published copies block reviewed run-body deletion. [Contract](EVIDENCE_PUBLICATION.md).
 
 DA-123 candidate intake has a 32 KiB streamed strict local-origin/no-store BFF. Model

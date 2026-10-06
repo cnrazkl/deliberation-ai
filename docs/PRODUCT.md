@@ -1,5 +1,10 @@
 # Product
 
+DA-125 adds an explicit NVIDIA hosted connection preset, fixed hosted address and
+conservative text-only settings. Manual model choice remains available without a
+catalog. Pending hosted results remain unknown without automatic resend. Live
+key/model acceptance is separate. [Contract](NVIDIA_PRESET.md).
+
 DA-124 adds separately reviewed saving of approved/current candidates to an exact local collection and owner-selected manual handoff packets. Original provenance survives in immutable receipts; no claim promotion, automatic selection or external upload occurs. [Contract](EVIDENCE_PUBLICATION.md).
 
 DA-123 adds an explicit claim-linked candidate inbox for owner submissions, stored

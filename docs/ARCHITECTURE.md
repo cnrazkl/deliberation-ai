@@ -1,5 +1,12 @@
 # Architecture
 
+DA-125 keeps NVIDIA as a service preset of the compatible protocol. Contracts fix
+hosted identity/settings; persistence requires a new key across service switches
+and freezes its revision in encrypted run members; the worker checks the revision
+before dispatch. Council and private adapters refuse invalid targets and normalize
+202 to unknown. No SDK, domain dependency or SQL migration is added.
+[Contract](NVIDIA_PRESET.md).
+
 DA-124 persistence serializes exact candidate/destination review with grants, saves a TXT source and encrypted receipt atomically, reads back and deduplicates original copies. The no-store BFF and candidate UI provide separate consent and pending/manual acknowledgement; no adapter is admitted. [Contract](EVIDENCE_PUBLICATION.md), [ADR-0039](adr/0039-reviewed-reusable-evidence.md).
 
 DA-123 extends evidence sources with contract-validated encrypted immutable candidate

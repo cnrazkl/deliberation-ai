@@ -1,8 +1,26 @@
 # Current state
 
-Updated: 6 October 2026 (DA-124 reusable evidence complete)
+Updated: 6 October 2026 (DA-125 NVIDIA hosted preset complete)
 
-## Current increment — DA-124 reusable evidence complete
+## Current increment — DA-125 NVIDIA hosted preset
+
+The distinct NVIDIA hosted connection fixes the official destination and conservative
+text-only protocol settings while retaining explicit key/model choice. Optional
+catalogs provide identifiers without certifying access/capabilities. Service switches
+require a fresh credential. Encrypted queued member revisions fence edits before
+worker execution; private delivery retains its existing fingerprint binding.
+Invalid council output keeps raw/usage, missing counters stay unknown, and HTTP
+202 pending never causes blind resend. No NVIDIA polling or live acceptance is claimed.
+[Contract](NVIDIA_PRESET.md), [verification](DA125_ACCEPTANCE.md).
+
+335 units / 56 files, 248 isolated PostgreSQL cases / 29 files, two focused browser
+cases with mobile editor coverage, typecheck, zero-warning lint and production build
+pass. No SQL migration or owner-data change is required. DA-126 is next and remains
+an empirical acceptance task requiring independent human labels and real measurements;
+fixtures do not close DA-119 or DA-126. Remote/runtime evidence is recorded in the
+verification document when publication completes.
+
+## Previous increment — DA-124 reusable evidence complete
 
 Approved/current candidates can be saved only after separate exact-payload and
 named-destination review. Atomic local TXT source/version and encrypted immutable
@@ -18,7 +36,7 @@ publication rerun, populated archive restore, typecheck, zero-warning lint, prod
 build and dependency audit pass. Browser acceptance covers actual BFF/database,
 lost acknowledgements, explicit consent, changed destinations and manual download/
 acknowledgement. DA-119 independent gold and DA-126 empirical quality stay open.
-DA-125 distinct NVIDIA preset is next; external adapters and publication erasure remain
+DA-125 was the next increment (now completed above); external adapters and publication erasure remain
 separate conditional work.
 Implementation commit `a43a2db` is on remote `main`; Security checks run `37442602442`
 passed, including the new publication contract tests.

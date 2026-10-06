@@ -5,9 +5,16 @@ the owner-reviewed 128–1024 integer request value (default 1024). Historical f
 descriptions below describe the default. Reasoning/search and byte/time limits remain
 unchanged. [Contract and limits](PRIVATE_DELIVERY_SETTINGS.md).
 
-## Proposed NVIDIA preset — DA-125, not implemented
+## NVIDIA hosted preset — DA-125
 
-Add distinct **NVIDIA API Catalog** identity over the compatible Chat Completions adapter, with `https://integrate.api.nvidia.com/v1`, explicit key/model and self-hosted NIM kept separate. Default reasoning/search off, image support unassumed and prompt-only output until per-model validation. Preserve catalogs, revision binding, usage and unknown outcomes. A manually named custom connection is possible in principle; no NVIDIA generation was tested. [Architecture](KNOWLEDGE_SOURCES.md#nvidia-provider-preset), [official-source research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md#nvidia-hosted-inference).
+**NVIDIA hosted** now fixes `https://integrate.api.nvidia.com/v1`, explicit key/model,
+no reasoning parameter and prompt-only council output over the compatible protocol.
+Catalog-only lists never certify capabilities; images/search remain unsupported.
+Queued revisions are frozen and checked before worker execution. Invalid output
+keeps raw/usage; HTTP 202 stays unknown without resend or polling. Private text
+uses its separate contract. Self-hosted NIM stays custom; live hosted generation
+is unverified. [Contract and primary sources](NVIDIA_PRESET.md),
+[verification](DA125_ACCEPTANCE.md).
 
 **DA-100 native private Gemini:** Google joins compatible/Anthropic/Responses delivery using generateContent, header-only credentials and exact reviewed text/order. One text candidate and `generationConfig.maxOutputTokens=1024` are requested without tools, thinking override or council JSON schema. Bounded validation accepts STOP/MAX_TOKENS text only, excludes opaque signatures from retained/future input, preserves candidate/thought/cache/total conventions and maps unfinished candidates to unknown without polling/retry. Earlier private-provider absence notes are historical. Interactions, richer settings and live acceptance remain separate. [Mapping and current official sources](PRIVATE_BRANCHES.md#da-100-native-gemini-generatecontent).
 

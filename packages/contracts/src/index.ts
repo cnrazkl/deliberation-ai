@@ -118,7 +118,10 @@ export const endpointPresetSchema = z.enum([
   "ollama",
   "litellm",
   "openrouter",
+  "nvidia",
 ]);
+
+export const NVIDIA_HOSTED_BASE_URL = "https://integrate.api.nvidia.com/v1";
 
 export const reasoningProtocolSchema = z.enum([
   "none",
@@ -142,6 +145,8 @@ export const councilMemberConfigSchema = z.object({
   model: z.string().trim().min(1).max(120),
   perspective: fakePerspectiveSchema.optional(),
   connectionId: z.string().uuid().optional(),
+  // Frozen at enqueue for the distinct NVIDIA hosted service.
+  nvidiaConnectionRevision: z.number().int().positive().optional(),
   reasoningLevel: reasoningLevelSchema.default("default"),
   webSearchMode: webSearchModeSchema.default("off"),
   councilRole: councilRoleSchema.default("analyst"),
@@ -870,6 +875,10 @@ export const saveProviderConnectionSchema = z.object({
   reasoningProtocol: reasoningProtocolSchema.default("none"),
   structuredOutputMode: structuredOutputModeSchema.default("json-object"),
 }).superRefine((connection, context) => {
+  if (connection.endpointPreset === "nvidia" && (connection.provider !== "openai-compatible" || connection.baseUrl !== NVIDIA_HOSTED_BASE_URL
+    || connection.reasoningProtocol !== "none" || connection.structuredOutputMode !== "prompt-only")) {
+    context.addIssue({ code: "custom", message: "NVIDIA hosted bağlantısı sabit HTTPS adresi, düşünme parametresi kapalı ve yalnız istem sözleşmesi gerektirir.", path: ["endpointPreset"] });
+  }
   if (connection.provider === "openai-compatible" && !connection.baseUrl) {
     context.addIssue({
       code: "custom",

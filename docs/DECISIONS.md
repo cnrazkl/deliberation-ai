@@ -1,5 +1,10 @@
 # Decisions
 
+DA-125 treats NVIDIA hosted identity as a conservative compatible preset with a
+fixed destination, fresh keys across service switches and queued revision fencing.
+Self-hosted NIM, live capabilities and pending-result polling remain separate.
+[Contract and rationale](NVIDIA_PRESET.md).
+
 DA-123 reuses the existing evidence source review boundary with frozen candidate
 origin/provenance, separate observed availability and additive changed-source links.
 No automatic truth annotation or reusable publication is admitted.

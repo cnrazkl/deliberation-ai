@@ -217,7 +217,9 @@ export async function executeWorkerCouncil(work: DurableRunWork) {
         connectionCache.set(member.connectionId, pendingConnection);
       }
       const connection = await pendingConnection;
-      if (!connection || connection.provider !== member.provider) {
+      if (!connection || connection.provider !== member.provider ||
+          (member.nvidiaConnectionRevision !== undefined && (connection.endpointPreset !== "nvidia" || connection.revision !== member.nvidiaConnectionRevision)) ||
+          (connection.endpointPreset === "nvidia" && member.nvidiaConnectionRevision === undefined)) {
         return new UnavailableProvider(member.id, member.label, member.councilRole, member.role);
       }
       const shared = {
