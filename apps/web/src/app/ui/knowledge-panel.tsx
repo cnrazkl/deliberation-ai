@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { KnowledgePacket, KnowledgeScope, CreateRunRequest } from "@deliberation-ai/contracts";
+import { inspectKnowledgeQuery } from "@deliberation-ai/contracts";
 
 type Collection = { collectionId: string; title: string; grantId: string; grantRevision: number; grantStatus: string; accountId: string };
 type Selection = { revision: string; topic: string; grants: { scope: KnowledgeScope; available: boolean }[] };
@@ -9,7 +10,7 @@ async function command<T>(value: unknown): Promise<T> {
   const response = await fetch("/api/knowledge", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(value), cache: "no-store" });
   const body = await response.json() as T & { error?: string }; if (!response.ok) throw new Error(body.error ?? "Kaynak işlemi tamamlanamadı."); return body;
 }
-export function KnowledgePanel({ question, runId, onChange }: { question: string; runId: string | undefined;
+export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
   onChange: (reference: CreateRunRequest["knowledgePacket"] | null, blocked: boolean) => void }) {
   const [collections, setCollections] = useState<Collection[]>([]), [hasMore, setHasMore] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null), [selection, setSelection] = useState<Selection | null>(null);
@@ -19,6 +20,7 @@ export function KnowledgePanel({ question, runId, onChange }: { question: string
   const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null), [allowEmpty, setAllowEmpty] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const queryInspection = inspectKnowledgeQuery(query);
   function invalidate() { setPacket(null); setReviewed(false); onChange(null, true); }
   async function work(action: () => Promise<void>) { if (busy) return; setBusy(true); setError(null); try { await action(); } catch (cause) { setError(cause instanceof Error ? cause.message : "İşlem tamamlanamadı."); } finally { setBusy(false); } }
   async function refresh(id = conversationId) {
@@ -63,9 +65,13 @@ export function KnowledgePanel({ question, runId, onChange }: { question: string
       });
     }} /></label>
     {notice && <p>{notice}</p>}{sources.map((item) => <p key={item.sourceId}>{item.name} · {item.status === "complete" ? "Metin çıkarıldı; içerik doğrulanmadı" : `Alıntı için kullanılamıyor: ${item.reason ?? item.status}`}</p>)}
-    <label>Arama sözcükleri<input disabled={busy} value={query} placeholder={question} maxLength={4_000} onChange={(event) => { invalidate(); setQuery(event.target.value); }} /></label>
+    <label>Arama sözcükleri<input disabled={busy} value={query} placeholder="Örn. kritik destek" maxLength={4_000}
+      aria-describedby="knowledge-query-help knowledge-query-feedback" aria-invalid={Boolean(query && !queryInspection.valid)}
+      onChange={(event) => { invalidate(); setQuery(event.target.value); }} /></label>
+    <p id="knowledge-query-help">Kaynakta geçen kısa sözcükleri açıkça girin. En fazla 12 farklı sözcük kullanın; arama bütün sözcükleri aynı kaynakta birlikte arar. Sorunuz otomatik aktarılmaz.</p>
+    <p id="knowledge-query-feedback" role="status">{queryInspection.termCount}/12 farklı arama sözcüğü{!queryInspection.valid ? " · " + queryInspection.message : ""}</p>
     <label><input type="checkbox" disabled={busy} checked={allowEmpty} onChange={(event) => { invalidate(); setAllowEmpty(event.target.checked); }} />Arama sonuçsuz kalırsa kanıtsız paketi ayrıca inceleyerek devam edebilirim</label>
-    <button type="button" disabled={busy || !selection || !(query.trim() || question.trim())} onClick={() => void work(async () => { invalidate(); const value = await command<KnowledgePacket>({ operation: "prepare", id: crypto.randomUUID(), conversationId, selectionRevision: selection!.revision, query: query.trim() || question, allowWithoutEvidence: allowEmpty }); setPacket(value); })}>Kanıt paketini hazırla</button>
+    <button type="button" disabled={busy || !selection || !queryInspection.valid} onClick={() => void work(async () => { invalidate(); const value = await command<KnowledgePacket>({ operation: "prepare", id: crypto.randomUUID(), conversationId, selectionRevision: selection!.revision, query: query.trim(), allowWithoutEvidence: allowEmpty }); setPacket(value); })}>Kanıt paketini hazırla</button>
     {packet && <section><p>Arama: {packet.query} · Konu: {packet.topic || "Belirtilmedi"}</p><p>{packet.excerpts.length} alıntı · {packet.excerpts.reduce((sum, item) => sum + item.text.length, 0)} karakter · {packet.createdAt}. İçerik ve güncellik incelenmedi. Hazırlama sonrası sürüm değişirse yeniden hazırlayın.</p>
       {packet.coverage.map((item) => <p key={item.collectionId}>{collections.find((collection) => collection.collectionId === item.collectionId)?.title ?? item.collectionId}: {item.inspected} dosya, {item.matches} eşleşme, {item.selected} alıntı, {item.omitted} dışarıda, {item.unavailable} kullanılamıyor.</p>)}
       {packet.excerpts.map((item) => <article key={item.excerptId}><strong>{item.source.title} · sayfa {item.page ?? "metin"}</strong><p>Sürüm {item.source.versionId} · konum {item.start}–{item.end}</p><pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{item.text}</pre></article>)}

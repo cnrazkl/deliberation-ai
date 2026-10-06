@@ -7,8 +7,8 @@ import { createRunRequestSchema, defaultFakeCouncilMembers, type KnowledgePacket
 import { buildCouncilReport } from "@deliberation-ai/domain";
 import { closeDatabase, getDatabase } from "./database";
 import { createKnowledgeCollection, createKnowledgeConversation, changeKnowledgeGrant, setConversationKnowledge } from "./knowledge-scope";
-import { importKnowledgeFiles, exportKnowledgeVersion } from "./knowledge-sources";
-import { prepareKnowledgePacket, loadKnowledgePacket, KnowledgePacketStaleError, assertKnowledgePacketAttachmentRouting } from "./knowledge-packets";
+import { importKnowledgeFiles, exportKnowledgeVersion, searchLocalKnowledge, KnowledgeQueryError } from "./knowledge-sources";
+import { prepareKnowledgePacket, loadKnowledgePacket, KnowledgePacketStaleError, KnowledgeEvidenceNotFoundError, assertKnowledgePacketAttachmentRouting } from "./knowledge-packets";
 import { closeBoss } from "./queue";
 import { enqueueDurableRun, executeDurableRun, cancelDurableRun, findDurableRunById } from "./run-repository";
 import { prepareProviderOperation, claimProviderOperationSubmission } from "./provider-operations";
@@ -87,7 +87,11 @@ test("duplicates remain visible, full-file resends deny and expired review never
   finally { clock.mockRestore(); }
 });
 test("empty evidence requires explicit choice; foreign ids/fingerprints and missing review deny", async () => {
-  const input = await setup(); await expect(prepareKnowledgePacket({ ...input, query: "absent" })).rejects.toBeInstanceOf(KnowledgeAccessError);
+  const input = await setup(); await expect(prepareKnowledgePacket({ ...input, query: "absent" })).rejects.toBeInstanceOf(KnowledgeEvidenceNotFoundError);
+  const excessive = Array.from({ length: 13 }, (_, index) => "word" + index).join(" ");
+  await expect(searchLocalKnowledge([], excessive)).rejects.toBeInstanceOf(KnowledgeQueryError);
+  await expect(prepareKnowledgePacket({ ...input, query: excessive })).rejects.toBeInstanceOf(KnowledgeQueryError);
+  await expect(prepareKnowledgePacket({ ...input, conversationId: randomUUID(), query: "absent" })).rejects.toBeInstanceOf(KnowledgeAccessError);
   const packet = await prepareKnowledgePacket({ ...input, query: "absent", allowWithoutEvidence: true }); expect(packet.withoutEvidence).toBe(true);
   await expect(loadKnowledgePacket({ id: packet.id, fingerprint: "0".repeat(64), reviewed: true })).rejects.toThrow();
   await expect(prepareKnowledgePacket({ ...input, id: randomUUID(), conversationId: randomUUID() })).rejects.toThrow();

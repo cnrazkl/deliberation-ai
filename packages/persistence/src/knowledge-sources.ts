@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { inspectKnowledgeQuery, normalizeKnowledgeSearchTerm } from "@deliberation-ai/contracts";
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { knowledgeObjectIdSchema, knowledgeScopeSchema, type KnowledgeExcerpt, type KnowledgeScope, type KnowledgeSource } from "@deliberation-ai/contracts";
 import { KnowledgeAccessError, ScopedKnowledgeSource, sameKnowledgeScope, type KnowledgeSourcePort } from "@deliberation-ai/application";
@@ -183,13 +184,17 @@ export class LocalKnowledgeSource implements KnowledgeSourcePort {
     });
   }
 }
-const fold = (word: string) => word.normalize("NFKC").toLowerCase().replace(/\u0307/g, "");
+const fold = normalizeKnowledgeSearchTerm;
+export class KnowledgeQueryError extends KnowledgeAccessError {
+  constructor(readonly feedback: string) { super(); }
+}
 export async function searchLocalKnowledge(scopes: readonly KnowledgeScope[], query: string) {
-  if (!query.trim() || query.length > 4_000) throw new KnowledgeAccessError();
+  const inspected = inspectKnowledgeQuery(query);
+  if (!inspected.valid) throw new KnowledgeQueryError(inspected.message!);
   const selected = scopes.map((scope) => knowledgeScopeSchema.parse(scope));
-  const terms = new Set([...query.matchAll(/[\p{L}\p{N}_]+/gu)].map((match) => fold(match[0])));
+  const terms = new Set(inspected.terms);
   if (!selected.length || selected.length > 3 || new Set(selected.map((scope) => scope.collectionId)).size !== selected.length
-    || !terms.size || terms.size > 12 || [...terms].some((term) => term.length > 200)) throw new KnowledgeAccessError();
+    ) throw new KnowledgeAccessError();
   for (const scope of selected) if (!await authorizeKnowledgeScope(scope)) throw new KnowledgeAccessError();
   const deadline = performance.now() + 5_000;
   const result = await getDatabase().transaction(async (tx) => {

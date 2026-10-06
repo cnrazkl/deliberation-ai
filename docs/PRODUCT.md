@@ -1,5 +1,9 @@
 # Product
 
+Knowledge preparation now requires explicit search words, shows the existing limits
+and explains a no-match result without confusing it with source access failure.
+Blank input never reuses the council question. [Behavior](KNOWLEDGE_QUERY_FEEDBACK.md).
+
 DA-126 now has an offline local measurement command. It preserves failed/empty
 retrieval outcomes and cannot mark quality or cost acceptance complete. Application
 behavior and provider consent remain unchanged. [Observed limitations](DA126_ACCEPTANCE.md).

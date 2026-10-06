@@ -2,7 +2,7 @@ import { z } from "zod";
 import { knowledgeFileMediaSchema, knowledgeScopeSchema, knowledgeSelectionSchema } from "@deliberation-ai/contracts";
 import { createKnowledgeCollection, createKnowledgeConversation, listKnowledgeCollections, changeKnowledgeGrant, exportConversationKnowledge,
   setConversationKnowledge, importKnowledgeFiles, listKnowledgeSources, prepareKnowledgePacket, KnowledgePacketStaleError,
-  KnowledgeSelectionConflictError } from "@deliberation-ai/persistence";
+  KnowledgeSelectionConflictError, KnowledgeQueryError, KnowledgeEvidenceNotFoundError } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../lib/request-security";
 
 export const runtime = "nodejs";
@@ -46,6 +46,11 @@ export async function POST(request: Request) {
       case "prepare": return response(await prepareKnowledgePacket(command));
     }
   } catch (error) {
+    if (error instanceof KnowledgeQueryError) return response({ error: error.feedback, code: "knowledge_query_invalid" }, 422);
+    if (error instanceof KnowledgeEvidenceNotFoundError) return response({
+      error: "Bütün arama sözcüklerini birlikte içeren bir alıntı bulunamadı. Kaynakta geçen daha az sözcükle tekrar arayın. Bu sonuç, kaynakta yanıt olmadığı anlamına gelmez.",
+      code: "knowledge_evidence_not_found",
+    }, 422);
     return response({ error: error instanceof KnowledgePacketStaleError || error instanceof KnowledgeSelectionConflictError
       ? "Seçim veya kaynaklar değişti; yenileyip tekrar inceleyin." : "Kaynak işlemi tamamlanamadı; izinleri, dosya türünü ve sınırları kontrol edin." },
     error instanceof KnowledgePacketStaleError || error instanceof KnowledgeSelectionConflictError ? 409 : 422);

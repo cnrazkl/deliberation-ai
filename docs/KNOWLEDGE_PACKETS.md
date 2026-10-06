@@ -8,6 +8,11 @@ The panel also lets the owner select the currently open report's conversation.
 
 ## Retrieval, budgets and review
 
+The search field now requires explicit words rather than substituting a blank field
+with the council question. It shows the 12-distinct-word limit and lexical AND rule;
+public query errors and authorized no-match results have separate feedback. The
+explicit evidence-free choice still requires review. [Follow-up](KNOWLEDGE_QUERY_FEEDBACK.md).
+
 DA-121's bounded lexical AND search scans every active source in the selected scope:
 30 sources, 1,000,000 UTF-8 text bytes and five seconds in aggregate. Above these
 limits preparation refuses rather than truncates the source inventory. It takes the

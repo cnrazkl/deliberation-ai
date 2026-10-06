@@ -12,6 +12,7 @@ import { searchLocalKnowledge, KnowledgeCapacityError } from "./knowledge-source
 import { knowledgePreparations, knowledgeSources, knowledgeSourceVersions } from "./schema";
 
 export class KnowledgePacketStaleError extends Error { constructor() { super("Kaynak seçimi veya sürümleri değişti; kanıt paketini yeniden hazırlayın ve inceleyin."); } }
+export class KnowledgeEvidenceNotFoundError extends KnowledgeAccessError {}
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 async function inventory(tx: ConversationTransaction, collections: string[]) {
   const rows = await tx.select({ sourceId: knowledgeSources.id, versionId: knowledgeSources.activeVersionId,
@@ -86,7 +87,7 @@ export async function prepareKnowledgePacket(input: { id: string; conversationId
     if (seen.has(key)) { duplicateIds.add(hit.source.sourceId); continue; }
     if (excerpts.length < 6) { seen.add(key); excerpts.push(hit.excerpt); }
   }
-  if (!excerpts.length && !input.allowWithoutEvidence) throw new KnowledgeAccessError();
+  if (!excerpts.length && !input.allowWithoutEvidence) throw new KnowledgeEvidenceNotFoundError();
   const body: Omit<KnowledgePacket, "fingerprint"> = { version: "knowledge-packet-v1", id: input.id, ownerId: LOCAL_OWNER_ID,
     conversationId: input.conversationId, selectionRevision: input.selectionRevision, query: input.query, topic: before.selection.topic,
     createdAt: new Date().toISOString(), scopes, policy: "lexical-fair-coverage-v1",

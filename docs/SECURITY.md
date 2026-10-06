@@ -1,5 +1,9 @@
 # Security
 
+Knowledge query feedback exposes only public limits. No-match feedback is emitted
+after owned selection/grant checks; missing/foreign/revoked scopes retain generic
+access errors without source existence/content hints. [Boundary](KNOWLEDGE_QUERY_FEEDBACK.md).
+
 DA-125 fixes the NVIDIA hosted destination, refuses redirects and requires an
 explicit replacement credential when switching to/from that service. Its queued
 connection revision is frozen and checked before worker execution; catalog writes

@@ -2102,7 +2102,7 @@ export function CouncilWorkbench() {
         {originalQuestion.length >= 10 ? <details className="composer-disclosure"><summary>İstemi düzenle ve karşılaştır</summary><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
           choice={promptChoice} disabled={needsContext} onCandidateChange={setPromptCandidate} onChoiceChange={setPromptChoice} /></details> : null}
         {needsContext ? <p className="hint">Önce eksik bilgi sorularını yanıtlayın; istem sürümü seçimi bu yanıttan sonra açılır.</p> : null}
-        <KnowledgePanel key={knowledgePanelGeneration} question={selectedQuestion} runId={run?.runId} onChange={(reference, blocked) => { setKnowledgePacket(reference); setKnowledgeBlocked(blocked); }} />
+        <KnowledgePanel key={knowledgePanelGeneration} runId={run?.runId} onChange={(reference, blocked) => { setKnowledgePacket(reference); setKnowledgeBlocked(blocked); }} />
         {knowledgeBlocked && <p role="status">Kaynak paketini inceleyin veya açıkça paketsiz devam etmeyi seçin.</p>}
         <details className="attachment-picker composer-disclosure"><summary>Dosya ekle{attachments.length > 0 ? ` · ${attachments.length} ek` : ""}</summary>
         <p>Büyük (1 MiB üzeri PDF) veya tekrar kullanılan TXT/Markdown/PDF/PNG/JPEG dosyalarını Yerel bilgi kaynakları bölümüne kaydedin. Kaynak paketi seçiliyken aynı kütüphane dosyasını ayrıca tam ek olarak göndermeyin.</p>

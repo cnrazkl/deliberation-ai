@@ -1,5 +1,10 @@
 # Architecture
 
+Knowledge query normalization/limits are shared by the contracts, browser and local
+search. Typed query/no-match errors preserve the access boundary while the BFF maps
+public feedback; lexical retrieval and authorization semantics are unchanged.
+[Follow-up](KNOWLEDGE_QUERY_FEEDBACK.md).
+
 DA-126 adds a pure evaluation summarizer and a disposable PostgreSQL measurement
 runner. Actual encrypted source/preparation/read-back APIs are exercised without
 provider calls or owner database writes; report counts cannot become semantic

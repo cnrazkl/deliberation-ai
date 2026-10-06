@@ -48,6 +48,22 @@ test("selected files produce reviewed frozen citations through real routes and l
     await panel.getByLabel("Yerel kütüphaneye dosya seç", { exact: true }).setInputFiles(["docs/evaluation/knowledge-fixtures/support-table.pdf", "docs/evaluation/knowledge-fixtures/scanned-support.pdf", "docs/evaluation/knowledge-fixtures/ambiguous-support.png"]);
     await expect(panel).toContainText("support-table.pdf · Metin çıkarıldı", { timeout: 20_000 });
     await expect(panel).toContainText("missing_text_pages"); await expect(panel).toContainText("image_unverified");
+    const prepareButton = panel.getByRole("button", { name: "Kanıt paketini hazırla", exact: true });
+    const searchField = panel.getByLabel("Arama sözcükleri", { exact: true });
+    await expect(searchField).toHaveValue(""); await expect(prepareButton).toBeDisabled();
+    await expect(panel).toContainText("Sorunuz otomatik aktarılmaz.");
+    const excessive = Array.from({ length: 13 }, (_, index) => "word" + index).join(" ");
+    await searchField.fill(excessive); await expect(prepareButton).toBeDisabled();
+    await expect(searchField).toHaveAttribute("aria-invalid", "true");
+    await expect(panel).toContainText("13/12 farklı arama sözcüğü");
+    await searchField.fill("absentkeyword");
+    await prepareButton.click();
+    await expect(panel.getByRole("alert")).toContainText("Bütün arama sözcüklerini birlikte içeren bir alıntı bulunamadı");
+    await expect(searchField).toHaveValue("absentkeyword");
+    const selectionState = await (await request.post("/api/knowledge", { data: { operation: "state", conversationId } })).json();
+    const invalidQuery = await request.post("/api/knowledge", { data: { operation: "prepare", id: randomUUID(), conversationId,
+      selectionRevision: selectionState.selection.revision, query: excessive, allowWithoutEvidence: false } });
+    expect(invalidQuery.status()).toBe(422); expect(await invalidQuery.json()).toMatchObject({ code: "knowledge_query_invalid" });
     await panel.getByLabel("Arama sözcükleri", { exact: true }).fill("destek");
     const preparing = page.waitForResponse((response) => response.url().endsWith("/api/knowledge") && response.request().postDataJSON().operation === "prepare");
     await panel.getByRole("button", { name: "Kanıt paketini hazırla", exact: true }).click();

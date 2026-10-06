@@ -1,8 +1,25 @@
 # Current state
 
-Updated: 6 October 2026 (DA-126 local diagnostic; acceptance remains open)
+Updated: 6 October 2026 (explicit knowledge query feedback; DA-126 remains open)
 
-## Current increment — DA-126 local diagnostic
+## Current increment — explicit knowledge query feedback
+
+Blank search input no longer silently substitutes the council question. The field
+requires owner-selected words, shows normalized distinct-word limits and explains
+the unchanged lexical AND rule. Query-limit and authorized no-match errors have
+specific feedback; source access failures remain generic. Explicit evidence-free
+consent/review and exact frozen packets remain intact.
+[Behavior and verification](KNOWLEDGE_QUERY_FEEDBACK.md).
+
+341 unit cases / 58 files, 249 isolated PostgreSQL cases / 30 files, the actual
+browser/BFF preparation and reviewed-delivery flow, typecheck, zero-warning lint,
+production build and dependency audit pass. No SQL or owner-data migration is needed.
+
+DA-119 human labels and DA-126 quality/cost/recovery acceptance remain open. This
+addresses the usability mismatch found by the diagnostic without changing retrieval
+policy, tuning held-out queries or introducing a model call/migration.
+
+## Previous increment — DA-126 local diagnostic
 
 The isolated knowledge:benchmark command measures actual encrypted local preparation
 for all 40 frozen questions in two pool phases and separately verifies exact citation

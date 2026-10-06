@@ -1,5 +1,20 @@
 import { z } from "zod";
 
+export function normalizeKnowledgeSearchTerm(term: string): string {
+  return term.normalize("NFKC").toLowerCase().replace(/\u0307/g, "");
+}
+
+/** Shared public query limits; no source lookup or automatic question rewriting. */
+export function inspectKnowledgeQuery(query: string) {
+  const terms = [...new Set([...query.matchAll(/[\p{L}\p{N}_]+/gu)].map((match) => normalizeKnowledgeSearchTerm(match[0])))];
+  const message = query.length > 4_000 ? "Arama en fazla 4.000 karakter olabilir."
+    : !terms.length ? "En az bir arama sözcüğü girin."
+    : terms.length > 12 ? "En fazla 12 farklı arama sözcüğü girin; sorguyu daraltın."
+    : terms.some((term) => term.length > 200) ? "Her arama sözcüğü en fazla 200 karakter olabilir."
+    : null;
+  return { terms, termCount: terms.length, valid: message === null, message };
+}
+
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
 export const knowledgeObjectIdSchema = z.string().uuid();
 export const knowledgeScopeSchema = z.object({
