@@ -3,7 +3,7 @@ import { afterEach, afterAll, expect, test } from "vitest";
 import { eq, inArray, sql } from "drizzle-orm";
 import { closeDatabase, getDatabase } from "./database";
 import { LOCAL_OWNER_ID } from "./owner";
-import { conversations, conversationRuns, runs } from "./schema";
+import { conversations, conversationRuns, conversationPrivateBranches, runs } from "./schema";
 import { lockConversationMembership } from "./conversation-membership";
 import { ConversationDeletionBlockedError, ConversationDeletionStaleError, deleteEmptyConversation,
   MAX_CONVERSATION_DELETION_MEMBERS, previewConversationDeletion } from "./conversation-deletion";
@@ -12,6 +12,7 @@ const conversationIds: string[] = [];
 const runIds: string[] = [];
 afterEach(async () => {
   if (conversationIds.length) {
+    await getDatabase().delete(conversationPrivateBranches).where(inArray(conversationPrivateBranches.conversationId, conversationIds));
     await getDatabase().delete(conversationRuns).where(inArray(conversationRuns.conversationId, conversationIds));
     await getDatabase().delete(conversations).where(inArray(conversations.id, conversationIds));
   }
@@ -62,9 +63,42 @@ test("retained bodies block deletion without decrypting or modifying their conte
   const preview = await previewConversationDeletion(target.id);
   expect(preview).toMatchObject({ eligible: false, fingerprint: null });
   expect(preview!.blockedReasons).toContain("available_runs");
+  expect(preview!.availableRunIds).toEqual([target.anchorRunId]);
+  expect(preview!.privateBranchIds).toEqual([]);
   await expect(deleteEmptyConversation(target.id, oldPreview!.fingerprint!)).rejects.toBeInstanceOf(ConversationDeletionBlockedError);
   const [saved] = await getDatabase().select({ question: runs.questionCiphertext, report: runs.reportCiphertext }).from(runs).where(eq(runs.id, target.anchorRunId));
   expect(saved).toEqual({ question: "unreadable-question-fixture", report: "unreadable-report-fixture" });
+});
+
+test("cleanup discovery lists only owned existing bodies and branches without reading their content", async () => {
+  const target = await empty(); const neighbor = await empty();
+  await membership(target.id, target.anchorRunId); await body(target.anchorRunId);
+  await membership(target.id); // Pruned body must not acquire a delete action.
+  const foreignRun = await membership(target.id); await body(foreignRun, "foreign-cleanup-fixture");
+  const ownBranch = randomUUID(); const foreignBranch = randomUUID(); const neighborBranch = randomUUID();
+  await getDatabase().insert(conversationPrivateBranches).values([
+    { id: ownBranch, ownerId: LOCAL_OWNER_ID, conversationId: target.id, sourceRunId: target.anchorRunId },
+    { id: foreignBranch, ownerId: "foreign-cleanup-fixture", conversationId: target.id, sourceRunId: target.anchorRunId },
+    { id: neighborBranch, ownerId: LOCAL_OWNER_ID, conversationId: neighbor.id, sourceRunId: randomUUID() },
+  ].map((row) => ({ ...row, sourceMemberId: "fixture", requestId: randomUUID(), requestHash: "fixture",
+    bodyCiphertext: "unreadable-private-fixture" })));
+  const preview = await previewConversationDeletion(target.id);
+  expect(preview).toMatchObject({ availableRunIds: [target.anchorRunId], privateBranchIds: [ownBranch], eligible: false });
+  expect(preview!.blockedReasons).toEqual(expect.arrayContaining(["available_runs", "private_branches", "owner_mismatch"]));
+  await expect(deleteEmptyConversation(target.id, "a".repeat(64))).rejects.toBeInstanceOf(ConversationDeletionBlockedError);
+  expect((await getDatabase().select().from(conversationPrivateBranches).where(eq(conversationPrivateBranches.id, ownBranch)))[0]!.bodyCiphertext)
+    .toBe("unreadable-private-fixture");
+});
+
+test("cleanup discovery refuses oversized private inventories without a partial branch list", async () => {
+  const target = await empty();
+  await getDatabase().insert(conversationPrivateBranches).values(Array.from({ length: MAX_CONVERSATION_DELETION_MEMBERS + 1 }, () => ({
+    id: randomUUID(), ownerId: LOCAL_OWNER_ID, conversationId: target.id, sourceRunId: target.anchorRunId,
+    sourceMemberId: "fixture", requestId: randomUUID(), requestHash: "fixture", bodyCiphertext: "unreadable-private-fixture",
+  })));
+  expect(await previewConversationDeletion(target.id)).toMatchObject({ eligible: false, fingerprint: null,
+    availableRunIds: [], privateBranchIds: [], blockedReasons: ["too_many_members", "private_branches"] });
+  await expect(deleteEmptyConversation(target.id, "a".repeat(64))).rejects.toBeInstanceOf(ConversationDeletionBlockedError);
 });
 
 test("unknown/foreign identities and mixed-owner metadata cannot be deleted", async () => {

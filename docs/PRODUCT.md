@@ -1,5 +1,10 @@
 # Product
 
+Conversation cards now expose deletion review for populated history as well as
+empty records. The same review guides separately confirmed private/run deletion,
+then metadata removal, showing existing blockers and preserving the draft.
+[Workflow and limits](CONVERSATION_CLEANUP.md).
+
 Saved-backup rehearsal also shows queue job states and future start times for
 council/private/decision work, with other queues counted separately. Inspecting
 them resumes no jobs. [Scope](RECOVERY_QUEUE_INVENTORY.md).

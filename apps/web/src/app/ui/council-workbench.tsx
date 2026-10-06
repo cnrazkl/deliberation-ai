@@ -2234,7 +2234,11 @@ export function CouncilWorkbench() {
         )}
       </details>
 
-      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)} onDeleted={() => { setLibraryDeletionId(undefined); setHistoryRefreshKey((value) => value + 1); }} />}
+      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)}
+        onDeletedRun={(id) => {
+          if (activeRunIdRef.current === id) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
+          setHistoryRefreshKey((value) => value + 1);
+        }} onDeleted={() => { setLibraryDeletionId(undefined); setHistoryRefreshKey((value) => value + 1); }} />}
       {privateConversationId && <PrivateBranchesPanel key={privateConversationId} conversationId={privateConversationId} onClose={() => setPrivateConversationId(undefined)} />}
       <PreflightDraftsPanel refreshKey={draftRefreshKey} focusDraftId={focusDraftId} onStarted={(created) => {
         cancelActiveWatchRef.current?.();

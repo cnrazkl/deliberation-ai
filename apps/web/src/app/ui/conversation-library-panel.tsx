@@ -89,9 +89,9 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun, onReviewDeleti
           data-open-history onClick={() => item.latestAvailableRun && void open(item.latestAvailableRun.runId)}>
           {opening === item.latestAvailableRun?.runId ? "Açılıyor…" : item.latestAvailableRun ? "Konuşmayı aç" : "İçerik erişilemiyor"}
         </button>
+        <button className="secondary-button" type="button" disabled={Boolean(opening)}
+          onClick={() => onReviewDeletion(item.conversationId)}>{item.availableRunCount === 0 ? "Kayıt silmeyi incele" : "Konuşmayı silmeyi incele"}</button>
         <details className="conversation-options"><summary aria-label="Konuşma seçenekleri">Diğer işlemler</summary>
-        {item.availableRunCount === 0 && <button className="secondary-button" type="button" disabled={Boolean(opening)}
-          onClick={() => onReviewDeletion(item.conversationId)}>Kayıt silmeyi incele</button>}
         <button className="secondary-button" type="button" disabled={Boolean(opening)} data-open-history onClick={() => onOpenPrivate(item.conversationId)}>Özel dal taslaklarını göster</button>
         </details>
       </article>)}

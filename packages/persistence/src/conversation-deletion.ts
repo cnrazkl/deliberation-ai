@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDatabase } from "./database";
 import { LOCAL_OWNER_ID } from "./owner";
-import { conversations, conversationRuns, runs } from "./schema";
+import { conversations, conversationRuns, conversationPrivateBranches, runs } from "./schema";
 import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
 
 export const MAX_CONVERSATION_DELETION_MEMBERS = 1_000;
@@ -15,6 +15,8 @@ export type ConversationDeletionPreview = {
   origin: "native" | "legacy-reconstructed";
   recordedRunCount: number;
   memberRunIds: string[];
+  availableRunIds: string[];
+  privateBranchIds: string[];
   eligible: boolean;
   blockedReasons: ConversationDeletionBlock[];
   fingerprint: string | null;
@@ -80,6 +82,15 @@ async function inspect(tx: ConversationTransaction, conversationId: string): Pro
     kind: conversationRuns.kind, createdAt: sql<string>`${conversationRuns.createdAt}::text` }).from(conversationRuns)
     .where(and(eq(conversationRuns.conversationId, conversationId), eq(conversationRuns.ownerId, LOCAL_OWNER_ID)))
     .orderBy(asc(conversationRuns.runId)).limit(MAX_CONVERSATION_DELETION_MEMBERS + 1);
+  // Metadata only: content review remains at the existing per-body boundary.
+  const available = await tx.select({ id: runs.id }).from(conversationRuns)
+    .innerJoin(runs, and(eq(runs.id, conversationRuns.runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+    .where(and(eq(conversationRuns.conversationId, conversationId), eq(conversationRuns.ownerId, LOCAL_OWNER_ID)))
+    .orderBy(asc(runs.id)).limit(MAX_CONVERSATION_DELETION_MEMBERS + 1);
+  const privateBranches = await tx.select({ id: conversationPrivateBranches.id }).from(conversationPrivateBranches)
+    .where(and(eq(conversationPrivateBranches.conversationId, conversationId), eq(conversationPrivateBranches.ownerId, LOCAL_OWNER_ID)))
+    .orderBy(asc(conversationPrivateBranches.id)).limit(MAX_CONVERSATION_DELETION_MEMBERS + 1);
+  if (privateBranches.length > MAX_CONVERSATION_DELETION_MEMBERS && !blockedReasons.includes("too_many_members")) blockedReasons.push("too_many_members");
   const checks = await tx.execute<{ available: boolean; pending: boolean; foreign: boolean; referenced: boolean; private: boolean; knowledge: boolean }>(sql`
     select
       exists(select 1 from runs r join conversation_runs cr on cr.run_id = r.id
@@ -119,6 +130,8 @@ async function inspect(tx: ConversationTransaction, conversationId: string): Pro
   return { version: "empty-conversation-deletion-v1", conversationId, createdAt: new Date(conversation.createdAt).toISOString(),
     origin: conversation.origin as ConversationDeletionPreview["origin"], recordedRunCount,
     memberRunIds: recordedRunCount <= MAX_CONVERSATION_DELETION_MEMBERS ? members.map((row) => row.runId) : [],
+    availableRunIds: recordedRunCount <= MAX_CONVERSATION_DELETION_MEMBERS ? available.map((row) => row.id) : [],
+    privateBranchIds: privateBranches.length <= MAX_CONVERSATION_DELETION_MEMBERS ? privateBranches.map((row) => row.id) : [],
     eligible, blockedReasons, fingerprint };
 }
 

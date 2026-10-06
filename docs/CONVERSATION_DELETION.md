@@ -1,5 +1,12 @@
 # Explicit empty-conversation metadata deletion — DA-095
 
+**Owner-requested access fix:** the library now exposes review for populated entries
+too. Bounded `availableRunIds`/`privateBranchIds` discovery connects existing separate
+body-deletion previews before the unchanged empty-metadata confirmation. Private
+inventory overflow also blocks deletion. This does not expand the metadata mutation
+target. [Current guided workflow](CONVERSATION_CLEANUP.md). The DA-095 descriptions
+below record its original metadata-only entry point.
+
 **DA-102 extension:** terminal leaf run bodies can now be removed through a separate reviewed policy before retention age. DA-095 still removes identity/memberships only once all body/reference/index guards pass. Logical `run_deletions` audit remains afterwards and blocks old enqueue/rerun intent replay; this is not complete account or independent-input erasure. [Policy](RUN_DELETION.md).
 
 **DA-101 extension:** owned private branch content can now be removed through its separate reviewed leaf-first policy. Any surviving private branch still blocks DA-095 metadata deletion. Content-free `private_branch_deletions` audit has logical conversation identifiers without FKs and remains after eligible identity deletion; this preserves usage/replay evidence and is not complete metadata/account erasure. [Policy](PRIVATE_BRANCH_DELETION.md). Earlier DA-095/096 private-body absence statements below describe those increments.

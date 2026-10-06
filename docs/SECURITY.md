@@ -1,5 +1,11 @@
 # Security
 
+Conversation cleanup discovery returns only bounded owned body/branch identities.
+It reads no additional ciphertext and authorizes no deletion by itself; each reused
+content/metadata mutation retains its existing snapshot, owner, worker and copy
+guards. Separate confirmations never automatically cascade to dependent copies.
+[Scope](CONVERSATION_CLEANUP.md).
+
 Restored queue inspection selects aggregate states/timing only, excluding job
 payloads, outputs and IDs. Unknown queue names are collapsed into a fixed `other`
 category; errors expose a fixed message. It starts no queue service or worker.

@@ -1,8 +1,38 @@
 # Current state
 
-Updated: 7 October 2026 (restored queue inventory; acceptance tasks remain open)
+Updated: 7 October 2026 (owner-requested conversation deletion access; acceptance tasks remain open)
 
-## Current increment — restored queue inventory (Group 5)
+## Current increment — populated conversation deletion access
+
+The owner-reported missing deletion action came from the library showing deletion
+only inside other operations for conversations with no remaining run bodies.
+Every card now has a visible review entry. Opening focuses/scrolls to a guided
+review with bounded owned run/private identifiers; each body uses its existing
+separately confirmed deletion policy before final empty-metadata confirmation.
+Successful steps refresh review/history, clear old acknowledgement and close a
+matching current result/watch while preserving the question draft.
+[Workflow and retained-reference limits](CONVERSATION_CLEANUP.md).
+
+402 unit cases / 65 files and the full isolated PostgreSQL suite of 253 cases /
+33 files pass. The final focused metadata suite passes 10 cases, including the
+additional private-inventory overflow regression. Five real-route browser cases
+in a separate generated database pass, including populated private/child/source/
+metadata deletion, preserved neighbor/draft/audits, zero generation, stale-state
+and lost-response guards. Early fixture failures were corrected to include exact
+membership timestamps and a valid source report; the final five-case run passes.
+Workspace/scripts typecheck, zero-warning lint, separate-output production build
+and full dependency audit pass. All 900 local documentation links resolve; staged
+and full-history secret scans are clean.
+
+No owner conversation is deleted during verification, no personal migration is
+needed and no provider is called. At 01:05 Istanbul, HTTP 200, database and one
+worker are ready; queued/running council runs and unknown council attempts are zero.
+Each confirmed step commits independently; cancellation does not undo earlier
+deletions. Knowledge/preparation/publication and external-copy references remain
+subject to existing blockers. Broader recovery, DA-119/DA-126 and full erasure
+acceptance remain open; queue-target reconciliation remains the next recovery work.
+
+## Previous increment — restored queue inventory (Group 5)
 
 Saved-backup rehearsal now includes aggregate pg-boss job states across partitions
 for council/decision/private work and an anonymized other category. Future start

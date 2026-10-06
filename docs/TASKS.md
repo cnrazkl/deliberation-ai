@@ -1,5 +1,11 @@
 # Tasks
 
+- [x] Owner-requested insertion — populated conversation deletion access: visible
+  library entry, bounded owned content discovery, separate existing private/run
+  reviews followed by metadata confirmation, refreshed history and preserved drafts.
+  Existing active/unknown/copy/reference guards remain; no automatic cascade or full
+  account erasure. [Workflow](CONVERSATION_CLEANUP.md).
+
 DA-119 update: the owner accepted the exact local-first trial contract, selected files
 only, and reviewable trial limits. Forty text cases, ten boundary challenges, eight
 format questions/four binary fixtures and blank human forms are frozen. 303 units,

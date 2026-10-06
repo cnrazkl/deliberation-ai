@@ -1,5 +1,11 @@
 # Architecture
 
+ConversationDeletionPanel composes existing private/run/metadata review boundaries.
+The owned read-only metadata preview adds bounded live-body/private identifiers;
+each existing mutation independently rechecks its fingerprint and guards. Successful
+body removal refreshes the review/history and clears a matching current result.
+No new schema, endpoint or dispatch path. [Scope](CONVERSATION_CLEANUP.md).
+
 The backup verifier reads only aggregate queue metadata from the restored parent
 job table and its partitions. Fixed application categories hide other queue names;
 no PgBoss instance is started by inspection. Runtime dispatch is unchanged.
