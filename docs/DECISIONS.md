@@ -1,5 +1,10 @@
 # Decisions
 
+DA-123 reuses the existing evidence source review boundary with frozen candidate
+origin/provenance, separate observed availability and additive changed-source links.
+No automatic truth annotation or reusable publication is admitted.
+[ADR-0038](adr/0038-evidence-candidate-inbox.md).
+
 DA-121 accepts encrypted immutable local source versions, page/hash-bound old quotes,
 bounded transient lexical reads and explicit immutable transient-failure retries.
 No external service is required or admitted. [ADR-0036](adr/0036-local-knowledge-source-versions.md).

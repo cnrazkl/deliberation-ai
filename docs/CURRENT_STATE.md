@@ -1,8 +1,27 @@
 # Current state
 
-Updated: 5 October 2026 (DA-122 reviewed local knowledge packets)
+Updated: 6 October 2026 (DA-123 candidate inbox complete)
 
-## Current increment — DA-122 local packet implementation complete
+## Current increment — DA-123 candidate inbox complete
+
+Explicit owner submissions, stored round-0 model citations and run packet excerpts
+enter a claim-linked human inbox. Original passages, model/source distinction and
+additive conflicting-source links remain frozen. Content and freshness decisions
+are independent; local grant/version availability is a separate observation. Intake
+and review never promote claim evidence or invoke providers/tools. Candidate JSON
+export, exhaustive archive audit and reviewed run-body deletion cover the new
+encrypted provenance. [Contract](EVIDENCE_CANDIDATES.md), [verification](DA123_ACCEPTANCE.md).
+
+325 units, 244 isolated PostgreSQL cases, populated disposable candidate/source
+dump/restore, typecheck, lint, production build, dependency audit, extraction/cohort
+integrity and secret scans passed. Browser coverage and the final passing candidate/
+workspace/mobile reruns are recorded in the verification file; one initial mobile
+sidebar failure is retained honestly. All 776 documentation links resolve. Migration
+0053 has been applied only in generated databases. Owner database migration, DA-119
+independent labels and DA-126 empirical acceptance stay open. DA-124 reusable save/
+publication is the next implementation task.
+
+## Previous increment — DA-122 local packet implementation complete
 
 Explicit local collection/grant/conversation/file UI prepares a scoped lexical packet
 with up to six intact page-linked quotes/9,000 characters, inspectable coverage and
@@ -19,10 +38,12 @@ transport, production build/packaged parser routes and populated packet/source
 archive restore pass. Typecheck, lint, frozen install, dependency audit, extraction
 snapshots and seven lint compatibility checks pass. Final browser/publication evidence
 is recorded in the verification file. Migration 0052 was applied only in generated
-databases; owner data and main remain unchanged. Local 24,000-token text estimates
+databases; owner data remained unchanged. The owner subsequently authorized merging
+the completed DA-121/122 source into main and removing those two remote feature
+branches. Local 24,000-token text estimates
 are planning ceilings, not guaranteed provider context fit or billing. Independent
 human labels, source/preparation erasure, optional adapters and DA-126 empirical
-acceptance remain open. Next implementation task: DA-123 candidate inbox/human review.
+acceptance remain open. DA-123 implementation and verification are recorded above.
 
 ## Previous increment — DA-121 local source backend complete
 
@@ -98,9 +119,9 @@ gates. Disposable test databases were removed and the ignored workspace environm
 was restored. No primary database migration, paid call or real owner deletion ran.
 [Review and remaining gates](REPO_RECONCILIATION_2026_10_05.md).
 
-## Proposed knowledge sources and NVIDIA — documentation only
+## Knowledge sources and NVIDIA — implementation and remaining proposal
 
-[Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable notebook-scoped sources, multi-notebook conversations, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-119 trial agreement/preparation is recorded above; full DA-119 acceptance and DA-122–DA-126 remain open; DA-120/121 backend foundations are verified. Selected-byte intake is implemented; no connector or council knowledge input is enabled. Existing attachment/MCP behavior is unchanged. DA-108 is complete in the integrated application chain through DA-118.
+[Architecture](KNOWLEDGE_SOURCES.md) and [research](research/KNOWLEDGE_CONNECTORS_2026_10_05.md) cover reusable scoped sources, bounded frozen evidence, reviewed publication/manual fallback and a distinct NVIDIA preset. DA-119 trial agreement/preparation is recorded above; full human/model acceptance remains open. DA-120–123 scopes, selected-file intake, reviewed council input and human candidate inbox are implemented. DA-124–126 and external adapter admission remain open. DA-108 is complete in the integrated application chain through DA-118.
 
 Owner refinement: prioritize security, quality and maintainability. The revised proposal excludes unofficial NotebookLM bridges and Notion, defers official NotebookLM pending stable required APIs, and proposes a bounded local-first library with optional admitted adapters. Open Notebook is not certified safe by this review. [Seven synthetic worked scenarios](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md) specify expected evidence, conflict, isolation, OCR, publication, recovery and cost behavior; they are documentation examples, not executed tests or live quality results.
 

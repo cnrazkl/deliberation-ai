@@ -79,6 +79,7 @@ import { attachRunToConversation, lockConversationMembership } from "./conversat
 import { loadFrozenMemoryEntries } from "./memory-entries";
 import { loadFrozenToolContexts, loadRelevantToolContexts } from "./mcp-connections";
 import { claimOccurrences, claims, evidenceSources, modelRuns, preflightDrafts, providerConnections, providerOperations, runEvents, runs } from "./schema";
+import { candidateSourceAvailable } from "./evidence-sources";
 import * as schema from "./schema";
 import { loadKnowledgePacket, readRunKnowledgePacket, authorizeKnowledgePacketInSnapshot, assertKnowledgePacketAttachmentRouting } from "./knowledge-packets";
 
@@ -1141,6 +1142,7 @@ async function updateDurableClaimAnnotation(
 ): Promise<RunRecord | undefined> {
   const db = getDatabase();
   return db.transaction(async (tx) => {
+    await lockConversationMembership(tx);
     const [row] = await tx
       .select()
       .from(runs)
@@ -1200,8 +1202,8 @@ async function updateDurableClaimAnnotation(
     ) {
       const requiredRelation =
         annotation.value === "externally-verified" ? "supports" : "contradicts";
-      const [verifiedSource] = await tx
-        .select({ id: evidenceSources.id })
+      const verifiedSources = await tx
+        .select()
         .from(evidenceSources)
         .where(
           and(
@@ -1211,8 +1213,10 @@ async function updateDurableClaimAnnotation(
             eq(evidenceSources.freshnessStatus, "current"),
           ),
         )
-        .limit(1);
-      if (!verifiedSource) throw new EvidenceRequirementError(annotation.value);
+        .limit(10);
+      let qualifies = false;
+      for (const source of verifiedSources) if (await candidateSourceAvailable(tx, source)) { qualifies = true; break; }
+      if (!qualifies) throw new EvidenceRequirementError(annotation.value);
     }
 
     await tx

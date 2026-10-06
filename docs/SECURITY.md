@@ -1,5 +1,13 @@
 # Security
 
+DA-123 candidate intake has a 32 KiB streamed strict local-origin/no-store BFF. Model
+citations resolve stored identities and never masquerade as original source passages;
+local excerpts reauthorize grants before creating copies. Current grant/version checks
+block changed/revoked candidates from new qualifying claim annotations. Historical
+copies remain inspectable; human decisions do not prove truth. New encrypted provenance
+and local quote round-trip enter the exhaustive archive audit. Candidate TypeSafe
+transmission is refused. [Contract](EVIDENCE_CANDIDATES.md).
+
 DA-121 stores originals/names and extraction/pages as separate AES-GCM payloads with
 version/payload-kind AAD. Current grants fence every source read/export and final
 intake publication; a revoked scope cannot read old quotes. Lexical search decrypts

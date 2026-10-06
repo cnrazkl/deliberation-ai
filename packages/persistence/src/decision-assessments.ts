@@ -181,6 +181,7 @@ export async function createDecisionAssessment(
     if (!source?.excerptCiphertext) {
       throw new DecisionAssessmentInputError("Seçilen iddiaya ait mühürlü kaynak alıntısı bulunamadı.");
     }
+    if (source.candidateProvenanceCiphertext) throw new DecisionAssessmentInputError("Aday kutusu TypeSafe gönderimi sağlamaz; bu kayıt yalnızca insan incelemesi içindir.");
     const [connection] = await tx
       .select({ id: decisionConnections.id })
       .from(decisionConnections)

@@ -1,5 +1,11 @@
 # Architecture
 
+DA-123 extends evidence sources with contract-validated encrypted immutable candidate
+provenance. Persistence resolves owner/run/claim/member/packet identities and serializes
+intake/review with grants and reviewed deletion; the local BFF and inbox perform no
+retrieval or provider/tool calls. Human judgments and live local availability remain
+separate. [Contract](EVIDENCE_CANDIDATES.md), [ADR-0038](adr/0038-evidence-candidate-inbox.md).
+
 DA-121 implements [local source versions](LOCAL_KNOWLEDGE_SOURCES.md): contracts
 define encrypted body schemas; domain validates identity/hash/page spans and exact
 quote locators; retrieval validates selected files and bounds the disposable PDF

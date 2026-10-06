@@ -12,7 +12,9 @@ import { createKnowledgeCollection, changeKnowledgeGrant, setConversationKnowled
 import { importKnowledgeFiles, exportKnowledgeVersion, searchLocalKnowledge, selectKnowledgeExcerpt, LocalKnowledgeSource } from "../src/knowledge-sources";
 import { auditRestoredEncryption } from "./backup-encryption-audit";
 import { prepareKnowledgePacket, loadKnowledgePacket } from "../src/knowledge-packets";
-import { enqueueDurableRun, cancelDurableRun, findDurableRunById } from "../src/run-repository";
+import { enqueueDurableRun, executeDurableRun, findDurableRunById } from "../src/run-repository";
+import { createEvidenceCandidate, listEvidenceCandidates } from "../src/evidence-candidates";
+import { updateEvidenceSourceReview } from "../src/evidence-sources";
 import { closeBoss } from "../src/queue";
 import { buildRoundZeroPromptPlan, buildRiskPreflight } from "@deliberation-ai/application";
 import { createRunRequestSchema, defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
@@ -68,9 +70,15 @@ async function main() {
     const plan = buildRoundZeroPromptPlan({ question, members, knowledgePacket: packet, memoryContext: [], toolContext: [], documents: [], images: [] });
     const risk = buildRiskPreflight({ question, documents: packet.excerpts.map((item) => ({ content: item.text })), memoryContext: [], toolContext: [], promptFingerprint: plan.fingerprint, reviewRounds: 0 });
     const run = await enqueueDurableRun(createRunRequestSchema.parse({ question, members, providerMode: "fake", reviewRounds: 0, idempotencyKey: randomUUID(), knowledgePacket: { id: packet.id, fingerprint: packet.fingerprint, reviewed: true }, expectedPreflightFingerprint: plan.fingerprint, expectedRiskFingerprint: risk.fingerprint }));
-    await cancelDurableRun(run.runId); await closeBoss();
+    const completed = (await executeDurableRun(run.runId))!;
+    const claimId = [...completed.report!.sharedClaims, ...completed.report!.distinctClaims][0]!.claimId;
+    const candidate = (await createEvidenceCandidate({ requestId: randomUUID(), runId: run.runId, claimId, origin: "local-excerpt",
+      excerptId: packet.excerpts[0]!.excerptId, relation: "context" }))!;
+    await updateEvidenceSourceReview(candidate.id, { reviewStatus: "rejected", freshnessStatus: "stale" });
+    await closeBoss();
     const beforeVersions = await getDatabase().select().from(knowledgeSourceVersions).orderBy(asc(knowledgeSourceVersions.id));
     const revoked = await changeKnowledgeGrant(collection.id, scope.grantRevision, "revoked");
+    const candidateExport = await listEvidenceCandidates(run.runId);
     const exported = await exportConversationKnowledge(conversationId);
     const collectionExport = await exportKnowledgeCollection(collection.id);
     const [beforeCollection] = await getDatabase().select().from(knowledgeCollections).where(eq(knowledgeCollections.id, collection.id));
@@ -88,6 +96,8 @@ async function main() {
     assert.deepEqual(await exportConversationKnowledge(conversationId), exported);
     assert.equal(await authorizeKnowledgeScope(scope), false);
     assert.deepEqual((await findDurableRunById(run.runId))!.knowledgePacket, packet);
+    assert.deepEqual(await listEvidenceCandidates(run.runId), candidateExport);
+    assert.equal(candidateExport![0]!.availability, "inaccessible");
     await assert.rejects(loadKnowledgePacket({ id: packet.id, fingerprint: packet.fingerprint, reviewed: true }));
     assert.equal(exported?.revision, revision); assert.equal(exported?.grants[0]?.available, false);
     assert.deepEqual(await getDatabase().select().from(knowledgeSourceVersions).orderBy(asc(knowledgeSourceVersions.id)), beforeVersions);
@@ -97,7 +107,7 @@ async function main() {
     assert.deepEqual(await new LocalKnowledgeSource().readExcerpt(renewed, sourceId, imported[0]!.versionId, quote.excerptId), { ...quote, source: { ...quote.source, scope: renewed } });
     assert.equal((await searchLocalKnowledge([renewed], "updated")).hits[0]?.source.versionId, updated!.versionId);
     assert.equal((await searchLocalKnowledge([renewed], "source")).unavailableSources, 2);
-    console.log("Synthetic packet and source restore verified: identical originals/versions/page hashes, pinned old quote, latest search and revoked scope denial.");
+    console.log("Synthetic packet, candidate and source restore verified: immutable quote/provenance, separate human decisions, latest search and revoked scope denial.");
   } finally {
     await closeBoss(); await closeDatabase(); process.env.DATABASE_URL = originalUrl;
     for (const name of created) {

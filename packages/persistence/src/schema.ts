@@ -337,6 +337,7 @@ export const evidenceSources = pgTable(
     titleCiphertext: text("title_ciphertext").notNull(),
     urlCiphertext: text("url_ciphertext").notNull(),
     excerptCiphertext: text("excerpt_ciphertext"),
+    candidateProvenanceCiphertext: text("candidate_provenance_ciphertext"),
     noteCiphertext: text("note_ciphertext").notNull(),
     publishedAt: date("published_at"),
     capturedAt: timestamp("captured_at", { withTimezone: true }).notNull().defaultNow(),
@@ -357,7 +358,7 @@ export const evidenceSources = pgTable(
     ),
     check(
       "evidence_sources_freshness_status_valid",
-      sql`${table.freshnessStatus} in ('unreviewed', 'current', 'needs-review', 'stale')`,
+      sql`${table.freshnessStatus} in ('unreviewed', 'current', 'needs-review', 'stale', 'changed', 'inaccessible')`,
     ),
   ],
 );

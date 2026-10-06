@@ -17,6 +17,7 @@ export * from "./billing-account";
 export * from "./billing-payment";
 export * from "./memory-entries";
 export * from "./evidence-sources";
+export * from "./evidence-candidates";
 export * from "./research-captures";
 export * from "./mcp-connections";
 export * from "./local-schedules";

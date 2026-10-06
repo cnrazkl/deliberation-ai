@@ -7,6 +7,7 @@ import { getDatabase } from "./database";
 import { MAX_EVIDENCE_SOURCES_PER_CLAIM } from "./evidence-sources";
 import { LOCAL_OWNER_ID } from "./owner";
 import { claims, evidenceSources, researchCaptures, runs } from "./schema";
+import { lockConversationMembership } from "./conversation-membership";
 
 export const MAX_RESEARCH_CAPTURES_PER_CLAIM = 5;
 
@@ -159,6 +160,7 @@ export async function promoteResearchCapture(
   request: PromoteResearchCaptureRequest,
 ): Promise<{ capture: ResearchCapture; evidenceSourceId: string } | undefined> {
   return getDatabase().transaction(async (tx) => {
+    await lockConversationMembership(tx);
     const [capture] = await tx.select().from(researchCaptures)
       .where(and(eq(researchCaptures.id, id), eq(researchCaptures.ownerId, LOCAL_OWNER_ID)))
       .for("update").limit(1);

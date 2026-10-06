@@ -1,6 +1,6 @@
 import { z } from "zod";
 export * from "./knowledge";
-import { knowledgePacketReferenceSchema } from "./knowledge";
+import { knowledgePacketReferenceSchema, knowledgeExcerptSchema } from "./knowledge";
 export * from "./pricing";
 export * from "./billing";
 export * from "./billing-statement";
@@ -641,6 +641,8 @@ export const evidenceFreshnessStatusSchema = z.enum([
   "current",
   "needs-review",
   "stale",
+  "changed",
+  "inaccessible",
 ]);
 export type EvidenceFreshnessStatus = z.infer<typeof evidenceFreshnessStatusSchema>;
 
@@ -656,6 +658,41 @@ export const saveEvidenceSourceSchema = z.object({
 });
 
 export type SaveEvidenceSourceRequest = z.infer<typeof saveEvidenceSourceSchema>;
+
+// A citation is model text, never a captured passage from the cited document.
+const candidateCommon = {
+  requestId: z.string().uuid(), runId: z.string().uuid(),
+  claimId: z.string().regex(/^(?:claim|red-team)-\d{3}$/),
+  relation: evidenceRelationSchema,
+  relatedSourceId: z.string().uuid().optional(),
+};
+export const createEvidenceCandidateSchema = z.discriminatedUnion("origin", [
+  z.object({ ...candidateCommon, origin: z.literal("owner"),
+    title: z.string().trim().min(1).max(160),
+    url: z.string().url().max(2048).refine((value) => /^https?:\/\//i.test(value)),
+    excerpt: z.string().min(1).max(4000).refine((value) => value.trim().length > 0),
+    publishedAt: z.iso.date().optional(), note: z.string().trim().max(1000).default("") }).strict(),
+  z.object({ ...candidateCommon, origin: z.literal("model-citation"),
+    memberId: z.string().min(1).max(64), citationIndex: z.number().int().min(0).max(99) }).strict(),
+  z.object({ ...candidateCommon, origin: z.literal("local-excerpt"),
+    excerptId: z.string().uuid() }).strict(),
+]);
+export type CreateEvidenceCandidate = z.infer<typeof createEvidenceCandidateSchema>;
+export const evidenceCandidateProvenanceSchema = z.object({
+  version: z.literal("evidence-candidate-v1"), requestHash: z.string().regex(/^[a-f0-9]{64}$/),
+  origin: z.enum(["owner", "model-citation", "local-excerpt"]),
+  relatedSourceId: z.string().uuid().nullable(), statement: z.string().min(1).max(1000),
+  model: z.object({ memberId: z.string().min(1).max(64), label: z.string().max(160),
+    citationIndex: z.number().int().min(0).max(99), passage: z.string().max(1000),
+    rawSha256: z.string().regex(/^[a-f0-9]{64}$/) }).strict().nullable(),
+  localExcerpt: knowledgeExcerptSchema.nullable(),
+}).strict().superRefine((value, context) => {
+  if ((value.origin === "model-citation") !== Boolean(value.model) ||
+      (value.origin === "local-excerpt") !== Boolean(value.localExcerpt)) {
+    context.addIssue({ code: "custom", message: "Candidate origin/provenance mismatch." });
+  }
+});
+export type EvidenceCandidateProvenance = z.infer<typeof evidenceCandidateProvenanceSchema>;
 
 export const updateEvidenceSourceSchema = z
   .object({

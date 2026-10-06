@@ -35,6 +35,7 @@ import type {
 import { DecisionAssessmentPanel } from "./decision-assessment-panel";
 import { ClaimContextPanel } from "./claim-context-panel";
 import { ResearchCapturePanel } from "./research-capture-panel";
+import { EvidenceCandidatePanel } from "./evidence-candidate-panel";
 import { LocalToolsPanel } from "./local-tools-panel";
 import { KnowledgePanel } from "./knowledge-panel";
 import { LocalSchedulesPanel } from "./local-schedules-panel";
@@ -110,6 +111,8 @@ const evidenceFreshnessStatusLabels: Record<EvidenceFreshnessStatus, string> = {
   unreviewed: "Güncellik incelenmedi",
   current: "Güncel kabul edildi",
   "needs-review": "Yeniden incelenmeli",
+  changed: "Kaynak değişmiş",
+  inaccessible: "Kaynağa erişilemiyor",
   stale: "Güncelliğini yitirdi",
 };
 
@@ -283,6 +286,7 @@ type EvidenceSource = {
   title: string;
   url: string;
   excerpt: string | null;
+  candidateProvenance?: unknown | null;
   relation: EvidenceRelation;
   reviewStatus: EvidenceReviewStatus;
   freshnessStatus: EvidenceFreshnessStatus;
@@ -1372,7 +1376,7 @@ export function CouncilWorkbench() {
   )?.claim;
   const effectiveSelectedEvidenceClaimId = selectedEvidenceClaim?.claimId;
   const selectedClaimSources = evidenceSources.filter(
-    (source) => source.claimId === effectiveSelectedEvidenceClaimId,
+    (source) => source.claimId === effectiveSelectedEvidenceClaimId && !source.candidateProvenance,
   );
   const statusLabel =
     run?.status === "queued"
@@ -2465,6 +2469,8 @@ export function CouncilWorkbench() {
 
               <ClaimContextPanel run={run} onRunUpdated={setRun} />
 
+              <EvidenceCandidatePanel key={run.runId} run={run} onSourcesChanged={() => { void refreshEvidenceSources(run.runId); }} />
+
               <ResearchCapturePanel
                 runId={run.runId}
                 claims={synthesisClaims.map(({ claim, source }) => ({
@@ -2479,7 +2485,7 @@ export function CouncilWorkbench() {
                 <div className="synthesis-heading">
                   <div>
                     <span>KAYNAK BAĞLANTILI KANITLAR</span>
-                    <strong>{evidenceSources.length} kayıt</strong>
+                    <strong>{evidenceSources.filter((source) => !source.candidateProvenance).length} kayıt</strong>
                   </div>
                   <small>
                     Manuel kayıtlar bağlantıyı ziyaret etmez. Güvenli getirme yoluyla oluşturulanlar da
@@ -2574,7 +2580,7 @@ export function CouncilWorkbench() {
                       {selectedClaimSources.map((source) => (
                         <article className="evidence-source" key={source.id}>
                           <div>
-                            <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a>
+                            {/^https?:\/\//i.test(source.url) ? <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a> : <strong>{source.title}</strong>}
                             <small>{evidenceRelationLabels[source.relation]} · {source.note || "Not yok"}</small>
                             <blockquote>
                               {source.excerpt ?? "Bu eski kaynak kaydında mühürlenmiş alıntı bulunmuyor."}
@@ -2646,7 +2652,7 @@ export function CouncilWorkbench() {
                   claimId: claim.claimId,
                   statement: claim.statement,
                 }))}
-                sources={evidenceSources.map((source) => ({
+                sources={evidenceSources.filter((source) => !source.candidateProvenance).map((source) => ({
                   id: source.id,
                   claimId: source.claimId,
                   title: source.title,

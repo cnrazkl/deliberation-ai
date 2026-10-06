@@ -1,5 +1,11 @@
 # Workspace design principles — DA-111 / DA-112
 
+DA-123 groups candidate origin/claim controls, shows each frozen passage and its
+provenance before two independent human-review controls, and keeps candidate records
+in the inbox rather than duplicating them in manual-source/TypeSafe controls. Its
+forms and populated cards use workspace container queries and wrap expanded model
+provenance on narrow screens. [Contract](EVIDENCE_CANDIDATES.md).
+
 DA-118 keeps conversation council/private usage collapsed under the saved conversation
 record. Each is fetched explicitly with its own time, with record denominators and unknown
 history/counters visible. A failed refresh clears old results. [Scope](CONVERSATION_COUNCIL_USAGE.md).

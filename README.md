@@ -1,5 +1,9 @@
 # DeliberationAI
 
+DA-123 adds a human candidate inbox with frozen owner/model/local provenance,
+separate content/freshness decisions and explicit JSON export. Intake/review never
+automatically promotes claim evidence. [Contract](docs/EVIDENCE_CANDIDATES.md).
+
 DA-120–122 provide explicit local collections, encrypted immutable selected file
 versions, page-linked quotes and reviewed frozen council packets. Scope, freshness,
 named omissions and prospective revocation are checked; human quality stays open.

@@ -1,5 +1,5 @@
 import type { Client } from "pg";
-import { knowledgeCollectionBodySchema, knowledgeSelectionSchema } from "@deliberation-ai/contracts";
+import { evidenceCandidateProvenanceSchema, knowledgeCollectionBodySchema, knowledgeSelectionSchema } from "@deliberation-ai/contracts";
 import { validateKnowledgeExtraction, validateKnowledgeOriginal, type KnowledgeVersionMetadata } from "@deliberation-ai/domain";
 import { validateKnowledgePacket, readKnowledgeExcerpt } from "@deliberation-ai/domain";
 import { decryptText } from "../src/crypto";
@@ -77,7 +77,8 @@ const encryptedTables: readonly EncryptedTable[] = [
   { table: "evidence_sources", keys: ["id"], contextPrefix: "evidence-source", fields: [
     ["title_ciphertext", "title", "text"], ["url_ciphertext", "url", "text"],
     ["excerpt_ciphertext", "excerpt", "text"], ["note_ciphertext", "note", "text"],
-  ] },
+    ["candidate_provenance_ciphertext", "candidate-provenance", "json"],
+  ], metadata: [["owner_id", "ownerId"], ["run_id", "runId"], ["claim_id", "claimId"]] },
   { table: "research_captures", keys: ["id"], contextPrefix: "research-capture", fields: [
     ["requested_url_ciphertext", "requested-url", "text"], ["final_url_ciphertext", "final-url", "text"],
     ["title_ciphertext", "title", "text"], ["content_ciphertext", "content", "text"],
@@ -146,7 +147,9 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
   const supportedTables = encryptedTables.filter((descriptor) => !descriptor.optional || presentTables.has(descriptor.table)).map((descriptor) =>
     descriptor.table === "local_schedules" && added.length === 0
       ? { ...descriptor, fields: descriptor.fields.filter(([column]) => column !== "deletion_receipt_ciphertext"), metadata: [] }
-      : descriptor.table === "runs" && !packetColumn ? { ...descriptor, fields: descriptor.fields.filter(([column]) => column !== "knowledge_packet_ciphertext") } : descriptor);
+      : descriptor.table === "runs" && !packetColumn ? { ...descriptor, fields: descriptor.fields.filter(([column]) => column !== "knowledge_packet_ciphertext") }
+      : descriptor.table === "evidence_sources" && !actual.rows.some((row) => row.table_name === "evidence_sources" && row.column_name === "candidate_provenance_ciphertext")
+        ? { ...descriptor, fields: descriptor.fields.filter(([column]) => column !== "candidate_provenance_ciphertext") } : descriptor);
   const expected = new Set(supportedTables.flatMap(({ table, fields }) => fields.map(([column]) => `${table}.${column}`)));
   const found = new Set(actual.rows.filter(({ column_name }) => column_name.endsWith("_ciphertext")).map(({ table_name, column_name }) => `${table_name}.${column_name}`));
   if (expected.size !== found.size || [...expected].some((column) => !found.has(column))) {
@@ -197,6 +200,28 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
           try {
             const plaintext = decryptText(ciphertext, suffix ? `${contextBase}:${suffix}` : contextBase);
             if (format === "json") JSON.parse(plaintext);
+            if (descriptor.table === "evidence_sources" && column === "candidate_provenance_ciphertext") {
+              const candidate = evidenceCandidateProvenanceSchema.parse(JSON.parse(plaintext));
+              const owned = await client.query(`select 1 from claims c join runs r on r.id = c.run_id where c.id = $1 and r.id = $2 and r.owner_id = $3`, [row.claimId, row.runId, row.ownerId]);
+              if (owned.rows.length !== 1) throw new Error("Invalid candidate ownership.");
+              if (candidate.relatedSourceId) {
+                const related = await client.query("select 1 from evidence_sources where id = $1 and claim_id = $2 and owner_id = $3", [candidate.relatedSourceId, row.claimId, row.ownerId]);
+                if (related.rows.length !== 1) throw new Error("Invalid candidate relationship.");
+              }
+              const excerpt = candidate.localExcerpt;
+              if (excerpt) {
+                if (excerpt.source.scope.ownerId !== row.ownerId || !row.excerpt_ciphertext) throw new Error("Invalid candidate excerpt owner.");
+                const version = await client.query<{ extraction_ciphertext: string }>(`select v.extraction_ciphertext from knowledge_source_versions v
+                  join knowledge_sources s on s.id = v.source_id where v.id = $1 and v.source_id = $2 and v.owner_id = $3 and s.owner_id = $3 and s.collection_id = $4`,
+                  [excerpt.source.versionId, excerpt.source.sourceId, row.ownerId, excerpt.source.scope.collectionId]);
+                if (version.rows.length !== 1) throw new Error("Invalid candidate source version.");
+                const body = JSON.parse(decryptText(version.rows[0]!.extraction_ciphertext, `knowledge-version:${excerpt.source.versionId}:extraction`));
+                const quote = readKnowledgeExcerpt(body, excerpt.excerptId);
+                if (body.originalHash !== excerpt.source.originalHash || body.textHash !== excerpt.source.textHash || body.parserVersion !== excerpt.source.parserVersion
+                  || body.name !== excerpt.source.title || body.mediaType !== excerpt.source.mediaType || quote.text !== excerpt.text || quote.textHash !== excerpt.textHash
+                  || decryptText(row.excerpt_ciphertext, `${contextBase}:excerpt`) !== excerpt.text) throw new Error("Invalid candidate quote provenance.");
+              }
+            }
             if (descriptor.table === "knowledge_preparations" || descriptor.table === "runs" && column === "knowledge_packet_ciphertext") {
               const packet = validateKnowledgePacket(JSON.parse(plaintext));
               if (descriptor.table === "knowledge_preparations" && (packet.id !== key[0] || packet.ownerId !== row.ownerId || packet.conversationId !== row.conversationId)) throw new Error("Invalid packet identity.");

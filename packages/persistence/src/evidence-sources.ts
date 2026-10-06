@@ -1,16 +1,34 @@
 import { randomUUID } from "node:crypto";
 import type {
+  EvidenceCandidateProvenance,
   EvidenceFreshnessStatus,
   EvidenceRelation,
   EvidenceReviewStatus,
   SaveEvidenceSourceRequest,
   UpdateEvidenceSourceRequest,
 } from "@deliberation-ai/contracts";
+import { evidenceCandidateProvenanceSchema } from "@deliberation-ai/contracts";
 import { and, asc, count, eq } from "drizzle-orm";
-import { decryptText, encryptText } from "./crypto";
+import { decryptJson, decryptText, encryptText } from "./crypto";
 import { getDatabase } from "./database";
 import { LOCAL_OWNER_ID } from "./owner";
-import { claims, evidenceSources, runs } from "./schema";
+import { claims, evidenceSources, knowledgeSources, runs } from "./schema";
+import { authorizeKnowledgeScopeInSnapshot } from "./knowledge-scope";
+import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
+
+export async function candidateSourceAvailable(tx: ConversationTransaction, row: {
+  id: string; candidateProvenanceCiphertext: string | null; excerptCiphertext: string | null;
+}) {
+  if (!row.candidateProvenanceCiphertext) return true; // Historical evidence contract.
+  const provenance = evidenceCandidateProvenanceSchema.parse(decryptJson(row.candidateProvenanceCiphertext, `evidence-source:${row.id}:candidate-provenance`));
+  if (!row.excerptCiphertext) return false;
+  const quote = provenance.localExcerpt;
+  if (!quote) return true; // Remote content/freshness is an explicit human assessment.
+  if (!await authorizeKnowledgeScopeInSnapshot(tx, quote.source.scope)) return false;
+  const [head] = await tx.select({ version: knowledgeSources.activeVersionId }).from(knowledgeSources)
+    .where(and(eq(knowledgeSources.id, quote.source.sourceId), eq(knowledgeSources.ownerId, LOCAL_OWNER_ID))).limit(1);
+  return head?.version === quote.source.versionId;
+}
 
 export const MAX_EVIDENCE_SOURCES_PER_CLAIM = 10;
 
@@ -21,6 +39,7 @@ export type EvidenceSource = {
   title: string;
   url: string;
   excerpt: string | null;
+  candidateProvenance: EvidenceCandidateProvenance | null;
   relation: EvidenceRelation;
   reviewStatus: EvidenceReviewStatus;
   freshnessStatus: EvidenceFreshnessStatus;
@@ -40,17 +59,19 @@ export class EvidenceSourceLimitError extends Error {
 }
 
 export class EvidenceSourceInUseError extends Error {
-  constructor() {
-    super("Bu kaynak iddianın mevcut kanıt durumunu destekliyor; önce iddianın kanıt durumunu değiştirin.");
+  constructor(message = "Bu kaynak iddianın mevcut kanıt durumunu destekliyor; önce iddianın kanıt durumunu değiştirin.") {
+    super(message);
     this.name = "EvidenceSourceInUseError";
   }
 }
 
-function mapEvidenceSource(row: typeof evidenceSources.$inferSelect): EvidenceSource {
+export function mapEvidenceSource(row: typeof evidenceSources.$inferSelect): EvidenceSource {
   return {
     id: row.id,
     runId: row.runId,
     claimId: row.reportClaimId,
+    candidateProvenance: row.candidateProvenanceCiphertext
+      ? evidenceCandidateProvenanceSchema.parse(decryptJson(row.candidateProvenanceCiphertext, `evidence-source:${row.id}:candidate-provenance`)) : null,
     title: decryptText(row.titleCiphertext, `evidence-source:${row.id}:title`),
     url: decryptText(row.urlCiphertext, `evidence-source:${row.id}:url`),
     excerpt: row.excerptCiphertext
@@ -87,6 +108,7 @@ export async function saveEvidenceSource(
   request: SaveEvidenceSourceRequest,
 ): Promise<EvidenceSource | undefined> {
   return getDatabase().transaction(async (tx) => {
+    await lockConversationMembership(tx);
     const [claim] = await tx
       .select({ id: claims.id })
       .from(claims)
@@ -137,12 +159,16 @@ export async function updateEvidenceSourceReview(
   update: UpdateEvidenceSourceRequest,
 ): Promise<EvidenceSource | undefined> {
   return getDatabase().transaction(async (tx) => {
+    await lockConversationMembership(tx);
     const [source] = await tx
       .select({
+        id: evidenceSources.id,
         relation: evidenceSources.relation,
         reviewStatus: evidenceSources.reviewStatus,
         freshnessStatus: evidenceSources.freshnessStatus,
         freshnessReviewedAt: evidenceSources.freshnessReviewedAt,
+        excerptCiphertext: evidenceSources.excerptCiphertext,
+        candidateProvenanceCiphertext: evidenceSources.candidateProvenanceCiphertext,
         evidenceState: claims.evidenceState,
       })
       .from(evidenceSources)
@@ -153,6 +179,11 @@ export async function updateEvidenceSourceReview(
     if (!source) return undefined;
 
     const reviewStatus = update.reviewStatus ?? (source.reviewStatus as EvidenceReviewStatus);
+    if (source.candidateProvenanceCiphertext && !source.excerptCiphertext &&
+        (reviewStatus === "verified" || update.freshnessStatus === "current")) {
+      throw new EvidenceSourceInUseError("Model atfında özgün kaynak pasajı yok; içerik veya güncellik doğrulanamaz.");
+    }
+    if (update.freshnessStatus === "current" && !await candidateSourceAvailable(tx, source)) throw new EvidenceSourceInUseError("Yerel kaynak değişmiş veya erişimi iptal edilmiş; yeni bir aday gönderin.");
     const freshnessStatus =
       update.freshnessStatus ?? (source.freshnessStatus as EvidenceFreshnessStatus);
     if (
@@ -191,8 +222,11 @@ function sourceSupportsClaimState(relation: string, evidenceState: string): bool
 
 export async function deleteEvidenceSource(id: string): Promise<boolean> {
   return getDatabase().transaction(async (tx) => {
+    await lockConversationMembership(tx);
     const [source] = await tx
       .select({
+        candidateProvenanceCiphertext: evidenceSources.candidateProvenanceCiphertext,
+        claimId: evidenceSources.claimId,
         relation: evidenceSources.relation,
         reviewStatus: evidenceSources.reviewStatus,
         evidenceState: claims.evidenceState,
@@ -202,6 +236,9 @@ export async function deleteEvidenceSource(id: string): Promise<boolean> {
       .where(and(eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.id, id)))
       .limit(1);
     if (!source) return false;
+    if (source.candidateProvenanceCiphertext) throw new EvidenceSourceInUseError("Adayın özgün kaydı korunur; reddetme kararını kullanın. İçerik, çalışma için incelenmiş silme işlemiyle kaldırılabilir.");
+    const linked = await tx.select().from(evidenceSources).where(and(eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.claimId, source.claimId))).limit(MAX_EVIDENCE_SOURCES_PER_CLAIM);
+    if (linked.some((row) => mapEvidenceSource(row).candidateProvenance?.relatedSourceId === id)) throw new EvidenceSourceInUseError("Kaynak bir adayın önceki kaydıdır; özgün bağlantı korunur.");
     const requiredByClaim = sourceSupportsClaimState(source.relation, source.evidenceState);
     if (requiredByClaim) throw new EvidenceSourceInUseError();
     const deleted = await tx

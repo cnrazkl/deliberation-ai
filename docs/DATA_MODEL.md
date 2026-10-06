@@ -1,5 +1,12 @@
 # Data model
 
+DA-123 migration 0053 adds nullable `evidence_sources.candidate_provenance_ciphertext`
+with candidate origin, request hash, frozen claim/member/excerpt provenance and optional
+same-claim prior-source link. Existing review/freshness columns remain independent;
+freshness adds `changed`/`inaccessible`. The existing SQL trigger protects candidate
+snapshots; cascade retention, reviewed run deletion and exhaustive backup audit include
+the new column. [Contract](EVIDENCE_CANDIDATES.md).
+
 DA-121 migration 0051 adds `knowledge_sources` (owned collection/active-version heads)
 and `knowledge_source_versions` (immutable original/extraction ciphertext, hashes,
 parser/status and bounded counters). NO ACTION source/collection foreign keys keep

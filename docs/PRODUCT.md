@@ -1,5 +1,11 @@
 # Product
 
+DA-123 adds an explicit claim-linked candidate inbox for owner submissions, stored
+model citations and frozen local excerpts. Originals/conflicts remain inspectable;
+human content and freshness decisions are separate. A citation alone cannot count
+as verified source text; intake/review changes no claim evidence state. JSON inbox
+export and existing reviewed run deletion cover candidates. [Contract](EVIDENCE_CANDIDATES.md).
+
 DA-121 adds a bounded local source backend: selected TXT/Markdown/PDF/PNG/JPEG bytes,
 encrypted immutable originals/extraction, page-linked manual quotes and inspectable
 lexical search. Failed/unverified files retain status and cannot supply evidence.
