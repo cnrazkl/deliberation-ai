@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { Client } from "pg";
+import { inspectAdditionalRecovery } from "../scripts/backup-recovery-inventory";
 import { defaultFakeCouncilMembers, type CreateRunRequest } from "@deliberation-ai/contracts";
 import type { DecisionAssessmentResult } from "@deliberation-ai/evaluation";
 import { eq } from "drizzle-orm";
@@ -188,6 +190,14 @@ test("keeps Jev shadow assessments encrypted, replayable, cancellable, and isola
     errorCode: "network_unknown",
   });
   await failDecisionAssessment(uncertain.id, "outcome_unknown", "network_unknown");
+  const inspectionClient = new Client({ connectionString: process.env.DATABASE_URL });
+  await inspectionClient.connect();
+  try {
+    const inventory = await inspectAdditionalRecovery(inspectionClient);
+    expect(inventory.decisionAssessmentStatuses?.outcome_unknown).toBe(1);
+    expect(inventory.decisionOperationStatuses?.outcome_unknown).toBe(1);
+    expect(inventory.decisionOperationStatuses?.succeeded).toBe(1);
+  } finally { await inspectionClient.end(); }
   expect(
     (await listDecisionOperationsNeedingAction()).some(
       (item) => item.id === uncertainOperation.id,

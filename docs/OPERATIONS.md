@@ -1,5 +1,10 @@
 # Local operations
 
+Saved-archive rehearsal includes separate decision/private recovery inventories.
+Private origin and copied historical statuses stay distinct; unavailable old schemas
+remain `null`. Counts describe the archive, never live provider outcomes. Inspection
+starts no worker and authorizes no resend. [Scope](RECOVERY_OPERATION_INVENTORY.md).
+
 Settings diagnostics warn about non-ready workers with running council work and
 unknown council provider outcomes. Inspect the relevant run before resending an
 unknown operation; a ready worker or zero council count does not certify private/

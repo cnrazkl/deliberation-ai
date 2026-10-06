@@ -1,5 +1,9 @@
 # Product
 
+Saved-backup rehearsal now separates council, decision and private operation
+states, with copied private history and unavailable old schemas explicit. No work
+is resumed automatically. [Scope](RECOVERY_OPERATION_INVENTORY.md).
+
 Settings diagnostics now explain non-ready workers with running council work and
 unknown council provider outcomes, retaining uncertainty and inspection guidance.
 Refresh remains read-only. [Scope](LOCAL_DIAGNOSTICS_ALERTS.md).

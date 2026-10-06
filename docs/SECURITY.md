@@ -1,5 +1,11 @@
 # Security
 
+Saved-backup recovery inspection exposes only aggregate decision/private states.
+Private bodies use the existing authenticated bounded decoder; invalid data emits
+a fixed error without content, identifiers or underlying database/parser details.
+It runs only in the temporary restored database and starts no dispatch.
+[Scope](RECOVERY_OPERATION_INVENTORY.md).
+
 Worker migration mismatches/database-read errors expose only a fixed explanation
 and class name before queue startup. Logical history matching does not certify DDL,
 SQL hashes, restored job reconciliation or historical executable safety.

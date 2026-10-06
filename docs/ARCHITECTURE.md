@@ -1,5 +1,10 @@
 # Architecture
 
+The backup verifier scans authenticated private bodies in bounded pages and groups
+decision metadata in its temporary restored database. Only aggregate recovery
+counts are exposed; runtime APIs, schemas and dispatch remain unchanged.
+[Boundary](RECOVERY_OPERATION_INVENTORY.md).
+
 A pure web projection derives operational warnings from existing diagnostics counts.
 The panel renders all applicable notices without changing persistence queries,
 dispatch or recovery controls. [Contract](LOCAL_DIAGNOSTICS_ALERTS.md).

@@ -186,6 +186,8 @@ The original complete quality gate remains open. DA-074 performs mechanical chec
 
 ### Group 5 — operational evaluation
 
+- [x] Saved-archive recovery inventory: include decision assessment/operation states and bounded authenticated private delivery states; separate origin dispatches from copied historical outcomes and unavailable old schemas. Read-only disposable checks preserve ciphertext and reject invalid records. No real cutover/replay or full Group 5 acceptance. [Scope](RECOVERY_OPERATION_INVENTORY.md).
+
 - [x] Initial local warning projection: stale running council work and unknown provider outcomes have explicit read-only notices; multiple-worker warnings survive, counts are labelled as council-only, and fetched recovery clears notices. Unit/browser checks pass without POST requests. This bounded increment does not complete the broader operational evaluation task. [Scope](LOCAL_DIAGNOSTICS_ALERTS.md).
 
 - [ ] Complete replacement-installation recovery/cutover/rollback, backup/export deletion policy and deeper operational metrics/alerts.

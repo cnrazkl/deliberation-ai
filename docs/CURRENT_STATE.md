@@ -1,8 +1,32 @@
 # Current state
 
-Updated: 7 October 2026 (local operational warnings; acceptance tasks remain open)
+Updated: 7 October 2026 (restored operation inventory; acceptance tasks remain open)
 
-## Current increment — local operational warnings (Group 5)
+## Current increment — restored operation inventory (Group 5)
+
+Backup rehearsal now includes decision assessment/operation statuses and private
+delivery statuses decoded from authenticated bounded bodies in 16-row pages.
+Origin sends and copied historical snapshots remain separate; absent feature
+schemas are unavailable, not zero. Invalid/incomplete data refuses verification
+with a fixed error. Only aggregate counts are printed. No schema migration, owner
+database mutation, provider call, automatic retry or cutover is added.
+[Scope](RECOVERY_OPERATION_INVENTORY.md).
+
+399 unit cases / 64 files and 251 isolated PostgreSQL cases / 32 files pass.
+The final focused repeat passes 21 cases in three files, including actual populated
+private dump/restore and deleted-receipt exclusion. Workspace/scripts typecheck,
+zero-warning lint, production build and dependency audit pass. Normal CI adds three
+offline cases. The saved 6 October post-migration archive restores successfully:
+434 runs, 7,457 encrypted rows and 12,005 decrypted values; private/decision tables
+are available but empty. Populated-state evidence is synthetic, not owner history.
+
+At 00:44 Istanbul, the app returns HTTP 200; database and one worker are ready,
+with zero queued/running council runs, unknown council attempts or active schedules.
+DA-119/DA-126 human/model/cost and full operational acceptance remain open. Live
+private/decision monitoring and current-versus-archive change reconciliation are
+separate from this saved-archive inventory.
+
+## Previous increment — local operational warnings (Group 5)
 
 The settings diagnostics panel now warns about non-ready workers with running
 council work even when no jobs are queued or schedules active. Unknown council
