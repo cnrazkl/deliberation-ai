@@ -1,8 +1,40 @@
 # Current state
 
-Updated: 6 October 2026 (generated upgrade/rollback rehearsal; DA-126 remains open)
+Updated: 6 October 2026 (synthetic rollback reconciliation; DA-126 remains open)
 
-## Current increment — generated knowledge upgrade/rollback rehearsal
+## Current increment — synthetic rollback reconciliation and dependency maintenance
+
+The generated recovery command now reapplies its known post-backup revocation and
+rejected/stale candidate decision after proving exact baseline rollback. Existing
+revision checks reject stale grant updates; old reads, search and packets are denied.
+Forward migration preserves absent publication receipts without replay. Explicit
+synthetic renewal requires fresh selection/packet; rejected candidates stay blocked.
+Historical run packet, source ciphertext and candidate provenance remain intact,
+with a final encryption audit. [Procedure](KNOWLEDGE_RECOVERY_REHEARSAL.md).
+
+This fixed sequence does not discover all lost changes or reconcile real jobs,
+remote outcomes, deletions or owner decisions. No old executable, clean-machine
+install or actual cutover is tested. DA-119/DA-126 remain open. No schema or personal
+database migration is added. The first attempt could not start because PostgreSQL
+was stopped; after starting it, the full generated reconciliation command passed.
+
+A fresh audit exposed two newly listed high advisories. The direct MCP client is
+updated from 2.0.0 to 2.2.0; Next's transitive sharp from 0.35.4 to 0.35.5 within its
+existing range. No override or advisory suppression is used. See
+[MCP advisory](https://github.com/advisories/GHSA-6qxp-vccf-f47h) and
+[sharp advisory](https://github.com/advisories/GHSA-wq5f-xc86-pv6w).
+
+Fresh checks after dependency updates: 390 unit cases / 61 files, 249 isolated
+PostgreSQL cases / 30 files, workspace/scripts typecheck, zero-warning lint,
+production build and seven lint-dependency checks pass. Full dependency audit is
+clean. Native sharp PNG encode/decode and actual MCP SDK discovery/call against a
+synthetic loopback HTTP server pass; no real connector or model was contacted.
+The upgraded/rollback/reconciliation command passes again on the patched graph
+and cleans its generated archives/databases. Human evidence status remains blocked.
+At 23:41 Istanbul, HTTP 200, database and one worker were ready, with no queued/
+running runs, unresolved provider attempts or active schedules.
+
+## Previous increment — generated knowledge upgrade/rollback rehearsal
 
 The generated-only verifier tests populated 0053→0054 migration, current archive
 restoration and separate pre-upgrade snapshot rollback in three disposable databases.

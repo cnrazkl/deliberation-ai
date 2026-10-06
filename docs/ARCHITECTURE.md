@@ -1,5 +1,10 @@
 # Architecture
 
+The generated archive verifier also exercises known synthetic post-backup revoke/
+review reconciliation and forward migration. Existing scope/packet APIs require fresh
+selection/packet after renewal; no publication replay or new recovery service is added.
+[Bounded procedure](KNOWLEDGE_RECOVERY_REHEARSAL.md).
+
 The generated knowledge archive verifier has an opt-in 0053→0054 upgrade mode.
 A temporary baseline migration inventory and three disposable databases check
 migration preservation and pre-upgrade archive rollback. No runtime API or schema

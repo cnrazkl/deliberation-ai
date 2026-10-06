@@ -47,7 +47,10 @@ exercises populated 0053→0054 preservation, current archive restore and pre-up
 snapshot rollback in three disposable databases. Current storage APIs verify encryption
 and exact historical state; no old executable or clean-machine cutover is exercised.
 Later revocations/receipts are absent from the earlier archive and require reconciliation
-before real cutover. Operational acceptance remains partial.
+before real cutover. A fixed synthetic follow-up reapplies its known revoke and
+rejected/stale review, checks stale-access denial and forward migration without
+publication replay, and requires fresh selection/packet after explicit renewal.
+It does not discover/reconcile all lost changes. Operational acceptance remains partial.
 
 The [format review compiler](KNOWLEDGE_FORMAT_REVIEW.md) now validates completed
 human format worksheets against fresh extraction of the frozen binaries. Exact

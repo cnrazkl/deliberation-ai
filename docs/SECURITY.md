@@ -1,5 +1,12 @@
 # Security
 
+6 October 2026 dependency maintenance: MCP client/core 2.2.0 and transitive sharp
+0.35.5 replace affected versions without overrides or suppressions. The
+[MCP OAuth advisory](https://github.com/advisories/GHSA-6qxp-vccf-f47h) and
+[sharp/librsvg advisory](https://github.com/advisories/GHSA-wq5f-xc86-pv6w) prompted
+the update. Existing loopback-only MCP policy remains; passing dependency audit
+does not certify full application security or live connector acceptance.
+
 Knowledge query feedback exposes only public limits. No-match feedback is emitted
 after owned selection/grant checks; missing/foreign/revoked scopes retain generic
 access errors without source existence/content hints. [Boundary](KNOWLEDGE_QUERY_FEEDBACK.md).

@@ -193,6 +193,50 @@ async function main() {
       assert.deepEqual((await findDurableRunById(run.runId))!.knowledgePacket, packet);
       assert.deepEqual(await exportKnowledgeVersion(scope, sourceId, imported[0]!.versionId), originalExport);
       assert.equal(await authorizeKnowledgeScope(scope), true);
+      verificationPhase = "rollback-reconcile-revocation";
+      // Explicit synthetic operator action: the older archive lost the later revoke.
+      // Never start a worker or replay publication operations while reconciling it.
+      const reconciledRevoke = await changeKnowledgeGrant(collection.id, scope.grantRevision, "revoked");
+      await assert.rejects(changeKnowledgeGrant(collection.id, scope.grantRevision, "active"));
+      assert.equal(await authorizeKnowledgeScope(scope), false);
+      assert.equal((await exportConversationKnowledge(conversationId))!.grants[0]!.available, false);
+      await assert.rejects(exportKnowledgeVersion(scope, sourceId, imported[0]!.versionId));
+      await assert.rejects(searchLocalKnowledge([scope], "updated"));
+      await assert.rejects(loadKnowledgePacket({ id: packet.id, fingerprint: packet.fingerprint, reviewed: true }));
+      verificationPhase = "rollback-reconcile-review";
+      await updateEvidenceSourceReview(candidate.id, { reviewStatus: "rejected", freshnessStatus: "stale" });
+      const reconciledCandidate = (await listEvidenceCandidates(run.runId))![0]!;
+      assert.equal(reconciledCandidate.reviewStatus, "rejected");
+      assert.equal(reconciledCandidate.freshnessStatus, "stale");
+      assert.equal(reconciledCandidate.availability, "inaccessible");
+      assert.deepEqual(reconciledCandidate.candidateProvenance, baseline!.candidates![0]!.candidateProvenance);
+      verificationPhase = "rollback-forward-migration";
+      await closeDatabase(); migrateCurrent();
+      assert.deepEqual(await listEvidencePublications(run.runId), []);
+      await assert.rejects(previewEvidencePublication(localSave));
+      await assert.rejects(previewEvidencePublication(manualSave));
+      verificationPhase = "rollback-explicit-renewal";
+      const rollbackRenewed = await changeKnowledgeGrant(collection.id, reconciledRevoke.grantRevision, "active");
+      assert.equal(await authorizeKnowledgeScope(scope), false);
+      assert.deepEqual(await exportKnowledgeVersion(rollbackRenewed, sourceId, imported[0]!.versionId), originalExport);
+      // Grant renewal alone cannot revive the old conversation selection/packet.
+      assert.equal((await exportConversationKnowledge(conversationId))!.grants[0]!.available, false);
+      await assert.rejects(loadKnowledgePacket({ id: packet.id, fingerprint: packet.fingerprint, reviewed: true }));
+      const newRevision = await setConversationKnowledge(conversationId, revision, { topic: "Synthetic archive topic", scopes: [rollbackRenewed] });
+      const newPacket = await prepareKnowledgePacket({ id: randomUUID(), conversationId, selectionRevision: newRevision!, query: "updated", allowWithoutEvidence: false });
+      assert.equal(newPacket.scopes[0]!.grantRevision, rollbackRenewed.grantRevision);
+      assert.notEqual(newPacket.fingerprint, packet.fingerprint);
+      assert.deepEqual(await loadKnowledgePacket({ id: newPacket.id, fingerprint: newPacket.fingerprint, reviewed: true }), newPacket);
+      await assert.rejects(loadKnowledgePacket({ id: packet.id, fingerprint: packet.fingerprint, reviewed: true }));
+      await assert.rejects(previewEvidencePublication({ ...localSave, destination: { kind: "local", scope: rollbackRenewed } }));
+      await assert.rejects(previewEvidencePublication(manualSave));
+      assert.deepEqual(await listEvidencePublications(run.runId), []);
+      assert.deepEqual((await findDurableRunById(run.runId))!.knowledgePacket, packet);
+      assert.deepEqual(await getDatabase().select().from(knowledgeSourceVersions).orderBy(asc(knowledgeSourceVersions.id)), baseline!.versions);
+      verificationPhase = "rollback-reconciled-encryption";
+      const reconciledClient = new Client({ connectionString: rollbackUrl.toString() }); await reconciledClient.connect();
+      try { assert.ok((await auditRestoredEncryption(reconciledClient)).decryptedValues >= 2); } finally { await reconciledClient.end(); }
+      console.log("Synthetic rollback reconciliation verified: revoked access, rejected candidate, fresh selection/packet and no publication replay.");
       console.log("Generated 0053-to-0054 upgrade and pre-upgrade archive rollback verified; no old application binary or owner database was used.");
     }
     console.log("Synthetic packet, candidate and source restore verified: immutable quote/provenance, separate human decisions, latest search and revoked scope denial.");

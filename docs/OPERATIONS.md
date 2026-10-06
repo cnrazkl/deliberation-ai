@@ -1,5 +1,11 @@
 # Local operations
 
+The generated recovery command also exercises explicit synthetic reconciliation of
+its known later revocation/rejected review. Old packets remain denied after renewal;
+fresh selection/packet review is required. Lost publication receipts are not replayed.
+This fixture does not discover or authorize reconciliation of real owner changes.
+[Detailed scope](KNOWLEDGE_RECOVERY_REHEARSAL.md).
+
 Generated-only 0053→0054 upgrade and pre-upgrade snapshot rollback:
 `pnpm knowledge:recovery:rehearse`. It checks three temporary databases without
 owner-data writes or provider calls. Rollback restores earlier grant/receipt state;

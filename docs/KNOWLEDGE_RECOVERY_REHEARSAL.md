@@ -1,5 +1,11 @@
 # Generated knowledge upgrade and rollback rehearsal
 
+6 October follow-up: the explicit synthetic reconciliation below passes on the
+patched dependency graph. 390 unit cases / 61 files, 249 isolated PostgreSQL cases /
+30 files, typecheck, lint, production build, seven lint-dependency checks and full
+dependency audit pass. Native sharp PNG and actual MCP SDK synthetic loopback
+discovery/call also pass. No real cutover or human decision is inferred.
+
 Run `pnpm knowledge:recovery:rehearse` on the provisioned Windows loopback PostgreSQL
 installation. It uses the locally managed encryption key but creates only synthetic
 records in three randomly named databases. It never dumps, migrates, restores over,
@@ -28,14 +34,23 @@ and migration inventory are removed; the rehearsal restores its original environ
 Rollback means replacement from the pre-upgrade snapshot, not in-place downgrade.
 Publication receipts/copied sources and grant revocations after that snapshot are
 absent by design. The baseline active grant reappears and is checked as active.
-A real cutover requires reconciling those later changes before enabling access/jobs;
-this rehearsal does not automate reconciliation. No worker starts against the restored
+A real cutover requires reconciling those later changes before enabling access/jobs.
+The rehearsal now explicitly reapplies only its known synthetic revocation and
+rejected/stale candidate review through existing revision-checked APIs. A stale grant
+update, old reads/search and packet loading are refused; candidate provenance survives.
+Forward migration to 0054 leaves missing publication receipts absent, with neither
+local nor manual publication preview permitted for that candidate. Explicit synthetic
+grant renewal still leaves the old selection/packet unavailable. A fresh selection
+and newly prepared/reviewed packet can be loaded, while the old packet remains denied.
+Historical run packet and encrypted source versions stay intact; a final exhaustive
+encryption audit checks the reconciled database. This fixed fixture sequence does
+not discover all lost changes or authorize real renewal/replay. No worker starts against the restored
 databases and no provider operation is resumed.
 
 Pre-upgrade/restored reads use current code's compatible storage APIs; no historical
 application executable is launched. This is local PostgreSQL/migration/archive
 evidence only. Clean-machine setup, old-binary compatibility/fencing, actual cutover,
-later-data reconciliation, month-long maintenance and human/model quality/cost remain
+complete later-data reconciliation, month-long maintenance and human/model quality/cost remain
 open under [DA-126](DA126_ACCEPTANCE.md). Keep production archives and keys separate
 as described in [operations](OPERATIONS.md).
 
