@@ -10,6 +10,8 @@ import {
   knowledgeFixtureNames,
   createKnowledgeFormatWorksheet,
   compileKnowledgeFormatReviewPair,
+  createKnowledgeFormatAdjudicationWorksheet,
+  compileKnowledgeFormatAdjudicationWorksheet,
 } from "@deliberation-ai/evaluation";
 import { verifyKnowledgeExtractionSnapshot } from "./knowledge-extraction-snapshot";
 
@@ -75,15 +77,27 @@ async function main() {
       path: resolve(output, `compiled/review-${index === 0 ? "a" : "b"}.json`), value: review,
     })));
     console.log("Source-bound reviews compiled; human independence and acceptance still require attestation.");
-  } else if (mode === "format-compile") {
+  } else if (mode === "format-compile" || mode === "format-adjudication-prepare" || mode === "format-adjudication-compile") {
     const extractionText = readFileSync(resolve(root, "docs/evaluation/KNOWLEDGE_EXTRACTION_SNAPSHOT.json"), "utf8");
     await verifyKnowledgeExtractionSnapshot(root, extractionText);
-    const reviews = compileKnowledgeFormatReviewPair(plan, extractionText, [
+    const worksheets = [
       readJson(resolve(output, "reviewer-a/format-worksheet.json")),
       readJson(resolve(output, "reviewer-b/format-worksheet.json")),
-    ]);
-    writeBatch(reviews.map((review) => ({ path: resolve(output, `compiled/format-review-${review.slot}.json`), value: review })));
-    console.log("Page-bound format reviews compiled; adjudication, independence and release acceptance remain pending.");
+    ] as const;
+    if (mode === "format-compile") {
+      const reviews = compileKnowledgeFormatReviewPair(plan, extractionText, worksheets);
+      writeBatch(reviews.map((review) => ({ path: resolve(output, `compiled/format-review-${review.slot}.json`), value: review })));
+      console.log("Page-bound format reviews compiled; adjudication, independence and release acceptance remain pending.");
+    } else if (mode === "format-adjudication-prepare") {
+      writeBatch([{ path: resolve(output, "adjudicator/format-worksheet.json"),
+        value: createKnowledgeFormatAdjudicationWorksheet(plan, extractionText, worksheets) }]);
+      console.log("Blank format adjudication form created; original reviews retained and no decision generated.");
+    } else {
+      const result = compileKnowledgeFormatAdjudicationWorksheet(plan, extractionText, worksheets,
+        readJson(resolve(output, "adjudicator/format-worksheet.json")));
+      writeBatch([{ path: resolve(output, "compiled/format-adjudication.json"), value: result }]);
+      console.log("Source-bound format adjudication declarations compiled; independence, gold and release acceptance remain pending.");
+    }
   } else if (mode === "adjudication-prepare") {
     writeBatch([{ path: resolve(output, "adjudicator/worksheet.json"),
       value: createCouncilCoverageAdjudicationWorksheet(intake, checkedReviews()) }]);
@@ -95,11 +109,11 @@ async function main() {
     writeBatch([{ path: resolve(output, "compiled/adjudication.json"), value: result }]);
     console.log("Knowledge adjudication compiled; format coverage, independence and model study remain separate gates.");
   } else {
-    throw new Error("Use status, prepare, compile-reviews, format-compile, adjudication-prepare or adjudication-compile.");
+    throw new Error("Use status, prepare, compile-reviews, format-compile, format-adjudication-prepare, format-adjudication-compile, adjudication-prepare or adjudication-compile.");
   }
 }
 void main().catch((error: unknown) => {
-  if (mode !== "format-compile") throw error;
-  console.error("Format review compilation refused: verify frozen extraction, complete both original worksheets and preserve existing outputs. No acceptance recorded.");
+  if (!mode?.startsWith("format-")) throw error;
+  console.error("Format workflow refused: verify frozen extraction, complete the required human worksheets and preserve existing outputs. No acceptance recorded.");
   process.exitCode = 1;
 });

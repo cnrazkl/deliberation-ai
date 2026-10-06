@@ -1,8 +1,28 @@
 # Current state
 
-Updated: 6 October 2026 (human format review compiler; DA-126 remains open)
+Updated: 6 October 2026 (third-person format adjudication compiler; DA-126 remains open)
 
-## Current increment — human format review compiler
+## Current increment — third-person format adjudication compiler
+
+The offline format workflow now prepares blank third-person adjudication forms
+from two completed original reviews, retaining both originals and mechanically
+exposing differing decisions. Compilation binds exact review/extraction/plan digests,
+requires a third declared identity and validates independently entered final page
+quotes, inspection, abstention and rationale. Stale inputs and existing outputs are
+refused. [Workflow](KNOWLEDGE_FORMAT_REVIEW.md#third-person-format-adjudication).
+
+No human adjudication has been generated or supplied. Independence/coverage
+attestation, accepted gold and real model/cost/recovery measurements remain open;
+DA-119 and DA-126 remain incomplete. No runtime UI/schema, migration or provider
+call is introduced. Frozen protocol, cohort and trial approval are unchanged.
+
+374 unit cases / 60 files, workspace/scripts typecheck, zero-warning lint, frozen
+plan status, four actual extraction fixtures and dependency audit pass. Both new
+CLI commands refuse incomplete human forms, preserve original file hashes and
+create no adjudication form/result. Interactive web returns HTTP 200; the database
+and one worker are ready, with no queued/running runs or unresolved attempts.
+
+## Previous increment — human format review compiler
 
 The offline format workflow validates completed human worksheets against actual
 re-extraction of all four frozen binaries, eight case/question identities, exact

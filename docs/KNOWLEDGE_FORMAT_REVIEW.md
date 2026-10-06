@@ -1,8 +1,8 @@
 # Human format review compilation
 
 DA-126 has an offline compiler for the eight frozen PDF/image review cases.
-It validates human declarations; it does not produce labels, gold, adjudication,
-semantic entailment, independence attestation or release acceptance.
+It validates human declarations; it never invents labels or human judgments, or
+certifies gold, semantic entailment, independence or release acceptance.
 
 `pnpm knowledge:prepare` creates blank text and format worksheets under ignored
 `.local/knowledge-evaluation/reviewer-a/` and `reviewer-b/`. Existing files are
@@ -38,9 +38,49 @@ Blank/incomplete forms fail validation; no substitute decisions are generated.
 
 Different IDs cannot prove different people or independent work. Every compiled
 result retains `humanIndependence: not_attested`, `adjudication: not_assessed` and
-`releaseAcceptance: blocked`. A third format adjudication workflow, representative
-coverage review and paired real model/cost/recovery measurements remain open under
+`releaseAcceptance: blocked`. Human adjudication, representative coverage review
+and paired real model/cost/recovery measurements remain open under
 [DA-126](DA126_ACCEPTANCE.md). Text adjudication remains a separate workflow.
+
+## Third-person format adjudication
+
+After both original format worksheets are complete, run
+`pnpm knowledge:format-adjudication:prepare`. It revalidates the actual binaries
+and original worksheets, then creates ignored `adjudicator/format-worksheet.json`.
+The form retains both original compiled reviews and their digests, exact extraction
+file/plan digests, and a conservative list of differing case decisions. Differences
+in claim order/text/critical flags, evidence, extraction or abstention are exposed;
+this comparison is mechanical, not semantic agreement scoring.
+
+No final choice is copied from either reviewer, including when their decisions
+agree. A third person fills `adjudicatorId` and every case using the same inspection,
+quote, abstention and rationale fields as the reviewer forms. Each rationale must
+explain the final judgment, including resolution of any disagreement. The third
+declared ID must differ from both original IDs. Keep `reviews`, `reviewSha256`,
+`disagreementCaseIds`, original case identities and plan/extraction digests intact.
+
+Run `pnpm knowledge:format-adjudication:compile` to revalidate all inputs and write
+ignored `compiled/format-adjudication.json`. Changes to validated original review content
+after preparation invalidate the adjudication form; existing forms/results are
+preserved rather than overwritten. Both conflicting originals remain beside the
+final independently entered decisions. Every final quote is validated again against
+its original page. Unverified scan/image extraction still requires abstention.
+
+Output marks `adjudication: human_declared`, not certified gold. It retains
+`humanIndependence: not_attested`, `goldAcceptance: not_assessed` and
+`releaseAcceptance: blocked`. Different declared IDs do not prove three people or
+independent work. Coordinator coverage/independence attestation and empirical
+acceptance remain separate requirements. No reviewer identity, rationale or claim
+is printed in CLI failure messages.
+
+Adjudication compiler verification: 374 unit cases / 60 files, workspace/scripts
+typecheck, zero-warning lint, frozen plan status, actual extraction verification and
+dependency audit pass. Fourteen new offline cases exercise blank decisions, third
+identity, stale/hash-substituted originals, hidden disagreements, missing/changed
+cases, invented quotes, unsupported extraction and retained conflicting claims.
+Both CLI commands reject the current incomplete human forms without changing their
+hashes or creating adjudication forms/results. No runtime/browser/database change
+requires additional integration acceptance in this increment.
 
 Offline regression tests use explicitly synthetic declarations only. They check
 blank refusal, exact quotes, frozen identities, unsupported extraction, abstention,

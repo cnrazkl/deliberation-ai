@@ -46,7 +46,10 @@ The [format review compiler](KNOWLEDGE_FORMAT_REVIEW.md) now validates completed
 human format worksheets against fresh extraction of the frozen binaries. Exact
 page quotes, case/original identities and abstention remain inspectable. Local
 blank forms are preserved and no human decisions have been supplied or generated;
-format adjudication, independence and quality acceptance remain open.
+human format adjudication, independence and quality acceptance remain open. The
+third-person compiler now prepares blank resolutions, binds the original review
+pair and preserves conflicting originals beside source-validated final declarations;
+it cannot generate decisions or certify gold/independence.
 
 Four unit cases reject missing/duplicate/substituted pairs, fabricated failure counts,
 unchecked citations, non-finite durations and invalid memory samples. They verify p95

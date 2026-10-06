@@ -2,7 +2,9 @@
 
 Human PDF/image review declarations are compiled in the pure evaluation package.
 The offline CLI first re-extracts actual frozen binaries using retrieval, then
-validates page-bound quotes and writes ignored local review artifacts. No runtime
+validates page-bound quotes and writes ignored local review artifacts. Third-person
+format adjudication binds both unchanged reviews and exact extraction bytes, retains
+conflicting originals and validates separately entered final declarations. No runtime
 route or provider call is introduced. [Contract](KNOWLEDGE_FORMAT_REVIEW.md).
 
 Knowledge query normalization/limits are shared by the contracts, browser and local
