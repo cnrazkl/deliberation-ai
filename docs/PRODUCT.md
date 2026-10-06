@@ -1,5 +1,9 @@
 # Product
 
+Saved-backup rehearsal also shows queue job states and future start times for
+council/private/decision work, with other queues counted separately. Inspecting
+them resumes no jobs. [Scope](RECOVERY_QUEUE_INVENTORY.md).
+
 Saved-backup rehearsal now separates council, decision and private operation
 states, with copied private history and unavailable old schemas explicit. No work
 is resumed automatically. [Scope](RECOVERY_OPERATION_INVENTORY.md).

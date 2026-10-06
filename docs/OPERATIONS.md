@@ -1,5 +1,10 @@
 # Local operations
 
+Saved-archive rehearsal now includes queue states and future `start_after` counts
+relative to inspection time. Review created/retry/active jobs in all categories
+before starting a replacement worker; these counts do not reconcile job targets or
+certify provider outcomes. [Procedure](RECOVERY_QUEUE_INVENTORY.md).
+
 Saved-archive rehearsal includes separate decision/private recovery inventories.
 Private origin and copied historical statuses stay distinct; unavailable old schemas
 remain `null`. Counts describe the archive, never live provider outcomes. Inspection

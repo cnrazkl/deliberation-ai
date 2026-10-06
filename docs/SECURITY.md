@@ -1,5 +1,10 @@
 # Security
 
+Restored queue inspection selects aggregate states/timing only, excluding job
+payloads, outputs and IDs. Unknown queue names are collapsed into a fixed `other`
+category; errors expose a fixed message. It starts no queue service or worker.
+[Scope](RECOVERY_QUEUE_INVENTORY.md).
+
 Saved-backup recovery inspection exposes only aggregate decision/private states.
 Private bodies use the existing authenticated bounded decoder; invalid data emits
 a fixed error without content, identifiers or underlying database/parser details.

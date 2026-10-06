@@ -34,7 +34,8 @@ assessments, prepared/submitted/outcome_unknown/retry_authorized operations, cop
 and active schedules. Counts are a snapshot of the saved archive, not live state,
 proof of a remote outcome or permission to resend. Use the relevant existing
 review/recovery controls; an unknown operation may already have incurred cost.
-Actual cutover, current-versus-archive change reconciliation, queue-job inventory,
+Queue job states now have a separate [read-only inventory](RECOVERY_QUEUE_INVENTORY.md).
+Actual cutover, current-versus-archive change reconciliation, queue-target reconciliation,
 old-binary compatibility and external backup/export deletion remain open.
 
 ## Verification

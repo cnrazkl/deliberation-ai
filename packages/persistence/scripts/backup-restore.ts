@@ -6,6 +6,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { Client } from "pg";
 import { auditRestoredEncryption, type EncryptionAudit } from "./backup-encryption-audit";
 import { inspectAdditionalRecovery, type AdditionalRecoveryInventory } from "./backup-recovery-inventory";
+import { inspectRestoredQueue, type RestoredQueueInventory } from "./backup-queue-inventory";
 
 const localAppData = process.env.LOCALAPPDATA;
 if (!localAppData) throw new Error("LOCALAPPDATA is required for local backup operations.");
@@ -30,6 +31,7 @@ interface RecoveryInspection extends AdditionalRecoveryInventory {
   runStatuses: Record<string, number>;
   providerOperationStatuses: Record<string, number>;
   activeSchedules: number;
+  queueJobs: RestoredQueueInventory;
 }
 
 function localDatabaseUrl(): URL {
@@ -198,6 +200,7 @@ async function verifyBackup(manifestPath: string, sourceUrl: URL): Promise<Recov
       }
       return {
         ...await inspectAdditionalRecovery(restored),
+        queueJobs: await inspectRestoredQueue(restored),
         conversations: conversationInventory,
         runs: Object.values(runStatuses).reduce((total, count) => total + count, 0),
         encryptionAudit,
@@ -279,5 +282,6 @@ if (action === "rehearse") {
   console.log(`Recovery inventory: run statuses=${JSON.stringify(result.runStatuses)}; provider operation statuses=${JSON.stringify(result.providerOperationStatuses)}; active schedules=${result.activeSchedules}.`);
   console.log(`Decision recovery inventory: assessment statuses=${JSON.stringify(result.decisionAssessmentStatuses)}; operation statuses=${JSON.stringify(result.decisionOperationStatuses)}.`);
   console.log(`Private recovery inventory: ${JSON.stringify(result.privateBranches)}. Copied deliveries are historical snapshots, not additional dispatches; deleted-branch receipts are excluded. Null means the archive predates that schema.`);
-  console.log("Review queued/running runs and decision assessments, prepared/submitted/outcome_unknown/retry_authorized operations, copied private outcomes, and active schedules before any replacement cutover. Counts describe this archive, not live state. This rehearsal did not start a worker or replace the live database.");
+  console.log(`Restored queue inventory: ${JSON.stringify(result.queueJobs)}. Future start times are relative to checkedAt; queue states are not provider outcomes or proof of a live worker.`);
+  console.log("Review queued/running runs and decision assessments, prepared/submitted/outcome_unknown/retry_authorized operations, copied private outcomes, created/retry/active queue jobs (including other queues), and active schedules before any replacement cutover. Counts describe this archive, not live state. This rehearsal did not start a worker or replace the live database.");
 }

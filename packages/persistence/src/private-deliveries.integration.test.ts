@@ -19,6 +19,7 @@ import { enqueuePrivateDelivery, previewPrivateDelivery, controlPrivateDelivery,
 import { exportConversation } from "./conversations";
 import { auditRestoredEncryption } from "../scripts/backup-encryption-audit";
 import { inspectAdditionalRecovery } from "../scripts/backup-recovery-inventory";
+import { inspectRestoredQueue } from "../scripts/backup-queue-inventory";
 import { previewPrivateBranchDeletion, deletePrivateBranch } from "./private-branch-deletion";
 import { privateBranchDeletions } from "./schema";
 import { runDeletions, providerOperations } from "./schema";
@@ -411,7 +412,10 @@ test("a populated native private receipt survives an actual disposable archive r
       const recovery = await inspectAdditionalRecovery(reader);
       expect(recovery.privateBranches).toEqual({ branches: 2, ownDeliveryStatuses: { succeeded: 2 }, copiedDeliveryStatuses: {} });
       const sourceReader = new Client({ connectionString: url.toString() }); await sourceReader.connect();
-      try { expect(recovery).toEqual(await inspectAdditionalRecovery(sourceReader)); } finally { await sourceReader.end(); }
+      try {
+        expect(recovery).toEqual(await inspectAdditionalRecovery(sourceReader));
+        expect((await inspectRestoredQueue(reader)).queues).toEqual((await inspectRestoredQueue(sourceReader)).queues);
+      } finally { await sourceReader.end(); }
       const value = await reader.query<{ body_ciphertext: string }>("select body_ciphertext from conversation_private_branches where id = $1", [id]);
       expect(value.rows[0]!.body_ciphertext).toBe((await getDatabase().select().from(branches).where(eq(branches.id, id)))[0]!.bodyCiphertext);
       const nativeValue = await reader.query<{ body_ciphertext: string }>("select body_ciphertext from conversation_private_branches where id = $1", [nativeId]);

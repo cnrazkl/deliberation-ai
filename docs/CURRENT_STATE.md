@@ -1,8 +1,37 @@
 # Current state
 
-Updated: 7 October 2026 (restored operation inventory; acceptance tasks remain open)
+Updated: 7 October 2026 (restored queue inventory; acceptance tasks remain open)
 
-## Current increment — restored operation inventory (Group 5)
+## Current increment — restored queue inventory (Group 5)
+
+Saved-backup rehearsal now includes aggregate pg-boss job states across partitions
+for council/decision/private work and an anonymized other category. Future start
+times count only waiting created/retry jobs relative to the reported inspection
+time. Queue states do not establish provider outcomes or live execution. Invalid/
+missing schema or aggregates refuse verification with a fixed error. No payload,
+output or ID is selected; inspection starts no PgBoss instance or worker.
+[Scope](RECOVERY_QUEUE_INVENTORY.md).
+
+402 unit cases / 65 files and 252 isolated PostgreSQL cases / 33 files pass,
+including actual populated archive queue comparison and unchanged job state/
+timestamp/payload-output hashes during inspection. Workspace/scripts typecheck,
+zero-warning lint, production build and dependency audit pass. Normal CI adds
+three offline queue cases. All 891 local documentation links resolve; staged and
+full-history secret scans are clean.
+
+The saved 6 October post-migration archive restores and verifies 12,005 encrypted
+values. Its decision assessment/operation tables are empty but its decision queue
+has 246 created jobs; this is an observed archive inconsistency requiring target
+reconciliation, not live activity or authorization to delete/resend. The disabled
+decision adapter remains disabled. The runtime check returns HTTP 200;
+database and one worker are ready, with no queued/running council runs.
+
+No schema migration, owner database mutation, provider call, job replay/cancellation
+or replacement cutover is added. Queue-target and current-versus-archive
+reconciliation, human/model/cost and full operational acceptance remain open;
+DA-119/DA-126 remain incomplete.
+
+## Previous increment — restored operation inventory (Group 5)
 
 Backup rehearsal now includes decision assessment/operation statuses and private
 delivery statuses decoded from authenticated bounded bodies in 16-row pages.

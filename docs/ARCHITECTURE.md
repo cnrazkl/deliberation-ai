@@ -1,5 +1,10 @@
 # Architecture
 
+The backup verifier reads only aggregate queue metadata from the restored parent
+job table and its partitions. Fixed application categories hide other queue names;
+no PgBoss instance is started by inspection. Runtime dispatch is unchanged.
+[Boundary](RECOVERY_QUEUE_INVENTORY.md).
+
 The backup verifier scans authenticated private bodies in bounded pages and groups
 decision metadata in its temporary restored database. Only aggregate recovery
 counts are exposed; runtime APIs, schemas and dispatch remain unchanged.
