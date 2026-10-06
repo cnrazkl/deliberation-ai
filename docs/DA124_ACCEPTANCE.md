@@ -50,3 +50,11 @@ ready, one ready worker, zero queued/running runs, zero unresolved provider atte
 and zero active schedules. Local knowledge state and publication-list routes returned
 success. No synthetic owner source or model request was created for readiness checks.
 The independent interactive processes remain running after browser tests end.
+
+## Publication
+
+Implementation commit `a43a2db` was fast-forward published to `main` without creating
+a remote feature branch. [Security checks run 37442602442](https://github.com/cnrazkl/deliberation-ai/actions/runs/37442602442)
+completed successfully, including dependency audit, frozen install, publication
+contract/scoped knowledge checks, extraction integrity, lint compatibility and full
+Git history secret scan. Local runtime readiness was checked again after publication.

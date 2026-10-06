@@ -20,6 +20,8 @@ lost acknowledgements, explicit consent, changed destinations and manual downloa
 acknowledgement. DA-119 independent gold and DA-126 empirical quality stay open.
 DA-125 distinct NVIDIA preset is next; external adapters and publication erasure remain
 separate conditional work.
+Implementation commit `a43a2db` is on remote `main`; Security checks run `37442602442`
+passed, including the new publication contract tests.
 
 The owner explicitly authorized backed-up deployment on 6 October 2026. Pending
 additive migrations through 0054 were applied only after a temporary restore verified
