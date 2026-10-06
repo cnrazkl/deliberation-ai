@@ -25,6 +25,7 @@ jobs:
       - name: Verify frozen knowledge preparation
         run: |
           pnpm exec vitest run packages/evaluation/src/knowledge-evaluation.test.ts
+          pnpm exec vitest run packages/evaluation/src/knowledge-benchmark.test.ts
           pnpm knowledge:status
       - name: Verify scoped knowledge boundary
         run: pnpm exec vitest run packages/application/src/knowledge.test.ts packages/application/src/knowledge-packet.test.ts packages/contracts/src/evidence-candidates.test.ts packages/contracts/src/evidence-publications.test.ts apps/web/src/lib/markdown-export.test.ts

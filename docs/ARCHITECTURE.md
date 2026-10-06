@@ -1,5 +1,11 @@
 # Architecture
 
+DA-126 adds a pure evaluation summarizer and a disposable PostgreSQL measurement
+runner. Actual encrypted source/preparation/read-back APIs are exercised without
+provider calls or owner database writes; report counts cannot become semantic
+acceptance. No runtime route, schema migration or service is added.
+[Procedure](KNOWLEDGE_LOCAL_MEASUREMENTS.md).
+
 DA-125 keeps NVIDIA as a service preset of the compatible protocol. Contracts fix
 hosted identity/settings; persistence requires a new key across service switches
 and freezes its revision in encrypted run members; the worker checks the revision

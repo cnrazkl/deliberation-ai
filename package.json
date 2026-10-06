@@ -21,6 +21,7 @@
     "test:e2e": "node scripts/with-root-env.mjs pnpm exec playwright test",
     "test:watch": "vitest",
     "knowledge:status": "tsx scripts/knowledge-evaluation-workflow.ts status",
+    "knowledge:benchmark": "node packages/persistence/scripts/run-isolated-integration.mjs knowledge-benchmark",
     "knowledge:extraction:verify": "tsx scripts/knowledge-extraction-fixtures.mts",
     "knowledge:prepare": "tsx scripts/knowledge-evaluation-workflow.ts prepare",
     "knowledge:compile-reviews": "tsx scripts/knowledge-evaluation-workflow.ts compile-reviews",

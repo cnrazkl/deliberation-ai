@@ -1,8 +1,24 @@
 # Current state
 
-Updated: 6 October 2026 (DA-125 NVIDIA hosted preset complete)
+Updated: 6 October 2026 (DA-126 local diagnostic; acceptance remains open)
 
-## Current increment — DA-125 NVIDIA hosted preset
+## Current increment — DA-126 local diagnostic
+
+The isolated knowledge:benchmark command measures actual encrypted local preparation
+for all 40 frozen questions in two pool phases and separately verifies exact citation
+round-trip controls. Failed and empty attempts remain explicit; no provider call or
+owner-data write occurs. The literal-question diagnostic finds 22 query refusals and
+18 empty packets per phase. Ten source-derived controls validate 11 citations, but
+cannot establish semantic retrieval quality. [Procedure](KNOWLEDGE_LOCAL_MEASUREMENTS.md),
+[observations and open gates](DA126_ACCEPTANCE.md).
+
+DA-126 remains incomplete: independent human gold/format reviews, paired live model
+quality, critical recall/entailment, cost, setup/maintenance, true cold-cache and
+upgrade/rollback acceptance remain open. The current lexical keyword/manual workflow
+must not be represented as general question retrieval. No migration or model consent
+is introduced, and the frozen protocol/cohort is unchanged.
+
+## Previous increment — DA-125 NVIDIA hosted preset
 
 The distinct NVIDIA hosted connection fixes the official destination and conservative
 text-only protocol settings while retaining explicit key/model choice. Optional

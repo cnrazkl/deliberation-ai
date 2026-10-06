@@ -1,5 +1,9 @@
 # Product
 
+DA-126 now has an offline local measurement command. It preserves failed/empty
+retrieval outcomes and cannot mark quality or cost acceptance complete. Application
+behavior and provider consent remain unchanged. [Observed limitations](DA126_ACCEPTANCE.md).
+
 DA-125 adds an explicit NVIDIA hosted connection preset, fixed hosted address and
 conservative text-only settings. Manual model choice remains available without a
 catalog. Pending hosted results remain unknown without automatic resend. Live
@@ -64,7 +68,11 @@ JSON remains available. [Scope](MARKDOWN_EXPORTS.md).
 
 **DA-108:** saved council templates use durable creation identities and reviewed deletion beneath the selected card. Acknowledgement clears that reusable configuration; current drafts, frozen runs and schedules remain. Lost responses can be retried safely, deleted identities remain blocked, and a fresh identity can reuse the name. [Contract](COUNCIL_TEMPLATE_LIFECYCLE.md).
 
-## Proposed reusable topic libraries (not implemented)
+## Reusable topic libraries — original proposal and current acceptance
+
+DA-120–125 implement the local scope/source/packet/review/save foundations and the
+NVIDIA preset. DA-126 now provides the partial diagnostic above; independent quality
+and supported rollout remain open. The paragraph below records the original proposal.
 
 The owner requests exact notebook selection per conversation, including multiple notebooks, with security, quality and maintainability first. Propose local reusable collections and bounded source-linked excerpts; large/repeated files need not depend on an external service. New evidence is reviewed before reusable save or separately authorized external publication. Unofficial NotebookLM bridges and Notion are excluded; official NotebookLM is deferred until stable required capabilities are verified. Other adapters are optional and must pass admission tests. Small inputs and the distinct NVIDIA proposal remain. Pending implementation in DA-119–DA-126. [Proposal](KNOWLEDGE_SOURCES.md), [worked examples](evaluation/KNOWLEDGE_SOURCE_SCENARIOS.md).
 
