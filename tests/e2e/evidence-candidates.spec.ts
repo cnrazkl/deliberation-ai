@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { buildCouncilReport } from "@deliberation-ai/domain";
-import { getDatabase, closeDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, runs, claims, conversationRuns, conversations } from "@deliberation-ai/persistence";
+import { getDatabase, closeDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, runs, claims, conversationRuns, conversations, createKnowledgeCollection, changeKnowledgeGrant, evidencePublications, knowledgeSources, knowledgeSourceVersions, knowledgeGrants, knowledgeCollections } from "@deliberation-ai/persistence";
 
 test("candidate inbox preserves originals, retries lost replies and separates review from claim state without provider calls", async ({ page, request }) => {
   test.setTimeout(60_000);
@@ -12,6 +12,8 @@ test("candidate inbox preserves originals, retries lost replies and separates re
     rawText: "Generated model candidate response", parsed: { summary: "Generated answer", claims: [{ statement: "Generated candidate claim", quote: "Original model passage", kind: "shared" as const }] },
     citations: [{ title: "Generated citation", url: "https://example.invalid/candidate" }] })), []);
   const claim = report.sharedClaims[0]!;
+  const collection = await createKnowledgeCollection("Browser evidence destination");
+  await changeKnowledgeGrant(collection.id, 1, "active");
   page.on("request", (value) => { if (value.method() === "POST" && new URL(value.url()).pathname === "/api/runs") generations++; });
   try {
     await getDatabase().insert(runs).values({ id, ownerId: LOCAL_OWNER_ID, idempotencyKey: randomUUID(), requestHash: "candidate-browser-fixture", snapshotId: randomUUID(),
@@ -35,6 +37,50 @@ test("candidate inbox preserves originals, retries lost replies and separates re
     await panel.getByRole("button", { name: "Gönderiyi aday kutusuna ekle", exact: true }).click(); await expect(panel.getByRole("alert")).toBeVisible();
     await panel.getByRole("button", { name: "Gönderiyi aday kutusuna ekle", exact: true }).click();
     await expect(panel.locator("article")).toHaveCount(1);
+    await panel.getByLabel("Owner false source aday içerik kararı", { exact: true }).selectOption("verified");
+    await panel.getByLabel("Owner false source aday güncellik kararı", { exact: true }).selectOption("current");
+    const publication = panel.locator(".candidate-publication").first();
+    await publication.getByText("Yeniden kullanılabilir kanıt kaydı", { exact: true }).click();
+    await publication.getByLabel("Kanıtın hedef koleksiyonu", { exact: true }).selectOption(collection.id);
+    await publication.getByRole("button", { name: "Kanıt kaydını incele", exact: true }).click();
+    const review = publication.getByRole("region", { name: "Kanıt kaydı incelemesi", exact: true });
+    await expect(review).toContainText("Original false source passage.");
+    await expect(review.getByRole("button", { name: "Onaylanan kanıtı kaydet", exact: true })).toBeDisabled();
+    await review.getByLabel("Bu içeriği ve tam hedefi onaylıyorum", { exact: true }).check();
+    let loseSave = true;
+    await page.route("**/api/evidence-publications", async (route) => {
+      if (route.request().method() === "POST" && route.request().postDataJSON().action === "commit" && loseSave) {
+        loseSave = false; await route.fetch(); await route.abort("failed");
+      } else await route.continue();
+    });
+    await review.getByRole("button", { name: "Onaylanan kanıtı kaydet", exact: true }).click();
+    await expect(publication.getByRole("alert")).toBeVisible();
+    await review.getByRole("button", { name: "Onaylanan kanıtı kaydet", exact: true }).click();
+    await expect(publication).toContainText("Yerel kayıt tamamlandı");
+    expect(await getDatabase().select().from(knowledgeSources).where(eq(knowledgeSources.collectionId, collection.id))).toHaveLength(1);
+    await publication.getByLabel("Kaydetme yöntemi", { exact: true }).selectOption("manual");
+    await publication.getByLabel("Manuel hedef adı", { exact: true }).fill("Selected manual notebook");
+    await publication.getByLabel("Manuel hedef hesabı", { exact: true }).fill("Declared account");
+    await publication.getByLabel("Manuel hedef bağlantısı", { exact: true }).fill("https://example.invalid/notebook");
+    await publication.getByRole("button", { name: "Kanıt kaydını incele", exact: true }).click();
+    await expect(review).toContainText("uygulama göndermez");
+    await publication.getByLabel("Manuel hedef adı", { exact: true }).fill("Changed manual notebook");
+    await expect(review).toHaveCount(0);
+    await publication.getByRole("button", { name: "Kanıt kaydını incele", exact: true }).click();
+    await review.getByLabel("Bu içeriği ve tam hedefi onaylıyorum", { exact: true }).check();
+    await review.getByRole("button", { name: "Onaylanan aktarım paketini hazırla", exact: true }).click();
+    await expect(publication).toContainText("Elle eklemeniz bekleniyor");
+    const handoffDownload = page.waitForEvent("download");
+    await publication.getByText("Kanıt ve hedef paketini indir (JSON)", { exact: true }).last().click();
+    expect((await handoffDownload).suggestedFilename()).toContain("deliberationai-evidence-");
+    await publication.getByRole("button", { name: "Adlandırılan hedefe elle ekledim", exact: true }).click();
+    await expect(publication).toContainText("uzaktan doğrulanmadı");
+    const packets = await (await request.get(`/api/evidence-publications?runId=${id}`)).json();
+    expect(packets.publications).toHaveLength(2);
+    expect(packets.publications[1].destination.name).toBe("Changed manual notebook");
+    expect(packets.publications[1].candidate.provenance.statement).toBe(claim.statement);
+    expect((await request.post("/api/evidence-publications", { data: { action: "preview" }, headers: { origin: "https://external.invalid" } })).status()).toBe(403);
+    expect((await request.post("/api/evidence-publications", { data: "x".repeat(17 * 1024) })).status()).toBe(413);
     await panel.getByLabel("Owner false source aday içerik kararı", { exact: true }).selectOption("rejected");
     await expect(panel.getByLabel("Owner false source aday içerik kararı", { exact: true })).toHaveValue("rejected");
     await panel.getByLabel("Owner false source aday güncellik kararı", { exact: true }).selectOption("stale");
@@ -58,8 +104,17 @@ test("candidate inbox preserves originals, retries lost replies and separates re
     await page.setViewportSize({ width: 390, height: 844 }); await panel.scrollIntoViewIfNeeded();
     await panel.getByText("Modelin özgün pasajı ve atıf kaydı", { exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await page.screenshot({ path: ".local/da123-inbox-mobile.png" });
+    await panel.locator(".candidate-publication").first().getByText("Yeniden kullanılabilir kanıt kaydı", { exact: true }).click();
+    await expect(panel.locator(".candidate-publication").first()).toContainText("Yerel kayıt tamamlandı");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: ".local/da124-publication-mobile.png" });
   } finally {
+    await getDatabase().delete(evidencePublications).where(eq(evidencePublications.runId, id));
+    const heads = await getDatabase().select().from(knowledgeSources).where(eq(knowledgeSources.collectionId, collection.id));
+    if (heads.length) await getDatabase().delete(knowledgeSourceVersions).where(inArray(knowledgeSourceVersions.sourceId, heads.map((value) => value.id)));
+    await getDatabase().delete(knowledgeSources).where(eq(knowledgeSources.collectionId, collection.id));
+    await getDatabase().delete(knowledgeGrants).where(eq(knowledgeGrants.collectionId, collection.id));
+    await getDatabase().delete(knowledgeCollections).where(eq(knowledgeCollections.id, collection.id));
     await getDatabase().delete(conversationRuns).where(eq(conversationRuns.runId, id)); await getDatabase().delete(runs).where(eq(runs.id, id));
     await getDatabase().delete(conversations).where(eq(conversations.id, conversationId)); await closeDatabase();
   }

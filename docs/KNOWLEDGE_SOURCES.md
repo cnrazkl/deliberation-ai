@@ -1,5 +1,7 @@
 # Scoped knowledge sources and NVIDIA connections
 
+DA-124 local reusable save and manual handoff are implemented and verified; no external adapter is admitted. [Implemented contract](EVIDENCE_PUBLICATION.md), [verification](DA124_ACCEPTANCE.md). The broader remote-adapter and empirical quality proposal below remains conditional.
+
 DA-119 update: the owner accepted the [frozen trial contract](evaluation/KNOWLEDGE_EVALUATION.md)
 and selected individual files only. [Exact-plan approval](evaluation/KNOWLEDGE_CONTRACT_APPROVAL.json)
 ratifies trial scope/limits, not independent labels or measured model quality.

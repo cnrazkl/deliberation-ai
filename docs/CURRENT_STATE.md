@@ -1,8 +1,34 @@
 # Current state
 
-Updated: 6 October 2026 (DA-123 candidate inbox complete)
+Updated: 6 October 2026 (DA-124 reusable evidence complete)
 
-## Current increment — DA-123 candidate inbox complete
+## Current increment — DA-124 reusable evidence complete
+
+Approved/current candidates can be saved only after separate exact-payload and
+named-destination review. Atomic local TXT source/version and encrypted immutable
+receipts preserve original provenance, conflicts and human review without promoting
+claims or selecting council inputs. Lost-response replay and destination/original
+deduplication prevent duplicate source creation. Named manual handoff stays pending
+until explicit owner declaration; remote read-back/indexing remain unverified.
+No external adapter is admitted. Publication copies block reviewed run-body erasure.
+[Contract](EVIDENCE_PUBLICATION.md), [verification](DA124_ACCEPTANCE.md).
+
+327 units / 55 files, 246 isolated PostgreSQL cases / 28 files, final six-case candidate/
+publication rerun, populated archive restore, typecheck, zero-warning lint, production
+build and dependency audit pass. Browser acceptance covers actual BFF/database,
+lost acknowledgements, explicit consent, changed destinations and manual download/
+acknowledgement. DA-119 independent gold and DA-126 empirical quality stay open.
+DA-125 distinct NVIDIA preset is next; external adapters and publication erasure remain
+separate conditional work.
+
+The owner explicitly authorized backed-up deployment on 6 October 2026. Pending
+additive migrations through 0054 were applied only after a temporary restore verified
+backup `deliberation-20261006T091815Z-8aeecbae6cf2.manifest.json`. Post-migration
+backup `deliberation-20261006T091929Z-3b0771e5f2fe.manifest.json` also restored and
+passed exhaustive encryption audit: 434 runs, 7,457 encrypted rows and 12,005 values.
+Existing owner content was not rewritten/deleted. Interactive web at `http://127.0.0.1:3000/` returns HTTP 200; database and one worker are ready, with zero queued/running runs, unresolved provider attempts or active schedules. The runtime uses this current checkout; [verification](DA124_ACCEPTANCE.md).
+
+## Previous increment — DA-123 candidate inbox complete
 
 Explicit owner submissions, stored round-0 model citations and run packet excerpts
 enter a claim-linked human inbox. Original passages, model/source distinction and

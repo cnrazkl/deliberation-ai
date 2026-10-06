@@ -1,5 +1,18 @@
 # Local operations
 
+## DA-124 — backed-up owner deployment, 6 October 2026
+
+The owner separately authorized applying pending additive migrations through 0054.
+Pre-migration backup `deliberation-20261006T091815Z-8aeecbae6cf2.manifest.json`
+and post-migration backup `deliberation-20261006T091929Z-3b0771e5f2fe.manifest.json`
+were each restored into a temporary database and passed exhaustive encryption audit
+(434 runs, 7,457 encrypted rows, 12,005 values). Archives/manifests stay under the
+local application backup directory outside Git; retain the encryption key separately.
+No owner source passage, run history or provider credential was rewritten/deleted.
+Earlier generated-only migration notes below describe the original increment status;
+this authorized deployment supersedes their pending-installation status.
+
+
 DA-121 migration 0051 has been tested only in disposable databases; owner deployment
 still requires a separately authorized backed-up migration of 0050/0051. Verify frozen
 parser output with `pnpm knowledge:extraction:verify`. Generated-only restore/resource

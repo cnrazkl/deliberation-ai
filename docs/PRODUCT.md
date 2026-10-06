@@ -1,5 +1,7 @@
 # Product
 
+DA-124 adds separately reviewed saving of approved/current candidates to an exact local collection and owner-selected manual handoff packets. Original provenance survives in immutable receipts; no claim promotion, automatic selection or external upload occurs. [Contract](EVIDENCE_PUBLICATION.md).
+
 DA-123 adds an explicit claim-linked candidate inbox for owner submissions, stored
 model citations and frozen local excerpts. Originals/conflicts remain inspectable;
 human content and freshness decisions are separate. A citation alone cannot count

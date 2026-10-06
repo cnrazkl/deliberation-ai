@@ -1,5 +1,7 @@
 # Security
 
+DA-124 rechecks source review/current grant/version and exact target consent under owner serialization. Encrypted immutable receipts use `evidence-publication:<id>:body`; exhaustive archive audit checks identities and exact copied source text. The byte-bounded same-origin route never fetches target URLs or sends a tool/provider request. Manual confirmation is not remote read-back. Published copies block reviewed run-body deletion. [Contract](EVIDENCE_PUBLICATION.md).
+
 DA-123 candidate intake has a 32 KiB streamed strict local-origin/no-store BFF. Model
 citations resolve stored identities and never masquerade as original source passages;
 local excerpts reauthorize grants before creating copies. Current grant/version checks

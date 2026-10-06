@@ -455,6 +455,10 @@ button:disabled { opacity: .55; cursor: wait; }
 .candidate-card.evidence-source { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 .candidate-card > :not(label) { grid-column: 1 / -1; margin: 0; }
 .candidate-card pre { overflow: auto; max-height: 320px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.candidate-publication { min-width: 0; }
+.candidate-publication fieldset { display: grid; gap: 12px; min-width: 0; }
+.candidate-publication label { display: grid; gap: 6px; }
+.candidate-publication input[type="checkbox"] { width: auto; justify-self: start; }
 .evidence-source { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .45fr) auto; align-items: end; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 13px; }
 .evidence-source > div { display: grid; gap: 4px; min-width: 0; }
 .evidence-source a { color: var(--green); font-weight: 800; overflow-wrap: anywhere; }

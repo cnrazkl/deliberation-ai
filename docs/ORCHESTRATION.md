@@ -1,5 +1,7 @@
 # Orchestration
 
+DA-124 local save commits the exact source/version and receipt atomically, with bounded intake/owner locks and historical idempotent acknowledgement recovery. It performs no council, worker, retrieval or provider dispatch. Manual handoff stays awaiting_manual_addition until separate owner declaration; remote state/indexing stays unverified. [Contract](EVIDENCE_PUBLICATION.md).
+
 **DA-122 implemented; DA-124 publication proposed:** [Preparation](KNOWLEDGE_SOURCES.md#frozen-context-and-lifecycle) is a separate bounded operation before enqueue. Frozen granted packets enter prompt/risk fingerprints; round 0 remains independent and models never invoke connectors. Query/publication unknown outcomes need reconciliation, not polling-driven resubmission. Schedules do not silently refresh sources and cross-review gains no autonomous retrieval. DA-123 candidate capture/review is an explicit local operation with no provider dispatch, packet modification or automatic claim promotion. [Contract](EVIDENCE_CANDIDATES.md).
 
 **DA-104:** preflight tombstones are checked under the existing owner/intent locks before ordinary enqueue or selected-member rerun can create/return an intent. Draft creation/cancellation shares owner serialization with resumed start and reviewed deletion. If start wins, review must be refreshed; a later draft deletion preserves that independent run/job. [Retained boundary](PREFLIGHT_DRAFT_DELETION.md).

@@ -1,5 +1,7 @@
 # Workspace design principles — DA-111 / DA-112
 
+DA-124 candidate cards offer an expandable reusable-save panel with explicit collection or named manual destination, full-payload review, separate consent, exact-target confirmation and downloadable receipts. Editing target invalidates review; confirmed local saving does not select a council source. Manual acknowledgement is labeled as an unverified owner declaration. [Contract](EVIDENCE_PUBLICATION.md).
+
 DA-123 groups candidate origin/claim controls, shows each frozen passage and its
 provenance before two independent human-review controls, and keeps candidate records
 in the inbox rather than duplicating them in manual-source/TypeSafe controls. Its

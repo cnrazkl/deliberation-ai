@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { RunRecord } from "@deliberation-ai/application";
 import type { EvidenceCandidateProvenance, EvidenceFreshnessStatus, EvidenceRelation, EvidenceReviewStatus } from "@deliberation-ai/contracts";
+import { EvidencePublicationPanel } from "./evidence-publication-panel";
 
 type Candidate = { id: string; claimId: string; title: string; url: string; excerpt: string | null;
   relation: EvidenceRelation; reviewStatus: EvidenceReviewStatus; freshnessStatus: EvidenceFreshnessStatus;
@@ -101,6 +102,7 @@ export function EvidenceCandidatePanel({ run, onSourcesChanged }: { run: RunReco
         {candidate.candidateProvenance.relatedSourceId ? <p>Önceki kayıt korunuyor: {candidate.candidateProvenance.relatedSourceId}</p> : null}
         <label>{candidate.title} aday içerik kararı<select aria-label={`${candidate.title} aday içerik kararı`} value={candidate.reviewStatus} onChange={(event) => void send(`/api/evidence-sources/${candidate.id}`, { reviewStatus: event.target.value }, "PATCH")}>{Object.entries(reviewLabels).map(([value, label]) => <option key={value} value={value} disabled={value === "verified" && !candidate.excerpt}>{label}</option>)}</select></label>
         <label>{candidate.title} aday güncellik kararı<select aria-label={`${candidate.title} aday güncellik kararı`} value={candidate.freshnessStatus} onChange={(event) => void send(`/api/evidence-sources/${candidate.id}`, { freshnessStatus: event.target.value }, "PATCH")}>{Object.entries(freshnessLabels).map(([value, label]) => <option key={value} value={value} disabled={value === "current" && (!candidate.excerpt || ["changed", "inaccessible"].includes(candidate.availability))}>{label}</option>)}</select></label>
+        <EvidencePublicationPanel key={`${candidate.id}:${candidate.reviewStatus}:${candidate.freshnessStatus}:${candidate.availability}`} runId={run.runId} candidateId={candidate.id} eligible={Boolean(candidate.excerpt && candidate.reviewStatus === "verified" && candidate.freshnessStatus === "current" && !["changed", "inaccessible"].includes(candidate.availability))} />
       </article>)}</div>
       {!visible.length ? <p className="empty">Bu iddiada aday yok.</p> : null}
     </fieldset>

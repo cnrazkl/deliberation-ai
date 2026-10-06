@@ -1,5 +1,7 @@
 # Architecture
 
+DA-124 persistence serializes exact candidate/destination review with grants, saves a TXT source and encrypted receipt atomically, reads back and deduplicates original copies. The no-store BFF and candidate UI provide separate consent and pending/manual acknowledgement; no adapter is admitted. [Contract](EVIDENCE_PUBLICATION.md), [ADR-0039](adr/0039-reviewed-reusable-evidence.md).
+
 DA-123 extends evidence sources with contract-validated encrypted immutable candidate
 provenance. Persistence resolves owner/run/claim/member/packet identities and serializes
 intake/review with grants and reviewed deletion; the local BFF and inbox perform no
@@ -102,7 +104,7 @@ Persistence owns request identity/hash, exact-row review and encrypted deletion 
 
 ## Remaining proposed knowledge boundary
 
-[Scoped knowledge sources](KNOWLEDGE_SOURCES.md) proposes a local-first `KnowledgeSource` boundary separate from `TextProvider`, reusing encrypted persistence/extraction and adding bounded source retrieval. Optional documented adapters must pass admission gates; cookie/private-API bridges are excluded and no notebook vendor is required. Exact grants and immutable excerpts precede enqueue; models cannot dispatch tools/writes. Many-to-many bindings, reviewed saves, portable evidence and rebuildable indexes preserve independence from vendors. MCP is optional. NVIDIA reuses the compatible adapter. DA-120–122 local foundations and reviewed packets are implemented; DA-119 human acceptance and DA-123–126 remain open; existing boundaries below describe implemented behavior.
+[Scoped knowledge sources](KNOWLEDGE_SOURCES.md) proposes a local-first `KnowledgeSource` boundary separate from `TextProvider`, reusing encrypted persistence/extraction and adding bounded source retrieval. Optional documented adapters must pass admission gates; cookie/private-API bridges are excluded and no notebook vendor is required. Exact grants and immutable excerpts precede enqueue; models cannot dispatch tools/writes. Many-to-many bindings, reviewed saves, portable evidence and rebuildable indexes preserve independence from vendors. MCP is optional. NVIDIA reuses the compatible adapter. DA-120–122 local foundations and reviewed packets are implemented; DA-119 human acceptance and DA-125–126 remain open; DA-123–124 are implemented; existing boundaries below describe implemented behavior.
 
 **DA-104:** A separate persistence boundary inspects one owned preflight row, fingerprints exact database timestamps and scrubs it under existing owner serialization plus a draft-table lock. Existing JSON metadata holds the strict receipt; create/start/cancel and enqueue/rerun guards preserve tombstone ordering. No provider or queue work is dispatched by review/deletion. [Contract](PREFLIGHT_DRAFT_DELETION.md).
 

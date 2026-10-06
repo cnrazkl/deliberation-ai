@@ -1,5 +1,7 @@
 # Data model
 
+DA-124 migration 0054 adds independent `evidence_publications` (owner/run/candidate IDs, request/dedup digests, encrypted frozen body, status and acknowledgement timestamp). Snapshot fields are immutable; only awaiting_manual_addition to manual_acknowledged is allowed. Local source/version rows use existing storage; publication copies block reviewed run erasure. [Contract](EVIDENCE_PUBLICATION.md).
+
 DA-123 migration 0053 adds nullable `evidence_sources.candidate_provenance_ciphertext`
 with candidate origin, request hash, frozen claim/member/excerpt provenance and optional
 same-claim prior-source link. Existing review/freshness columns remain independent;

@@ -704,6 +704,17 @@ export const knowledgeSources = pgTable("knowledge_sources", {
   activeVersionId: uuid("active_version_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("knowledge_sources_collection_idx").on(table.ownerId, table.collectionId)]);
+
+// Independent reusable copies survive run retention; no cascading run FK.
+export const evidencePublications = pgTable("evidence_publications", {
+  id: uuid("id").primaryKey(), ownerId: text("owner_id").notNull(), runId: uuid("run_id").notNull(),
+  candidateId: uuid("candidate_id").notNull(), requestHash: text("request_hash").notNull(), dedupHash: text("dedup_hash").notNull(),
+  bodyCiphertext: text("body_ciphertext").notNull(), status: text("status").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+}, (table) => [index("evidence_publications_owner_run_idx").on(table.ownerId, table.runId),
+  index("evidence_publications_dedup_idx").on(table.ownerId, table.dedupHash),
+  check("evidence_publications_status_valid", sql`${table.status} in ('local_saved', 'awaiting_manual_addition', 'manual_acknowledged')`)]);
 export const knowledgeSourceVersions = pgTable("knowledge_source_versions", {
   id: uuid("id").primaryKey(), sourceId: uuid("source_id").notNull().references(() => knowledgeSources.id), ownerId: text("owner_id").notNull(),
   originalHash: text("original_hash").notNull(), parserVersion: text("parser_version").notNull(), status: text("status").notNull(),

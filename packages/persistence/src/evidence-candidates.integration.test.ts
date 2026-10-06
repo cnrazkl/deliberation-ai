@@ -16,8 +16,11 @@ import { prepareKnowledgePacket } from "./knowledge-packets";
 import { previewRunDeletion, deleteRunBody } from "./run-deletion";
 import { auditRestoredEncryption } from "../scripts/backup-encryption-audit";
 import * as s from "./schema";
+import { commitEvidencePublication, previewEvidencePublication, listEvidencePublications, acknowledgeManualEvidencePublication, EvidencePublicationConflictError } from "./evidence-publications";
+import { listKnowledgeSources, exportKnowledgeVersion, searchLocalKnowledge } from "./knowledge-sources";
 const ids: string[] = [], conversationIds: string[] = [], collectionIds: string[] = [];
 afterEach(async () => {
+  if (ids.length) await getDatabase().delete(s.evidencePublications).where(inArray(s.evidencePublications.runId, ids));
   if (ids.length) { await getDatabase().delete(s.runDeletions).where(inArray(s.runDeletions.id, ids)); await getDatabase().delete(s.conversationRuns).where(inArray(s.conversationRuns.runId, ids)); await getDatabase().delete(s.runs).where(inArray(s.runs.id, ids)); }
   if (conversationIds.length) {
     await getDatabase().delete(s.knowledgePreparations).where(inArray(s.knowledgePreparations.conversationId, conversationIds));
@@ -126,4 +129,76 @@ test("serialized idempotent intake, owner isolation and reviewed deletion includ
   await updateEvidenceSourceReview(a!.id, { reviewStatus: "rejected" });
   const next = (await previewRunDeletion(f.run.runId))!; expect(next.fingerprint).not.toBe(first.fingerprint);
   await deleteRunBody(f.run.runId, next.fingerprint!); expect(await listEvidenceCandidates(f.run.runId)).toBeUndefined();
+});
+
+
+test("reviewed reusable save freezes exact originals, deduplicates concurrent retries and fences review/destination changes", async () => {
+  const f = await fixture(); const candidate = (await createEvidenceCandidate({ ...f.owner, excerpt: "  Özgün conflicting passage.\n" }))!;
+  const collection = await createKnowledgeCollection("Approved evidence destination"); collectionIds.push(collection.id);
+  const scope = await changeKnowledgeGrant(collection.id, 1, "active");
+  const request = { candidateId: candidate.id, destination: { kind: "local" as const, scope } };
+  await expect(previewEvidencePublication(request)).rejects.toBeInstanceOf(EvidencePublicationConflictError);
+  await updateEvidenceSourceReview(candidate.id, { reviewStatus: "verified", freshnessStatus: "current" });
+  const preview = await previewEvidencePublication(request);
+  const commit = { ...request, requestId: randomUUID(), fingerprint: preview.fingerprint, consent: true as const };
+  const [a, b] = await Promise.all([commitEvidencePublication(commit), commitEvidencePublication(commit)]);
+  expect(a).toEqual(b); expect(a.candidate.excerpt).toBe("  Özgün conflicting passage.\n");
+  expect((await listKnowledgeSources(scope)).items).toHaveLength(1);
+  expect((await exportKnowledgeVersion(scope, a.sourceId!, a.versionId!)).extraction.text).toBe(a.candidate.excerpt);
+  expect((await searchLocalKnowledge([scope], "conflicting")).hits).toHaveLength(1);
+  const another = await commitEvidencePublication({ ...commit, requestId: randomUUID() });
+  expect(another.sourceId).toBe(a.sourceId); expect(another.versionId).toBe(a.versionId);
+  expect((await listKnowledgeSources(scope)).items).toHaveLength(1);
+  await expect(commitEvidencePublication({ ...commit, destination: { kind: "manual", name: "Wrong", account: "Wrong", url: "https://example.invalid/wrong" } })).rejects.toBeInstanceOf(EvidencePublicationConflictError);
+  await expect(commitEvidencePublication({ ...commit, requestId: randomUUID(), destination: { kind: "manual", name: "Wrong", account: "Wrong", url: "https://example.invalid/wrong" } })).rejects.toBeInstanceOf(EvidencePublicationConflictError);
+  await expect(previewEvidencePublication({ ...request, destination: { kind: "local", scope: { ...scope, ownerId: "foreign-owner" } } })).rejects.toBeInstanceOf(KnowledgeAccessError);
+  await updateEvidenceSourceReview(candidate.id, { freshnessStatus: "stale" });
+  await expect(commitEvidencePublication({ ...commit, requestId: randomUUID() })).rejects.toBeInstanceOf(EvidencePublicationConflictError);
+  const revoked = await changeKnowledgeGrant(collection.id, scope.grantRevision, "revoked");
+  expect(await commitEvidencePublication(commit)).toEqual(a); // lost acknowledgement creates no second write/access
+  await expect(previewEvidencePublication(request)).rejects.toBeInstanceOf(EvidencePublicationConflictError);
+  const active = await changeKnowledgeGrant(collection.id, revoked.grantRevision, "active");
+  await updateEvidenceSourceReview(candidate.id, { freshnessStatus: "current" });
+  await expect(commitEvidencePublication({ ...commit, requestId: randomUUID() })).rejects.toBeInstanceOf(KnowledgeAccessError);
+  expect((await listKnowledgeSources(active)).items).toHaveLength(1);
+  expect((await previewRunDeletion(f.run.runId))!.blockedReasons).toContain("copied_content");
+  const audit = new Client({ connectionString: process.env.DATABASE_URL }); await audit.connect();
+  try {
+    await auditRestoredEncryption(audit);
+    await expect(audit.query("update evidence_publications set body_ciphertext = 'changed' where id=$1", [a.id])).rejects.toThrow();
+    // Simulate a failed receipt insert after local source creation. Transaction rolls back both.
+    await audit.query("CREATE FUNCTION fail_generated_publication() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'generated rollback'; END $$");
+    await audit.query("CREATE TRIGGER fail_generated_publication BEFORE INSERT ON evidence_publications FOR EACH ROW EXECUTE FUNCTION fail_generated_publication()");
+    try {
+      const second = await createKnowledgeCollection("Rollback destination"); collectionIds.push(second.id);
+      const secondScope = await changeKnowledgeGrant(second.id, 1, "active");
+      const other = { candidateId: candidate.id, destination: { kind: "local" as const, scope: secondScope } };
+      const current = await previewEvidencePublication(other);
+      await expect(commitEvidencePublication({ ...other, requestId: randomUUID(), fingerprint: current.fingerprint, consent: true })).rejects.toThrow();
+      expect((await listKnowledgeSources(secondScope)).items).toHaveLength(0);
+    } finally { await audit.query("DROP TRIGGER fail_generated_publication ON evidence_publications"); await audit.query("DROP FUNCTION fail_generated_publication()"); }
+  } finally { await audit.end(); }
+});
+
+test("manual handoff remains pending until owner acknowledgement; model-only and changed local candidates cannot publish", async () => {
+  const f = await fixture(true); const candidate = (await createEvidenceCandidate(f.owner))!;
+  await updateEvidenceSourceReview(candidate.id, { reviewStatus: "verified", freshnessStatus: "current" });
+  const destination = { kind: "manual" as const, name: "Selected notebook", account: "Declared account", url: "https://example.invalid/notebook" };
+  const request = { candidateId: candidate.id, destination }; const p = await previewEvidencePublication(request);
+  const receipt = await commitEvidencePublication({ ...request, requestId: randomUUID(), fingerprint: p.fingerprint, consent: true });
+  expect(receipt).toMatchObject({ status: "awaiting_manual_addition", sourceId: null, versionId: null, indexing: "unknown", remoteReadBack: "not_performed" });
+  const acknowledged = await acknowledgeManualEvidencePublication(receipt.id);
+  expect(acknowledged.status).toBe("manual_acknowledged"); expect(acknowledged.remoteReadBack).toBe("not_performed");
+  expect(await acknowledgeManualEvidencePublication(receipt.id)).toEqual(acknowledged);
+  expect((await listEvidencePublications(f.run.runId))[0]).toEqual(acknowledged);
+  const model = (await createEvidenceCandidate({ origin: "model-citation", requestId: randomUUID(), runId: f.run.runId, claimId: f.claimId, memberId: f.run.report!.memberResults[0]!.memberId, citationIndex: 0, relation: "context" }))!;
+  await expect(previewEvidencePublication({ candidateId: model.id, destination })).rejects.toBeInstanceOf(EvidencePublicationConflictError);
+  const quote = f.packet!.excerpts[0]!;
+  const local = (await createEvidenceCandidate({ origin: "local-excerpt", requestId: randomUUID(), runId: f.run.runId, claimId: f.claimId, excerptId: quote.excerptId, relation: "contradicts" }))!;
+  await updateEvidenceSourceReview(local.id, { reviewStatus: "verified", freshnessStatus: "current" });
+  const localRequest = { candidateId: local.id, destination }; const old = await previewEvidencePublication(localRequest);
+  await importKnowledgeFiles(f.scope!, [{ sourceId: quote.source.sourceId, expectedVersionId: quote.source.versionId, name: "updated.txt", mediaType: "text/plain", bytes: Buffer.from("Updated keyword source.") }]);
+  await expect(commitEvidencePublication({ ...localRequest, requestId: randomUUID(), fingerprint: old.fingerprint, consent: true })).rejects.toBeInstanceOf(EvidencePublicationConflictError);
+  const audit = new Client({ connectionString: process.env.DATABASE_URL }); await audit.connect();
+  try { await auditRestoredEncryption(audit); } finally { await audit.end(); }
 });

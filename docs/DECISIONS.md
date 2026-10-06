@@ -112,3 +112,5 @@ ADR-0032 retains reviewed schedule tombstones, reserves occurrence keys to fence
 ## DA-122 reviewed local source packets
 
 [ADR-0037](adr/0037-reviewed-local-knowledge-packets.md) accepts reviewed bounded local packets with visible omissions, freshness and prospective authorization fencing for the trial. Independent human/model acceptance remains open.
+
+- [ADR-0039: atomic reviewed reusable evidence and manual handoff](adr/0039-reviewed-reusable-evidence.md).

@@ -1,6 +1,6 @@
 import { z } from "zod";
 export * from "./knowledge";
-import { knowledgePacketReferenceSchema, knowledgeExcerptSchema } from "./knowledge";
+import { knowledgePacketReferenceSchema, knowledgeExcerptSchema, knowledgeScopeSchema } from "./knowledge";
 export * from "./pricing";
 export * from "./billing";
 export * from "./billing-statement";
@@ -693,6 +693,33 @@ export const evidenceCandidateProvenanceSchema = z.object({
   }
 });
 export type EvidenceCandidateProvenance = z.infer<typeof evidenceCandidateProvenanceSchema>;
+
+const publicationDigest = z.string().regex(/^[a-f0-9]{64}$/);
+export const evidencePublicationDestinationSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("local"), scope: knowledgeScopeSchema }).strict(),
+  z.object({ kind: z.literal("manual"), name: z.string().trim().min(1).max(160), account: z.string().trim().min(1).max(160),
+    url: z.string().url().max(2048).refine((value) => /^https:\/\//i.test(value)) }).strict(),
+]);
+export const evidencePublicationPreviewRequestSchema = z.object({ candidateId: z.string().uuid(), destination: evidencePublicationDestinationSchema }).strict();
+export const evidencePublicationCommitSchema = evidencePublicationPreviewRequestSchema.extend({ requestId: z.string().uuid(), fingerprint: publicationDigest, consent: z.literal(true) }).strict();
+export const evidencePublicationBodySchema = z.object({
+  version: z.literal("evidence-publication-v1"), id: z.string().uuid(), ownerId: z.string().min(1).max(100), requestHash: publicationDigest, fingerprint: publicationDigest,
+  destination: evidencePublicationDestinationSchema, destinationTitle: z.string().min(1).max(200), createdAt: z.iso.datetime(),
+  sourceId: z.string().uuid().nullable(), versionId: z.string().uuid().nullable(),
+  candidate: z.object({ id: z.string().uuid(), runId: z.string().uuid(), claimId: z.string().regex(/^(?:claim|red-team)-\d{3}$/),
+    title: z.string().min(1).max(160), url: z.string().max(2048), excerpt: z.string().min(1).max(4000), note: z.string().max(1000),
+    relation: evidenceRelationSchema, reviewStatus: z.literal("verified"), freshnessStatus: z.literal("current"),
+    capturedAt: z.iso.datetime(), publishedAt: z.iso.date().nullable(), freshnessReviewedAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
+    provenance: evidenceCandidateProvenanceSchema }).strict(),
+}).strict().superRefine((value, ctx) => {
+  if ((value.destination.kind === "local") !== Boolean(value.sourceId && value.versionId)
+    || (value.destination.kind === "manual" && (value.sourceId !== null || value.versionId !== null))) ctx.addIssue({ code: "custom", message: "Publication destination identity mismatch." });
+  if (value.candidate.provenance.origin === "model-citation" || value.candidate.provenance.localExcerpt && value.candidate.provenance.localExcerpt.text !== value.candidate.excerpt
+    || value.destination.kind === "local" && (value.destination.scope.ownerId !== value.ownerId || value.destination.scope.accountId !== "local")) ctx.addIssue({ code: "custom", message: "Publication original or owner mismatch." });
+});
+export type EvidencePublicationBody = z.infer<typeof evidencePublicationBodySchema>;
+export type EvidencePublicationPreviewRequest = z.infer<typeof evidencePublicationPreviewRequestSchema>;
+export type EvidencePublicationCommit = z.infer<typeof evidencePublicationCommitSchema>;
 
 export const updateEvidenceSourceSchema = z
   .object({

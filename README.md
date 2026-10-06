@@ -1,5 +1,7 @@
 # DeliberationAI
 
+Reviewed reusable evidence: approved source passages can be saved to an explicit local collection or exported as an owner-selected manual handoff packet, with immutable provenance and separate consent. [Contract](docs/EVIDENCE_PUBLICATION.md).
+
 DA-123 adds a human candidate inbox with frozen owner/model/local provenance,
 separate content/freshness decisions and explicit JSON export. Intake/review never
 automatically promotes claim evidence. [Contract](docs/EVIDENCE_CANDIDATES.md).

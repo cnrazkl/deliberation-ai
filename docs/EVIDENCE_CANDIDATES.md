@@ -49,8 +49,7 @@ does not recall an already submitted call or erase historical copies.
 Inserting/reviewing a candidate does not change the report's evidence state. A separate
 explicit existing claim annotation requires a human-reviewed/current qualifying
 source; changed/revoked local candidates do not qualify. Candidate records are not
-eligible for TypeSafe transmission in this version. DA-124 owns reusable saving and
-any later explicitly admitted publication. Independent DA-119 labels and DA-126
+eligible for TypeSafe transmission in this version. DA-124 adds separately reviewed [reusable saving/manual handoff](EVIDENCE_PUBLICATION.md); external publication still requires an admitted adapter. Independent DA-119 labels and DA-126
 quality/entailment acceptance remain open.
 
 ## Storage, recovery and limits

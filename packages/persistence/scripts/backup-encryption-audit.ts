@@ -9,6 +9,7 @@ import { decodeRunDeletion } from "../src/run-deletion";
 import { readPreflightDraftDeletion } from "../src/preflight-draft-deletion";
 import { decodeLocalScheduleDeletion } from "../src/local-schedule-deletion";
 import { decodeCouncilTemplateDeletion } from "../src/council-templates";
+import { decodeEvidencePublication } from "../src/evidence-publications";
 
 type EncryptedField = readonly [column: string, contextSuffix: string, format: "text" | "json"];
 interface EncryptedTable {
@@ -24,6 +25,9 @@ interface EncryptedTable {
 // Keep this inventory exhaustive. A new ciphertext column must have an explicit
 // authenticated context here before another archive can be published.
 const encryptedTables: readonly EncryptedTable[] = [
+  { table: "evidence_publications", keys: ["id"], contextPrefix: "evidence-publication", optional: true,
+    fields: [["body_ciphertext", "body", "json"]], metadata: [["owner_id", "ownerId"], ["run_id", "runId"], ["candidate_id", "candidateId"],
+      ["request_hash", "requestHash"], ["dedup_hash", "dedupHash"], ["status", "publicationStatus"], ["created_at", "publicationCreatedAt"], ["acknowledged_at", "publicationAcknowledgedAt"]] },
   { table: "knowledge_preparations", keys: ["id"], contextPrefix: "knowledge-preparation", optional: true,
     fields: [["packet_ciphertext", "packet", "json"]], metadata: [["owner_id", "ownerId"], ["conversation_id", "conversationId"]] },
   { table: "knowledge_source_versions", keys: ["id"], contextPrefix: "knowledge-version", optional: true, pageSize: 1,
@@ -200,6 +204,17 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
           try {
             const plaintext = decryptText(ciphertext, suffix ? `${contextBase}:${suffix}` : contextBase);
             if (format === "json") JSON.parse(plaintext);
+            if (descriptor.table === "evidence_publications") {
+              const publication = decodeEvidencePublication({ id: key[0]!, ownerId: row.ownerId!, runId: row.runId!, candidateId: row.candidateId!, requestHash: row.requestHash!, dedupHash: row.dedupHash!,
+                bodyCiphertext: ciphertext, status: row.publicationStatus!, createdAt: new Date(row.publicationCreatedAt!), acknowledgedAt: row.publicationAcknowledgedAt ? new Date(row.publicationAcknowledgedAt) : null });
+              if (publication.destination.kind === "local") {
+                const version = await client.query<{ extraction_ciphertext: string }>(`select v.extraction_ciphertext from knowledge_source_versions v join knowledge_sources s on s.id=v.source_id
+                  where v.id=$1 and v.source_id=$2 and v.owner_id=$3 and s.owner_id=$3 and s.collection_id=$4`, [publication.versionId, publication.sourceId, publication.ownerId, publication.destination.scope.collectionId]);
+                if (version.rows.length !== 1) throw new Error("Publication source ownership mismatch.");
+                const extracted = JSON.parse(decryptText(version.rows[0]!.extraction_ciphertext, `knowledge-version:${publication.versionId}:extraction`));
+                if (extracted.text !== publication.candidate.excerpt) throw new Error("Publication read-back mismatch.");
+              }
+            }
             if (descriptor.table === "evidence_sources" && column === "candidate_provenance_ciphertext") {
               const candidate = evidenceCandidateProvenanceSchema.parse(JSON.parse(plaintext));
               const owned = await client.query(`select 1 from claims c join runs r on r.id = c.run_id where c.id = $1 and r.id = $2 and r.owner_id = $3`, [row.claimId, row.runId, row.ownerId]);

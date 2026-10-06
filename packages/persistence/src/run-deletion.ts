@@ -173,6 +173,10 @@ async function inspect(tx: ConversationTransaction, id: string) {
     for (const peer of privateRows) if (peer.sourceRunId === id || references(decodePrivateBranchBody(peer), id)) privateCopies.add(peer.id);
   }
   if (copies.size || privateCopies.size) reasons.push("copied_content");
+  const [publication] = await tx.select({ id: s.evidencePublications.id }).from(s.evidencePublications)
+    .where(eq(s.evidencePublications.runId, id)).limit(1);
+  // Independent approved copies/handoff packets need their own copy-aware erasure.
+  if (publication) reasons.push("copied_content");
   // Catalog guard covers unknown cascading dependencies. Cross-run references in
   // known tables and foreign-owned rows must not be swept up by a valid FK graph.
   const foreign = await tx.execute(sql`select 1 where

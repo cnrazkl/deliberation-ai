@@ -16,6 +16,7 @@ import { enqueueDurableRun, executeDurableRun, findDurableRunById } from "../src
 import { createEvidenceCandidate, listEvidenceCandidates } from "../src/evidence-candidates";
 import { updateEvidenceSourceReview } from "../src/evidence-sources";
 import { closeBoss } from "../src/queue";
+import { commitEvidencePublication, previewEvidencePublication, listEvidencePublications, acknowledgeManualEvidencePublication } from "../src/evidence-publications";
 import { buildRoundZeroPromptPlan, buildRiskPreflight } from "@deliberation-ai/application";
 import { createRunRequestSchema, defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 
@@ -74,6 +75,15 @@ async function main() {
     const claimId = [...completed.report!.sharedClaims, ...completed.report!.distinctClaims][0]!.claimId;
     const candidate = (await createEvidenceCandidate({ requestId: randomUUID(), runId: run.runId, claimId, origin: "local-excerpt",
       excerptId: packet.excerpts[0]!.excerptId, relation: "context" }))!;
+    await updateEvidenceSourceReview(candidate.id, { reviewStatus: "verified", freshnessStatus: "current" });
+    const localSave = { candidateId: candidate.id, destination: { kind: "local" as const, scope } };
+    const localReview = await previewEvidencePublication(localSave);
+    await commitEvidencePublication({ ...localSave, requestId: randomUUID(), fingerprint: localReview.fingerprint, consent: true });
+    const manualSave = { candidateId: candidate.id, destination: { kind: "manual" as const, name: "Synthetic handoff", account: "Synthetic account", url: "https://example.invalid/notebook" } };
+    const manualReview = await previewEvidencePublication(manualSave);
+    const manualReceipt = await commitEvidencePublication({ ...manualSave, requestId: randomUUID(), fingerprint: manualReview.fingerprint, consent: true });
+    await acknowledgeManualEvidencePublication(manualReceipt.id);
+    const beforePublications = await listEvidencePublications(run.runId);
     await updateEvidenceSourceReview(candidate.id, { reviewStatus: "rejected", freshnessStatus: "stale" });
     await closeBoss();
     const beforeVersions = await getDatabase().select().from(knowledgeSourceVersions).orderBy(asc(knowledgeSourceVersions.id));
@@ -97,6 +107,7 @@ async function main() {
     assert.equal(await authorizeKnowledgeScope(scope), false);
     assert.deepEqual((await findDurableRunById(run.runId))!.knowledgePacket, packet);
     assert.deepEqual(await listEvidenceCandidates(run.runId), candidateExport);
+    assert.deepEqual(await listEvidencePublications(run.runId), beforePublications);
     assert.equal(candidateExport![0]!.availability, "inaccessible");
     await assert.rejects(loadKnowledgePacket({ id: packet.id, fingerprint: packet.fingerprint, reviewed: true }));
     assert.equal(exported?.revision, revision); assert.equal(exported?.grants[0]?.available, false);
