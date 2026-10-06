@@ -1,5 +1,10 @@
 # Local operations
 
+Settings diagnostics warn about non-ready workers with running council work and
+unknown council provider outcomes. Inspect the relevant run before resending an
+unknown operation; a ready worker or zero council count does not certify private/
+decision operation state or provider connectivity. [Scope](LOCAL_DIAGNOSTICS_ALERTS.md).
+
 Before worker startup, logical migration history must match the current journal.
 Use `pnpm db:compatibility:check` for a read-only check without queue initialization.
 Stop all web/worker processes before migrations or version replacement; the gate

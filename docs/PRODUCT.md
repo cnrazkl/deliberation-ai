@@ -1,5 +1,9 @@
 # Product
 
+Settings diagnostics now explain non-ready workers with running council work and
+unknown council provider outcomes, retaining uncertainty and inspection guidance.
+Refresh remains read-only. [Scope](LOCAL_DIAGNOSTICS_ALERTS.md).
+
 The worker now checks logical migration history before starting queue/schedule work.
 An incompatible or unreadable history blocks startup with a fixed explanation;
 no automatic migration or restore is performed. [Scope](WORKER_MIGRATION_COMPATIBILITY.md).

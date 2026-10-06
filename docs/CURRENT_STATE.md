@@ -1,8 +1,26 @@
 # Current state
 
-Updated: 6 October 2026 (worker migration history gate; DA-126 remains open)
+Updated: 7 October 2026 (local operational warnings; acceptance tasks remain open)
 
-## Current increment — worker migration history startup gate
+## Current increment — local operational warnings (Group 5)
+
+The settings diagnostics panel now warns about non-ready workers with running
+council work even when no jobs are queued or schedules active. Unknown council
+provider outcomes have separate inspection/resend-cost guidance even with a healthy
+worker. Multiple-worker warnings remain; all applicable notices are shown. Counts
+are explicitly labelled council-only and exclude private/decision operations.
+Refetching a recovered snapshot clears the notices. [Scope](LOCAL_DIAGNOSTICS_ALERTS.md).
+
+396 unit cases / 63 files, four focused warning cases, two browser cases, workspace/
+scripts typecheck, zero-warning lint, production build and dependency audit pass.
+The browser scenario observes zero POST requests and tests synthetic stale/unknown
+status then recovery against the existing 3000 app. No additional worker is started.
+Normal CI adds the four offline cases. No persistence/route/schema migration or
+provider call is added. Historical metrics, private/decision monitoring and broader
+Group 5 operations remain open. DA-119/DA-126 human/model/cutover acceptance remains
+open; this independent existing backlog item does not fill human worksheets.
+
+## Previous increment — worker migration history startup gate
 
 The worker compares ordered logical migration timestamps with its bundled journal
 before queue initialization, handlers, schedules or heartbeat creation. Missing/

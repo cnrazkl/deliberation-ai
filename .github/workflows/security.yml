@@ -45,6 +45,8 @@ jobs:
         run: pnpm exec vitest run packages/contracts/src/knowledge-query.test.ts
       - name: Verify offline worker migration history gate
         run: pnpm exec vitest run packages/persistence/src/migration-compatibility.test.ts
+      - name: Verify offline local diagnostics warnings
+        run: pnpm exec vitest run apps/web/src/lib/local-diagnostics-alerts.test.ts
       - name: Scan Git history for secrets
         shell: bash
         run: |

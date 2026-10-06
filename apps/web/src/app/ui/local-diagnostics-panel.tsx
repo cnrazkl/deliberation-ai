@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { localDiagnosticsAlerts } from "../../lib/local-diagnostics-alerts";
 
 type Diagnostics = {
   checkedAt: string;
@@ -66,7 +67,6 @@ export function LocalDiagnosticsPanel() {
     return () => { active = false; clearInterval(timer); };
   }, []);
 
-  const workerReady = diagnostics?.workerStatus === "ready";
   return (
     <details className="settings-card diagnostics-card" aria-label="Yerel çalışma durumu">
       <summary>Yerel çalışma durumu · {error ? "Okunamadı" : diagnostics ? `Worker ${workerLabels[diagnostics.workerStatus].toLowerCase()}` : "Kontrol ediliyor"}</summary>
@@ -78,14 +78,11 @@ export function LocalDiagnosticsPanel() {
             <div><small>Worker</small><strong>{workerLabels[diagnostics.workerStatus]}{diagnostics.readyWorkers > 1 ? ` · ${diagnostics.readyWorkers} süreç` : ""}</strong></div>
             <div><small>Sıradaki çalışma</small><strong>{diagnostics.queuedRuns}</strong></div>
             <div><small>Çalışıyor</small><strong>{diagnostics.runningRuns}</strong></div>
-            <div><small>Belirsiz sağlayıcı işlemi</small><strong>{diagnostics.unresolvedProviderAttempts}</strong></div>
+            <div><small>Belirsiz sağlayıcı işlemi (konsey)</small><strong>{diagnostics.unresolvedProviderAttempts}</strong></div>
             <div><small>Etkin zamanlama</small><strong>{diagnostics.activeSchedules}</strong></div>
           </div>
-          {!workerReady && (diagnostics.queuedRuns > 0 || diagnostics.activeSchedules > 0) ? (
-            <p className="inline-warning">Worker hazır görünmüyor. Sıradaki işler ve etkin zamanlamalar worker yeniden başlayana kadar işlenmeyebilir.</p>
-          ) : null}
-          {diagnostics.readyWorkers > 1 ? <p className="inline-warning">Birden fazla worker nabzı var. Aynı bilgisayarda birden fazla worker süreci çalışıyor olabilir.</p> : null}
-          <p className="hint">Son kontrol: {new Date(diagnostics.checkedAt).toLocaleString("tr-TR")} · Son worker nabzı: {diagnostics.latestHeartbeatAt ? new Date(diagnostics.latestHeartbeatAt).toLocaleString("tr-TR") : "yok"}. Bu gösterge sağlayıcı API bağlantısını veya bir model isteğini test etmez.</p>
+          {localDiagnosticsAlerts(diagnostics).map((message) => <p key={message} className="inline-warning" role="status">{message}</p>)}
+          <p className="hint">Son kontrol: {new Date(diagnostics.checkedAt).toLocaleString("tr-TR")} · Son worker nabzı: {diagnostics.latestHeartbeatAt ? new Date(diagnostics.latestHeartbeatAt).toLocaleString("tr-TR") : "yok"}. İşlem sayaçları konsey çalışmalarını kapsar; özel sohbet ve karar değerlendirme işlemlerini kapsamaz. Bu gösterge sağlayıcı API bağlantısını veya bir model isteğini test etmez.</p>
         </>
       ) : null}
       <button type="button" className="secondary-button" disabled={pending} onClick={() => void refresh()}>Durumu yenile</button>

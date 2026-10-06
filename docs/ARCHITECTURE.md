@@ -1,5 +1,9 @@
 # Architecture
 
+A pure web projection derives operational warnings from existing diagnostics counts.
+The panel renders all applicable notices without changing persistence queries,
+dispatch or recovery controls. [Contract](LOCAL_DIAGNOSTICS_ALERTS.md).
+
 Persistence compares bounded migration-ledger timestamps with its imported journal.
 Worker startup awaits that gate before getBoss, work registration, schedules and
 heartbeat creation; a read-only operator command reuses it. Domain and web APIs are
