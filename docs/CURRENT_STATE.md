@@ -21,6 +21,12 @@ and dependency audit pass. A pre-existing lexical-hit ordering assumption in the
 verifier was corrected to check original source identity alongside its matching saved
 copy. Earlier failed attempts do not count as successful recovery evidence.
 
+Implementation `5058bc2` is on remote main; Security checks `37456850603` passed.
+All 852 documentation links and staged/full-history secret scans pass. At 14:30
+Istanbul, database and one worker were ready with no queued/running runs or unresolved
+attempts; the scratch archive directory was empty. The Windows rehearsal was run
+locally; GitHub Security checks do not run this PostgreSQL recovery command.
+
 ## Previous increment — read-only human evidence status
 
 knowledge:review-status checks current original human files through existing

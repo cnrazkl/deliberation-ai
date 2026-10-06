@@ -47,3 +47,10 @@ source and UUID order can put that copy first. The verifier now checks the origi
 source ID and explicitly requires the matching copy too. Earlier failed rehearsal
 attempts are not acceptance evidence; they exposed this verification defect. Failure
 messages now identify a fixed phase name without printing content or credentials.
+
+Implementation `5058bc2` is on remote main;
+[Security checks 37456850603](https://github.com/cnrazkl/deliberation-ai/actions/runs/37456850603)
+passed. All 852 documentation links and staged/full-history secret scans pass. The
+Windows PostgreSQL rehearsal is local evidence, not a GitHub CI job. At 14:30
+Istanbul, application database and one worker were ready with no queued/running runs
+or unresolved attempts; the generated archive directory was empty.
