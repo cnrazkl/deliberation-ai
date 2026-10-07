@@ -1,5 +1,10 @@
 # Architecture
 
+A restored-only inspector validates queue target fields and joins fixed application
+metadata inside PostgreSQL, returning aggregate relations and stored statuses.
+Private bodies are not read; no PgBoss startup, schema or dispatch change occurs.
+[Boundary](RECOVERY_QUEUE_TARGETS.md).
+
 ConversationDeletionPanel composes existing private/run/metadata review boundaries.
 The owned read-only metadata preview adds bounded live-body/private identifiers;
 each existing mutation independently rechecks its fingerprint and guards. Successful

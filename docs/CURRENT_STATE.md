@@ -1,8 +1,47 @@
 # Current state
 
-Updated: 7 October 2026 (owner-requested conversation deletion access; acceptance tasks remain open)
+Updated: 7 October 2026 (DA-126 restored queue targets; acceptance tasks remain open)
 
-## Current increment — populated conversation deletion access
+## Current increment — DA-126 restored queue target reconciliation
+
+Backup verification/rehearsal now distinguishes malformed payload targets, missing
+schemas/records and exact/different/unrecorded council/decision job links in the
+temporary restored database. Application statuses remain separate from queue
+states. Private branch existence explicitly leaves delivery receipts unchecked;
+other queue targets are excluded. No identifiers/content are returned, no private
+ciphertext is read and no queue service/dispatch is started.
+[Contract and remaining recovery gates](RECOVERY_QUEUE_TARGETS.md).
+
+The saved 6 October post-migration archive restores again: 434 runs and 12,005
+decrypted values. All 246 created decision jobs have valid-shaped but missing
+assessment targets. Completed council jobs split into 68 missing, 54 exact links
+and nine different recorded links; 16 cancelled council jobs have missing targets.
+All 186 completed/one failed private job targets are missing. These observations
+describe this archive; no cause, live state or cleanup/resend authority is inferred.
+
+405 unit cases / 66 files and 255 isolated PostgreSQL cases / 34 files pass.
+The focused real-schema target test also passes. Tests cover malformed/uppercase
+UUIDs, missing/job-link relations, absent historical schemas, unreadable private
+bodies without decryption, unchanged job state/timestamp/payload-output hashes,
+actual queued decision linkage and populated private dump/restore comparison.
+An initial fixture parameter type conflict and persisted partial-status spelling
+were corrected before the successful final test and real archive checks.
+Workspace/scripts typecheck, zero-warning lint, production build and dependency
+audit pass. No personal migration or provider call is added.
+All 911 local documentation links resolve; staged and full-history secret scans
+are clean. Normal CI includes the three offline target-boundary cases.
+
+At 16:20 Istanbul, the restarted local app returns HTTP 200; database and one
+worker are ready, with zero queued/running council runs, unresolved council attempts
+or active schedules. Initial verification found PostgreSQL/web stopped; the existing
+database was started and its logical migration compatibility check passed before
+starting the runtime. These diagnostics do not certify private/decision outcomes.
+
+DA-119/DA-126 independent human/model/cost and full operational acceptance remain
+open. Next recovery work is private delivery/origin/deletion-audit reconciliation,
+then current-versus-archive changes and replacement cutover/rollback.
+
+## Previous increment — populated conversation deletion access
 
 The owner-reported missing deletion action came from the library showing deletion
 only inside other operations for conversations with no remaining run bodies.

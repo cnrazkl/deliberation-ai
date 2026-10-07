@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { inspectAdditionalRecovery } from "../scripts/backup-recovery-inventory";
+import { inspectRestoredQueueTargets } from "../scripts/backup-queue-targets";
 import { defaultFakeCouncilMembers, type CreateRunRequest } from "@deliberation-ai/contracts";
 import type { DecisionAssessmentResult } from "@deliberation-ai/evaluation";
 import { eq } from "drizzle-orm";
@@ -108,6 +109,12 @@ test("keeps Jev shadow assessments encrypted, replayable, cancellable, and isola
   expect(storedAssessment?.inputCiphertext).not.toContain(claim!.statement);
   expect(storedAssessment?.inputCiphertext).not.toContain("yalnızca şifreli");
   expect(storedConnection?.secretCiphertext).not.toContain("typesafe-test-secret");
+  const targetReader = new Client({ connectionString: process.env.DATABASE_URL }); await targetReader.connect();
+  try {
+    const targets = await inspectRestoredQueueTargets(targetReader);
+    expect(targets.decision.created.relations.linked_job).toBeGreaterThanOrEqual(1);
+    expect(targets.decision.created.targetStatuses.queued).toBeGreaterThanOrEqual(1);
+  } finally { await targetReader.end(); }
 
   const work = await startDecisionAssessment(assessment.id);
   expect(work?.input.claim).toBe(claim!.statement);

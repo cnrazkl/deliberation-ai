@@ -1,9 +1,14 @@
 # Local operations
 
+Saved-archive rehearsal also checks queue target shape/existence and recorded
+council/decision job linkage. Missing/terminal targets require manual review;
+private receipt and other-queue reconciliation remain open. The inspector starts
+no worker and changes no jobs. [Procedure](RECOVERY_QUEUE_TARGETS.md).
+
 Saved-archive rehearsal now includes queue states and future `start_after` counts
 relative to inspection time. Review created/retry/active jobs in all categories
-before starting a replacement worker; these counts do not reconcile job targets or
-certify provider outcomes. [Procedure](RECOVERY_QUEUE_INVENTORY.md).
+before starting a replacement worker; state counts alone do not reconcile job
+targets or certify provider outcomes. [Procedure](RECOVERY_QUEUE_INVENTORY.md).
 
 Saved-archive rehearsal includes separate decision/private recovery inventories.
 Private origin and copied historical statuses stay distinct; unavailable old schemas

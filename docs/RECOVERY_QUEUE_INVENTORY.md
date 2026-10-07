@@ -25,8 +25,10 @@ Before starting a replacement worker, inspect created/retry/active jobs in every
 category, including `other`, together with application operations and schedules.
 A zero application count cannot establish an empty queue; a completed queue job
 cannot establish a successful provider result. The inspector neither starts
-PgBoss nor registers/consumes/cancels/retries/purges any job. It does not compare
-payload targets against run/branch receipts or provide an automatic cutover gate.
+PgBoss nor registers/consumes/cancels/retries/purges any job. The separate
+[target inspector](RECOVERY_QUEUE_TARGETS.md) now checks shape/existence and
+council/decision job linkage. Private receipt checks and an automatic cutover gate
+remain outside these inventories.
 Actual replacement cutover, current-versus-archive reconciliation, historical
 binary compatibility and external backup/export deletion remain open.
 

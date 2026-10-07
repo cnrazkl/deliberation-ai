@@ -42,6 +42,12 @@ run selection; the final run still records every refusal and empty packet.
 
 ## Validation and remaining gates
 
+7 October recovery follow-up: [restored queue target reconciliation](RECOVERY_QUEUE_TARGETS.md)
+checks payload shape, target presence and council/decision recorded-job links in a
+disposable archive restore. All 246 created decision jobs in the saved archive have
+missing assessment targets. Private delivery receipts, current-versus-archive changes
+and actual cutover remain unchecked; this does not complete DA-126.
+
 The [worker startup history gate](WORKER_MIGRATION_COMPATIBILITY.md) refuses mismatched
 logical journal history before queue/schedule/heartbeat startup. Actual current
 worker processes exit on behind/ahead generated ledgers; populated baseline/rollback

@@ -7,6 +7,7 @@ import { Client } from "pg";
 import { auditRestoredEncryption, type EncryptionAudit } from "./backup-encryption-audit";
 import { inspectAdditionalRecovery, type AdditionalRecoveryInventory } from "./backup-recovery-inventory";
 import { inspectRestoredQueue, type RestoredQueueInventory } from "./backup-queue-inventory";
+import { inspectRestoredQueueTargets, type QueueTargetCounts } from "./backup-queue-targets";
 
 const localAppData = process.env.LOCALAPPDATA;
 if (!localAppData) throw new Error("LOCALAPPDATA is required for local backup operations.");
@@ -32,6 +33,7 @@ interface RecoveryInspection extends AdditionalRecoveryInventory {
   providerOperationStatuses: Record<string, number>;
   activeSchedules: number;
   queueJobs: RestoredQueueInventory;
+  queueTargets: QueueTargetCounts;
 }
 
 function localDatabaseUrl(): URL {
@@ -201,6 +203,7 @@ async function verifyBackup(manifestPath: string, sourceUrl: URL): Promise<Recov
       return {
         ...await inspectAdditionalRecovery(restored),
         queueJobs: await inspectRestoredQueue(restored),
+        queueTargets: await inspectRestoredQueueTargets(restored),
         conversations: conversationInventory,
         runs: Object.values(runStatuses).reduce((total, count) => total + count, 0),
         encryptionAudit,
@@ -283,5 +286,6 @@ if (action === "rehearse") {
   console.log(`Decision recovery inventory: assessment statuses=${JSON.stringify(result.decisionAssessmentStatuses)}; operation statuses=${JSON.stringify(result.decisionOperationStatuses)}.`);
   console.log(`Private recovery inventory: ${JSON.stringify(result.privateBranches)}. Copied deliveries are historical snapshots, not additional dispatches; deleted-branch receipts are excluded. Null means the archive predates that schema.`);
   console.log(`Restored queue inventory: ${JSON.stringify(result.queueJobs)}. Future start times are relative to checkedAt; queue states are not provider outcomes or proof of a live worker.`);
+  console.log(`Restored queue target inventory: ${JSON.stringify(result.queueTargets)}. Target presence/job linkage is not permission to dispatch. Private delivery receipts are unchecked; other queue targets are outside this contract.`);
   console.log("Review queued/running runs and decision assessments, prepared/submitted/outcome_unknown/retry_authorized operations, copied private outcomes, created/retry/active queue jobs (including other queues), and active schedules before any replacement cutover. Counts describe this archive, not live state. This rehearsal did not start a worker or replace the live database.");
 }

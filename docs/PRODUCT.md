@@ -1,5 +1,10 @@
 # Product
 
+Saved-backup rehearsal now distinguishes malformed queue targets, absent schemas,
+missing records and recorded council/decision job links. Private branch existence
+is separate from unchecked delivery receipts; counts permit no automatic recovery.
+[Scope](RECOVERY_QUEUE_TARGETS.md).
+
 Conversation cards now expose deletion review for populated history as well as
 empty records. The same review guides separately confirmed private/run deletion,
 then metadata removal, showing existing blockers and preserving the draft.

@@ -1,5 +1,11 @@
 # Security
 
+Restored target reconciliation reads required payload identifiers only within SQL
+for shape checks/metadata joins. Only fixed aggregate categories/statuses escape;
+no job/target/owner identifiers, payloads, outputs or private ciphertext are exposed.
+Errors hide database details; inspection authorizes no dispatch or owner mutation.
+[Scope](RECOVERY_QUEUE_TARGETS.md).
+
 Conversation cleanup discovery returns only bounded owned body/branch identities.
 It reads no additional ciphertext and authorizes no deletion by itself; each reused
 content/metadata mutation retains its existing snapshot, owner, worker and copy
