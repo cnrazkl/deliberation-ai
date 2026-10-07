@@ -1,5 +1,15 @@
 # Local operations
 
+Use Ayarlar → Yerel sağlayıcı bağlantıları → **Üretim testi ve model geçmişi**
+for versioned observations and separately approved generation. Refresh is
+read-only; same-intent replay never resends. The opt-in
+`pnpm connections:check:live --live <saved-connection-uuid>` helper creates new
+potentially paid intents; inspect old evidence through the UI. Expired uncertainty
+can be acknowledged without an API call. No DDL is needed, but old binaries cannot
+read new encrypted envelopes: use a suitable old archive with an old binary.
+Journal equality alone does not prove JSON compatibility. Preserve backup keys
+separately. [Procedure and live evidence](CONNECTION_GENERATION_CHECK.md).
+
 Saved-archive rehearsal also checks queue target shape/existence and recorded
 council/decision job linkage. Missing/terminal targets require manual review;
 private receipt and other-queue reconciliation remain open. The inspector starts

@@ -1,5 +1,13 @@
 # Tasks
 
+- [x] Group 5 main item — versioned per-model capability history and reviewed
+  bounded generation check, including durable intent replay/unknown handling.
+  411 unit, 258 isolated PostgreSQL, four final focused DB and three browser
+  cases plus type/lint/build/audit and real restore pass. Nine authorized live
+  intents on seven models: five structured successes, Gemini/Kimi HTTP 402/429
+  and an explicit OpenRouter reported-cap warning. No cost/semantic acceptance.
+  [Contract](CONNECTION_GENERATION_CHECK.md), [review](REPO_AUDIT_2026_10_07.md).
+
 - [x] Owner-requested insertion — populated conversation deletion access: visible
   library entry, bounded owned content discovery, separate existing private/run
   reviews followed by metadata confirmation, refreshed history and preserved drafts.
@@ -210,14 +218,14 @@ The original complete quality gate remains open. DA-074 performs mechanical chec
 - [x] Initial local warning projection: stale running council work and unknown provider outcomes have explicit read-only notices; multiple-worker warnings survive, counts are labelled as council-only, and fetched recovery clears notices. Unit/browser checks pass without POST requests. This bounded increment does not complete the broader operational evaluation task. [Scope](LOCAL_DIAGNOSTICS_ALERTS.md).
 
 - [ ] Complete replacement-installation recovery/cutover/rollback, backup/export deletion policy and deeper operational metrics/alerts.
-- [ ] Add versioned per-model capability history and an explicit bounded generation-level connection check; latest catalogs do not prove generation support.
+- [x] Add versioned per-model capability history and an explicit bounded generation-level connection check; latest catalogs do not prove generation support. [Delivered scope and live evidence](CONNECTION_GENERATION_CHECK.md).
 
-These local hardening gates remain open; public authentication/deployment stays under the separate owner-selected boundary below.
+Replacement recovery and broader operational acceptance remain open; public authentication/deployment stays under the separate owner-selected boundary below.
 
 ## Excluded or externally blocked
 
 - TypeSafe/JEV work is excluded from the active sequence. The existing adapter, encrypted shadow path, offline harness, rubric and pre-registration remain disabled and unchanged.
-- Kimi live generation retest is paused until the Moonshot account balance or suspension changes. The saved `kimi-k2.6` connection remains available and no application defect is currently indicated.
+- Kimi remains unavailable in the 7 October bounded checks: the authorized diagnostic recheck was rejected with HTTP 429. Earlier balance/suspension observations do not establish the current cause. The saved `kimi-k2.6` connection remains available; further calls await changed provider conditions, not automatic retries.
 
 These items do not block the active local sequence.
 

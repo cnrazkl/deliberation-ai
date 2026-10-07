@@ -1,5 +1,11 @@
 # Product
 
+Settings connection cards now expose **Üretim testi ve model geçmişi**: versioned
+per-model catalogs and a separately reviewed fixed generation test. Viewing never
+generates; intent replay prevents an extra call. Rejections, unknown outcomes and
+reported usage above the requested cap stay visible without billing or universal
+capability claims. [Workflow](CONNECTION_GENERATION_CHECK.md).
+
 Saved-backup rehearsal now distinguishes malformed queue targets, absent schemas,
 missing records and recorded council/decision job links. Private branch existence
 is separate from unchecked delivery receipts; counts permit no automatic recovery.
@@ -206,7 +212,7 @@ The owner may store multiple encrypted OpenAI, Anthropic, Gemini, and OpenAI-com
 
 The owner can explicitly inspect one saved connection's model list. This read-only catalog request never generates an answer; returned model ids become optional suggestions in task member fields without changing the selected model. A response from an official native-provider or OpenRouter user-filtered catalog endpoint indicates that the list request was authenticated. Custom URLs and other compatible `/models` replies may be public and do not establish key validity. Any catalog result is separate from generation availability, reasoning-level support and pricing; an unsupported list endpoint leaves manual model entry available.
 
-When an official catalog supplies model metadata, the selected task-model field also shows the reported display name, token limits, context window or reasoning signals that are actually present. Claude's catalog can name individual supported effort levels; Gemini's `thinking` field and OpenRouter's parameter list do not specify which UI levels work. OpenAI's list currently provides no such level map. The latest observation is timestamped and stored encrypted with its connection so it returns after a page reload. Editing that connection clears the observation; a check started before the edit cannot overwrite the new configuration. It never disables a manually chosen level, changes a connection, estimates price, or claims that a generation call succeeded.
+When an official catalog supplies model metadata, the selected task-model field also shows the reported display name, token limits, context window or reasoning signals that are actually present. Claude's catalog can name individual supported effort levels; Gemini's `thinking` field and OpenRouter's parameter list do not specify which UI levels work. OpenAI's list currently provides no such level map. The latest observation is timestamped and stored encrypted with its connection so it returns after a page reload. Editing clears the latest suggestion snapshot while preserving bounded versioned history; a check started before the edit cannot overwrite the new configuration. Catalogs never disable a manually chosen level, change a connection, estimate price, or prove generation success. The separate reviewed generation check records only the selected model and fixed request.
 
 When the owner sets a member's web-search mode to automatic, native OpenAI, Anthropic, Gemini, and OpenRouter adapters include their bounded provider-native search tool. The model decides whether to use it. Provider-returned source links remain labeled citation provenance; they do not become verified evidence or enter the owner's evidence library automatically. Compatible endpoints without one stable search-tool contract keep this setting unavailable.
 

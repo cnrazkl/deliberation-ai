@@ -1,5 +1,18 @@
 # Providers
 
+Reviewed fixed checks reuse native/compatible adapters with 512 requested output
+tokens, 45-second timeout, search off and bounded redirect-refusing fetch. Native
+OpenAI accepts optional probe timeout/fetch overrides without changing ordinary
+defaults. The application facade returns content-free metadata. Live checks found
+five structured successes, Gemini/Kimi HTTP 402/429 and OpenRouter reported usage
+above the requested cap. Enforcement/account cause/cost remain unverified.
+[Contract and evidence](CONNECTION_GENERATION_CHECK.md).
+
+For Gemini 3.7/3.8 Flash, none/minimal under gemini-level maps to low, the lowest
+level documented in [Google's thinking guide](https://ai.google.dev/gemini-api/docs/thinking).
+Older mappings remain unchanged. This does not imply thinking is off or establish
+that the observed live HTTP 402 was caused by the previous mapping.
+
 **DA-113 private output settings:** the existing private output-cap mappings now use
 the owner-reviewed 128–1024 integer request value (default 1024). Historical fixed-1024
 descriptions below describe the default. Reasoning/search and byte/time limits remain
@@ -84,7 +97,7 @@ Capability differs by model and provider. The selection belongs to the member sn
 
 The catalog request shapes follow the official [OpenAI Models API](https://developers.openai.com/api/reference/resources/models), [Anthropic Models API](https://platform.claude.com/docs/en/api/models/list), [Gemini Models API](https://ai.google.dev/api/models), and [OpenRouter user-filtered models API](https://openrouter.ai/docs/api/api-reference/models/list-models-filtered-by-user-provider-preferences-privacy-settings-and-guardrails). The generic compatible `/models` probe is best effort because server implementations vary.
 
-DA-066 exposes a narrow projection of those official responses: Claude `display_name`, positive `max_input_tokens`/`max_tokens` and effort entries explicitly marked supported; Gemini `displayName`, positive input/output token limits and an optional `thinking` boolean; OpenRouter `name`, positive `context_length` and whether `supported_parameters` includes a reasoning parameter. OpenAI's list provides model ids but no normalized effort map. Custom URLs and generic compatible replies are not trusted for these metadata fields. Prices, full capability profiles, endpoint routing, tool/schema support and successful generation are not inferred. DA-067 stores only the latest normalized check encrypted with the connection; it survives reload, is invalidated by connection edits, and does not become a historical, versioned per-model capability ledger. The UI retains the chosen reasoning level even if a catalog omits it.
+DA-066 projects only documented catalog fields: supported Claude effort entries/display/token limits, Gemini display/limits/optional thinking and OpenRouter display/context/reasoning-parameter presence. OpenAI provides ids without an effort map; custom catalogs are not trusted for capability fields. Prices, full profiles, routing, tool/schema support and generation are not inferred. DA-067 originally retained only the latest encrypted check. The Group 5 envelope now also retains bounded revisioned catalog and generation histories; edits invalidate latest suggestions while preserving historical observations. The UI retains the chosen reasoning level even if a catalog omits it.
 
 Alibaba Model Studio API keys are region-specific. The current verified local connection uses the Singapore base URL `https://dashscope-intl.aliyuncs.com/compatible-mode/v1` with `qwen3.8-flash`. Current Qwen Chat Completions accepts OpenAI-style `reasoning_effort`; provider aliases such as `high`/`max` may map to the model's highest supported named level. The exact mapping remains provider behavior and is preserved in the immutable member snapshot.
 

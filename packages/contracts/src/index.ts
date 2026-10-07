@@ -922,6 +922,46 @@ export const modelCatalogCheckSchema = z.strictObject({
 
 export type ModelCatalogCheck = z.infer<typeof modelCatalogCheckSchema>;
 
+export const MAX_CATALOG_HISTORY = 10;
+export const MAX_GENERATION_CHECKS = 32;
+export const generationCheckRequestSchema = z.strictObject({
+  requestId: z.uuid().transform((value) => value.toLowerCase()), model: z.string().trim().min(1).max(120),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/u), acknowledge: z.literal(true),
+  acknowledgeUnknown: z.boolean().default(false),
+});
+export const generationObservationSchema = z.strictObject({
+  version: z.literal("connection-generation-v1"),
+  id: z.uuid().transform((value) => value.toLowerCase()), revision: z.number().int().positive(), model: z.string().min(1).max(120),
+  provider: remoteProviderSchema, endpointPreset: endpointPresetSchema,
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/u),
+  status: z.enum(["submitted", "succeeded", "failed", "outcome_unknown"]),
+  startedAt: z.iso.datetime(), finishedAt: z.iso.datetime().nullable(), acknowledgedAt: z.iso.datetime().nullable(),
+  failure: z.enum(["rejected", "invalid_output", "incomplete", "network_unknown", "unavailable"]).nullable(),
+  httpStatus: z.number().int().min(400).max(599).nullable().default(null),
+  outputCapExceeded: z.boolean().nullable().default(null),
+  returnedModel: z.string().max(120).nullable(), remoteResponseId: z.string().max(512).nullable(),
+  inputTokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+  outputTokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+  elapsedMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+});
+export type GenerationObservation = z.infer<typeof generationObservationSchema>;
+export const acknowledgeGenerationCheckSchema = z.strictObject({
+  id: z.uuid().transform((value) => value.toLowerCase()), fingerprint: z.string().regex(/^[a-f0-9]{64}$/u), acknowledgeUnknown: z.literal(true),
+});
+export const providerObservationsSchema = z.strictObject({
+  version: z.literal("provider-observations-v1"),
+  latestCatalog: modelCatalogCheckSchema.nullable(),
+  catalogHistory: z.array(z.strictObject({ revision: z.number().int().positive(), provider: remoteProviderSchema,
+    endpointPreset: endpointPresetSchema, check: modelCatalogCheckSchema })).max(MAX_CATALOG_HISTORY),
+  catalogDropped: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  generationChecks: z.array(generationObservationSchema).max(MAX_GENERATION_CHECKS),
+}).superRefine((value, context) => {
+  if (new Set(value.generationChecks.map((check) => check.id)).size !== value.generationChecks.length) {
+    context.addIssue({ code: "custom", message: "Duplicate generation check identity." });
+  }
+});
+export type ProviderObservations = z.infer<typeof providerObservationsSchema>;
+
 export const resolveProviderOperationSchema = z.object({
   action: z.enum(["discard", "authorize_retry"]),
 });

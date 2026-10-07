@@ -1,5 +1,12 @@
 # Decisions
 
+Group 5 checks reuse a versioned encrypted envelope on the connection row, with
+legacy reads and permanent bounded intent identities. Requested settings stay
+separate from observations; no automatic capability policy, retry or cost
+certification follows from catalogs/probes. This avoids a new queue/service or
+DDL while requiring explicit old-binary data compatibility handling.
+[Decision and contract](CONNECTION_GENERATION_CHECK.md).
+
 DA-125 treats NVIDIA hosted identity as a conservative compatible preset with a
 fixed destination, fresh keys across service switches and queued revision fencing.
 Self-hosted NIM, live capabilities and pending-result polling remain separate.

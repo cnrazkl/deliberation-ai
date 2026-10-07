@@ -41,6 +41,8 @@ jobs:
         run: pnpm test:lint-dependencies
       - name: Verify offline NVIDIA hosted boundary
         run: pnpm exec vitest run packages/providers/src/nvidia-provider.test.ts
+      - name: Verify offline reviewed connection generation boundary
+        run: pnpm exec vitest run packages/providers/src/generation-check.test.ts packages/application/src/connection-check.test.ts
       - name: Verify knowledge query limits
         run: pnpm exec vitest run packages/contracts/src/knowledge-query.test.ts
       - name: Verify offline worker migration history gate

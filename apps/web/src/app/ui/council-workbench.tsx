@@ -33,6 +33,7 @@ import type {
   WebSearchMode,
 } from "@deliberation-ai/contracts";
 import { DecisionAssessmentPanel } from "./decision-assessment-panel";
+import { ConnectionGenerationPanel } from "./connection-generation-panel";
 import { ClaimContextPanel } from "./claim-context-panel";
 import { ResearchCapturePanel } from "./research-capture-panel";
 import { EvidenceCandidatePanel } from "./evidence-candidate-panel";
@@ -243,6 +244,7 @@ type ProviderConnection = {
   reasoningProtocol: ReasoningProtocol;
   structuredOutputMode: StructuredOutputMode;
   catalogCheck?: ModelCatalogCheck;
+  revision?: number;
 };
 
 function catalogMetadataText(detail: CatalogModelDetail): string {
@@ -1705,6 +1707,7 @@ export function CouncilWorkbench() {
                       {connectionForm}
                     </section>
                   ) : null}
+                  <ConnectionGenerationPanel key={`${connection.id}:${connection.revision ?? 0}`} connection={connection} />
                 </article>
               );
             })}

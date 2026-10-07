@@ -3,6 +3,7 @@ import {
   deleteProviderConnection,
   listProviderConnections,
   ProviderConnectionSecretRequiredError,
+  ProviderConnectionCheckPendingError,
   saveProviderConnection,
 } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../lib/request-security";
@@ -36,6 +37,9 @@ export async function DELETE(request: Request): Promise<Response> {
   if (rejected) return rejected;
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "Bağlantı kimliği gerekli." }, { status: 400 });
-  const deleted = await deleteProviderConnection(id);
-  return Response.json({ deleted });
+  try { return Response.json({ deleted: await deleteProviderConnection(id) }); }
+  catch (error) {
+    if (error instanceof ProviderConnectionCheckPendingError) return Response.json({ error: error.message }, { status: 409 });
+    throw error;
+  }
 }

@@ -410,3 +410,4 @@ export async function executeCouncil(
   });
 }
 export * from "./knowledge";
+export * from "./connection-check";

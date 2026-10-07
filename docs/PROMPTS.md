@@ -1,5 +1,13 @@
 # Prompt contracts
 
+`connection-generation-v1` reuses current analyst round-0 instructions with a
+fixed synthetic 2 + 2 input and no owner history/memory/sources/tools/attachments.
+Review displays actual application strings; fingerprint binds them, settings,
+model and connection revision before submission. Provider wire framing is not
+archived. Prompt/profile changes require a new probe version. Valid structured
+output is a connection observation, not semantic acceptance.
+[Contract](CONNECTION_GENERATION_CHECK.md).
+
 **Proposed only, DA-122:** [Knowledge-source context](KNOWLEDGE_SOURCES.md#frozen-context-and-lifecycle) carries bounded exact excerpts, source/version/locator identities and untrusted-data labels. Distinguish notebook-generated summaries from original evidence; show omissions and member sharing. No prompt change occurs here. Review rounds retain current inputs until a separate evidence-review prompt is accepted.
 
 **DA-100:** `private-text-v1` instruction and rendered seed/owner/reply text are unchanged. Gemini translates only the leading system text to `systemInstruction`; later roles become user/model with exact text/order and no invented reply. No schema/tool/search/thinking prompt is added. Opaque signatures and visible thoughts do not enter future input; this is reconstructed text history, not provider-managed reasoning continuity. [Translation](PRIVATE_BRANCHES.md#da-100-native-gemini-generatecontent).

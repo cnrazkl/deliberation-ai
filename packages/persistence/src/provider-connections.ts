@@ -4,9 +4,10 @@ import type {
   RemoteProvider,
   SaveProviderConnectionRequest,
 } from "@deliberation-ai/contracts";
-import { modelCatalogCheckSchema, saveProviderConnectionSchema } from "@deliberation-ai/contracts";
+import { MAX_CATALOG_HISTORY, modelCatalogCheckSchema, saveProviderConnectionSchema } from "@deliberation-ai/contracts";
 import { and, eq } from "drizzle-orm";
-import { encryptText, decryptText, encryptJson, decryptJson } from "./crypto";
+import { encryptText, decryptText } from "./crypto";
+import { readProviderObservations, encryptProviderObservations } from "./provider-observations";
 import { getDatabase } from "./database";
 import { LOCAL_OWNER_ID } from "./owner";
 import { providerConnections } from "./schema";
@@ -22,6 +23,7 @@ export type ProviderConnectionSummary = {
   structuredOutputMode: SaveProviderConnectionRequest["structuredOutputMode"];
   configured: true;
   updatedAt: string;
+  revision: number;
   catalogCheck?: ModelCatalogCheck;
 };
 
@@ -33,6 +35,7 @@ export class ProviderConnectionSecretRequiredError extends Error {
 }
 
 function summary(row: typeof providerConnections.$inferSelect): ProviderConnectionSummary {
+  const catalogCheck = readProviderObservations(row).latestCatalog;
   return {
     id: row.id,
     provider: row.provider as RemoteProvider,
@@ -45,9 +48,8 @@ function summary(row: typeof providerConnections.$inferSelect): ProviderConnecti
       row.structuredOutputMode as SaveProviderConnectionRequest["structuredOutputMode"],
     configured: true,
     updatedAt: row.updatedAt.toISOString(),
-    ...(row.catalogSnapshotCiphertext ? {
-      catalogCheck: modelCatalogCheckSchema.parse(decryptJson(row.catalogSnapshotCiphertext, `provider-connection:${row.id}:catalog-snapshot`)),
-    } : {}),
+    revision: row.revision,
+    ...(catalogCheck ? { catalogCheck } : {}),
   };
 }
 
@@ -97,7 +99,7 @@ export async function saveProviderConnection(
       secretCiphertext: request.apiKey
         ? encryptText(request.apiKey, `provider-connection:${id}:secret`)
         : existing?.secretCiphertext ?? encryptText("", `provider-connection:${id}:secret`),
-      catalogSnapshotCiphertext: null,
+      catalogSnapshotCiphertext: existing ? encryptProviderObservations(id, { ...readProviderObservations(existing), latestCatalog: null }) : null,
       revision: (existing?.revision ?? 0) + 1,
       keyVersion: Number(process.env.KEY_VERSION ?? "1"),
       updatedAt: new Date(),
@@ -157,24 +159,37 @@ export async function saveProviderConnectionCatalogCheck(
   check: ModelCatalogCheck,
 ): Promise<ModelCatalogCheck | undefined> {
   const snapshot = modelCatalogCheckSchema.parse({ ...check, checkedAt: new Date().toISOString() });
-  const [updated] = await getDatabase()
-    .update(providerConnections)
-    .set({ catalogSnapshotCiphertext: encryptJson(snapshot, `provider-connection:${connectionId}:catalog-snapshot`) })
-    .where(and(
-      eq(providerConnections.ownerId, LOCAL_OWNER_ID),
-      eq(providerConnections.id, connectionId),
+  return getDatabase().transaction(async (tx) => {
+    const [row] = await tx.select().from(providerConnections).where(and(
+      eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, connectionId),
       eq(providerConnections.revision, expectedRevision),
-    ))
-    .returning({ id: providerConnections.id });
-  return updated ? snapshot : undefined;
+    )).for("update").limit(1);
+    if (!row) return undefined;
+    const observations = readProviderObservations(row);
+    const history = [...observations.catalogHistory, { revision: row.revision, provider: row.provider as RemoteProvider,
+      endpointPreset: row.endpointPreset as SaveProviderConnectionRequest["endpointPreset"], check: snapshot }];
+    await tx.update(providerConnections).set({ catalogSnapshotCiphertext: encryptProviderObservations(row.id, {
+      ...observations, latestCatalog: snapshot, catalogHistory: history.slice(-MAX_CATALOG_HISTORY),
+      catalogDropped: observations.catalogDropped + Math.max(0, history.length - MAX_CATALOG_HISTORY),
+    }) }).where(eq(providerConnections.id, connectionId));
+    return snapshot;
+  });
 }
 
 export async function deleteProviderConnection(connectionId: string): Promise<boolean> {
-  const deleted = await getDatabase()
-    .delete(providerConnections)
-    .where(
-      and(eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, connectionId)),
-    )
-    .returning({ id: providerConnections.id });
-  return deleted.length > 0;
+  return getDatabase().transaction(async (tx) => {
+    const [row] = await tx.select().from(providerConnections).where(and(
+      eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, connectionId),
+    )).for("update").limit(1);
+    if (!row) return false;
+    if (readProviderObservations(row).generationChecks.some((check) => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt)) {
+      throw new ProviderConnectionCheckPendingError();
+    }
+    await tx.delete(providerConnections).where(eq(providerConnections.id, connectionId));
+    return true;
+  });
+}
+
+export class ProviderConnectionCheckPendingError extends Error {
+  constructor() { super("Bağlantının doğrulanmamış üretim denemesi var; kaldırma engellendi."); }
 }

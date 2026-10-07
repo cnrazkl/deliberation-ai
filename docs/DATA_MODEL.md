@@ -1,5 +1,12 @@
 # Data model
 
+`provider_connections.catalog_snapshot_ciphertext` now accepts strict version
+`provider-observations-v1` or a legacy latest-only catalog. It contains latest
+catalog, ten revisioned entries/dropped count and at most 32 permanent generation
+receipts. Edits clear only latestCatalog; row locks merge independent updates.
+Restore auditing validates both formats. No DDL; old binaries cannot read new
+envelopes. [Fields and compatibility](CONNECTION_GENERATION_CHECK.md).
+
 DA-125 adds optional positive `nvidiaConnectionRevision` to the encrypted council
 member snapshot. It freezes hosted identity at enqueue and fences worker loading;
 legacy members remain valid. Existing connection revision/ciphertext columns are
@@ -98,7 +105,7 @@ DA-069 migration `0026_polite_blizzard.sql` adds nullable `runs.risk_assessment_
 - `claims` and `claim_occurrences` preserve normalized disposition and encrypted source text while retaining provenance links. Each claim also stores its stable report-local id and explicit evidence state: `unsupported`, `model-supported`, `externally-verified`, `contradicted`, or `stale`.
 - Each claim stores synthesis coverage as `included`, `omitted`, or `unresolved`; the encrypted report carries the same value so the complete coverage ledger survives restart.
 - `council_templates` stores a local name, description, member count, and encrypted reusable 2–6 member configuration.
-- `provider_connections` stores multiple independently addressed encrypted provider secrets per local owner plus non-secret provider family, starting model, optional base URL, endpoint preset, reasoning protocol, and structured-output mode. Owner/label is unique; runs and templates refer to connections by id. Editing metadata can preserve the existing encrypted secret. Migration `0025_nervous_talos.sql` adds a nullable `catalog_snapshot_ciphertext` for the latest bounded normalized model-list result and a monotonic `revision`; an edit increments the revision and clears the snapshot. A catalog result writes only when the revision read before the request still matches, so stale checks cannot attach to changed credentials or endpoints. This is one latest observation, not a history of per-model capabilities.
+- `provider_connections` stores independently addressed encrypted secrets per local owner and non-secret provider/model/URL/preset/protocol settings. Owner/label is unique; runs/templates refer by id. Migration `0025_nervous_talos.sql` introduced nullable `catalog_snapshot_ciphertext` and monotonic `revision`. That column now reads legacy catalogs or the versioned observation envelope described above. Editing can preserve the key, increments revision and clears latest suggestions while retaining bounded catalog/generation history. Catalog writes require the original revision; intent/history writes merge under an owner-scoped row lock. No extra DDL is added for history.
 - `provider_operations` records each provider/model/member/round attempt, exact request fingerprint, outcome certainty, operator resolution, remote response id, usage, encrypted successful result, and encrypted normalized citation metadata. A known parse failure may store encrypted raw text with null parsed output so restart replay preserves the failure detail. `(run, member, round, attempt)` is unique so analysis and review receipts cannot collide and retry authorization never overwrites ambiguous history.
 - `memory_entries` stores at most 20 owner-selected claim snapshots with encrypted content, source run/claim provenance, source type, and evidence state at capture time. Runs store a separate encrypted immutable snapshot of at most five selected entries plus a non-sensitive count.
 - `evidence_sources` stores owner-scoped claim links; encrypted title, URL, note, and immutable excerpt fields; optional publication date; immutable server capture time; explicit support/contradiction/context relation; content-review status; freshness-review status; and freshness decision time. It retains both the database claim id and stable report-local claim id. Legacy rows may have no excerpt, while every new row requires one.

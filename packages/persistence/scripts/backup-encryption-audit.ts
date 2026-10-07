@@ -1,5 +1,5 @@
 import type { Client } from "pg";
-import { evidenceCandidateProvenanceSchema, knowledgeCollectionBodySchema, knowledgeSelectionSchema } from "@deliberation-ai/contracts";
+import { evidenceCandidateProvenanceSchema, knowledgeCollectionBodySchema, knowledgeSelectionSchema, modelCatalogCheckSchema, providerObservationsSchema } from "@deliberation-ai/contracts";
 import { validateKnowledgeExtraction, validateKnowledgeOriginal, type KnowledgeVersionMetadata } from "@deliberation-ai/domain";
 import { validateKnowledgePacket, readKnowledgeExcerpt } from "@deliberation-ai/domain";
 import { decryptText } from "../src/crypto";
@@ -204,6 +204,9 @@ export async function auditRestoredEncryption(client: Client): Promise<Encryptio
           try {
             const plaintext = decryptText(ciphertext, suffix ? `${contextBase}:${suffix}` : contextBase);
             if (format === "json") JSON.parse(plaintext);
+            if (descriptor.table === "provider_connections" && column === "catalog_snapshot_ciphertext") {
+              providerObservationsSchema.or(modelCatalogCheckSchema).parse(JSON.parse(plaintext));
+            }
             if (descriptor.table === "evidence_publications") {
               const publication = decodeEvidencePublication({ id: key[0]!, ownerId: row.ownerId!, runId: row.runId!, candidateId: row.candidateId!, requestHash: row.requestHash!, dedupHash: row.dedupHash!,
                 bodyCiphertext: ciphertext, status: row.publicationStatus!, createdAt: new Date(row.publicationCreatedAt!), acknowledgedAt: row.publicationAcknowledgedAt ? new Date(row.publicationAcknowledgedAt) : null });

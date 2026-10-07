@@ -76,7 +76,7 @@ export class GeminiGenerateContentProvider implements TextProvider {
     if (this.#options.reasoningProtocol === "gemini-level" && this.#options.reasoningLevel !== "default") {
       const level =
         this.#options.reasoningLevel === "none" || this.#options.reasoningLevel === "minimal"
-          ? "minimal"
+          ? /^gemini-3\.[78]-flash(?:$|-)/u.test(this.#options.model) ? "low" : "minimal"
           : this.#options.reasoningLevel === "xhigh" || this.#options.reasoningLevel === "max"
             ? "high"
             : this.#options.reasoningLevel;

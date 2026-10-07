@@ -1,8 +1,43 @@
 # Current state
 
-Updated: 7 October 2026 (DA-126 restored queue targets; acceptance tasks remain open)
+Updated: 7 October 2026 (Group 5 model history and reviewed generation complete)
 
-## Current increment — DA-126 restored queue target reconciliation
+## Current increment — model history and reviewed connection generation
+
+The existing Group 5 main task retains revisioned per-model catalogs and separately
+confirmed synthetic generation receipts. Ayarlar connection cards expose **Üretim
+testi ve model geçmişi**; opening/refreshing never generates. Submitted intent
+precedes one provider call; exact replay prevents another call, and unknown
+outcomes need explicit handling. Last ten catalogs and 32 permanent generation
+identities use the existing encrypted column. Edits preserve history and clear
+only latest suggestions. [Contract](CONNECTION_GENERATION_CHECK.md),
+[repository review and remaining gates](REPO_AUDIT_2026_10_07.md).
+
+Nine authorized live intents on seven defaults: Qwen, Claude, OpenRouter, OpenAI
+and DeepSeek returned structured output; Gemini/Kimi diagnostic rechecks were
+rejected with HTTP 402/429. OpenRouter reported 2,240 output tokens despite the
+512 request, explicitly flagged by the UI. No cap enforcement, invoice cost,
+account spending limit or semantic quality is certified.
+
+411 unit cases/68 files, 258 isolated PostgreSQL cases/35 files, four final focused
+DB cases and three final generated-database browser cases pass. Typecheck,
+zero-warning lint, separate-output production build, dependency audit and helper
+syntax pass. Six new offline adapter/facade cases enter CI; live checks are opt-in.
+No DDL/personal migration. The real archive restores 434 runs, 7,457 encrypted
+rows, 12,005 decrypted values, 11 populated tables and 504 conversations, including
+strict legacy/versioned catalog validation. Old binaries cannot read new JSON
+envelopes; journal equality alone does not certify this data compatibility.
+
+All 928 local documentation links resolve; staged and full-history Gitleaks scans
+are clean. At 17:04 Istanbul the app returns HTTP 200, DB/one worker are ready,
+and queued/running/unresolved council work and active schedules are zero. These
+diagnostics do not certify private/decision outcomes or probe invoice charges.
+
+DA-119/DA-126 human/model/cost acceptance and replacement cutover/rollback remain
+open. Public deployment/authentication remains outside the local-only boundary.
+This increment completes one main backlog item.
+
+## Previous increment — DA-126 restored queue target reconciliation
 
 Backup verification/rehearsal now distinguishes malformed payload targets, missing
 schemas/records and exact/different/unrecorded council/decision job links in the

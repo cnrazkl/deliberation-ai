@@ -27,6 +27,8 @@ export type OpenAIResponsesProviderOptions = {
   baseUrl?: string;
   maxOutputTokens?: number;
   client?: OpenAI;
+  timeoutMs?: number;
+  fetch?: typeof fetch;
 };
 
 export class OpenAIResponsesProvider implements TextProvider {
@@ -56,6 +58,8 @@ export class OpenAIResponsesProvider implements TextProvider {
       new OpenAI({
         apiKey: options.apiKey,
         maxRetries: 0,
+        ...(options.timeoutMs !== undefined ? { timeout: options.timeoutMs } : {}),
+        ...(options.fetch ? { fetch: options.fetch } : {}),
         ...(options.baseUrl ? { baseURL: options.baseUrl } : {}),
       });
   }

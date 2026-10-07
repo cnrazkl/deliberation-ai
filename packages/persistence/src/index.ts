@@ -8,6 +8,7 @@ export * from "./crypto";
 export * from "./council-templates";
 export * from "./queue";
 export * from "./provider-connections";
+export * from "./connection-generation-check";
 export * from "./provider-operations";
 export * from "./provider-pricing";
 export * from "./provider-billing";

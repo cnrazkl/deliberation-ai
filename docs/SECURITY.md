@@ -1,5 +1,14 @@
 # Security
 
+Connection reviews are owned/no-store; explicit POST/PATCH reject foreign origins
+and strictly validate streamed bodies up to 2 KiB. Encrypted submitted identities
+prevent replayed provider calls. Fixed input excludes owner content; provider raw
+output/error bodies never enter history/logs. Redirects are refused; response bytes
+are bounded to 64 KiB. Unacknowledged submitted/unknown receipts block removal;
+expired uncertainty can be acknowledged without a call. Timeout/requested caps do
+not certify remote cancellation, enforcement or charges.
+[Boundaries](CONNECTION_GENERATION_CHECK.md).
+
 Restored target reconciliation reads required payload identifiers only within SQL
 for shape checks/metadata joins. Only fixed aggregate categories/statuses escape;
 no job/target/owner identifiers, payloads, outputs or private ciphertext are exposed.
@@ -180,12 +189,12 @@ Local database backups are stored under the Windows user's `%LOCALAPPDATA%\Delib
 
 `DATA_ENCRYPTION_KEY` is a 32-byte local master key. AES-256-GCM envelopes use a random 96-bit IV and context-specific authenticated data so ciphertext cannot be moved between records or fields without detection. Questions, run member snapshots, council-template members, reports, raw and parsed outputs, claim statements, quotes, provider results, provider-returned citation URLs/titles, and API keys are encrypted before they reach PostgreSQL. Hashes, state names, template names, provider/model identifiers, member counts, timestamps, token counts, and queue metadata remain searchable plaintext.
 
-Provider keys are accepted only by the local server route and are never returned by list responses. They are decrypted in the worker for generation and in the explicit owner-triggered model-catalog route for a read-only list request. Local Ollama, vLLM, and LiteLLM connections may be keyless. Base URLs and capability settings are non-secret metadata. General logs must never contain request bodies, prompts, raw outputs, or credentials.
+Provider keys are accepted only by the local server route and never returned by lists/reviews. They are decrypted for worker generation and explicit owned catalog or reviewed generation checks. Local Ollama, vLLM and LiteLLM can be keyless. Base URLs/capability settings are non-secret metadata. General logs must never contain request bodies, prompts, raw outputs or credentials.
 
 The catalog route sends credentials only to the saved connection URL or fixed native provider URL, never to an arbitrary request URL. It validates the stored URL scheme and rejects embedded URL credentials, disables redirects, sets a ten-second deadline, caps response bytes at 4 MiB and returns at most 300 sanitized model ids and coarse failure status. It does not read or log provider error bodies. Compatible endpoints may intentionally be loopback for local servers; this owner-only feature is not the public-source retrieval boundary. It must not be exposed to untrusted owners without a separate egress policy and authorization design.
 
 Official catalog metadata is allow-listed into bounded display names, positive token limits and enumerated reasoning signals; provider descriptions, prices and unknown fields are discarded. Generic compatible servers cannot inject capability claims into this projection. The browser renders the text as ordinary escaped content; these observations are not trusted authorization or generation-policy inputs.
-The latest normalized catalog check is stored as context-bound AES-GCM ciphertext on its owner-scoped connection row. A connection revision prevents an in-flight check from attaching to edited credentials or endpoints; editing clears the ciphertext. The browser can read the decrypted latest check after reload, but no key, raw provider response or provider error body is included. Backup verification now includes this nullable encrypted field in its exhaustive inventory. Catalog observations remain untrusted as authorization or generation-policy inputs.
+The normalized catalog/history envelope is stored as context-bound AES-GCM ciphertext on its owner-scoped connection row. A connection revision prevents an in-flight catalog from attaching to edited credentials or endpoints; editing clears only the latest catalog while preserving bounded history and generation identities. The browser reads content-free observation metadata after reload; no key, raw provider response or error body is included. Backup verification validates this encrypted field's legacy/new formats in its exhaustive inventory. Observations remain untrusted as authorization or generation-policy inputs.
 
 Provider-native web search is off by default and frozen per member/run when enabled. Tool calls are bounded in adapter request configuration. Returned citations remain provider-supplied data and are rendered as external links; they are not treated as trusted instructions, owner-reviewed evidence, or automatic evidence-state changes.
 
