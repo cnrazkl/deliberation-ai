@@ -17,6 +17,11 @@ launcher, without automatic login/crash restart, upgrades or migration.
 An occupied TCP listener blocks a second launch even when HTTP is slow; unknown
 listener/diagnostic state refuses launch/stop rather than guessing readiness.
 
+8 October correction: the daily launcher and original-runtime rollback now use a
+held hidden on-demand Windows session task; role children do not request detached
+console windows. Earlier readiness evidence did not prove window-independent
+lifetime. [Owner-reported cause and actual job-closure check](WINDOWS_SESSION_RUNTIME.md).
+
 ## Replacement rehearsal and reconciliation
 
 Stop editing, pause schedules, inspect unresolved council/private/decision/probe

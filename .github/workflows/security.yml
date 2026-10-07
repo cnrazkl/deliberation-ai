@@ -52,7 +52,7 @@ jobs:
       - name: Verify offline recovery inventory boundaries
         run: pnpm exec vitest run packages/persistence/scripts/backup-recovery-inventory.test.ts packages/persistence/scripts/backup-queue-inventory.test.ts packages/persistence/scripts/backup-queue-targets.test.ts
       - name: Verify offline local recovery and selected copy cleanup
-        run: pnpm exec vitest run packages/persistence/scripts/recovery-integrity.test.ts packages/persistence/scripts/local-copy-cleanup.test.ts packages/persistence/scripts/local-runtime.test.ts packages/persistence/src/operational-diagnostics.test.ts
+        run: pnpm exec vitest run packages/persistence/scripts/recovery-integrity.test.ts packages/persistence/scripts/local-copy-cleanup.test.ts packages/persistence/scripts/local-runtime.test.ts packages/persistence/scripts/windows-session-runtime.test.ts packages/persistence/src/operational-diagnostics.test.ts
       - name: Scan Git history for secrets
         shell: bash
         run: |

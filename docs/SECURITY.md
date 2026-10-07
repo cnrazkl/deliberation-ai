@@ -1,5 +1,11 @@
 # Security
 
+The Windows session task binds the checkout/action/current owner SID and refuses
+altered definitions. It runs with limited interactive rights, no automatic trigger
+or restart and no stored account password. Task arguments contain paths only;
+existing private configuration is read at runtime. Stop/removal retain data and
+the exact process-identity guard. [Boundary](WINDOWS_SESSION_RUNTIME.md).
+
 Replacement uses a separate authenticated loopback cluster and exact current/archive
 checks without overwriting the owner DB. Changed clones survive failed rollback.
 Selected local unlink binds path/hash review to encrypted replay-protected receipts,

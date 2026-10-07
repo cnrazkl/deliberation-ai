@@ -1,6 +1,14 @@
 # Local operations
 
 Managed Windows runtime: `pnpm app:start`, `pnpm app:status`, `pnpm app:stop`.
+Startup is now an on-demand, hidden current-user Windows session task with a
+long-running supervisor; web/worker do not create detached console windows.
+The canonical local data path preserves MSIX-redirected PG/backups. There are no
+login/reboot/timer or automatic failure-restart triggers. Stop waits for the task
+to finish; `pnpm app:remove-launcher` removes only its stopped owned definition.
+`pnpm app:verify-lifetime` is an opt-in Windows check after a safe stop: it closes
+a disposable launcher's kill-on-close job and leaves the verified app running.
+[Correction, lifecycle evidence and limits](WINDOWS_SESSION_RUNTIME.md).
 For complete replacement rehearsal, quiesce/stop, take a verified backup, stage
 reviewed source and use `pnpm recovery:rehearse`. Original data is preserved;
 changed clones stay for reconciliation. Selected-copy preview/apply and operational

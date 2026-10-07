@@ -13,6 +13,8 @@
     "app:start": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-runtime.ts start",
     "app:stop": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-runtime.ts stop",
     "app:status": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-runtime.ts status",
+    "app:remove-launcher": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-runtime.ts remove-launcher",
+    "app:verify-lifetime": "powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -File packages/persistence/scripts/verify-session-job-teardown.ps1",
     "recovery:rehearse": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/rehearse-local-replacement.ts --live-owner",
     "connections:check:live": "node scripts/check-connections-live.mjs",
     "dev": "node scripts/with-root-env.mjs pnpm --parallel --filter @deliberation-ai/web --filter @deliberation-ai/worker run dev",

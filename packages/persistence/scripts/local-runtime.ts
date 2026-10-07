@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createConnection } from "node:net";
+import { sessionRuntimeTask } from "./windows-session-runtime";
 
 export type RuntimeRecord = { version: "local-runtime-v1"; identity: string; root: string; web: number; worker: number };
 export async function interactivePortOccupied(port = 3000): Promise<boolean> {
@@ -48,7 +49,7 @@ export async function startManagedRuntime(root: string, env: NodeJS.ProcessEnv):
     const out = openSync(join(directory, `${role}.stdout.log`), "a"), err = openSync(join(directory, `${role}.stderr.log`), "a");
     try {
       const child = spawn(process.execPath, [join(root, "node_modules/tsx/dist/cli.mjs"), join(root, "packages/persistence/scripts/runtime-child.ts"), role, identity], {
-        cwd: root, env: { ...env, DELIBERATION_RUNTIME_IDENTITY: identity }, windowsHide: true, detached: true, stdio: ["ignore", out, err],
+        cwd: root, env: { ...env, DELIBERATION_RUNTIME_IDENTITY: identity }, windowsHide: true, stdio: ["ignore", out, err],
       });
       child.on("error", () => undefined); if (!child.pid) throw new Error("Runtime process unavailable."); child.unref(); return child.pid;
     } finally { closeSync(out); closeSync(err); }
@@ -70,25 +71,81 @@ export async function stopManagedRuntime(record: RuntimeRecord): Promise<void> {
   }
 }
 
+async function readManagedRuntime(root: string): Promise<RuntimeRecord | null> {
+  try { return JSON.parse(await readFile(join(root, ".local/runtime/managed.json"), "utf8")) as RuntimeRecord; }
+  catch { return null; }
+}
+
+export async function startSessionRuntime(root: string): Promise<RuntimeRecord> {
+  root = resolve(root);
+  if (await interactivePortOccupied()) throw new Error("Interactive port is already occupied.");
+  const previous = await readManagedRuntime(root);
+  const task = await sessionRuntimeTask(root, "start");
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    const record = await readManagedRuntime(root);
+    if (record && record.root === root && (!task.started || record.identity !== previous?.identity) && await runtimeHealthy(record.identity)) return record;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error("Session runtime did not become ready.");
+}
+
+async function serveSessionRuntime(root: string): Promise<void> {
+  const directory = join(root, ".local/runtime");
+  await mkdir(directory, { recursive: true });
+  const state = async (value: "starting" | "ready" | "stopped" | "failed", identity?: string) => {
+    await writeFile(join(directory, "session.json"), JSON.stringify({ version: "local-session-v1", state: value, identity: identity ?? null, supervisor: process.pid, at: new Date().toISOString() }), { mode: 0o600 });
+  };
+  let record: RuntimeRecord | undefined;
+  try {
+    await state("starting");
+    const managed = join(root, "packages/persistence/scripts/manage-portable-postgres.mjs");
+    const status = spawnSync(process.execPath, [managed, "status"], { stdio: "ignore", windowsHide: true });
+    if (status.status !== 0 && spawnSync(process.execPath, [managed, "start"], { stdio: "ignore", windowsHide: true }).status !== 0) throw new Error();
+    record = await startManagedRuntime(root, await localEnvironment(root));
+    await state("ready", record.identity);
+    const alive = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+    // Keep the scheduler action alive for the entire hidden process pair, without
+    // independent role consoles that the owner could close accidentally.
+    while (alive(record.web) && alive(record.worker)) await new Promise((resolve) => setTimeout(resolve, 1000));
+    await writeFile(join(directory, "process-exit.json"), JSON.stringify({ identity: record.identity, webAlive: alive(record.web), workerAlive: alive(record.worker), at: new Date().toISOString() }), { mode: 0o600 });
+    await stopManagedRuntime(record);
+    const requested = JSON.parse(await readFile(join(directory, "stop-request.json"), "utf8").catch(() => "null")) as { identity?: string } | null;
+    if (requested?.identity !== record.identity) throw new Error("Unrequested runtime exit.");
+    await state("stopped", record.identity);
+  } catch {
+    if (record) await stopManagedRuntime(record);
+    await state("failed", record?.identity);
+    throw new Error("Session runtime stopped unexpectedly or failed to start.");
+  }
+}
+
 const here = resolve(fileURLToPath(import.meta.url));
 if (process.argv[1] && resolve(process.argv[1]) === here) {
   const root = resolve(dirname(here), "../../..");
   const action = process.argv[2];
   try {
-    if (process.argv.length !== 3 || !["start", "stop", "status"].includes(action ?? "")) throw new Error();
-    if (action === "status") console.log(JSON.stringify({ ready: await runtimeHealthy() }));
+    if (process.argv.length !== 3 || !["start", "stop", "status", "serve", "remove-launcher"].includes(action ?? "")) throw new Error();
+    if (action === "serve") await serveSessionRuntime(root);
+    else if (action === "remove-launcher") { await sessionRuntimeTask(root, "remove"); console.log("Stopped session launcher removed; database and records retained."); }
+    else if (action === "status") console.log(JSON.stringify({ ready: await runtimeHealthy(), session: await sessionRuntimeTask(root, "status") }));
     else if (action === "stop") {
       const diagnostics = await fetch("http://127.0.0.1:3000/api/local-diagnostics", { signal: AbortSignal.timeout(3000) }).then((response) => response.json()).catch(() => null) as { runningRuns?: number; queuedRuns?: number; unresolvedProviderAttempts?: number; operational?: { unsettled?: number } } | null;
       if (!diagnostics || diagnostics.runningRuns || diagnostics.queuedRuns || diagnostics.unresolvedProviderAttempts || diagnostics.operational?.unsettled) throw new Error();
+      await sessionRuntimeTask(root, "status"); // Refuse an altered task before any stop mutation.
       const record = JSON.parse(await readFile(join(root, ".local/runtime/managed.json"), "utf8")) as RuntimeRecord;
-      await stopManagedRuntime(record); console.log("Managed web/worker stopped; database and records retained.");
+      await writeFile(join(root, ".local/runtime/stop-request.json"), JSON.stringify({ identity: record.identity, requestedAt: new Date().toISOString() }), { mode: 0o600 });
+      await stopManagedRuntime(record);
+      const deadline = Date.now() + 15_000;
+      while ((await sessionRuntimeTask(root, "status")).running) {
+        if (Date.now() >= deadline) throw new Error("Session runtime did not stop.");
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      console.log("Managed web/worker stopped; database and records retained.");
     } else if (await runtimeHealthy()) console.log("Local application already ready.");
     else {
-      const managed = join(root, "packages/persistence/scripts/manage-portable-postgres.mjs");
-      const status = spawnSync(process.execPath, [managed, "status"], { stdio: "ignore", windowsHide: true });
-      if (status.status !== 0 && spawnSync(process.execPath, [managed, "start"], { stdio: "ignore", windowsHide: true }).status !== 0) throw new Error();
       if (!existsSync(join(root, ".env.local"))) throw new Error();
-      await startManagedRuntime(root, await localEnvironment(root)); console.log("Local application ready at http://127.0.0.1:3000/.");
+      await startSessionRuntime(root); console.log("Local application ready at http://127.0.0.1:3000/ (Windows session runtime).");
     }
   } catch { console.error("Local runtime action failed or was refused; inspect stopped processes and unresolved work."); process.exitCode = 1; }
 }

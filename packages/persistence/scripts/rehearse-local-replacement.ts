@@ -10,7 +10,7 @@ import { assertMigrationTimeline } from "../src/migration-compatibility";
 import { encryptJson } from "../src/crypto";
 import { auditRestoredEncryption } from "./backup-encryption-audit";
 import { snapshotRecoveryDatabase, requireMatchingRecovery, changedRecoveryTables, inspectRecoveryWork, requireQuiescentRecovery, parkRestoredQueue, type RecoverySnapshot } from "./recovery-integrity";
-import { interactivePortOccupied, localEnvironment, startManagedRuntime, stopManagedRuntime, type RuntimeRecord } from "./local-runtime";
+import { interactivePortOccupied, localEnvironment, startManagedRuntime, startSessionRuntime, stopManagedRuntime, type RuntimeRecord } from "./local-runtime";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const localRoot = join(process.env.LOCALAPPDATA ?? "", "DeliberationAI"), recoveryRoot = join(localRoot, "recovery");
@@ -133,7 +133,7 @@ try {
     requireMatchingRecovery(baseline, await snapshotRecoveryDatabase(source!));
   });
   await stamp("rollback-to-preserved-original", async () => {
-    await startManagedRuntime(repo, { ...ownerEnv, DELIBERATION_RECOVERY_HOLD: "false" });
+    await startSessionRuntime(repo);
     requireMatchingRecovery(baseline, await snapshotRecoveryDatabase(source!), true);
   });
   await writeFile(join(recoveryRoot, `${identity}.receipt.enc`), encryptJson({ version: "local-replacement-receipt-v1", identity, completedAt: new Date().toISOString(), sourceTree: tree,

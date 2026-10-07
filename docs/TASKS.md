@@ -1,5 +1,11 @@
 # Tasks
 
+- [x] Owner-reported runtime/window correction: default startup holds a hidden
+  current-user session task and non-detached web/worker pair. Exact stop/ownership
+  guards and physical MSIX data root are preserved. The real Windows kill-on-close
+  launcher probe passes; prolonged uptime/reboot/crash restart are not certified.
+  [Cause, verification and operating contract](WINDOWS_SESSION_RUNTIME.md).
+
 - [x] Group 5 main item — versioned per-model capability history and reviewed
   bounded generation check, including durable intent replay/unknown handling.
   411 unit, 258 isolated PostgreSQL, four final focused DB and three browser

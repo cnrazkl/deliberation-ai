@@ -1,5 +1,10 @@
 # Architecture
 
+Daily Windows startup is an owned on-demand session task holding a supervisor and
+hidden non-detached web/worker pair. The physical local data root preserves MSIX
+storage; credentials stay in the existing local environment file. Replacement
+rollback uses the session launcher. [Lifecycle boundary](WINDOWS_SESSION_RUNTIME.md).
+
 Local recovery scripts own fresh source/dependency/PG installation, authenticated
 record comparison, actual-port cutover and rollback. Web proxy holds mutations;
 worker holds queue registration; adapters fence generation. Persistence provides

@@ -1,6 +1,24 @@
 # Current state
 
-Updated: 7 October 2026 (whole Group 5 local recovery/operating main task complete)
+Updated: 8 October 2026 (owner-reported runtime/window correction)
+
+## Current maintenance — Windows session startup
+
+The owner confirmed that closing the visible Node/Next terminal windows stopped
+the app. Previous readiness checks did not establish window-independent operation;
+host turn/job teardown was only an initial hypothesis. Default startup now uses a
+held hidden current-user Windows session task with non-detached web/worker children
+and the canonical physical MSIX data root. It registers no automatic login/reboot/
+timer or crash-restart trigger and stores no credentials in the task definition.
+The original rollback launcher uses the same session boundary.
+
+The opt-in real Windows check starts through a disposable kill-on-close job,
+validates the actual native job policy, closes it and confirms the launcher's exit.
+The same application identity then returns HTTP 200 twice, DB/one worker are ready,
+pending/uncertain application work and schedules are zero, and existing backup
+metadata remains visible. 420 unit cases/73 files, full workspace/scripts
+typechecking and zero-warning lint pass; no provider call, migration or owner deletion occurs.
+[Operating details and verification limits](WINDOWS_SESSION_RUNTIME.md).
 
 ## Current increment — whole local recovery/operating main task
 

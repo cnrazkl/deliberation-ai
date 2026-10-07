@@ -1,5 +1,9 @@
 # Product
 
+Daily local startup runs the app in a hidden Windows session task, without separate
+Node/Next terminal windows. Requested stop preserves the database/history. It adds
+no automatic login/reboot/crash restart. [Operating contract](WINDOWS_SESSION_RUNTIME.md).
+
 Local recovery supports a held read-only replacement, separately parked restored
 jobs and verified return to the preserved original. Settings show separate private/
 decision/probe backlogs, queue age and backup metadata with notices. Selected local
