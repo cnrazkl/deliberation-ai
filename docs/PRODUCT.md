@@ -1,5 +1,10 @@
 # Product
 
+Local recovery supports a held read-only replacement, separately parked restored
+jobs and verified return to the preserved original. Settings show separate private/
+decision/probe backlogs, queue age and backup metadata with notices. Selected local
+backup/export removal requires an exact review. [Operating contract](LOCAL_RECOVERY.md).
+
 Settings connection cards now expose **Üretim testi ve model geçmişi**: versioned
 per-model catalogs and a separately reviewed fixed generation test. Viewing never
 generates; intent replay prevents an extra call. Rejections, unknown outcomes and

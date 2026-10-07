@@ -962,6 +962,11 @@ export const providerObservationsSchema = z.strictObject({
 });
 export type ProviderObservations = z.infer<typeof providerObservationsSchema>;
 
+export const localCopyCleanupRequestSchema = z.strictObject({
+  requestId: z.uuid().transform((id) => id.toLowerCase()),
+  paths: z.array(z.string().min(1).max(1024)).min(1).max(20),
+});
+
 export const resolveProviderOperationSchema = z.object({
   action: z.enum(["discard", "authorize_retry"]),
 });

@@ -2,9 +2,24 @@ import { expect, test, vi } from "vitest";
 import type { SaveProviderConnectionRequest } from "@deliberation-ai/contracts";
 import { boundedCheckFetch, createGenerationCheckProvider, generationCheckPrompt, generationCheckRequest } from "./generation-check";
 import { NormalizedProviderError } from "./index";
+import { generatePrivateText } from "./private-text";
 const output = { summary: "Dört.", claims: [{ statement: "2 + 2 = 4", kind: "shared", quote: "2 + 2 = 4" }] };
 const target: SaveProviderConnectionRequest = { provider: "openai-compatible", label: "Fixture", defaultModel: "fixture-model",
   apiKey: "synthetic-key", baseUrl: "https://example.test/v1", endpointPreset: "custom", reasoningProtocol: "none", structuredOutputMode: "json-object" };
+
+test("recovery generation fence refuses all four adapter families before fetch", async () => {
+  vi.stubEnv("DELIBERATION_RECOVERY_FORBID_GENERATION", "true");
+  try {
+    for (const provider of ["openai-compatible", "openai", "anthropic", "google"] as const) {
+      const fetcher = vi.fn<typeof fetch>();
+      await expect(createGenerationCheckProvider({ ...target, provider }, fetcher).generate(generationCheckRequest("fixture"))).rejects.toMatchObject({ code: "recovery_generation_disabled", outcome: "known" });
+      await expect(generatePrivateText({ version: "private-text-v1", model: "fixture", maxOutputTokens: 128, messages: Array.from({ length: 4 }, () => ({ role: "user" as const, content: "Synthetic request" })) }, {
+        provider, baseUrl: "https://example.test/v1", apiKey: "synthetic-key", endpointPreset: "custom", operationKey: "fixture", fetch: fetcher,
+      })).rejects.toMatchObject({ code: "recovery_generation_disabled", outcome: "known" });
+      expect(fetcher).not.toHaveBeenCalled();
+    }
+  } finally { vi.unstubAllEnvs(); }
+});
 
 test("uses fixed content and one bounded request through all four council adapter families", async () => {
   for (const provider of ["openai-compatible", "openai", "anthropic", "google"] as const) {

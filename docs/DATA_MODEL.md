@@ -1,5 +1,10 @@
 # Data model
 
+Local recovery adds no DDL. Existing private/audit/probe bodies are authenticated
+and retained state is hashed; clone queue parking preserves application receipts.
+Recovery/copy-cleanup receipts are encrypted local files outside Git.
+[Contract](LOCAL_RECOVERY.md).
+
 `provider_connections.catalog_snapshot_ciphertext` now accepts strict version
 `provider-observations-v1` or a legacy latest-only catalog. It contains latest
 catalog, ten revisioned entries/dropped count and at most 32 permanent generation

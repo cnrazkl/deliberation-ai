@@ -1,6 +1,6 @@
 import { NVIDIA_HOSTED_BASE_URL, privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult } from "@deliberation-ai/contracts";
 import { NormalizedProviderError } from "./index";
-import { providerHttpError, providerNetworkError, withProviderNetworkDeadline } from "./provider-utils";
+import { assertRecoveryGenerationAllowed, providerHttpError, providerNetworkError, withProviderNetworkDeadline } from "./provider-utils";
 import { extractTokenUsage } from "./token-usage";
 import { z } from "zod";
 
@@ -50,6 +50,7 @@ const openaiReplySchema = z.object({
 export async function generatePrivateText(request: PrivateDeliveryRequest, options: {
   provider?: "openai-compatible" | "anthropic" | "openai" | "google"; baseUrl: string; apiKey: string; endpointPreset: string; operationKey: string; fetch?: typeof fetch; timeoutMs?: number;
 }): Promise<PrivateDeliveryResult> {
+  assertRecoveryGenerationAllowed();
   const input = privateDeliveryRequestSchema.parse(request);
   if (!options.operationKey) throw new NormalizedProviderError("İşlem kimliği gerekli.", "missing_operation_id", "known", false);
   const provider = options.provider ?? "openai-compatible";

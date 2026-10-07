@@ -208,19 +208,20 @@ The original complete quality gate remains open. DA-074 performs mechanical chec
 
 - [x] Saved-archive target reconciliation: fixed aggregate shape/existence and
   council/decision job-link checks; missing private branches and unchecked receipts
-  remain distinct. Private/audit/current-versus-archive reconciliation and real
-  cutover stay open. [Scope](RECOVERY_QUEUE_TARGETS.md).
+  remain distinct. Subsequent private/audit/current-record reconciliation and local
+  cutover are completed in [the whole recovery task](LOCAL_RECOVERY.md).
+  [Original scope](RECOVERY_QUEUE_TARGETS.md).
 
-- [x] Saved-archive queue inventory: inspect all six stored job states across queue partitions, separately count future waiting start times and hide unknown queue names in an other category. Inspection never starts/consumes/retries work; generated state-preservation and actual archive checks cover the read-only path. Queue-target reconciliation and real cutover remain open. [Scope](RECOVERY_QUEUE_INVENTORY.md).
+- [x] Saved-archive queue inventory: inspect all six stored job states across queue partitions, separately count future waiting start times and hide unknown queue names in an other category. Inspection never starts/consumes/retries work; generated state-preservation and actual archive checks cover the read-only path. Target reconciliation and local cutover are recorded in the subsequent completed tasks. [Original scope](RECOVERY_QUEUE_INVENTORY.md).
 
 - [x] Saved-archive recovery inventory: include decision assessment/operation states and bounded authenticated private delivery states; separate origin dispatches from copied historical outcomes and unavailable old schemas. Read-only disposable checks preserve ciphertext and reject invalid records. No real cutover/replay or full Group 5 acceptance. [Scope](RECOVERY_OPERATION_INVENTORY.md).
 
 - [x] Initial local warning projection: stale running council work and unknown provider outcomes have explicit read-only notices; multiple-worker warnings survive, counts are labelled as council-only, and fetched recovery clears notices. Unit/browser checks pass without POST requests. This bounded increment does not complete the broader operational evaluation task. [Scope](LOCAL_DIAGNOSTICS_ALERTS.md).
 
-- [ ] Complete replacement-installation recovery/cutover/rollback, backup/export deletion policy and deeper operational metrics/alerts.
+- [x] Complete replacement-installation recovery/cutover/rollback, backup/export deletion policy and deeper operational metrics/alerts: clean source/store/PG, authenticated current/private/audit comparison, held and operational port-3000 cutover, parked clone jobs, verified rollback, protected selected-copy removal and managed runtime/alerts. All five linked substeps and actual evidence are complete in [the whole-task contract](LOCAL_RECOVERY.md). No owner deletion, migration or provider call.
 - [x] Add versioned per-model capability history and an explicit bounded generation-level connection check; latest catalogs do not prove generation support. [Delivered scope and live evidence](CONNECTION_GENERATION_CHECK.md).
 
-Replacement recovery and broader operational acceptance remain open; public authentication/deployment stays under the separate owner-selected boundary below.
+Local replacement/operating implementation is complete. DA-119/DA-126 independent human/model/cost and longer-term/separate-machine acceptance remain open; public authentication/deployment stays under the separate owner-selected boundary below.
 
 ## Excluded or externally blocked
 

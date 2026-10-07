@@ -1,5 +1,10 @@
 # Providers
 
+`DELIBERATION_RECOVERY_FORBID_GENERATION=true` rejects real council/private/probe
+generation with `recovery_generation_disabled` before adapter fetch. Offline checks
+cover every family with zero fetches. Ordinary defaults are unchanged.
+[Operating contract](LOCAL_RECOVERY.md).
+
 Reviewed fixed checks reuse native/compatible adapters with 512 requested output
 tokens, 45-second timeout, search off and bounded redirect-refusing fetch. Native
 OpenAI accepts optional probe timeout/fetch overrides without changing ordinary

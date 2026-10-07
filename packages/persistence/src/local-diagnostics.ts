@@ -1,5 +1,6 @@
 import { getPool } from "./database";
 import { LOCAL_OWNER_ID } from "./owner";
+import { readOperationalDiagnostics } from "./operational-diagnostics";
 
 const HEARTBEAT_FRESH_SECONDS = 45;
 
@@ -65,6 +66,7 @@ export interface LocalDiagnostics {
   runningRuns: number;
   unresolvedProviderAttempts: number;
   activeSchedules: number;
+  operational: Awaited<ReturnType<typeof readOperationalDiagnostics>>;
 }
 
 export async function readLocalDiagnostics(): Promise<LocalDiagnostics> {
@@ -106,5 +108,6 @@ export async function readLocalDiagnostics(): Promise<LocalDiagnostics> {
     runningRuns: row.running_runs,
     unresolvedProviderAttempts: row.unresolved_provider_attempts,
     activeSchedules: row.active_schedules,
+    operational: await readOperationalDiagnostics(),
   };
 }

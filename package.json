@@ -8,6 +8,12 @@
     "pnpm": ">=11 <12"
   },
   "scripts": {
+    "local-copies:preview": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-copy-cleanup.ts preview",
+    "local-copies:apply": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-copy-cleanup.ts apply",
+    "app:start": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-runtime.ts start",
+    "app:stop": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-runtime.ts stop",
+    "app:status": "pnpm --filter @deliberation-ai/persistence exec tsx scripts/local-runtime.ts status",
+    "recovery:rehearse": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/rehearse-local-replacement.ts --live-owner",
     "connections:check:live": "node scripts/check-connections-live.mjs",
     "dev": "node scripts/with-root-env.mjs pnpm --parallel --filter @deliberation-ai/web --filter @deliberation-ai/worker run dev",
     "dev:e2e": "node scripts/with-root-env.mjs node scripts/e2e-server.mjs",

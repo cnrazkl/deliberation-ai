@@ -1,5 +1,13 @@
 # Decisions
 
+Group 5 local replacement uses a fresh source/store and separate PG cluster, exact
+authenticated current/archive comparison, a held API/worker and explicit restored
+queue parking before operational cutover. Later writes prevent rollback/cleanup.
+The preserved original is never overwritten. Selected-copy unlink binds review to
+encrypted receipts, protects the newest backup and retains external-copy uncertainty.
+Diagnostics expose metadata/instantaneous timings separately from restore, model
+quality, invoice cost and longer-term acceptance. [Decision and verified scope](LOCAL_RECOVERY.md).
+
 Group 5 checks reuse a versioned encrypted envelope on the connection row, with
 legacy reads and permanent bounded intent identities. Requested settings stay
 separate from observations; no automatic capability policy, retry or cost

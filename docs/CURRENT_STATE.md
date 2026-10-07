@@ -1,8 +1,35 @@
 # Current state
 
-Updated: 7 October 2026 (Group 5 model history and reviewed generation complete)
+Updated: 7 October 2026 (whole Group 5 local recovery/operating main task complete)
 
-## Current increment — model history and reviewed connection generation
+## Current increment — whole local recovery/operating main task
+
+Replacement recovery, held and operational actual-port cutover, rollback,
+selected-copy deletion policy, managed runtime and deeper alerts are complete,
+including all five linked substeps. A clean source/store and separate SCRAM PG
+cluster restored the fresh owner archive, authenticated every encrypted field and
+matched retained records/table definitions. Held and operational port-3000 cutovers
+passed; one synthetic connection was created/removed, then the original was verified
+and restarted. Changed copies would be retained for reconciliation; there is no
+automatic resend. [Complete contract and timings](LOCAL_RECOVERY.md).
+
+The successful final source tree is `a8e77858cc4ffb39f646ab783146deb3caa3aa19`. The encrypted
+outside-Git receipt authenticates cutover/rollback, zero provider calls and 225 parked
+clone jobs. Generated cluster/source/store are removed. The original still retains
+its 225 pending queue records; their age warning is distinct from zero pending
+application work. No owner DB restore-over, deletion or new migration occurred.
+
+418 unit cases/72 files, 262 isolated PostgreSQL cases/36 files, five final focused
+DB cases and six generated-database browser cases pass. Typecheck, zero-warning lint,
+separate-output production build and dependency audit pass. At 23:41 Istanbul the
+original app returns HTTP 200, DB/one worker are ready, recovery hold is off and
+council/private/decision/probe pending/uncertain work and active schedules are zero.
+
+DA-119/DA-126 independent human/model/cost and longer-term/separate-machine acceptance
+remain open, as does the separately owner-selected public deployment/authentication
+boundary. This increment closes one whole existing main backlog item.
+
+## Previous increment — model history and reviewed connection generation
 
 The existing Group 5 main task retains revisioned per-model catalogs and separately
 confirmed synthetic generation receipts. Ayarlar connection cards expose **Üretim

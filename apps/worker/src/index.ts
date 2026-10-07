@@ -23,6 +23,12 @@ const workerInstanceId = randomUUID();
 
 async function main(): Promise<void> {
   await assertDatabaseMigrationCompatibility();
+  if (process.env.DELIBERATION_RECOVERY_HOLD === "true") {
+    heartbeatLease = await openWorkerHeartbeat(workerInstanceId);
+    heartbeatTimer = setInterval(() => { void heartbeatLease?.beat().catch(() => console.error("Kurtarma nabzı güncellenemedi.")); }, 15_000);
+    console.log("Kurtarma incelemesi salt okunur; kuyruk ve zamanlamalar başlatılmadı.");
+    return;
+  }
   const boss = await getBoss();
   await boss.work<{ branchId: string; operationId: string }>(PRIVATE_DELIVERY_QUEUE, {
     batchSize: 1, localConcurrency: 1, pollingIntervalSeconds: 0.5, notifyPollingIntervalSeconds: 1,

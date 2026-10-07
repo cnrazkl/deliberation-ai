@@ -1,5 +1,11 @@
 # Security
 
+Replacement uses a separate authenticated loopback cluster and exact current/archive
+checks without overwriting the owner DB. Changed clones survive failed rollback.
+Selected local unlink binds path/hash review to encrypted replay-protected receipts,
+protects newest backups and refuses redirected roots/keys. Unlink is not secure
+erasure. [Operating and external-copy boundary](LOCAL_RECOVERY.md).
+
 Connection reviews are owned/no-store; explicit POST/PATCH reject foreign origins
 and strictly validate streamed bodies up to 2 KiB. Encrypted submitted identities
 prevent replayed provider calls. Fixed input excludes owner content; provider raw

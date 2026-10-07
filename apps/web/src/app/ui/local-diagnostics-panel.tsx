@@ -13,6 +13,7 @@ type Diagnostics = {
   runningRuns: number;
   unresolvedProviderAttempts: number;
   activeSchedules: number;
+  operational?: Parameters<typeof localDiagnosticsAlerts>[0]["operational"] & { privateCopied: number; backup: { bytes: number } };
 };
 
 const workerLabels: Record<Diagnostics["workerStatus"], string> = {
@@ -69,7 +70,7 @@ export function LocalDiagnosticsPanel() {
 
   return (
     <details className="settings-card diagnostics-card" aria-label="Yerel çalışma durumu">
-      <summary>Yerel çalışma durumu · {error ? "Okunamadı" : diagnostics ? `Worker ${workerLabels[diagnostics.workerStatus].toLowerCase()}` : "Kontrol ediliyor"}</summary>
+      <summary>Yerel çalışma durumu · {error ? "Okunamadı" : diagnostics?.operational?.recoveryHold ? "Salt okunur kurtarma" : diagnostics ? `Worker ${workerLabels[diagnostics.workerStatus].toLowerCase()}` : "Kontrol ediliyor"}</summary>
       {error ? <p className="error">{error}</p> : null}
       {diagnostics ? (
         <>
@@ -81,8 +82,19 @@ export function LocalDiagnosticsPanel() {
             <div><small>Belirsiz sağlayıcı işlemi (konsey)</small><strong>{diagnostics.unresolvedProviderAttempts}</strong></div>
             <div><small>Etkin zamanlama</small><strong>{diagnostics.activeSchedules}</strong></div>
           </div>
+          {diagnostics.operational ? <div className="diagnostics-grid">
+            <div><small>Özel sohbet bekleyen / belirsiz</small><strong>{diagnostics.operational.privatePending} / {diagnostics.operational.privateUnknown}</strong></div>
+            <div><small>Karar bekleyen / belirsiz</small><strong>{diagnostics.operational.decisionPending} / {diagnostics.operational.decisionUnknown}</strong></div>
+            <div><small>Bağlantı denemesi bekleyen / belirsiz</small><strong>{diagnostics.operational.probePending} / {diagnostics.operational.probeUnknown}</strong></div>
+            <div><small>Kuyruk bekleyen / aktif (DB geneli)</small><strong>{diagnostics.operational.queue.pending ?? "bilinmiyor"} / {diagnostics.operational.queue.active ?? "bilinmiyor"}</strong></div>
+            <div><small>En eski zamanı gelmiş iş</small><strong>{diagnostics.operational.queue.state === "unavailable" ? "bilinmiyor" : diagnostics.operational.queue.oldestDueSeconds === null ? "yok" : `${Math.floor(diagnostics.operational.queue.oldestDueSeconds / 3600)} saat`}</strong></div>
+            <div><small>Kayıtlı yedek</small><strong>{diagnostics.operational.backup.state === "metadata_only" ? diagnostics.operational.backup.count : "bilinmiyor"}</strong></div>
+            <div><small>Son kayıtlı yedek</small><strong>{diagnostics.operational.backup.latestAt ? new Date(diagnostics.operational.backup.latestAt).toLocaleString("tr-TR") : "bilinmiyor"}</strong></div>
+            <div><small>Anlık durum sorgusu</small><strong>{diagnostics.operational.queryMs} ms</strong></div>
+            <div><small>Kopyalanmış özel sonuçlar</small><strong>{diagnostics.operational.privateCopied} tarihsel kayıt</strong></div>
+          </div> : null}
           {localDiagnosticsAlerts(diagnostics).map((message) => <p key={message} className="inline-warning" role="status">{message}</p>)}
-          <p className="hint">Son kontrol: {new Date(diagnostics.checkedAt).toLocaleString("tr-TR")} · Son worker nabzı: {diagnostics.latestHeartbeatAt ? new Date(diagnostics.latestHeartbeatAt).toLocaleString("tr-TR") : "yok"}. İşlem sayaçları konsey çalışmalarını kapsar; özel sohbet ve karar değerlendirme işlemlerini kapsamaz. Bu gösterge sağlayıcı API bağlantısını veya bir model isteğini test etmez.</p>
+          <p className="hint">Son kontrol: {new Date(diagnostics.checkedAt).toLocaleString("tr-TR")} · Son worker nabzı: {diagnostics.latestHeartbeatAt ? new Date(diagnostics.latestHeartbeatAt).toLocaleString("tr-TR") : "yok"}. Konsey, özel sohbet, karar ve bağlantı denemesi ayrı sayaçlardır. Yedek sayımı geri yükleme doğrulaması değildir. Anlık süre toplam çalışma gecikmesi değildir. Bu gösterge sağlayıcı API bağlantısını veya bir model isteğini test etmez.</p>
         </>
       ) : null}
       <button type="button" className="secondary-button" disabled={pending} onClick={() => void refresh()}>Durumu yenile</button>

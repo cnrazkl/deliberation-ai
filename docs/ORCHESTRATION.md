@@ -1,5 +1,10 @@
 # Orchestration
 
+Recovery hold checks migration compatibility, then opens a heartbeat without queue/
+schedule consumers. Explicit clone queue parking retains cancelled rows. Adapter
+generation is fenced during rehearsal. Post-cutover changes block rollback/cleanup.
+Ordinary dispatch is unchanged. [Procedure](LOCAL_RECOVERY.md).
+
 Worker startup verifies migration history before queue initialization/handlers,
 schedule dispatch or heartbeat writes. Mismatch/unreadable history exits without
 starting those operations. This is a startup gate, not continuous schema monitoring.

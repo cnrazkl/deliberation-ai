@@ -1,5 +1,11 @@
 # Local operations
 
+Managed Windows runtime: `pnpm app:start`, `pnpm app:status`, `pnpm app:stop`.
+For complete replacement rehearsal, quiesce/stop, take a verified backup, stage
+reviewed source and use `pnpm recovery:rehearse`. Original data is preserved;
+changed clones stay for reconciliation. Selected-copy preview/apply and operational
+alerts are in [the local recovery runbook](LOCAL_RECOVERY.md). No automatic migration.
+
 Use Ayarlar → Yerel sağlayıcı bağlantıları → **Üretim testi ve model geçmişi**
 for versioned observations and separately approved generation. Refresh is
 read-only; same-intent replay never resends. The opt-in

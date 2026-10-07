@@ -1,5 +1,10 @@
 # Architecture
 
+Local recovery scripts own fresh source/dependency/PG installation, authenticated
+record comparison, actual-port cutover and rollback. Web proxy holds mutations;
+worker holds queue registration; adapters fence generation. Persistence provides
+content-free operational diagnostics. [Component boundaries](LOCAL_RECOVERY.md).
+
 Generation-check GET/POST/PATCH routes compose strict contracts, owned locked
 persistence and an application facade over the existing four provider adapters.
 A dedicated settings panel isolates review state from council drafts. Submitted

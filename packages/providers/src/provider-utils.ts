@@ -12,8 +12,15 @@ import { NormalizedProviderError, type ProviderRequest, type ProviderResult } fr
 
 export const PROVIDER_NETWORK_TIMEOUT_MS = 600_000;
 
+export function assertRecoveryGenerationAllowed(): void {
+  if (process.env.DELIBERATION_RECOVERY_FORBID_GENERATION === "true") {
+    throw new NormalizedProviderError("Kurtarma doğrulamasında model gönderimi kapalı.", "recovery_generation_disabled", "known", false);
+  }
+}
+
 /** Validate a frozen request cap before any outbound provider call. */
 export function outputTokenLimitFor(request: ProviderRequest): number | undefined {
+  assertRecoveryGenerationAllowed();
   const limit = request.maxOutputTokens;
   if (limit === undefined) return undefined;
   if (!Number.isInteger(limit) || limit < 128 || limit > 32_768) {
