@@ -1,5 +1,10 @@
 # Product
 
+The signed-in account bar remains at the top during page scrolling. Desktop navigation
+stays directly below it; the mobile drawer uses the same measured offset. History can
+scroll within the available height. Conversation/run list refresh controls use a single
+icon with their existing accessible names, tooltips, pending guards and read-only actions.
+
 ## In-app help
 
 The public `/help` Turkish guide is linked as **Yardım** on login/registration and

@@ -1,8 +1,39 @@
 # Current state
 
-Updated: 9 October 2026 (in-app guide)
+Updated: 9 October 2026 (pinned navigation)
 
-## In-app help — deployed
+## Pinned navigation and refresh icons — deployed
+
+AccountBar measures its height to position the sticky sidebar/mobile drawer below
+wrapped account actions. Both history refresh controls now use decorative icons with
+unchanged accessible names and request handlers. No API/migration/provider behavior
+changes. The account bar stays above both navigation variants; scroll padding keeps
+anchor/focus targets clear. The history pane retains a 120px minimum so short screens
+can scroll the containing sidebar instead of clipping refresh actions to zero height.
+
+Twelve final workspace cases pass, including actual down/up page scrolling at
+1225x918, 390x844 and 820x390; both icon buttons still issue the expected GET requests
+and preserve the composer draft. Existing layout checks cover 320/390/640/820/1024/
+1440px, short screens and 200% zoom. Six account/conversation/run history cases also
+pass. Strict types, zero-warning lint, production web types/build and eleven isolated
+production smoke checks pass with zero paid provider calls. Actual LAN page at scrollY
+737 retains header top 0 and sidebar top 73, matching the measured 73px header; both
+refresh controls have empty visible text and decorative SVGs with their original labels.
+Visual verification used a temporary tab, closed afterward; the user's original tab
+and unsaved input were not reloaded or changed.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-nav-ui1`,
+manifest `sha256:5ec9aef9e7f5942e553bb479c6545ea5a2be65fe44ac8da987e686f0b1fdc23a`,
+exported source tree `439d272544126d793a3ba248341c7a86d6bc1926` before this final
+evidence update. LAN binding remains `192.168.1.112:33184`. Fresh foreign-container
+and owned database/worker lifecycles match pre-change baselines. No schema/migration,
+foreign database, firewall, Cloudflare or personal-data migration occurred. Source-bound
+window `month-nav-20261009` starts 2026-10-08T21:30:42.362Z, is due
+2026-11-07T21:30:42.362Z (8 November 00:30 Istanbul), and its first sample is healthy.
+Earlier windows are retained; monthly and independent human quality acceptance remain
+pending.
+
+## In-app help — prior deployment
 
 Public `/help` adds a Turkish beginner/technical guide with twenty-six chapters,
 examples, local index search, related anchors, appearance and print/PDF support.
@@ -20,14 +51,14 @@ and scheduler detail expansion were checked; Windows GET `/help` is HTTP 200 wit
 final text. No paid provider request was made. Eleven final production smoke checks
 pass. The existing user tab/draft was not reloaded or changed during visual checks.
 
-Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-help-ui2`,
+That help deployment used `deliberationai-rehearsal:60374dd507ec-help-ui2`,
 manifest `sha256:a554b74fc14160749c3b492a9bc0cf51363c0d995676f406957192ac9c5dfa81`,
 exported source tree `d6fea99b3e5387eeec32603069661a49f618f9f1` before this final
 evidence update. Access remains `http://192.168.1.112:33184/help` on the selected
 private LAN binding. Fresh foreign-container and owned database/worker lifecycles
 match pre-change baselines; no schema/migration, foreign database, firewall, Cloudflare
 or personal-data migration occurred. Earlier source-bound observations remain retained.
-The current window `month-help-final-20261009` starts 2026-10-08T21:21:52.261Z,
+Its retained window `month-help-final-20261009` starts 2026-10-08T21:21:52.261Z,
 is due 2026-11-07T21:21:52.261Z (8 November 00:21 Istanbul), and its first sample
 is healthy. Thirty-day acceptance and independent human quality remain pending.
 

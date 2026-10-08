@@ -1,5 +1,14 @@
 # Workspace design principles — DA-111 / DA-112
 
+## Pinned account and navigation
+
+The account bar is sticky above desktop navigation and the mobile drawer. Its measured
+height accommodates wrapping without a hard-coded mobile offset; sidebar height uses
+the remaining viewport. Browser anchor/focus scrolling respects the account bar.
+Sidebar/history remain scrollable on short screens. List refresh uses a 44px round
+icon button with a tooltip, visible focus and the existing accessible name/disabled
+states. No automatic reload, provider call or draft reset is added.
+
 ## Help and onboarding guide
 
 Yardım is available before login and in the account bar for both roles; its label

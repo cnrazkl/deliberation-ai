@@ -1,5 +1,10 @@
 # Tasks
 
+- [x] Owner browser comments: pin account bar and sidebar below its measured height;
+  replace both history refresh texts with accessible icons. Twelve final workspace
+  checks plus six account/history cases, types/lint/build and eleven production smoke
+  checks pass; actual LAN scrolling verified. Existing services/database-worker unchanged.
+
 - [x] Owner-requested Turkish in-app help: public guide, login/account menu, searchable
   index, twenty-six chapters with beginner steps, examples and accurate technical limits;
   separate-tab draft preservation and printable detail expansion. Eighteen browser cases,

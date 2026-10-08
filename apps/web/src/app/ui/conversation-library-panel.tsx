@@ -3,6 +3,7 @@
 import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { ConversationLibraryPage } from "@deliberation-ai/persistence";
+import { RefreshIcon } from "./refresh-icon";
 
 export function ConversationLibraryPanel({ refreshKey, onOpenRun, onReviewDeletion, onOpenPrivate, activeRunId }: {
   onReviewDeletion: (id: string) => void; onOpenPrivate: (id: string) => void; activeRunId: string | undefined;
@@ -76,7 +77,7 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun, onReviewDeleti
 
   return <section className="settings-card" aria-label="Kayıtlı konuşmalar">
     <div className="config-heading"><strong>Kayıtlı konuşmalar</strong>
-      <button className="secondary-button" type="button" disabled={loading} onClick={reload}>Konuşma listesini yenile</button>
+      <button className="secondary-button history-refresh" type="button" aria-label="Konuşma listesini yenile" title="Konuşma listesini yenile" disabled={loading} onClick={reload}><RefreshIcon /></button>
     </div>
     <p className="section-hint">Her konuşmanın son erişilebilir çalışmasını açabilirsiniz. Soru taslağı ve model seçimleri korunur; yeni model isteği gönderilmez.</p>
     {loading ? <p className="hint">Konuşmalar yükleniyor…</p> : <div className="run-history-list">

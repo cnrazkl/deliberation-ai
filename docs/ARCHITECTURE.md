@@ -1,5 +1,11 @@
 # Architecture
 
+AccountBar observes its rendered height, including wrapped mobile actions, and owns
+the transient `--account-bar-height` presentation variable. Sticky desktop navigation
+and the fixed mobile drawer/backdrop use this offset; unmount clears it. RefreshIcon
+is decorative; list buttons retain their accessible names and existing handlers.
+No account/dispatch/persistence boundary changes.
+
 `/help` renders a public documentation page from typed bundled `help-content.ts`.
 HelpGuide owns local search, anchors and print state; it imports no account,
 persistence or provider client. HelpLink opens with noopener in a separate tab,

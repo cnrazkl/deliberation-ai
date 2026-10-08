@@ -146,3 +146,39 @@ test("opens mobile history, navigates without overflow and returns to the preser
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: "test-results/da111-dark-mobile.png" });
 }));
+
+for (const { width, height } of [{ width: 1225, height: 918 }, { width: 390, height: 844 }, { width: 820, height: 390 }]) {
+  test(`account bar and navigation remain pinned while scrolling at ${width}x${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height }); await fixtures(page); await page.goto("/");
+    await page.getByLabel("Sorunuz", { exact: true }).fill("Sabit gezinme sırasında korunacak soru taslağı");
+    await workspaceView(page, "Ayarlar");
+    await page.locator('.workspace-view:not([hidden]) details').evaluateAll((items) => { for (const item of items) (item as HTMLDetailsElement).open = true; });
+    const sidebar = page.getByRole("complementary", { name: "Sohbet geçmişi ve gezinme" });
+    if (!await sidebar.isVisible()) await page.getByRole("button", { name: "Sohbet geçmişini aç", exact: true }).click();
+    const bar = page.getByRole("banner", { name: "Hesap" });
+    const bounds = () => page.evaluate(() => {
+      const header = document.querySelector(".account-bar")!.getBoundingClientRect();
+      const aside = document.querySelector(".app-sidebar")!.getBoundingClientRect();
+      return { headerTop: Math.round(header.top), sidebarTop: Math.round(aside.top), headerBottom: Math.round(header.bottom), sidebarBottom: Math.round(aside.bottom), viewport: window.innerHeight };
+    });
+    await expect(bar).toBeVisible();
+    for (const scroll of [1000, 300, 1800, 0]) {
+      await page.evaluate((y) => window.scrollTo(0, y), scroll);
+      if (scroll > 0) expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+      const position = await bounds();
+      expect(position.headerTop).toBe(0); expect(position.sidebarTop).toBe(position.headerBottom);
+      expect(position.sidebarBottom).toBe(position.viewport);
+    }
+    for (const name of ["Listeyi yenile", "Konuşma listesini yenile"]) {
+      const refresh = sidebar.getByRole("button", { name, exact: true });
+      await expect(refresh).toHaveText(""); await expect(refresh.locator("svg")).toHaveAttribute("aria-hidden", "true");
+      await expect(refresh).toBeEnabled();
+      const request = page.waitForRequest((item) => new URL(item.url()).pathname === (name === "Listeyi yenile" ? "/api/runs" : "/api/conversations") && item.method() === "GET");
+      await refresh.click(); await request; await expect(refresh).toBeEnabled();
+    }
+    await page.screenshot({ path: `test-results/pinned-navigation-${width}.png` });
+    if (width <= 800) await page.getByRole("button", { name: "Geçmiş menüsünü kapat", exact: true }).last().click();
+    await workspaceView(page, "Sohbet");
+    await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Sabit gezinme sırasında korunacak soru taslağı");
+  });
+}

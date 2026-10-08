@@ -7,6 +7,7 @@ import { CouncilWorkbench } from "./council-workbench";
 import { AccountDeletionPanel, RootManagement } from "./account-management";
 import { accountRequest, announceSessionChange } from "../../lib/account-client";
 import { HelpLink } from "./help-link";
+import { AccountBar } from "./account-bar";
 
 export function AuthShell() {
   const [session, setSession] = useState<LocalSessionSummary | null>(null);
@@ -110,7 +111,7 @@ export function AuthShell() {
     </div>
   </main>;
   return <>
-    <header className="account-bar" aria-label="Hesap">
+    <AccountBar>
       <div><span className="account-bar-brand">Deliberation AI</span><strong>{session.user.displayName}</strong><small>@{session.user.username}</small><span className="account-role-badge">{session.user.role === "root" ? "Yönetici" : "Kişisel hesap"}</span>
         </div>
       <div className="account-actions">
@@ -119,7 +120,7 @@ export function AuthShell() {
         <button type="button" className="secondary-button" disabled={busy} onClick={() => setPasswordPanel(!passwordPanel)}>Parolayı değiştir</button>
         <button type="button" className="secondary-button" disabled={busy} onClick={() => void logout()}>Çıkış yap</button>
       </div>
-    </header>
+    </AccountBar>
     {error && <p className="account-message inline-error" role="alert">{error}</p>}{notice && <p className="account-message" role="status">{notice}</p>}
     {passwordPanel && <section className="account-panel" aria-label="Parola değiştirme"><h2>Parolayı değiştir</h2>
       <form onSubmit={changePassword}><label>Mevcut parola<input name="currentPassword" type="password" autoComplete="current-password" required maxLength={128} /></label>

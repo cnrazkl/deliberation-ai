@@ -4,6 +4,7 @@ import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { RunHistoryPage } from "@deliberation-ai/persistence";
 import { RunDeletionPanel } from "./run-deletion-panel";
+import { RefreshIcon } from "./refresh-icon";
 
 const statusLabels: Record<RunHistoryPage["runs"][number]["status"], string> = {
   queued: "Sırada",
@@ -116,7 +117,7 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun, onDeletedR
     <details className="run-history settings-card" open>
       <summary>Son çalışmalar</summary>
       <p className="hint">Kayıtlı bir çalışmayı açıp raporunu inceleyebilir veya indirebilirsiniz. Soru alanınız ve model seçimleriniz değişmez.</p>
-      <button className="secondary-button" type="button" disabled={loading || Boolean(deletionId)} onClick={reload}>Listeyi yenile</button>
+      <button className="secondary-button history-refresh" type="button" aria-label="Listeyi yenile" title="Listeyi yenile" disabled={loading || Boolean(deletionId)} onClick={reload}><RefreshIcon /></button>
       {loading ? <p className="hint">Geçmiş yükleniyor…</p> : page.runs.length === 0 ? <p className="hint">Henüz kayıtlı çalışma yok.</p> : (
         <div className="run-history-list">
           {page.runs.map((item) => (
