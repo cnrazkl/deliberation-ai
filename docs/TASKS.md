@@ -4,6 +4,9 @@
 human verification. Provider-authoritative invoice/account/payment acceptance is
 cancelled for now at the owner's explicit request. Existing records are retained;
 it is neither passed nor required for the current local-use sequence.
+The owner also explicitly cancelled input/tool-token budget accounting and monetary
+spending protection on 8 October. Existing call/output controls and observations
+remain; the cancelled extension is not an active task or an accepted capability.
 [Execution inventory and live checks](NON_HUMAN_COMPLETION.md).
 
 - [x] Non-human follow-through: hosted contradiction shadow adapter/owned CLI,
@@ -203,14 +206,14 @@ The risk floor, missing-context questions and additive revision control are impl
   [reviewed synthesis](REVIEWED_SYNTHESIS.md) engineering path delivers a separate
   model fidelity check, at most one repair and the deterministic ledger fallback;
   model judgments alone cannot close independent quality acceptance.
-- [ ] Complete the selected-member follow-up with semantic/free-form resynthesis validation and a monetary/token cost guardrail. DA-079 supplies the rerun and rebuilt deterministic ledger; verified DA-081 adds inherited local call/output reservations with fresh child allowance. Semantic synthesis, total-input/tool accounting and monetary enforcement remain open.
+- [ ] Complete independent semantic/free-form resynthesis acceptance for the selected-member follow-up. DA-079 supplies the rerun and rebuilt deterministic ledger; verified DA-081 adds inherited local call/output reservations with fresh child allowance. Independent semantic acceptance remains open. The input/tool-token budget and monetary protection extension was cancelled by the owner on 8 October.
 
 The original complete quality gate remains open. DA-074 performs mechanical checks only and does not assess whether the source question was fully extracted or any claim is true. DA-077 records model-proposed revisions but does not verify their truth, promote them to the canonical claim ledger, or enable consensus-based early stopping.
 
 ### Group 4 — usage and conversation
 
 - [x] DA-080: retain and display provider-reported total, cache, reasoning and tool-input token details with completeness and native conventions; preserve observed usage on invalid-output failures. [Scope](PROVIDER_USAGE_DETAILS.md).
-- [x] DA-081: add and verify optional frozen local generation-call limits, per-call output caps and permanent atomic output-capacity reservations across runs, schedules and follow-ups; keep actual usage separate. Local acceptance passed; the broad input/tool/money budget gate remains open. [Contract and checks](EXECUTION_LIMITS.md).
+- [x] DA-081: add and verify optional frozen local generation-call limits, per-call output caps and permanent atomic output-capacity reservations across runs, schedules and follow-ups; keep actual usage separate. Local acceptance passed; the broad input/tool/money budget extension was cancelled by the owner on 8 October. [Contract and checks](EXECUTION_LIMITS.md).
 - [x] DA-082: record immutable owned price observations with source/date/connection revision; bind each new attempt and retain an auditable token estimate without repricing history. Missing usage stays unknown. [Scope](PROVIDER_PRICING.md).
 - [x] DA-083: implement immutable owner-reviewed billing evidence with source digest, exact receipt matching, component reconciliation, duplicate guards and separate billing coverage/subtotals. Synthetic local mechanics accepted; real-account invoice acceptance remains open. [Scope](PROVIDER_BILLING.md).
 - [x] DA-084: append owner-reviewed replacement/void events for the same billing attribution, preserving original evidence, reviewed-version guards and one effective subtotal. Voided calls remain pending; identity reallocation is separate. [Scope](BILLING_CORRECTIONS.md).
@@ -223,6 +226,9 @@ The original complete quality gate remains open. DA-074 performs mechanical chec
   payment evidence and real-account settled-cost acceptance. Existing DA-081–089
   evidence and call/output reservations remain. Total input/tool accounting and
   monetary enforcement are not certified by their local observations.
+- **Cancelled by owner, 8 October:** input/tool-token budget accounting and monetary
+  spending protection. Existing call/output reservations, usage visibility, prices
+  and billing evidence remain. Cancellation does not implement or certify the extension.
 - [x] DA-090: review complete owned source question/report context and continue with a new question in a fresh independent council; freeze encrypted source provenance, bind prompt/risk/token preview, preserve history across clarification/member reruns and source retention, reject drift/oversize and expose exact context in details/export. [Scope](CONVERSATION_CONTINUATION.md).
 - [x] DA-091: add explicit owner-written/reviewed history compaction, per-section omission digests and an encrypted original archive that survives source retention; preserve source questions, original risk controls, clarification/member-rerun provenance and private archive inheritance without retransmitting omitted raw text. [Scope](CONVERSATION_COMPACTION.md).
 - [x] DA-092: navigate authenticated source-linked run branches, distinguish full/compacted continuation and immediate member reruns, backfill durable owned links, bound ancestry, paginate siblings/children and preserve drafts and surviving links after source retention. [Scope](RUN_BRANCHES.md).

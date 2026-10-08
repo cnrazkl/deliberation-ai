@@ -2,6 +2,16 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
+## Current scope change — budget extension cancelled
+
+On 8 October the owner explicitly cancelled input/tool-token budget accounting and
+monetary spending protection. This follows the earlier invoice/account/payment
+acceptance cancellation. The extension is removed from the active task scope, without
+claiming it was implemented or verified. Existing call/output limits, permanent
+reservations, usage visibility and billing/price records remain. No runtime, provider,
+database or application behavior changes. Independent semantic acceptance and
+separate-machine/month-long measurements remain open.
+
 ## Current increment — bounded hosted shadow, studies and synthesis v3
 
 The owner requested remaining tasks without independent human verification, then

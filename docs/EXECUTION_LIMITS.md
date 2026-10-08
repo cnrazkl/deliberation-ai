@@ -2,6 +2,10 @@
 
 Status: local acceptance verified on 1 October 2026. [The repository audit](REPO_AUDIT_2026_10_01.md) records this increment's own checks and fixes. No live paid-provider result is claimed here.
 
+8 October scope decision: the owner cancelled the planned input/tool-token budget
+accounting and monetary spending protection extension. Existing local call/output
+controls remain implemented; cancellation does not establish the excluded ceilings.
+
 The owner can optionally freeze `dispatch-limits-v1` controls for a council: the maximum number of submitted generation attempts, an output-token cap per attempt, and the total output capacity the application may reserve. These controls limit application dispatch. They are separate from provider-reported actual usage and do not establish a monetary or total-input-token ceiling.
 
 | Field | Allowed integer range | Meaning |
@@ -46,4 +50,9 @@ Acceptance passed concurrent claims, reconnect/replay, unknown outcomes, discard
 
 The backup inventory includes `runs.execution_limits_ciphertext` and `local_schedules.execution_limits_ciphertext`; `provider_operations.reserved_output_tokens` is searchable non-sensitive reservation metadata. Migration `0033_light_warbound.sql` is applied locally. A fresh disposable restore verified 280 runs, 4,800 encrypted rows and 7,329 decrypted values, including both quota fields populated by a generated cancelled-run and paused-schedule fixture. Those fixtures created no jobs or model calls and were removed from the live database afterward. Wrong-context ciphertext regression checks fail for either field. This is encrypted-field readability verification, not replacement cutover acceptance.
 
-The broad budget gate remains open for exact input/modality/tool accounting, versioned prices, a reconciled settled-cost ledger and enforceable monetary controls. Semantic synthesis and independent human/model quality acceptance also remain open.
+The broad input/modality/tool budget and monetary enforcement extension is cancelled
+by the owner's 8 October instruction. Provider-authoritative invoice/account/payment
+acceptance was separately cancelled for now. Existing versioned price observations
+and local billing evidence remain inspectable without certifying settled cost or
+monetary enforcement. Independent semantic synthesis and human/model quality
+acceptance remain open.

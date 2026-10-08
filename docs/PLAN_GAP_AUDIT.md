@@ -1,5 +1,11 @@
 # Original PLAN.md versus the running local application
 
+**8 October owner scope change:** input/tool-token budget accounting and monetary
+spending protection are cancelled, following the earlier invoice/account/payment
+acceptance cancellation. Historical open-budget statements below are superseded for
+the active scope. Existing call/output controls and financial observations remain;
+the cancelled capabilities are not declared implemented. [Current policy](EXECUTION_LIMITS.md).
+
 **8 October non-human scope:** hosted contradiction shadow, frozen bounded
 round/prompt dispatch, content-only synthesis v3, terminal submitted-receipt alerts
 and reported-output-cap failure handling are delivered. Limited live diagnostics

@@ -6,6 +6,11 @@ billing evidence is preserved. No invoice, payment or settled cost is invented.
 Independent human correctness, drift, contradiction, early-stop, synthesis and
 knowledge gold/answer judgments remain pending; this request does not approve them.
 
+Subsequent 8 October owner instruction also cancels input/tool-token budget accounting
+and monetary spending protection. Those extensions are removed from active scope;
+existing call/output limits, permanent reservations and recorded usage/billing evidence
+remain. Neither cancellation constitutes implementation or financial certification.
+
 ## Hosted contradiction engineering
 
 `pnpm contradiction:hosted prepare study <run-uuid> <connection-uuid>` freezes an
