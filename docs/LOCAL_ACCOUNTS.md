@@ -7,6 +7,14 @@ encrypted provider secrets, provenance and unknown receipts are preserved unchan
 
 ## Use
 
+The entry screen has a compact mobile header and a two-column desktop layout. Both
+themes show bordered 50px username/password fields, 16px input text and visible focus.
+Registration includes the accepted username characters and eight-character password
+minimum. **Parolayı göster/gizle** works with keyboard or pointer and retains the typed
+value; switching between registration/login hides it again. Requests disable fields
+and actions until completion. Errors and registration confirmation are announced in
+the form. Password changes and administration fields share the visible input style.
+
 Sign in on the application home page or choose **Yeni hesap oluştur**. Each user
 manages their own provider, MCP and decision connections under **Ayarlar** and uses
 their own saved API keys. Runs, conversations, private branches, templates, memory,

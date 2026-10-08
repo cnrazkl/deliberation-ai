@@ -20,6 +20,13 @@ read/create chats, run models or open the council workspace.
 API keys are usable/editable through connection management but never displayed in
 account summaries. [Use and scope](LOCAL_ACCOUNTS.md).
 
+Account entry uses a responsive introduction and a clearly labelled form in both
+light and dark themes. Username/password fields have visible borders, placeholders
+and keyboard focus. Registration explains the username format and password minimum;
+an accessible button reversibly reveals the entered password. Pending submission
+disables entry/actions, and failures or successful registration appear inside the form.
+Account-management/password-change fields use the same visible input treatment.
+
 An opt-in local synthesis command generates a claim-linked draft and asks a separate
 model to check meaning against the complete supplied ledger. At most one repair is
 allowed; failure preserves the deterministic ledger. Drafts remain model judgments,

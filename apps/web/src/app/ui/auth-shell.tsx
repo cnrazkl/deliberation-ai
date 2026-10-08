@@ -12,6 +12,7 @@ export function AuthShell() {
   const previousSession = useRef<LocalSessionSummary | null>(null);
   const [ready, setReady] = useState(false), [error, setError] = useState("");
   const [register, setRegister] = useState(false), [busy, setBusy] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [deletion, setDeletion] = useState(false);
   const [passwordPanel, setPasswordPanel] = useState(false), [notice, setNotice] = useState("");
   useEffect(() => {
@@ -43,7 +44,7 @@ export function AuthShell() {
       const username = String(form.get("username")), password = String(form.get("password"));
       if (register) {
         await accountRequest("register", { username, password });
-        target.reset(); setRegister(false); setNotice("Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.");
+        target.reset(); setRegister(false); setPasswordVisible(false); setNotice("Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.");
       } else {
         await accountRequest("login", { username, password }); announceSessionChange(); window.location.reload();
       }
@@ -60,18 +61,52 @@ export function AuthShell() {
     try { await accountRequest("password", { currentPassword: String(form.get("currentPassword")), password: String(form.get("password")) }); announceSessionChange(); window.location.reload(); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Parola değiştirilemedi."); setBusy(false); }
   }
-  if (!ready) return <main className="account-login"><p>Oturum kontrol ediliyor…</p></main>;
-  if (!session) return <main className="account-login"><section className="account-login-card">
-    <span className="eyebrow">DELIBERATION AI</span><h1>{register ? "Hesap oluştur" : "Giriş yap"}</h1>
-    <p>{register ? "Kendi kullanıcı adınızı ve parolanızı seçin." : "API bağlantılarınızı ve sohbetlerinizi kendi hesabınızda yönetin."}</p>
-    {error && <p role="alert" className="inline-error">{error}</p>}{notice && <p role="status">{notice}</p>}
-    <form onSubmit={authenticate}>
-      <label>Kullanıcı adı<input name="username" autoComplete="username" required minLength={3} maxLength={32} pattern="[a-zA-Z0-9][a-zA-Z0-9_.-]*" /></label>
-      <label>Parola<input name="password" type="password" autoComplete={register ? "new-password" : "current-password"} required minLength={register ? 8 : 1} maxLength={128} /></label>
-      <button type="submit" disabled={busy}>{busy ? "Bekleyin…" : register ? "Hesap oluştur" : "Giriş yap"}</button>
-    </form>
-    <button type="button" className="secondary-button" disabled={busy} onClick={() => { setRegister(!register); setError(""); setNotice(""); }}>{register ? "Girişe dön" : "Yeni hesap oluştur"}</button>
-  </section></main>;
+  if (!ready) return <main className="account-login"><p role="status">Oturum kontrol ediliyor…</p></main>;
+  if (!session) return <main className="account-login">
+    <div className="account-login-layout">
+      <section className="account-welcome" aria-label="Deliberation AI hakkında">
+        <div className="account-brand"><span className="account-brand-mark" aria-hidden="true">D<span>·</span></span>Deliberation AI</div>
+        <div className="account-welcome-copy">
+          <span className="account-kicker">BİRLİKTE DÜŞÜN, DAHA İYİ KARAR VER</span>
+          <h2>Bir soruya,{" "}<br /><span>farklı bakış açıları.</span></h2>
+          <p>Yapay zekâ modellerini aynı masada buluşturun. Yanıtları karşılaştırın, ortak noktaları ve ayrışan görüşleri birlikte inceleyin.</p>
+        </div>
+        <div className="account-council-visual" aria-hidden="true">
+          <span className="account-model-dot">01</span><span className="account-model-dot">02</span><span className="account-model-dot">03</span>
+          <div className="account-visual-caption"><span className="account-visual-line" />Bir soru · Birden çok perspektif</div>
+        </div>
+        <p className="account-welcome-footer">Kendi modelleriniz. Kendi çalışma alanınız.</p>
+      </section>
+      <section className="account-login-card" aria-labelledby="account-login-title">
+        <span className="account-form-eyebrow">{register ? "YENİ BİR BAŞLANGIÇ" : "ÇALIŞMA ALANINIZA DÖNÜN"}</span>
+        <h1 id="account-login-title">{register ? "Hesap oluştur" : "Giriş yap"}</h1>
+        <p className="account-form-intro">{register ? "Kullanıcı adınızı ve parolanızı seçin. Bağlantılarınızı hesabınızı oluşturduktan sonra ekleyebilirsiniz." : "Sohbetleriniz ve API bağlantılarınız, kendi hesabınızda sizi bekliyor."}</p>
+        {error && <p role="alert" className="account-auth-message account-auth-error">{error}</p>}
+        {notice && <p role="status" className="account-auth-message account-auth-success">{notice}</p>}
+        <form onSubmit={authenticate} aria-busy={busy}>
+          <div className="account-field">
+            <label htmlFor="account-username">Kullanıcı adı</label>
+            <input id="account-username" name="username" placeholder="kullanıcı_adınız" autoComplete="username" autoCapitalize="none" spellCheck={false} required minLength={3} maxLength={32} pattern="[a-zA-Z0-9][a-zA-Z0-9_.-]*" aria-describedby={register ? "account-username-hint" : undefined} disabled={busy} />
+            {register && <p id="account-username-hint" className="account-field-hint">3–32 karakter. İngilizce harfler, rakamlar, nokta, tire veya alt çizgi; ilk karakter harf ya da rakam olmalı.</p>}
+          </div>
+          <div className="account-field">
+            <label htmlFor="account-password">Parola</label>
+            <div className="account-password-field">
+              <input id="account-password" name="password" type={passwordVisible ? "text" : "password"} placeholder={register ? "En az 8 karakter" : "Parolanızı girin"} autoComplete={register ? "new-password" : "current-password"} required minLength={register ? 8 : 1} maxLength={128} disabled={busy} />
+              <button type="button" className="account-password-toggle" aria-label={passwordVisible ? "Parolayı gizle" : "Parolayı göster"} aria-controls="account-password" aria-pressed={passwordVisible} disabled={busy} onClick={() => setPasswordVisible(!passwordVisible)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" />{passwordVisible && <path d="m3 3 18 18" />}</svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" className="account-submit" disabled={busy}><span>{busy ? "Bekleyin…" : register ? "Hesap oluştur" : "Giriş yap"}</span><span aria-hidden="true">→</span></button>
+        </form>
+        <div className="account-login-switch"><p>{register ? "Zaten bir hesabınız var mı?" : "Henüz bir hesabınız yok mu?"}</p>
+          <button type="button" className="secondary-button" disabled={busy} onClick={() => { setRegister(!register); setPasswordVisible(false); setError(""); setNotice(""); }}>{register ? "Girişe dön" : "Yeni hesap oluştur"}</button>
+        </div>
+        <p className="account-form-footer">{register ? "Her kullanıcı kendi API bağlantılarını yönetir." : "Kullanıcı adınız ve parolanızla devam edin."}</p>
+      </section>
+    </div>
+  </main>;
   return <>
     <header className="account-bar" aria-label="Hesap">
       <div><strong>{session.user.displayName}</strong><small>@{session.user.username} {session.user.role === "root" ? "· Root" : ""}</small>

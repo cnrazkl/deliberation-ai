@@ -2,7 +2,34 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
-## Owner-selected homelab LAN access — deployed
+## Account frontend refresh — deployed
+
+Login and registration now use a responsive branded introduction and a clear form,
+with visible bordered fields in light/dark themes, placeholders, keyboard focus,
+username/password guidance, reversible password reveal and announced inline messages.
+Account management/password-change fields receive the same visible input styling;
+root administration and ordinary-user workspace boundaries are unchanged.
+
+All three focused account browser cases pass: six light/dark viewport combinations
+(320/390/1280px), keyboard/reveal/error handling, ordinary registration/self-erasure,
+and root user/connection/password administration. Screenshots were visually reviewed.
+Full strict type checks and zero-warning lint pass, and the isolated Linux production
+web typecheck/build passes. Actual Windows HTTP is 200 and the open homelab browser
+shows the new form. All eleven production smoke checks pass with zero provider calls.
+
+Only the owned web/observer changed to
+`deliberationai-rehearsal:60374dd507ec-auth-ui1`, manifest
+`sha256:93e62a711dea17fa81fa0dd5f939c0a084934a70d2c451a64c39448ef2c6da5d`,
+exported source tree `b43a14806c70458a1af4f69f781d215c81f908d4` (before this final
+evidence update). Fresh foreign-container lifecycle and the owned database/worker
+lifecycle are unchanged. No schema/migration, personal data transfer, paid model call,
+firewall or Cloudflare change was needed. The current source-bound observation is
+`month-authui-20261008`, started 2026-10-08T19:13:56.334Z and due
+2026-11-07T19:13:56.334Z (7 November at 22:13 Istanbul). Its first sample is healthy;
+the actual month remains pending. Previous `month-lan-20261008`/`month-v8` samples
+are retained separately.
+
+## Owner-selected homelab LAN access — initial deployment
 
 The isolated homelab copy is now reachable from the Windows computer at
 `http://192.168.1.112:33184/`. Web binds only that host LAN IP; `APP_ORIGIN` matches
@@ -18,8 +45,9 @@ Only owned web/observer containers changed to `deliberationai-rehearsal:60374dd5
 source tree `9a62d6a6d64d7ebc74c445c827994522832f8a95`; the existing owned worker/DB stay
 running. Windows data/accounts/provider connections were not migrated. The previous
 `month-v8` observations are retained; the new source/address-bound `month-lan-20261008`
-window started at 2026-10-08T18:57:51.627Z, is initially healthy and is due on
-7 November 2026 at 21:57 Istanbul. It remains pending, not a monthly acceptance pass.
+window started at 2026-10-08T18:57:51.627Z and was initially healthy. The frontend
+refresh above supersedes this source-bound window while preserving its samples;
+neither window is a monthly acceptance pass.
 
 ## Full-cohort mechanical follow-through — observed
 

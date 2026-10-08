@@ -2,6 +2,52 @@ import { withOwner } from "@deliberation-ai/persistence";
 import { randomBytes } from "node:crypto";
 import {expect, test, testOrigin, testOwnerId } from "./authenticated-test";
 
+test("account entry has visible fields across themes and screen sizes, keyboard access and a reversible password reveal", async ({ browser }, testInfo) => {
+  const context = await browser.newContext({ baseURL: testOrigin, storageState: { cookies: [], origins: [] }, extraHTTPHeaders: {} });
+  const page = await context.newPage();
+  try {
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Giriş yap", exact: true })).toBeVisible();
+    for (const theme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: theme });
+      for (const width of [320, 390, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        for (const name of ["Kullanıcı adı", "Parola"]) {
+          const input = page.getByLabel(name, { exact: true });
+          await expect(input).toBeVisible();
+          const appearance = await input.evaluate(element => {
+            const style = getComputedStyle(element), bounds = element.getBoundingClientRect();
+            return { height: bounds.height, width: bounds.width, border: parseFloat(style.borderTopWidth), borderColor: style.borderTopColor, background: style.backgroundColor };
+          });
+          expect(appearance.height).toBeGreaterThanOrEqual(44);
+          expect(appearance.width).toBeGreaterThan(180);
+          expect(appearance.border).toBeGreaterThanOrEqual(1);
+          expect(appearance.borderColor).not.toBe(appearance.background);
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        if (width !== 320) await page.screenshot({ path: testInfo.outputPath(`login-${theme}-${width}.png`), fullPage: true });
+      }
+    }
+    const username = page.getByLabel("Kullanıcı adı", { exact: true }), password = page.getByLabel("Parola", { exact: true });
+    await username.focus(); await page.keyboard.press("Tab"); await expect(password).toBeFocused();
+    await password.fill("offline-visibility-check"); await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Parolayı göster", exact: true })).toBeFocused();
+    await page.keyboard.press("Enter"); await expect(password).toHaveAttribute("type", "text");
+    await expect(password).toHaveValue("offline-visibility-check");
+    await page.getByRole("button", { name: "Parolayı gizle", exact: true }).click(); await expect(password).toHaveAttribute("type", "password");
+    await username.fill(`missing_${randomBytes(8).toString("hex")}`);
+    const card = page.getByRole("region", { name: "Giriş yap", exact: true });
+    await page.getByRole("button", { name: "Giriş yap", exact: true }).click(); await expect(card.getByRole("alert")).toBeVisible();
+    await page.getByRole("button", { name: "Yeni hesap oluştur", exact: true }).click(); await expect(page.getByRole("region", { name: "Hesap oluştur", exact: true }).getByRole("alert")).toHaveCount(0);
+    await expect(password).toHaveAttribute("type", "password"); await expect(password).toHaveAttribute("minlength", "8");
+    await expect(username).toHaveAccessibleDescription(/3–32 karakter/);
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.getByRole("button", { name: "Hesap oluştur", exact: true }).scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath("register-dark-320.png"), fullPage: true });
+  } finally { await context.close(); }
+});
+
 test("registration only needs a chosen username/password; self deletion removes connections and revokes all sessions", async ({ browser }) => withOwner(testOwnerId(), async () => {
   const context = await browser.newContext({ baseURL: testOrigin, viewport: { width: 390, height: 844 }, storageState: { cookies: [], origins: [] }, extraHTTPHeaders: {} });
   const page = await context.newPage(), username = `mobile_${randomBytes(5).toString("hex")}`, password = randomBytes(16).toString("hex");
