@@ -1,5 +1,11 @@
 # Architecture
 
+`/help` renders a public documentation page from typed bundled `help-content.ts`.
+HelpGuide owns local search, anchors and print state; it imports no account,
+persistence or provider client. HelpLink opens with noopener in a separate tab,
+leaving AuthShell/CouncilWorkbench mounted. ThemeSelect reuses the existing browser
+appearance preference. No API, migration, owner scope or dispatch boundary changes.
+
 Rehearsal web binding defaults to loopback. `REHEARSAL_BIND_IP` explicitly selects
 the host's private LAN address and supplies the matching `APP_ORIGIN`. PostgreSQL
 remains unpublished on the private project network. Content-free smoke/observation

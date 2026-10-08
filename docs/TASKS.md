@@ -1,5 +1,11 @@
 # Tasks
 
+- [x] Owner-requested Turkish in-app help: public guide, login/account menu, searchable
+  index, twenty-six chapters with beginner steps, examples and accurate technical limits;
+  separate-tab draft preservation and printable detail expansion. Eighteen browser cases,
+  six final guide reruns, types/lint/production build and eleven production smoke checks
+  pass; actual LAN guide/menu/search verified. See CURRENT_STATE.md for evidence.
+
 8 October owner scope: complete remaining work that does not require independent
 human verification. Provider-authoritative invoice/account/payment acceptance is
 cancelled for now at the owner's explicit request. Existing records are retained;

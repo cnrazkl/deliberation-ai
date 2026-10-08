@@ -1,8 +1,37 @@
 # Current state
 
-Updated: 8 October 2026 (non-human technical follow-through)
+Updated: 9 October 2026 (in-app guide)
 
-## Workspace and administration frontend refresh — deployed
+## In-app help — deployed
+
+Public `/help` adds a Turkish beginner/technical guide with twenty-six chapters,
+examples, local index search, related anchors, appearance and print/PDF support.
+Yardım links in login/registration and both roles' account bar open separately,
+preserving the original workspace. No account/provider request, API or migration
+is introduced. Reading/searching the guide makes no application/API request.
+
+Eighteen focused browser cases pass (six guide cases plus account/workspace suites).
+Six final guide reruns additionally check print detail expansion/restoration and no
+hydration/console errors after interactive hydration at 320/820/1440px. Public/ordinary/
+root menu access, anchor destinations, empty search, light/dark appearance and retained
+question drafts are covered. Strict types, zero-warning lint, Linux production web
+types/build and staged/full-history secret scans pass. Actual LAN menu, guide, search
+and scheduler detail expansion were checked; Windows GET `/help` is HTTP 200 with
+final text. No paid provider request was made. Eleven final production smoke checks
+pass. The existing user tab/draft was not reloaded or changed during visual checks.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-help-ui2`,
+manifest `sha256:a554b74fc14160749c3b492a9bc0cf51363c0d995676f406957192ac9c5dfa81`,
+exported source tree `d6fea99b3e5387eeec32603069661a49f618f9f1` before this final
+evidence update. Access remains `http://192.168.1.112:33184/help` on the selected
+private LAN binding. Fresh foreign-container and owned database/worker lifecycles
+match pre-change baselines; no schema/migration, foreign database, firewall, Cloudflare
+or personal-data migration occurred. Earlier source-bound observations remain retained.
+The current window `month-help-final-20261009` starts 2026-10-08T21:21:52.261Z,
+is due 2026-11-07T21:21:52.261Z (8 November 00:21 Istanbul), and its first sample
+is healthy. Thirty-day acceptance and independent human quality remain pending.
+
+## Workspace and administration frontend refresh — prior deployment
 
 The question composer now precedes detailed council configuration and provides a
 clear heading, writing guidance, visible text area, placeholder and character count.
@@ -25,12 +54,12 @@ account, which was completely erased afterward with its sessions revoked. No mod
 request or saved connection was created by that visual check. All eleven production
 smoke checks pass with zero paid provider calls and Windows HTTP remains 200.
 
-Owned web/observer use `deliberationai-rehearsal:60374dd507ec-workspace-ui1`, manifest
+That deployment used `deliberationai-rehearsal:60374dd507ec-workspace-ui1`, manifest
 `sha256:6482878853c10cfa3a183d5eb7061cd01acaeb6e202fecb60319930cdb7b38ac`,
 exported source tree `0be61832830bb6de86f8bafc4a499c0301986c34` before this final
 evidence update. Fresh foreign-container lifecycle and owned database/worker lifecycle
 match the pre-change baseline. No schema/migration, foreign database, firewall,
-Cloudflare or Windows personal-data change was made. The current source-bound window
+Cloudflare or Windows personal-data change was made. Its retained source-bound window
 `month-workspace-20261008` starts 2026-10-08T20:47:12.339Z and is due
 2026-11-07T20:47:12.339Z (7 November 23:47 Istanbul); its first sample is healthy and
 monthly acceptance remains pending. All earlier source-bound samples are retained.

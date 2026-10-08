@@ -6,6 +6,7 @@ import { setSessionOwner } from "../../lib/session-fetch";
 import { CouncilWorkbench } from "./council-workbench";
 import { AccountDeletionPanel, RootManagement } from "./account-management";
 import { accountRequest, announceSessionChange } from "../../lib/account-client";
+import { HelpLink } from "./help-link";
 
 export function AuthShell() {
   const [session, setSession] = useState<LocalSessionSummary | null>(null);
@@ -104,6 +105,7 @@ export function AuthShell() {
           <button type="button" className="secondary-button" disabled={busy} onClick={() => { setRegister(!register); setPasswordVisible(false); setError(""); setNotice(""); }}>{register ? "Girişe dön" : "Yeni hesap oluştur"}</button>
         </div>
         <p className="account-form-footer">{register ? "Her kullanıcı kendi API bağlantılarını yönetir." : "Kullanıcı adınız ve parolanızla devam edin."}</p>
+        <div className="account-help"><HelpLink /></div>
       </section>
     </div>
   </main>;
@@ -112,6 +114,7 @@ export function AuthShell() {
       <div><span className="account-bar-brand">Deliberation AI</span><strong>{session.user.displayName}</strong><small>@{session.user.username}</small><span className="account-role-badge">{session.user.role === "root" ? "Yönetici" : "Kişisel hesap"}</span>
         </div>
       <div className="account-actions">
+        <HelpLink />
         {session.user.role === "user" && <button type="button" className="secondary-button" disabled={busy} onClick={() => setDeletion(!deletion)}>Hesabımı sil</button>}
         <button type="button" className="secondary-button" disabled={busy} onClick={() => setPasswordPanel(!passwordPanel)}>Parolayı değiştir</button>
         <button type="button" className="secondary-button" disabled={busy} onClick={() => void logout()}>Çıkış yap</button>

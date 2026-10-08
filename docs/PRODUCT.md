@@ -1,5 +1,18 @@
 # Product
 
+## In-app help
+
+The public `/help` Turkish guide is linked as **Yardım** on login/registration and
+the account bar for ordinary users/root. It opens separately to retain the workspace
+draft. Twenty-six chapters cover first use, accounts, connections/presets, council
+configuration/rounds, prompt/context preparation, files/library/evidence/research,
+report/assessment/history/private branches, manual compaction, scheduler, settings/MCP,
+risk/usage/export/deletion and troubleshooting. Chapters include examples and explicit
+technical limits. Local search filters the topic index while retaining all articles;
+anchors and related links navigate the guide. Print/PDF expands technical details
+and restores prior collapse state afterward. Reading needs no account or API calls.
+CLI-only experiments and pending human quality acceptance are labeled distinctly.
+
 The owner-selected isolated homelab installation may be accessed from the private LAN
 at its explicitly configured IP/port. Registration/login and exact Host/Origin/session
 scope checks remain required; the Windows installation/data are not migrated.

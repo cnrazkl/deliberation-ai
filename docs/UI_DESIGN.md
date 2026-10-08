@@ -1,5 +1,16 @@
 # Workspace design principles — DA-111 / DA-112
 
+## Help and onboarding guide
+
+Yardım is available before login and in the account bar for both roles; its label
+announces a separate tab preserving workspace drafts. `/help` has a beginner hero,
+searchable topic index, numbered chapters with steps/examples, expandable technical
+limits and related anchors. Mobile is single-column; the desktop index sticks and
+scrolls independently. Light/dark tokens and visible keyboard focus are reused.
+Search retains full article bodies. Printing expands technical details and restores
+prior state afterward. The public page contains no credentials/personal configuration
+and reads no account, catalog or model data.
+
 DA-124 candidate cards offer an expandable reusable-save panel with explicit collection or named manual destination, full-payload review, separate consent, exact-target confirmation and downloadable receipts. Editing target invalidates review; confirmed local saving does not select a council source. Manual acknowledgement is labeled as an unverified owner declaration. [Contract](EVIDENCE_PUBLICATION.md).
 
 DA-123 groups candidate origin/claim controls, shows each frozen passage and its
