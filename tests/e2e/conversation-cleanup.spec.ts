@@ -1,12 +1,13 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, testOwnerId } from "./authenticated-test";
 import { eq, inArray, sql } from "drizzle-orm";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { buildCouncilReport } from "@deliberation-ai/domain";
-import { closeDatabase, getDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, runs, conversations,
+import { closeDatabase, getDatabase, encryptJson, encryptText, runs, conversations,
   conversationRuns, conversationPrivateBranches, privateBranchDeletions, runDeletions, loadRunContinuation } from "@deliberation-ai/persistence";
 
-test("deletes a populated conversation through separate private, leaf-run and metadata reviews while preserving the draft", async ({ page, request }) => {
+test("deletes a populated conversation through separate private, leaf-run and metadata reviews while preserving the draft", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const source = randomUUID(); const child = randomUUID(); const conversationId = randomUUID(); const neighbor = randomUUID();
   const report = buildCouncilReport(defaultFakeCouncilMembers.map((member) => ({ memberId: member.id, label: member.label,
     councilRole: member.councilRole, rawText: "Generated cleanup response", parsed: { summary: "Generated cleanup report",
@@ -16,7 +17,7 @@ test("deletes a populated conversation through separate private, leaf-run and me
   try {
     for (const [index, id] of [source, child].entries()) {
       const context = index ? await loadRunContinuation(source) : undefined;
-      await getDatabase().insert(runs).values({ id, ownerId: LOCAL_OWNER_ID, idempotencyKey: randomUUID(), requestHash: "cleanup-fixture",
+      await getDatabase().insert(runs).values({ id, ownerId: testOwnerId(), idempotencyKey: randomUUID(), requestHash: "cleanup-fixture",
         snapshotId: randomUUID(), question: "[encrypted]", questionCiphertext: encryptText("Generated conversation cleanup fixture", `run:${id}:question`),
         reportCiphertext: encryptJson(report, `run:${id}:report`), membersCiphertext: encryptJson(defaultFakeCouncilMembers, `run:${id}:members`),
         continuationContextCiphertext: context ? encryptJson(context, `run:${id}:continuation-context`) : null,
@@ -24,12 +25,12 @@ test("deletes a populated conversation through separate private, leaf-run and me
         branchSourceRunId: index ? source : null, createdAt: sql`'2400-02-01'::timestamptz`, finishedAt: new Date() });
     }
     await getDatabase().insert(conversations).values([
-      { id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: source, origin: "native", createdAt: sql`'2400-02-02'::timestamptz` },
-      { id: neighbor, ownerId: LOCAL_OWNER_ID, anchorRunId: randomUUID(), origin: "native", createdAt: sql`'2400-02-01'::timestamptz` },
+      { id: conversationId, ownerId: testOwnerId(), anchorRunId: source, origin: "native", createdAt: sql`'2400-02-02'::timestamptz` },
+      { id: neighbor, ownerId: testOwnerId(), anchorRunId: randomUUID(), origin: "native", createdAt: sql`'2400-02-01'::timestamptz` },
     ]);
     await getDatabase().insert(conversationRuns).values([
-      { ownerId: LOCAL_OWNER_ID, conversationId, runId: source, kind: "independent", createdAt: sql`'2400-02-01'::timestamptz` },
-      { ownerId: LOCAL_OWNER_ID, conversationId, runId: child, kind: "continuation-full", sourceRunId: source, createdAt: sql`'2400-02-01'::timestamptz` },
+      { ownerId: testOwnerId(), conversationId, runId: source, kind: "independent", createdAt: sql`'2400-02-01'::timestamptz` },
+      { ownerId: testOwnerId(), conversationId, runId: child, kind: "continuation-full", sourceRunId: source, createdAt: sql`'2400-02-01'::timestamptz` },
     ]);
     const seedResponse = await request.get(`/api/runs/${source}/private-branch-seed?member=${defaultFakeCouncilMembers[0]!.id}`);
     expect(seedResponse.status()).toBe(200);
@@ -90,4 +91,4 @@ test("deletes a populated conversation through separate private, leaf-run and me
     await getDatabase().delete(runs).where(inArray(runs.id, [source, child]));
     await closeDatabase();
   }
-});
+}));

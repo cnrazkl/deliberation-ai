@@ -1,8 +1,9 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import type { RunHistoryPage } from "@deliberation-ai/persistence";
 
-test("saved history refresh rejects an older response and preserves the draft", async ({ page }) => {
+test("saved history refresh rejects an older response and preserves the draft", async ({ page }) => withOwner(testOwnerId(), async () => {
   const currentId = randomUUID();
   const freshId = randomUUID();
   const staleId = randomUUID();
@@ -64,4 +65,4 @@ test("saved history refresh rejects an older response and preserves the draft", 
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Çalışma listesi yenilenirken korunacak taslak");
     expect(generations).toBe(0);
   } finally { releaseOlder(); }
-});
+}));

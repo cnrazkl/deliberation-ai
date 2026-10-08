@@ -8,6 +8,12 @@ databases through `pnpm test:e2e`, replacing the historical shared-DB test behav
 Maintenance stop checks all accounts and preserves terminal unknown council receipts
 without acknowledging/retrying them; normal stop continues to refuse unresolved work.
 
+Root now opens user administration only; ordinary users register with username/password
+and can review complete account erasure. No new migration is required for this follow-up.
+Browser fixtures authenticate as an ordinary user, with a separate root session for
+administration tests. `DELIBERATION_E2E_PORT` can select a free test port (default 3100,
+never 3000), without stopping an unrelated application already using the default port.
+
 Personal installation deployed migration 0055 and provisioned root on 8 October 2026.
 Both pre/post archives were restore-verified and all pre-existing tables stayed identical
 during the stopped migration/provisioning interval. The app is running from the updated

@@ -1,7 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { withOwner } from "@deliberation-ai/persistence";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 
-test("NVIDIA hosted editor fixes conservative settings and permits explicit manual model without a catalog call", async ({ page, request }) => {
+test("NVIDIA hosted editor fixes conservative settings and permits explicit manual model without a catalog call", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   let connectionId: string | undefined;
   let catalogCalls = 0;
   await page.route("**/api/provider-connections/*/models", async (route) => {
@@ -44,4 +45,4 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
   } finally {
     if (connectionId) await request.delete(`/api/provider-connections?id=${encodeURIComponent(connectionId)}`);
   }
-});
+}));

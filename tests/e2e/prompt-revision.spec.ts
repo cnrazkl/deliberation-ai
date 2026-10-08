@@ -1,7 +1,8 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls } from "./workspace-navigation";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 
-test("shows additive prompt differences, allows editing and blocks omission before submission", async ({ page }) => {
+test("shows additive prompt differences, allows editing and blocks omission before submission", async ({ page }) => withOwner(testOwnerId(), async () => {
   await page.route("**/api/provider-connections", async (route) => {
     await route.fulfill({ json: { connections: [{
       id: "11111111-1111-4111-8111-111111111111", provider: "openai", label: "Offline revision fixture",
@@ -29,4 +30,4 @@ test("shows additive prompt differences, allows editing and blocks omission befo
   await editor.getByRole("radio", { name: "Özgün soruyu kullan" }).check();
   await expect(page.getByRole("button", { name: "Konseyi çalıştır" })).toBeEnabled();
   expect(submissions).toBe(0);
-});
+}));

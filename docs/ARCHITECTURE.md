@@ -3,7 +3,12 @@
 Local authentication contracts live in contracts; persistence owns scrypt hashes,
 session/token records and per-request AsyncLocalStorage ownership. Every existing BFF
 route binds an authenticated owner centrally; web instrumentation forbids fallback.
-Root selects an explicit user scope, keeping actor identity separate. Worker job
+Root selects an explicit user scope for connection administration only; its role cannot
+enter council/chat routes. AccountDeletionPanel and RootManagement sit outside the
+ordinary CouncilWorkbench. Complete erasure owns an explicit schema/FK-checked closure,
+fingerprinted preview, password confirmation and one transactional delete. Shared owner
+leases fence web/worker activity against exclusive account erasure; a separate lease
+pool avoids starving application queries. Worker job
 ownership comes from persisted targets; schedules scan every owner. Providers/domain
 remain independent of authentication and SDK boundaries are unchanged.
 [Account boundaries](LOCAL_ACCOUNTS.md).

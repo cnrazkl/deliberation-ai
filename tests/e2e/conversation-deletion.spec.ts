@@ -1,21 +1,22 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealConversationOptions } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, testOwnerId } from "./authenticated-test";
 import { eq, inArray, sql } from "drizzle-orm";
-import { closeDatabase, conversations, conversationRuns, getDatabase, LOCAL_OWNER_ID } from "@deliberation-ai/persistence";
+import { closeDatabase, conversations, conversationRuns, getDatabase } from "@deliberation-ai/persistence";
 
-test("reviews deletion of generated empty metadata, rejects invalid confirmations and preserves other conversations and the draft", async ({ page, request }) => {
+test("reviews deletion of generated empty metadata, rejects invalid confirmations and preserves other conversations and the draft", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const target = randomUUID(); const neighbor = randomUUID(); const foreign = randomUUID();
   const source = randomUUID(); const member = randomUUID();
   let generations = 0;
   page.on("request", (value) => { if (value.method() === "POST" && new URL(value.url()).pathname === "/api/runs") generations += 1; });
   try {
     await getDatabase().insert(conversations).values([
-      { id: target, ownerId: LOCAL_OWNER_ID, anchorRunId: source, origin: "native", createdAt: sql`'2400-01-03'::timestamptz` },
-      { id: neighbor, ownerId: LOCAL_OWNER_ID, anchorRunId: randomUUID(), origin: "native", createdAt: sql`'2400-01-02'::timestamptz` },
+      { id: target, ownerId: testOwnerId(), anchorRunId: source, origin: "native", createdAt: sql`'2400-01-03'::timestamptz` },
+      { id: neighbor, ownerId: testOwnerId(), anchorRunId: randomUUID(), origin: "native", createdAt: sql`'2400-01-02'::timestamptz` },
       { id: foreign, ownerId: "foreign-deletion-fixture", anchorRunId: randomUUID(), origin: "native" },
     ]);
-    await getDatabase().insert(conversationRuns).values({ ownerId: LOCAL_OWNER_ID, conversationId: target, runId: member,
+    await getDatabase().insert(conversationRuns).values({ ownerId: testOwnerId(), conversationId: target, runId: member,
       sourceRunId: source, kind: "continuation-full", createdAt: new Date() });
     const endpoint = "/api/conversations/" + target + "/deletion";
     const previewResponse = await request.get(endpoint);
@@ -73,9 +74,9 @@ test("reviews deletion of generated empty metadata, rejects invalid confirmation
     await getDatabase().delete(conversations).where(inArray(conversations.id, [target, neighbor, foreign]));
     await closeDatabase();
   }
-});
+}));
 
-test("failed previews allow retry and a blocked preview cannot delete", async ({ page }) => {
+test("failed previews allow retry and a blocked preview cannot delete", async ({ page }) => withOwner(testOwnerId(), async () => {
   const conversationId = randomUUID(); let fail = true; let deleteCalls = 0;
   await page.route("**/api/conversations", (route) => route.fulfill({ json: { conversations: [{ conversationId,
     createdAt: new Date().toISOString(), origin: "native", recordedRunCount: 1, availableRunCount: 0,
@@ -97,4 +98,4 @@ test("failed previews allow retry and a blocked preview cannot delete", async ({
   await panel.getByRole("button", { name: "Vazgeç", exact: true }).click();
   await expect(panel).toHaveCount(0);
   expect(deleteCalls).toBe(0);
-});
+}));

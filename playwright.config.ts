@@ -1,4 +1,7 @@
 import { defineConfig } from "@playwright/test";
+const port = process.env.DELIBERATION_E2E_PORT ?? "3100";
+if (!/^\d{4,5}$/u.test(port) || Number(port) < 1024 || Number(port) > 65535 || port === "3000") throw new Error("Invalid isolated browser port.");
+const origin = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -7,14 +10,13 @@ export default defineConfig({
   reporter: "line",
   globalSetup: "./tests/e2e/auth-setup.ts",
   use: {
-    baseURL: "http://127.0.0.1:3100",
+    baseURL: origin,
     trace: "retain-on-failure",
     storageState: ".local/e2e/session.json",
-    extraHTTPHeaders: { "X-Deliberation-Owner": "local-owner" },
   },
   webServer: {
     command: "pnpm dev:e2e",
-    url: "http://127.0.0.1:3100",
+    url: origin,
     reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === "true",
     timeout: 60_000,
     stdout: "pipe",

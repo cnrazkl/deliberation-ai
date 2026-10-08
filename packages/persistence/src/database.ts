@@ -29,6 +29,8 @@ export function getDatabase(): NodePgDatabase<typeof schema> {
 }
 
 export async function closeDatabase(): Promise<void> {
+  if (globalThis.deliberationOwnerLeasePool) await globalThis.deliberationOwnerLeasePool.end();
+  globalThis.deliberationOwnerLeasePool = undefined;
   if (globalThis.deliberationPool) await globalThis.deliberationPool.end();
   globalThis.deliberationPool = undefined;
   globalThis.deliberationDb = undefined;

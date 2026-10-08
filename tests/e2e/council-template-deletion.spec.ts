@@ -1,10 +1,11 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import { eq, inArray, sql } from "drizzle-orm";
 import { closeDatabase, councilTemplates, getDatabase } from "@deliberation-ai/persistence";
 
-test("reviews template deletion, rejects stale confirmation and recovers a lost receipt while preserving the council draft", async ({ page, request }) => {
+test("reviews template deletion, rejects stale confirmation and recovers a lost receipt while preserving the council draft", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const ids: string[] = []; const name = `E2E reviewed template ${randomUUID()}`;
   let input: Record<string, unknown> | undefined; let generations = 0;
   page.on("request", (value) => { if (value.method() === "POST" && new URL(value.url()).pathname === "/api/runs") generations++; });
@@ -53,4 +54,4 @@ test("reviews template deletion, rejects stale confirmation and recovers a lost 
     await expect(page.getByLabel("Üye 1 modeli", { exact: true })).toHaveValue("offline-fixture");
     expect(generations).toBe(0);
   } finally { if (ids.length) await getDatabase().delete(councilTemplates).where(inArray(councilTemplates.id, ids)); await closeDatabase(); }
-});
+}));

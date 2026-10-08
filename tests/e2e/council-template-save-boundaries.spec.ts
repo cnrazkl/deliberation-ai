@@ -1,10 +1,11 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import { eq, or } from "drizzle-orm";
 import { closeDatabase, councilTemplates, getDatabase } from "@deliberation-ai/persistence";
 
-test("lost template save responses retry without overwriting drafts or resurrecting explicit deleted identities", async ({ page, request }) => {
+test("lost template save responses retry without overwriting drafts or resurrecting explicit deleted identities", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const name = `E2E template ${randomUUID()}`;
   let id: string | undefined;
   let input: Record<string, unknown> | undefined;
@@ -55,4 +56,4 @@ test("lost template save responses retry without overwriting drafts or resurrect
     await getDatabase().delete(councilTemplates).where(or(eq(councilTemplates.name, name), id ? eq(councilTemplates.id, id) : undefined));
     await closeDatabase();
   }
-});
+}));

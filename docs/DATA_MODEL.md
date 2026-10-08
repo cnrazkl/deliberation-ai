@@ -8,6 +8,14 @@ receive independent `user:<uuid>` owner strings. Existing data/ciphertext is not
 Password hashes are not plaintext passwords or decryptable `*_ciphertext` values.
 [Account/backup contract](LOCAL_ACCOUNTS.md).
 
+Account erasure adds no migration. One transaction removes the ordinary account,
+all owned application rows (including retained deletion/usage receipts and encrypted
+source originals), associated ownerless run/claim/decision children, matching queue
+jobs, own throttle identities and all its sessions. Root sessions selecting the deleted
+account return to their actor scope. FK constraints remain enabled; schema/relationship
+drift or cross-owner incoming references block the operation. Root/other account data
+and shared backups/exports remain unchanged.
+
 Local recovery adds no DDL. Existing private/audit/probe bodies are authenticated
 and retained state is hashed; clone queue parking preserves application receipts.
 Recovery/copy-cleanup receipts are encrypted local files outside Git.

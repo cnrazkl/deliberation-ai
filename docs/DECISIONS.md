@@ -1,5 +1,14 @@
 # Decisions
 
+8 October membership follow-up makes root administration-only, including server-side
+chat/generation denial. Public registration chooses username/password without a required
+display name. Explicit complete account deletion supersedes ordinary per-record retention
+for that account: erase its active-database content, credentials and retained audit rows
+atomically after a reviewed fingerprint and actor-password confirmation. Shared archives
+and exported files stay independently managed. Root is never a deletion target; legacy
+root records remain retained and do not migrate silently to a new ordinary account.
+[Contract](LOCAL_ACCOUNTS.md).
+
 8 October local membership uses DB-backed sessions and explicit per-request/job owner
 context over existing owner columns. Legacy data belongs to the unique root account,
 with actor identity distinct from root's selected workspace. All application routes are

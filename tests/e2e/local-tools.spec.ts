@@ -1,7 +1,8 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { workspaceView } from "./workspace-navigation";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 
-test("keeps a selected MCP result when deletion fails and allows retry", async ({ page }) => {
+test("keeps a selected MCP result when deletion fails and allows retry", async ({ page }) => withOwner(testOwnerId(), async () => {
   const result = {
     id: "22222222-2222-4222-8222-222222222222",
     connectionId: "33333333-3333-4333-8333-333333333333",
@@ -46,4 +47,4 @@ test("keeps a selected MCP result when deletion fails and allows retry", async (
   await expect(card).toHaveCount(0);
   await expect(panel).toContainText("bu çalışma için 0/3 sonuç seçili");
   expect(deleteAttempts).toBe(2);
-});
+}));

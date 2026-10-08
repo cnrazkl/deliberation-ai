@@ -1,6 +1,7 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import type { KnowledgePacket } from "@deliberation-ai/contracts";
 import type { RunRecord } from "@deliberation-ai/application";
 import { revealCouncilControls } from "./workspace-navigation";
@@ -8,7 +9,7 @@ import { cancelDurableRun, closeDatabase, deleteProviderConnection, getDatabase 
 import { eq, inArray } from "drizzle-orm";
 import * as s from "../../packages/persistence/src/schema";
 
-test("selected files produce reviewed frozen citations through real routes and local provider calls", async ({ page, request }) => {
+test("selected files produce reviewed frozen citations through real routes and local provider calls", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   test.setTimeout(90_000);
   const sent: string[] = [];
   const server = createServer(async (incoming, outgoing) => {
@@ -119,4 +120,4 @@ test("selected files produce reviewed frozen citations through real routes and l
     if (connectionId) await deleteProviderConnection(connectionId);
     await closeDatabase(); await new Promise<void>((resolve) => server.close(() => resolve()));
   }
-});
+}));

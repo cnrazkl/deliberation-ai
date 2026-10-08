@@ -1,5 +1,5 @@
 import { LOCAL_SESSION_COOKIE, LOCAL_SESSION_SECONDS, readLocalSession, withOwner, LOCAL_OWNER_ID,
-  LocalAuthError } from "@deliberation-ai/persistence";
+  LocalAuthError, withLiveOwner } from "@deliberation-ai/persistence";
 import { verifyRuntimeReadToken } from "../../../../packages/persistence/src/runtime-read-auth";
 
 export function localSessionToken(request: Request): string | undefined {
@@ -62,11 +62,23 @@ export function withLocalSession<Args extends unknown[]>(handler: (...args: Args
     try { session = await readLocalSession(localSessionToken(request)); }
     catch { return authResponse(request, { error: "Oturum doğrulanamadı." }, 503); }
     if (!session) return Response.json({ error: "Oturum açmanız gerekiyor." }, { status: 401, headers: { "Cache-Control": "no-store" } });
+    if (session.user.role === "root" && !["/api/provider-connections", "/api/mcp-connections", "/api/decision-connections"].includes(path))
+      return authResponse(request, { error: "Root hesabı yalnız kullanıcı ve bağlantı yönetimi için kullanılabilir." }, 403);
     const expected = request.headers.get("x-deliberation-owner") ?? (path.endsWith("/stream") ? new URL(request.url).searchParams.get("owner") : null);
     if ((expected && expected !== session.scope.ownerId) || (!expected && !["GET", "HEAD", "OPTIONS"].includes(request.method)))
       return Response.json({ error: "Hesap alanı değişti. Sayfayı yenileyin." }, { status: 409, headers: { "Cache-Control": "no-store" } });
-    const response = await withOwner(session.scope.ownerId, () => handler(...args));
-    response.headers.set("Cache-Control", "no-store");
-    return response;
+    try {
+      const response = await withLiveOwner(session.scope.ownerId, async () => {
+        const live = await readLocalSession(localSessionToken(request));
+        if (!live || live.user.id !== session.user.id || live.scope.id !== session.scope.id)
+          throw new LocalAuthError("Hesap veya oturum değişti. Sayfayı yenileyin.", 409);
+        return handler(...args);
+      });
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    } catch (error) {
+      if (error instanceof LocalAuthError) return authResponse(request, { error: error.message }, error.status);
+      throw error;
+    }
   };
 }

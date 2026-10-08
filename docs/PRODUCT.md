@@ -1,10 +1,13 @@
 # Product
 
 Local membership now offers registration, username/password login, logout and password
-changes. Each user owns their API connections and full workspace. Root retains legacy
-records, lists users/connection summaries and explicitly opens any user's workspace.
+changes. Registration needs only a chosen username and password. Each user owns their
+API connections and full workspace and can review/confirm complete account deletion.
+Root retains legacy records but uses only user administration: list/edit accounts,
+reset passwords, manage saved connections and review/delete ordinary users. Root cannot
+read/create chats, run models or open the council workspace.
 API keys are usable/editable through connection management but never displayed in
-account summaries. Switching accounts closes unsaved drafts. [Use and scope](LOCAL_ACCOUNTS.md).
+account summaries. [Use and scope](LOCAL_ACCOUNTS.md).
 
 An opt-in local synthesis command generates a claim-linked draft and asks a separate
 model to check meaning against the complete supplied ledger. At most one repair is

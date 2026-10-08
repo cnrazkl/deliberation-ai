@@ -11,15 +11,17 @@ Sign in on the application home page or choose **Yeni hesap oluştur**. Each use
 manages their own provider, MCP and decision connections under **Ayarlar** and uses
 their own saved API keys. Runs, conversations, private branches, templates, memory,
 sources, knowledge grants/packets, preflight drafts and schedules use the same user
-scope. Root's **Kullanıcı yönetimi** lists accounts and connection summaries and can
-open any user's entire workspace. A visible banner identifies the selected account;
-**Root alanına dön** restores root's workspace. Switching/logging out closes the
-current page's unsaved draft. Root can also create ordinary users. Raw API keys and
-password hashes are never returned to either account management or connection UI.
-Root can use/edit connections through the selected workspace without exposing keys.
+scope. Registration chooses a username and password; a separate display name is optional
+in the API and the browser uses the username initially. Root opens **Kullanıcı yönetimi**
+directly and has no council/chat workspace. It lists existing ordinary accounts, edits
+username/display name, resets passwords, reviews account deletion and manages saved
+connections through **Bağlantıları yönet**. Password or username changes revoke that
+user's sessions. Root cannot read/create chats or run/test models, including through
+direct APIs with a selected user scope. Raw API keys and password hashes are never
+returned. Root's old workspace/data stays retained without an automatic transfer.
 
 **Parolayı değiştir** requires the signed-in actor's current password (also while
-root is viewing another user's workspace). It closes all other sessions. Logout
+root is managing another user's connections). It closes all other sessions. Logout
 revokes the current session. Sessions last eight hours, with no sliding renewal.
 Users are local to this installation; internet/LAN hosting is not part of this change.
 
@@ -72,9 +74,38 @@ credentials. Host DB/key administration remains trusted and retains legacy root 
 Machine-key HMAC tokens permit only a 15-second diagnostic GET for hidden runtime health;
 they cannot create sessions, select users, mutate application data or call providers.
 
-Account deletion/reset, email verification, federation and public deployment are outside
+Email verification, federation and public deployment are outside
 the requested local membership scope. Existing independent human-quality gates and the
 two owner-cancelled billing/budget tasks remain unchanged.
+
+## Complete account deletion
+
+An ordinary user selects **Hesabımı sil**. Root selects **Kullanıcıyı sil** on an ordinary
+account. The read-only review shows account identity, connection/run/record totals and
+blockers. Confirmation requires the exact target username, the signed-in actor's current
+password (root's password for administrator deletion) and the reviewed fingerprint.
+The browser also requires explicit permanent-deletion acknowledgement. Root cannot be
+deleted. Other ordinary users cannot inspect/delete someone else's account.
+
+One transaction erases all target-owned application data, including API credentials,
+chat/private/source originals and retained audit/usage records, all associated ownerless
+children, inactive queue jobs and sessions. It retains no recoverable account tombstone.
+Username reuse creates a new UUID/owner and cannot recover the deleted workspace. Root
+sessions selecting the erased user return to their own scope. Other accounts stay intact.
+Already taken backups, independent exports and provider-side API credentials are separate:
+this operation does not selectively rewrite shared archives or revoke keys at providers.
+The deletion screen states those limits before confirmation.
+
+The complete reviewed schema/FK closure and incoming owner relationships must match.
+Unknown tables/columns/FKs/delete triggers and cross-owner references block erasure.
+Inspection bounds are 100,000 application/queue rows and 64 MiB serialized data; exceeding
+them requires local maintenance review. Lock waits/individual statements are bounded.
+Any scope change invalidates the fingerprint. Active runs/decisions/private dispatch,
+active queue jobs or unacknowledged uncertain connection tests block erasure. Terminal
+council/private uncertainty is erased with the explicitly confirmed full account, without
+claiming a provider outcome or retrying it. Shared web/worker lifecycle leases serialize
+in-flight operations against exclusive deletion, and deleted identities cannot acquire
+new leases. Confirmation password attempts are limited to ten per actor per 15 minutes.
 
 ## Verification
 

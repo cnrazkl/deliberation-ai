@@ -1,10 +1,11 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import { eq, sql } from "drizzle-orm";
 import { createRunRequestSchema, defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { createAwaitingPreflightDraft, getDatabase, preflightDrafts, closeDatabase } from "@deliberation-ai/persistence";
 
-test("reviews draft deletion, preserves unsaved inputs on cancel, rejects stale state and recovers a lost committed response", async ({ page, request }) => {
+test("reviews draft deletion, preserves unsaved inputs on cancel, rejects stale state and recovers a lost committed response", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const input = createRunRequestSchema.parse({ idempotencyKey: randomUUID(), question: "Bu sözleşmeyi feshetmeli miyim?",
     providerMode: "fake", riskProfile: "high", reviewRounds: 1,
     members: [defaultFakeCouncilMembers[0]!, { ...defaultFakeCouncilMembers[1]!, councilRole: "red-team" }] });
@@ -60,4 +61,4 @@ test("reviews draft deletion, preserves unsaved inputs on cancel, rejects stale 
   } finally {
     await getDatabase().delete(preflightDrafts).where(eq(preflightDrafts.id, draft.id)); await closeDatabase();
   }
-});
+}));

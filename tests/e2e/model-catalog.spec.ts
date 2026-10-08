@@ -1,9 +1,10 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 import { createServer, type Server } from "node:http";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import { closeDatabase } from "@deliberation-ai/persistence";
 
-test("checks a saved local catalog only on click and offers its models to council members", async ({ page, request }) => {
+test("checks a saved local catalog only on click and offers its models to council members", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const calls: string[] = [];
   const server: Server = createServer((incoming, outgoing) => {
     calls.push(incoming.url ?? "");
@@ -122,4 +123,4 @@ test("checks a saved local catalog only on click and offers its models to counci
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     await closeDatabase();
   }
-});
+}));

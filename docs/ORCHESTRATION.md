@@ -3,6 +3,11 @@
 Council, private-delivery and decision queue handlers derive owner context from the
 persisted job target before loading inputs/connections/receipts. Missing targets cause
 no root fallback. Schedule dispatch enumerates stored owners and binds each separately.
+Web and worker entry points hold shared account lifecycle leases; confirmed erasure
+takes an exclusive lease before checking/removing inactive jobs and all account data.
+Active runs/decisions/private deliveries or queue work block erasure. A deleted user
+cannot reacquire a lease, so previously read requests/schedule targets cannot recreate
+owned data. Erasure starts no model/network call and never authorizes a retry.
 Round independence, frozen snapshots, receipts and no-resend rules remain unchanged.
 [User scope](LOCAL_ACCOUNTS.md).
 

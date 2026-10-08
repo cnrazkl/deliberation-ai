@@ -1,13 +1,14 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealConversationOptions } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { test, expect } from "@playwright/test";
+import {test, expect, testOwnerId } from "./authenticated-test";
 import { eq, sql } from "drizzle-orm";
 import type { PrivateBranchBody } from "@deliberation-ai/contracts";
 import { renderPrivateDelivery } from "@deliberation-ai/domain";
-import { getDatabase, closeDatabase, encryptJson, LOCAL_OWNER_ID, conversations,
+import { getDatabase, closeDatabase, encryptJson, conversations,
   conversationPrivateBranches as branches, privateBranchDeletions } from "@deliberation-ai/persistence";
 
-test("reviews leaf-first private deletion, keeps usage/drafts, rejects stale confirmation and replays a lost committed response", async ({ page, request }) => {
+test("reviews leaf-first private deletion, keeps usage/drafts, rejects stale confirmation and replays a lost committed response", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const conversationId = randomUUID(); const rootId = randomUUID(); const sourceId = randomUUID(); let generations = 0;
   const body: PrivateBranchBody = { version: "private-branch-drafts-v1", forkedFrom: null, deliveryVersion: 1,
     seed: { version: "selected-member-private-seed-v1", conversationId, sourceRunId: sourceId, sourceStateVersion: 1,
@@ -23,8 +24,8 @@ test("reviews leaf-first private deletion, keeps usage/drafts, rejects stale con
     usage: { model: "offline-model", remoteResponseId: "offline-receipt", inputTokens: 21, outputTokens: 7, tokenDetails: null } }];
   page.on("request", (value) => { if (value.method() === "POST" && new URL(value.url()).pathname === "/api/runs") generations++; });
   try {
-    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: sourceId, origin: "native", createdAt: sql`'2400-01-06'::timestamptz` });
-    await getDatabase().insert(branches).values({ id: rootId, ownerId: LOCAL_OWNER_ID, conversationId, sourceRunId: sourceId, sourceMemberId: "private-delete",
+    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: testOwnerId(), anchorRunId: sourceId, origin: "native", createdAt: sql`'2400-01-06'::timestamptz` });
+    await getDatabase().insert(branches).values({ id: rootId, ownerId: testOwnerId(), conversationId, sourceRunId: sourceId, sourceMemberId: "private-delete",
       revision: 2, messageCount: 1, requestId: randomUUID(), requestHash: "private-delete-fixture", bodyCiphertext: encryptJson(body, `private-branch:${rootId}:body`) });
     const childResponse = await request.post("/api/private-branches", { data: { action: "fork", parentBranchId: rootId, expectedRevision: 2, expectedDeliveryVersion: 1, requestId: randomUUID() } });
     expect(childResponse.status()).toBe(200); const child = await childResponse.json() as { id: string };
@@ -96,4 +97,4 @@ test("reviews leaf-first private deletion, keeps usage/drafts, rejects stale con
     await getDatabase().delete(conversations).where(eq(conversations.id, conversationId));
     await closeDatabase();
   }
-});
+}));

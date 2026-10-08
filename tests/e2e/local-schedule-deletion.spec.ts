@@ -1,10 +1,11 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { workspaceView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { expect,test } from "@playwright/test";
+import {expect,test, testOwnerId } from "./authenticated-test";
 import { eq,inArray,sql } from "drizzle-orm";
 import { getDatabase,localSchedules,closeDatabase } from "@deliberation-ai/persistence";
 
-test("deduplicates a lost schedule creation, reviews deletion and recovers a lost committed delete without changing the question",async({page,request})=>{
+test("deduplicates a lost schedule creation, reviews deletion and recovers a lost committed delete without changing the question",async({page,request})=>withOwner(testOwnerId(), async () => {
   const ids:string[]=[];const requests:Array<Record<string,unknown>>=[];let generations=0;let first=true;
   const name=`E2E schedule ${randomUUID()}`;
   page.on("request",value=>{if(value.method()==="POST"&&new URL(value.url()).pathname==="/api/runs")generations++;});
@@ -52,4 +53,4 @@ test("deduplicates a lost schedule creation, reviews deletion and recovers a los
     expect((await request.patch(`/api/local-schedules?id=${id}`,{data:{status:"active"}})).status()).toBe(404);
     await expect(question).toHaveValue("Generated schedule browser comparison question");expect(generations).toBe(0);
   }finally{if(ids.length)await getDatabase().delete(localSchedules).where(inArray(localSchedules.id,ids));await closeDatabase();}
-});
+}));

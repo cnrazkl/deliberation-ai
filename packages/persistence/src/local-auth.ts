@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, eq, gt, lt, sql } from "drizzle-orm";
-import { localRegistrationSchema, localLoginSchema, localPasswordChangeSchema,
+import { localRegistrationSchema, localLoginSchema, localPasswordChangeSchema, localUserUpdateSchema,
   type LocalUserSummary, type LocalSessionSummary } from "@deliberation-ai/contracts";
 import { getDatabase } from "./database";
 import { localUsers, localSessions, localLoginAttempts } from "./schema";
@@ -27,6 +27,7 @@ async function throttle(identity: string, limit: number, seconds: number): Promi
     } }).returning({ attempts: localLoginAttempts.attempts });
   if (!row || row.attempts > limit) throw new LocalAuthError("Çok fazla deneme yapıldı. Bir süre sonra tekrar deneyin.", 429);
 }
+export async function throttleLocalAccountDeletion(userId: string) { await throttle(`delete:${userId}`, 10, 900); }
 export async function provisionLocalRoot(password: string): Promise<LocalUserSummary> {
   const input = localRegistrationSchema.parse({ username: "root", displayName: "Root", password });
   const passwordHash = await hashLocalPassword(input.password);
@@ -56,7 +57,7 @@ export async function registerLocalUser(value: unknown): Promise<LocalUserSummar
     if ((count?.total ?? 0) >= 500) throw new LocalAuthError("Yerel kullanıcı kapasitesi doldu.", 409);
     const id = randomUUID();
     const [created] = await tx.insert(localUsers).values({ id, ownerId: `user:${id}`, username: input.data.username,
-      displayName: input.data.displayName, role: "user", passwordHash }).onConflictDoNothing().returning();
+      displayName: input.data.displayName ?? input.data.username, role: "user", passwordHash }).onConflictDoNothing().returning();
     if (!created) throw new LocalAuthError("Bu kullanıcı adı kullanılamıyor.", 409);
     return summary(created);
   });
@@ -132,4 +133,25 @@ export async function changeLocalPassword(token: string, value: unknown) {
     return { ...current, passwordHash };
   });
   return issue(saved);
+}
+
+export async function updateLocalUser(token: string, userId: string, value: unknown): Promise<LocalUserSummary> {
+  await listLocalUsers(token);
+  const parsed = localUserUpdateSchema.safeParse(value);
+  if (!parsed.success || parsed.data.username === "root") throw new LocalAuthError("Kullanıcı bilgileri geçersiz.");
+  const passwordHash = parsed.data.password ? await hashLocalPassword(parsed.data.password) : undefined;
+  try {
+    return await getDatabase().transaction(async tx => {
+      const [user] = await tx.select().from(localUsers).where(eq(localUsers.id, userId)).for("update").limit(1);
+      if (!user) throw new LocalAuthError("Kullanıcı bulunamadı.", 404);
+      if (user.role === "root") throw new LocalAuthError("Root hesabı bu işlemle değiştirilemez.", 403);
+      const [saved] = await tx.update(localUsers).set({ username: parsed.data.username, displayName: parsed.data.displayName,
+        ...(passwordHash ? { passwordHash } : {}) }).where(eq(localUsers.id, userId)).returning();
+      if (passwordHash || user.username !== saved!.username) await tx.delete(localSessions).where(eq(localSessions.userId, userId));
+      return summary(saved!);
+    });
+  } catch (error) {
+    if (error instanceof LocalAuthError) throw error;
+    throw new LocalAuthError("Kullanıcı güncellenemedi; kullanıcı adı kullanılıyor olabilir.", 409);
+  }
 }

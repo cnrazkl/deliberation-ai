@@ -1,23 +1,24 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, testOwnerId } from "./authenticated-test";
 import { eq, inArray, sql } from "drizzle-orm";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { buildCouncilReport } from "@deliberation-ai/domain";
-import { getDatabase, closeDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, runs, conversationRuns, conversations,
+import { getDatabase, closeDatabase, encryptJson, encryptText, runs, conversationRuns, conversations,
   providerOperations, runDeletions, conversationPrivateBranches, loadRunContinuation } from "@deliberation-ai/persistence";
 
-test("reviews run deletion, preserves the draft, rejects stale state and manually replays a lost committed response", async ({ page, request }) => {
+test("reviews run deletion, preserves the draft, rejects stale state and manually replays a lost committed response", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const id = randomUUID(); const conversationId = randomUUID(); const key = randomUUID(); const op = randomUUID(); let generations = 0;
   const report = buildCouncilReport(defaultFakeCouncilMembers.map((member) => ({ memberId: member.id, label: member.label, councilRole: member.councilRole,
     rawText: "Generated report content to remove", parsed: { summary: "Generated deletion report", claims: [{ statement: "Generated claim", quote: "Generated claim", kind: "objection" as const }] }, citations: [] })), []);
   page.on("request", (value) => { if (value.method() === "POST" && new URL(value.url()).pathname === "/api/runs") generations++; });
   try {
-    await getDatabase().insert(runs).values({ id, ownerId: LOCAL_OWNER_ID, idempotencyKey: key, requestHash: "reviewed-delete-browser",
+    await getDatabase().insert(runs).values({ id, ownerId: testOwnerId(), idempotencyKey: key, requestHash: "reviewed-delete-browser",
       snapshotId: randomUUID(), question: "[encrypted]", questionCiphertext: encryptText("Generated run deletion browser fixture", `run:${id}:question`),
       reportCiphertext: encryptJson(report, `run:${id}:report`), membersCiphertext: encryptJson(defaultFakeCouncilMembers, `run:${id}:members`),
       status: "completed", branchIndexVersion: 1, branchKind: "independent", createdAt: sql`'2400-01-07'::timestamptz`, finishedAt: new Date() });
-    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: id, origin: "native" });
-    await getDatabase().insert(conversationRuns).values({ ownerId: LOCAL_OWNER_ID, conversationId, runId: id, kind: "independent", createdAt: sql`'2400-01-07'::timestamptz` });
+    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: testOwnerId(), anchorRunId: id, origin: "native" });
+    await getDatabase().insert(conversationRuns).values({ ownerId: testOwnerId(), conversationId, runId: id, kind: "independent", createdAt: sql`'2400-01-07'::timestamptz` });
     await getDatabase().insert(providerOperations).values({ id: op, runId: id, memberId: defaultFakeCouncilMembers[0]!.id,
       provider: "fake", model: "offline-model", status: "failed", requestFingerprint: "fixture-request", inputTokens: 0, outputTokens: null });
     const endpoint = `/api/runs/${id}/deletion`;
@@ -69,26 +70,26 @@ test("reviews run deletion, preserves the draft, rejects stale state and manuall
     await getDatabase().delete(conversations).where(eq(conversations.id, conversationId));
     await getDatabase().delete(runs).where(eq(runs.id, id)); await closeDatabase();
   }
-});
+}));
 
-test("run deletion preview blocks copied context and running work without generating or deleting content", async ({ page, request }) => {
+test("run deletion preview blocks copied context and running work without generating or deleting content", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const source = randomUUID(); const child = randomUUID(); const conversationId = randomUUID(); let generations = 0;
   const report = buildCouncilReport(defaultFakeCouncilMembers.map((member) => ({ memberId: member.id, label: member.label, councilRole: member.councilRole,
     rawText: "Copied fixture report", parsed: { summary: "Copied fixture", claims: [] }, citations: [] })), []);
   page.on("request", (value) => { if (value.method() === "POST" && new URL(value.url()).pathname === "/api/runs") generations++; });
   try {
-    await getDatabase().insert(runs).values({ id: source, ownerId: LOCAL_OWNER_ID, idempotencyKey: randomUUID(), requestHash: "copy-fixture",
+    await getDatabase().insert(runs).values({ id: source, ownerId: testOwnerId(), idempotencyKey: randomUUID(), requestHash: "copy-fixture",
       snapshotId: randomUUID(), question: "[encrypted]", questionCiphertext: encryptText("Generated blocked deletion fixture", `run:${source}:question`),
       reportCiphertext: encryptJson(report, `run:${source}:report`), membersCiphertext: encryptJson(defaultFakeCouncilMembers, `run:${source}:members`),
       status: "completed", branchIndexVersion: 1, branchKind: "independent", createdAt: sql`'2400-01-08'::timestamptz`, finishedAt: new Date() });
     const context = await loadRunContinuation(source);
-    await getDatabase().insert(runs).values({ id: child, ownerId: LOCAL_OWNER_ID, idempotencyKey: randomUUID(), requestHash: "copy-fixture-child",
+    await getDatabase().insert(runs).values({ id: child, ownerId: testOwnerId(), idempotencyKey: randomUUID(), requestHash: "copy-fixture-child",
       snapshotId: randomUUID(), question: "Copied generated child", continuationContextCiphertext: encryptJson(context, `run:${child}:continuation-context`),
       status: "running", branchIndexVersion: 1, branchKind: "continuation-full", branchSourceRunId: source, createdAt: sql`'2400-01-09'::timestamptz` });
-    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: source, origin: "native" });
+    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: testOwnerId(), anchorRunId: source, origin: "native" });
     await getDatabase().insert(conversationRuns).values([
-      { ownerId: LOCAL_OWNER_ID, conversationId, runId: source, kind: "independent", createdAt: sql`'2400-01-08'::timestamptz` },
-      { ownerId: LOCAL_OWNER_ID, conversationId, runId: child, kind: "continuation-full", sourceRunId: source, createdAt: sql`'2400-01-09'::timestamptz` },
+      { ownerId: testOwnerId(), conversationId, runId: source, kind: "independent", createdAt: sql`'2400-01-08'::timestamptz` },
+      { ownerId: testOwnerId(), conversationId, runId: child, kind: "continuation-full", sourceRunId: source, createdAt: sql`'2400-01-09'::timestamptz` },
     ]);
     const active = await (await request.get(`/api/runs/${child}/deletion`)).json(); expect(active.blockedReasons).toContain("active_run");
     await page.goto("/"); const history = page.locator("details.run-history"); const card = history.locator(`[data-run-id="${source}"]`);
@@ -106,4 +107,4 @@ test("run deletion preview blocks copied context and running work without genera
     await getDatabase().delete(conversations).where(eq(conversations.id, conversationId));
     await getDatabase().delete(runs).where(inArray(runs.id, [source, child])); await closeDatabase();
   }
-});
+}));

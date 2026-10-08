@@ -53,6 +53,11 @@
 .account-user-list article { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px; background: var(--surface-subtle); border-radius: 10px; }
 .account-user-list article > div { display: grid; gap: 5px; margin-right: auto; }
 .account-message { margin: 12px 24px; }
+.account-panel .account-check { display: flex; align-items: start; gap: 10px; }
+.account-panel .account-check input { width: 20px; min-height: 20px; flex: 0 0 20px; }
+.account-admin { padding-bottom: 32px; }
+.account-connection { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.account-user-list article, .account-connection { overflow-wrap: anywhere; }
 @media (max-width: 560px) { .account-bar { padding: 12px 16px; } .account-login-card { padding: 24px; } }
 [hidden] { display: none !important; }
 

@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { afterAll, beforeAll, expect, test } from "vitest";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { provisionLocalRoot, registerLocalUser, loginLocalUser, readLocalSession, logoutLocalUser, listLocalUsers, selectLocalUserScope, changeLocalPassword } from "./local-auth";
 import { closeDatabase, getDatabase } from "./database";
 import { closeBoss } from "./queue";
@@ -19,6 +19,10 @@ import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { readHostQuiescence } from "./host-quiescence";
 import { auditRestoredAccounts } from "../scripts/backup-account-audit";
 import { Client } from "pg";
+import { previewLocalAccountDeletion, deleteLocalAccount } from "./local-account-deletion";
+import { updateLocalUser } from "./local-auth";
+import { withLiveOwner } from "./owner-lifecycle";
+import { importKnowledgeFiles } from "./knowledge-sources";
 
 const password = randomBytes(24).toString("base64url");
 let root: Awaited<ReturnType<typeof provisionLocalRoot>>;
@@ -140,4 +144,107 @@ test("restore audit checks credential formats and rejects corrupted user session
     await client.query("ROLLBACK");
     expect(await auditRestoredAccounts(client)).toMatchObject({ users: 3, roots: 1 });
   } finally { await client.query("ROLLBACK"); await client.end(); }
+});
+
+test("self deletion removes populated data, credentials, queue jobs and all sessions, preserving other users", async () => {
+  const user = await registerLocalUser({ username: `erase_${randomBytes(5).toString("hex")}`, password });
+  expect(user.displayName).toBe(user.username);
+  const login = await loginLocalUser({ username: user.username, password }), second = await loginLocalUser({ username: user.username, password });
+  let runId = "";
+  await withOwner(user.ownerId, async () => {
+    await saveProviderConnection({ provider: "openai", label: "Delete credential", defaultModel: "offline", apiKey: "generated-test-secret", endpointPreset: "custom", reasoningProtocol: "openai", structuredOutputMode: "json-schema" });
+    await saveDecisionConnection({ label: "Delete decision", defaultModel: "offline", apiKey: "generated-test-secret" });
+    await saveMcpConnection({ label: "Delete MCP", endpoint: "http://127.0.0.1:9876/mcp" });
+    const collection = await createKnowledgeCollection("Erase sources");
+    const scope = await changeKnowledgeGrant(collection.id, 1, "active");
+    await importKnowledgeFiles(scope, [{ sourceId: randomUUID(), expectedVersionId: null, name: "erase.txt", mediaType: "text/plain", bytes: Buffer.from("Generated account deletion fixture.") }]);
+    const run = await enqueueDurableRun({ question: "Offline account deletion fixture question", idempotencyKey: randomUUID(), scenario: "success", providerMode: "fake", reviewRounds: 0, memoryEntryIds: [] });
+    runId = run.runId;
+    expect((await previewLocalAccountDeletion(login.token)).eligible).toBe(false);
+    await withWorkerOwner("run", runId, () => executeDurableRun(runId));
+  });
+  const preview = await previewLocalAccountDeletion(login.token);
+  expect(preview).toMatchObject({ eligible: true, connectionCount: 3, runCount: 1 });
+  expect(preview.recordCount).toBeGreaterThan(10);
+  await expect(deleteLocalAccount(login.token, { username: user.username, currentPassword: "wrong", fingerprint: preview.fingerprint })).rejects.toMatchObject({ status: 401 });
+  await withOwner(user.ownerId, () => saveMcpConnection({ label: "After preview", endpoint: "http://127.0.0.1:9876/changed" }));
+  await expect(deleteLocalAccount(login.token, { username: user.username, currentPassword: password, fingerprint: preview.fingerprint })).rejects.toMatchObject({ status: 409 });
+  const fresh = await previewLocalAccountDeletion(login.token);
+  expect(await deleteLocalAccount(login.token, { username: user.username, currentPassword: password, fingerprint: fresh.fingerprint })).toEqual({ deleted: true });
+  expect(await readLocalSession(login.token)).toBeNull(); expect(await readLocalSession(second.token)).toBeNull();
+  await expect(loginLocalUser({ username: user.username, password })).rejects.toMatchObject({ status: 401 });
+  await expect(withLiveOwner(user.ownerId, async () => saveMcpConnection({ label: "Resurrection", endpoint: "http://127.0.0.1:9876" }))).rejects.toMatchObject({ status: 401 });
+  const db = getDatabase();
+  const remaining = await db.execute<{ count: number }>(sql`SELECT count(*)::int AS count FROM runs WHERE id=${runId}::uuid`);
+  expect(remaining.rows[0]!.count).toBe(0);
+  const columns = await db.execute<{ table: string }>(sql`SELECT table_name AS "table" FROM information_schema.columns WHERE table_schema='public' AND column_name='owner_id'`);
+  for (const { table } of columns.rows) {
+    const result = await db.execute<{ count: number }>(sql`SELECT count(*)::int AS count FROM ${sql.identifier(table)} WHERE owner_id=${user.ownerId}`);
+    expect(result.rows[0]!.count, table).toBe(0);
+  }
+  expect((await db.select().from(localUsers).where(eq(localUsers.id, alice.id))).length).toBe(1);
+  expect((await withOwner(alice.ownerId, () => listProviderConnections())).length).toBe(1);
+  expect((await db.execute<{ count: number }>(sql`SELECT count(*)::int AS count FROM pgboss.job WHERE data->>'runId'=${runId}`)).rows[0]!.count).toBe(0);
+});
+
+test("only root updates/deletes another account; resets revoke sessions and root cannot be deleted", async () => {
+  const user = await registerLocalUser({ username: `manage_${randomBytes(5).toString("hex")}`, password });
+  const member = await loginLocalUser({ username: user.username, password }), admin = await loginLocalUser({ username: "root", password });
+  await expect(previewLocalAccountDeletion(member.token, alice.id)).rejects.toMatchObject({ status: 403 });
+  await expect(updateLocalUser(member.token, alice.id, { username: "hijack", displayName: "Hijack" })).rejects.toMatchObject({ status: 403 });
+  await expect(previewLocalAccountDeletion(admin.token)).rejects.toMatchObject({ status: 403 });
+  await expect(updateLocalUser(admin.token, root.id, { username: "otherroot", displayName: "Hijack" })).rejects.toMatchObject({ status: 403 });
+  const newPassword = randomBytes(24).toString("hex");
+  await updateLocalUser(admin.token, user.id, { username: user.username, displayName: "Managed", password: newPassword });
+  expect(await readLocalSession(member.token)).toBeNull();
+  await expect(loginLocalUser({ username: user.username, password })).rejects.toMatchObject({ status: 401 });
+  const newSession = await loginLocalUser({ username: user.username, password: newPassword });
+  await selectLocalUserScope(admin.token, user.id);
+  const preview = await previewLocalAccountDeletion(admin.token, user.id);
+  expect(await deleteLocalAccount(admin.token, { username: user.username, currentPassword: password, fingerprint: preview.fingerprint }, user.id)).toEqual({ deleted: true });
+  expect(await readLocalSession(newSession.token)).toBeNull();
+  expect((await readLocalSession(admin.token))?.scope.id).toBe(root.id);
+  await logoutLocalUser(admin.token);
+});
+
+test("deletion waits for an in-flight owner lease and schema drift blocks erasure", async () => {
+  const user = await registerLocalUser({ username: `fence_${randomBytes(5).toString("hex")}`, password });
+  const login = await loginLocalUser({ username: user.username, password });
+  const preview = await previewLocalAccountDeletion(login.token);
+  let release!: () => void, entered!: () => void;
+  const ready = new Promise<void>(resolve => { entered = resolve; });
+  const pending = withLiveOwner(user.ownerId, async () => { entered(); await new Promise<void>(resolve => { release = resolve; }); });
+  await ready;
+  try { await expect(deleteLocalAccount(login.token, { username: user.username, currentPassword: password, fingerprint: preview.fingerprint })).rejects.toMatchObject({ status: 409 }); }
+  finally { release(); await pending; }
+  const client = new Client({ connectionString: process.env.DATABASE_URL }); await client.connect();
+  try {
+    await client.query("CREATE TABLE account_drift_fixture(owner_id text)");
+    await expect(previewLocalAccountDeletion(login.token)).rejects.toMatchObject({ status: 409 });
+  } finally { await client.query("DROP TABLE IF EXISTS account_drift_fixture"); await client.end(); }
+  const fresh = await previewLocalAccountDeletion(login.token);
+  await deleteLocalAccount(login.token, { username: user.username, currentPassword: password, fingerprint: fresh.fingerprint });
+});
+
+test("a cross-owner foreign-key reference blocks deletion without mutating either account", async () => {
+  const user = await registerLocalUser({ username: `foreign_${randomBytes(5).toString("hex")}`, password });
+  const login = await loginLocalUser({ username: user.username, password });
+  const collection = await withOwner(user.ownerId, () => createKnowledgeCollection("Cross-reference fixture"));
+  const client = new Client({ connectionString: process.env.DATABASE_URL }); await client.connect();
+  const grantId = randomUUID();
+  try {
+    await client.query("DELETE FROM knowledge_grants WHERE collection_id=$1", [collection.id]);
+    await client.query("INSERT INTO knowledge_grants(id,owner_id,collection_id,revision,status) VALUES($1,$2,$3,1,'active')", [grantId, alice.ownerId, collection.id]);
+    await expect(previewLocalAccountDeletion(login.token)).rejects.toMatchObject({ status: 409 });
+    expect((await client.query("SELECT 1 FROM local_users WHERE id=$1", [user.id])).rowCount).toBe(1);
+    expect((await client.query("SELECT 1 FROM knowledge_grants WHERE id=$1", [grantId])).rowCount).toBe(1);
+  } finally { await client.query("DELETE FROM knowledge_grants WHERE id=$1", [grantId]); await client.end(); }
+  const preview = await previewLocalAccountDeletion(login.token);
+  const corrupted = randomBytes(32).toString("hex");
+  const connection = new Client({ connectionString: process.env.DATABASE_URL }); await connection.connect();
+  try {
+    await connection.query("INSERT INTO local_sessions(token_hash,user_id,scope_user_id,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')", [corrupted, alice.id, user.id]);
+    await expect(previewLocalAccountDeletion(login.token)).rejects.toMatchObject({ status: 409 });
+  } finally { await connection.query("DELETE FROM local_sessions WHERE token_hash=$1", [corrupted]); await connection.end(); }
+  await deleteLocalAccount(login.token, { username: user.username, currentPassword: password, fingerprint: preview.fingerprint });
 });

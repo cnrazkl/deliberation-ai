@@ -1,11 +1,12 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, testOwnerId } from "./authenticated-test";
 import { eq, sql, inArray } from "drizzle-orm";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { buildCouncilReport } from "@deliberation-ai/domain";
-import { getDatabase, closeDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, runs, claims, conversationRuns, conversations, createKnowledgeCollection, changeKnowledgeGrant, evidencePublications, knowledgeSources, knowledgeSourceVersions, knowledgeGrants, knowledgeCollections } from "@deliberation-ai/persistence";
+import { getDatabase, closeDatabase, encryptJson, encryptText, runs, claims, conversationRuns, conversations, createKnowledgeCollection, changeKnowledgeGrant, evidencePublications, knowledgeSources, knowledgeSourceVersions, knowledgeGrants, knowledgeCollections } from "@deliberation-ai/persistence";
 
-test("candidate inbox preserves originals, retries lost replies and separates review from claim state without provider calls", async ({ page, request }) => {
+test("candidate inbox preserves originals, retries lost replies and separates review from claim state without provider calls", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   test.setTimeout(60_000);
   const id = randomUUID(), conversationId = randomUUID(), claimRowId = randomUUID(); let generations = 0;
   const report = buildCouncilReport(defaultFakeCouncilMembers.slice(0, 2).map((member) => ({ memberId: member.id, label: member.label, councilRole: member.councilRole,
@@ -16,12 +17,12 @@ test("candidate inbox preserves originals, retries lost replies and separates re
   await changeKnowledgeGrant(collection.id, 1, "active");
   page.on("request", (value) => { if (value.method() === "POST" && new URL(value.url()).pathname === "/api/runs") generations++; });
   try {
-    await getDatabase().insert(runs).values({ id, ownerId: LOCAL_OWNER_ID, idempotencyKey: randomUUID(), requestHash: "candidate-browser-fixture", snapshotId: randomUUID(),
+    await getDatabase().insert(runs).values({ id, ownerId: testOwnerId(), idempotencyKey: randomUUID(), requestHash: "candidate-browser-fixture", snapshotId: randomUUID(),
       question: "[encrypted]", questionCiphertext: encryptText("Generated inbox browser fixture", `run:${id}:question`), reportCiphertext: encryptJson(report, `run:${id}:report`),
       membersCiphertext: encryptJson(defaultFakeCouncilMembers.slice(0, 2), `run:${id}:members`), status: "completed", branchIndexVersion: 1, branchKind: "independent", createdAt: sql`'2400-01-08'::timestamptz`, finishedAt: new Date() });
     await getDatabase().insert(claims).values({ id: claimRowId, runId: id, statement: "[encrypted]", statementCiphertext: encryptText(claim.statement, `claim:${claimRowId}:statement`), reportClaimId: claim.claimId, disposition: "represented" });
-    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: id, origin: "native" });
-    await getDatabase().insert(conversationRuns).values({ ownerId: LOCAL_OWNER_ID, conversationId, runId: id, kind: "independent", createdAt: sql`'2400-01-08'::timestamptz` });
+    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: testOwnerId(), anchorRunId: id, origin: "native" });
+    await getDatabase().insert(conversationRuns).values({ ownerId: testOwnerId(), conversationId, runId: id, kind: "independent", createdAt: sql`'2400-01-08'::timestamptz` });
     await page.goto("/");
     const card = page.locator(`details.run-history [data-run-id="${id}"]`);
     await expect(card).toBeVisible(); await card.getByRole("button", { name: "Çalışmayı aç", exact: true }).click();
@@ -121,4 +122,4 @@ test("candidate inbox preserves originals, retries lost replies and separates re
     await getDatabase().delete(conversationRuns).where(eq(conversationRuns.runId, id)); await getDatabase().delete(runs).where(eq(runs.id, id));
     await getDatabase().delete(conversations).where(eq(conversations.id, conversationId)); await closeDatabase();
   }
-});
+}));

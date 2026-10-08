@@ -1,7 +1,8 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls } from "./workspace-navigation";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 
-test("explains automatic risk and requires controls without changing the owner's question or calling a model", async ({ page, request }) => {
+test("explains automatic risk and requires controls without changing the owner's question or calling a model", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   let submissions = 0;
   await page.route("**/api/provider-connections", async (route) => {
     await route.fulfill({ json: { connections: [{
@@ -48,4 +49,4 @@ test("explains automatic risk and requires controls without changing the owner's
   } });
   expect(schedule.status()).toBe(422);
   expect(await schedule.json()).toMatchObject({ riskAssessment: { effectiveProfile: "high" } });
-});
+}));

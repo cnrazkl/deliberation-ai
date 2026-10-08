@@ -1,13 +1,14 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealConversationOptions, workspaceView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { test, expect } from "@playwright/test";
+import {test, expect, testOwnerId } from "./authenticated-test";
 import { eq, sql } from "drizzle-orm";
 import { buildCouncilReport } from "@deliberation-ai/domain";
 import type { CouncilMemberConfig } from "@deliberation-ai/contracts";
-import { closeDatabase, getDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, conversations, conversationRuns, runs,
+import { closeDatabase, getDatabase, encryptJson, encryptText, conversations, conversationRuns, runs,
   conversationPrivateBranches as branches, type PrivateBranchView } from "@deliberation-ai/persistence";
 
-test("private drafts preserve the council draft, retry one committed message, fork separately and survive fixture source deletion", async ({ page, request }) => {
+test("private drafts preserve the council draft, retry one committed message, fork separately and survive fixture source deletion", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const sourceId = randomUUID(); const conversationId = randomUUID(); let generationCalls = 0;
   const members: CouncilMemberConfig[] = [
     { id: "private-one", label: "Private selected member", role: "Selected perspective", provider: "fake", model: "fake-one", perspective: "risk", councilRole: "red-team", reasoningLevel: "default", webSearchMode: "off" },
@@ -18,12 +19,12 @@ test("private drafts preserve the council draft, retry one committed message, fo
       claims: [{ statement: member.label, kind: "objection" as const, quote: member.label }] }, citations: [] })), []);
   page.on("request", (value) => { if (value.method() === "POST" && new URL(value.url()).pathname === "/api/runs") generationCalls += 1; });
   try {
-    await getDatabase().insert(runs).values({ id: sourceId, ownerId: LOCAL_OWNER_ID, idempotencyKey: randomUUID(), requestHash: "private-e2e-fixture", snapshotId: randomUUID(),
+    await getDatabase().insert(runs).values({ id: sourceId, ownerId: testOwnerId(), idempotencyKey: randomUUID(), requestHash: "private-e2e-fixture", snapshotId: randomUUID(),
       question: "[encrypted]", questionCiphertext: encryptText("Private branch E2E source question", `run:${sourceId}:question`),
       membersCiphertext: encryptJson(members, `run:${sourceId}:members`), reportCiphertext: encryptJson(report, `run:${sourceId}:report`),
       status: "completed", branchIndexVersion: 1, branchKind: "independent", createdAt: sql`'2400-01-05'::timestamptz`, finishedAt: new Date() });
-    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: sourceId, origin: "native", createdAt: sql`'2400-01-05'::timestamptz` });
-    await getDatabase().insert(conversationRuns).values({ ownerId: LOCAL_OWNER_ID, runId: sourceId, conversationId, kind: "independent", createdAt: sql`(select created_at from runs where id = ${sourceId}::uuid)` });
+    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: testOwnerId(), anchorRunId: sourceId, origin: "native", createdAt: sql`'2400-01-05'::timestamptz` });
+    await getDatabase().insert(conversationRuns).values({ ownerId: testOwnerId(), runId: sourceId, conversationId, kind: "independent", createdAt: sql`(select created_at from runs where id = ${sourceId}::uuid)` });
     const seedUrl = `/api/runs/${sourceId}/private-branch-seed?member=private-one`;
     const preview = await request.get(seedUrl); expect(preview.status()).toBe(200); expect(preview.headers()["cache-control"]).toBe("no-store");
     const seed = await preview.json() as { sha256: string };
@@ -140,4 +141,4 @@ test("private drafts preserve the council draft, retry one committed message, fo
     await getDatabase().delete(runs).where(eq(runs.id, sourceId));
     await closeDatabase();
   }
-});
+}));

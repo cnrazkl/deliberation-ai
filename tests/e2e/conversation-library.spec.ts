@@ -1,12 +1,13 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, testOwnerId } from "./authenticated-test";
 import { eq, inArray, sql } from "drizzle-orm";
 import { closeBoss, closeDatabase, enqueueDurableRun, executeDurableRun, getDatabase, loadRunConversation, RUN_COUNCIL_QUEUE } from "@deliberation-ai/persistence";
-import { LOCAL_OWNER_ID } from "../../packages/persistence/src/owner";
+
 import { conversations, conversationRuns, runs } from "../../packages/persistence/src/schema";
 
-test("discovers saved conversations, paginates and opens a result without changing the draft or starting generation", async ({ page, request }) => {
+test("discovers saved conversations, paginates and opens a result without changing the draft or starting generation", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const ids: string[] = []; const conversationIds: string[] = [];
   try {
     const value = await enqueueDurableRun({ question: `Kayıtlı konuşma hangi alternatifleri içerir ${randomUUID()}?`, idempotencyKey: randomUUID(), providerMode: "fake", scenario: "success", reviewRounds: 0, memoryEntryIds: [] });
@@ -15,7 +16,7 @@ test("discovers saved conversations, paginates and opens a result without changi
     await getDatabase().update(conversations).set({ createdAt: sql`'2301-01-01 00:00:00+00'::timestamptz` }).where(eq(conversations.id, view.conversationId));
     for (let i = 0; i < 21; i++) {
       const id = randomUUID(); conversationIds.push(id);
-      await getDatabase().insert(conversations).values({ id, ownerId: LOCAL_OWNER_ID, anchorRunId: randomUUID(), origin: "native", createdAt: sql`'2300-01-01 00:00:00+00'::timestamptz` });
+      await getDatabase().insert(conversations).values({ id, ownerId: testOwnerId(), anchorRunId: randomUUID(), origin: "native", createdAt: sql`'2300-01-01 00:00:00+00'::timestamptz` });
     }
     expect((await request.get("/api/conversations?before=invalid")).status()).toBe(400);
     expect((await request.get(`/api/conversations?before=${randomUUID()}`)).status()).toBe(404);
@@ -50,9 +51,9 @@ test("discovers saved conversations, paginates and opens a result without changi
     }
     await closeDatabase();
   }
-});
+}));
 
-test("retrying the list preserves the draft and a refreshed first page rejects a stale older response", async ({ page }) => {
+test("retrying the list preserves the draft and a refreshed first page rejects a stale older response", async ({ page }) => withOwner(testOwnerId(), async () => {
   const currentId = randomUUID(); const staleId = randomUUID(); const freshId = randomUUID();
   const item = (id: string, question: string) => ({ conversationId: id, createdAt: new Date().toISOString(), origin: "native",
     recordedRunCount: 1, availableRunCount: 1, unavailableRunCount: 0,
@@ -88,4 +89,4 @@ test("retrying the list preserves the draft and a refreshed first page rejects a
     await expect(library).not.toContainText("Eski isteğin sonucu");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Liste yenilenirken korunacak taslak");
   } finally { releaseOlder(); }
-});
+}));

@@ -1,7 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { withOwner } from "@deliberation-ai/persistence";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import type { RunRecord } from "@deliberation-ai/application";
 
-test("keeps observing an active run after the former polling deadline", async ({ page }) => {
+test("keeps observing an active run after the former polling deadline", async ({ page }) => withOwner(testOwnerId(), async () => {
   test.setTimeout(60_000);
   const runId = "11111111-1111-4111-8111-111111111111";
   const question = "Uzun süren bir konsey çalışmasının sonucu beklenirken ilerleme izleme sürmeli mi?";
@@ -93,4 +94,4 @@ test("keeps observing an active run after the former polling deadline", async ({
 
   completed = true;
   await expect(page.getByText("Konsey tamamlandı", { exact: true })).toBeVisible({ timeout: 5_000 });
-});
+}));

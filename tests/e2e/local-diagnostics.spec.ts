@@ -1,7 +1,8 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { workspaceView } from "./workspace-navigation";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 
-test("terminal submitted council receipts are shown for manual decision without sending anything", async ({ page }) => {
+test("terminal submitted council receipts are shown for manual decision without sending anything", async ({ page }) => withOwner(testOwnerId(), async () => {
   const writes: string[] = [];
   page.on("request", request => { if (request.method() === "POST") writes.push(request.url()); });
   await page.route("**/api/provider-operations", route => route.fulfill({ json: { operations: [{
@@ -17,9 +18,9 @@ test("terminal submitted council receipts are shown for manual decision without 
   await expect(panel.getByRole("button", { name: "Yeni denemeye izin ver" })).toBeVisible();
   await panel.getByRole("button", { name: "Yenile", exact: true }).click();
   expect(writes).toEqual([]);
-});
+}));
 
-test("shows read-only local database and worker diagnostics", async ({ page }) => {
+test("shows read-only local database and worker diagnostics", async ({ page }) => withOwner(testOwnerId(), async () => {
   await page.goto("/"); await workspaceView(page, "Ayarlar");
   const panel = page.locator(".diagnostics-card");
   await expect(panel.locator("summary")).toContainText("Worker");
@@ -28,9 +29,9 @@ test("shows read-only local database and worker diagnostics", async ({ page }) =
   await expect(panel.getByText("Belirsiz sağlayıcı işlemi")).toBeVisible();
   await panel.getByRole("button", { name: "Durumu yenile" }).click();
   await expect(panel.getByText("Son kontrol:")).toBeVisible();
-});
+}));
 
-test("explains stalled running work and unknown council outcomes without resubmission", async ({ page }) => {
+test("explains stalled running work and unknown council outcomes without resubmission", async ({ page }) => withOwner(testOwnerId(), async () => {
   const writes: string[] = [];
   let recovered = false;
   page.on("request", (request) => { if (request.method() === "POST") writes.push(request.url()); });
@@ -50,9 +51,9 @@ test("explains stalled running work and unknown council outcomes without resubmi
   await expect(panel.locator(".inline-warning")).toHaveCount(0);
   await expect(panel.locator("summary")).toContainText("hazır");
   expect(writes).toEqual([]);
-});
+}));
 
-test("separates recovery hold, private/decision/probe uncertainty, queue age and backup warnings", async ({ page }) => {
+test("separates recovery hold, private/decision/probe uncertainty, queue age and backup warnings", async ({ page }) => withOwner(testOwnerId(), async () => {
   const writes: string[] = [];
   page.on("request", (request) => { if (request.method() === "POST") writes.push(request.url()); });
   await page.route("**/api/local-diagnostics", (route) => route.fulfill({ json: {
@@ -68,4 +69,4 @@ test("separates recovery hold, private/decision/probe uncertainty, queue age and
   await expect(panel.getByText(/Kayıtlı yedek bilgisi yok/)).toBeVisible();
   await expect(panel.getByText(/bir günden eski/)).toBeVisible();
   await panel.getByRole("button", { name: "Durumu yenile" }).click(); expect(writes).toEqual([]);
-});
+}));

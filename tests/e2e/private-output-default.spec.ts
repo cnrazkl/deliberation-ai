@@ -1,7 +1,8 @@
-import { test, expect } from "@playwright/test";
+import { withOwner } from "@deliberation-ai/persistence";
+import {test, expect, testOwnerId } from "./authenticated-test";
 import { workspaceView } from "./workspace-navigation";
 
-test("private output default requires save, survives reload, synchronizes tabs and resets", async ({ page, context }) => {
+test("private output default requires save, survives reload, synchronizes tabs and resets", async ({ page, context }) => withOwner(testOwnerId(), async () => {
   let mutations = 0;
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
@@ -24,9 +25,9 @@ test("private output default requires save, survives reload, synchronizes tabs a
   await panel.getByRole("button", { name: "Varsayılanı 1024'e sıfırla" }).click();
   await expect(other.getByRole("region", { name: "Özel yanıt varsayılanı" })).toContainText("Kaydedilen varsayılan: 1024 token");
   expect(mutations).toBe(0);
-});
+}));
 
-test("invalid stored values fall back and blocked storage reports a failed save", async ({ page }) => {
+test("invalid stored values fall back and blocked storage reports a failed save", async ({ page }) => withOwner(testOwnerId(), async () => {
   await page.addInitScript(() => localStorage.setItem("deliberation-private-output-default-v1", "1025"));
   await page.goto("/"); await workspaceView(page, "Ayarlar");
   const panel = page.getByRole("region", { name: "Özel yanıt varsayılanı", exact: true });
@@ -36,4 +37,4 @@ test("invalid stored values fall back and blocked storage reports a failed save"
   await panel.getByRole("button", { name: "Varsayılanı bu tarayıcıya kaydet" }).click();
   await expect(panel.getByRole("status")).toContainText("kaydedilemedi");
   await expect(panel).toContainText("Kaydedilen varsayılan: 1024 token");
-});
+}));

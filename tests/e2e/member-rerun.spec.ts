@@ -1,12 +1,13 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 import { createServer, type Server } from "node:http";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import type { ExecutionLimits } from "@deliberation-ai/contracts";
 import { cancelDurableRun, closeDatabase, deleteProviderConnection, getDatabase, getProviderBilling, recordProviderPrice, recordProviderBilling, recordProviderBillingChange, recordBillingReallocation } from "@deliberation-ai/persistence";
 import { eq, inArray, or } from "drizzle-orm";
 import { providerBillingChanges, providerBillingClaims, providerBillingReallocations, providerBillingRecords, providerOperations, providerPriceSnapshots, runs } from "../../packages/persistence/src/schema";
 
-test("reruns only the selected member against a local mock endpoint", async ({ page, request }) => {
+test("reruns only the selected member against a local mock endpoint", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   let calls = 0;
   const sentMaxOutputTokens: Array<number | undefined> = [];
   const executionLimits: ExecutionLimits = { version: "dispatch-limits-v1", maxProviderCalls: 2,
@@ -190,9 +191,9 @@ test("reruns only the selected member against a local mock endpoint", async ({ p
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     await closeDatabase();
   }
-});
+}));
 
-test("keeps limits optional and blocks an insufficient plan before any dispatch", async ({ page }) => {
+test("keeps limits optional and blocks an insufficient plan before any dispatch", async ({ page }) => withOwner(testOwnerId(), async () => {
   let runSubmissions = 0;
   let scheduleSubmissions = 0;
   // Browser-only connection metadata enables the form; no credential or connection is saved.
@@ -255,4 +256,4 @@ test("keeps limits optional and blocks an insufficient plan before any dispatch"
   await expect(createSchedule).toBeEnabled();
   expect(runSubmissions).toBe(0);
   expect(scheduleSubmissions).toBe(0);
-});
+}));

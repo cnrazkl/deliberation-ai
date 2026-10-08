@@ -1,10 +1,11 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls } from "./workspace-navigation";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { getDatabase, preflightDrafts, closeDatabase } from "@deliberation-ai/persistence";
 import { eq } from "drizzle-orm";
 
-test("restores a pending clarification after reload and previews both owner choices without a model call", async ({ page, request }) => {
+test("restores a pending clarification after reload and previews both owner choices without a model call", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const question = `Bu sözleşmeyi feshetmeli miyim? E2E ${crypto.randomUUID()}`;
   const created = await request.post("/api/runs", { data: {
     question, idempotencyKey: crypto.randomUUID(), scenario: "success", providerMode: "fake",
@@ -44,4 +45,4 @@ test("restores a pending clarification after reload and previews both owner choi
     await getDatabase().delete(preflightDrafts).where(eq(preflightDrafts.id, draftId));
     await closeDatabase();
   }
-});
+}));

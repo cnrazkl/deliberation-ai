@@ -1,4 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
+import { withOwner } from "@deliberation-ai/persistence";
+import {expect, test, type Page, testOwnerId } from "./authenticated-test";
 import type { RunRecord } from "@deliberation-ai/application";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 
@@ -37,7 +38,7 @@ async function fixtures(page: Page) {
 }
 
 for (const { width, zoom } of [...[320, 390, 640, 820, 1024, 1440].map((width) => ({ width, zoom: 1 })), { width: 1440, zoom: 2 }]) {
-  test(`expanded workspace fits ${width}px at ${zoom}x with long attachments`, async ({ page }) => {
+  test(`expanded workspace fits ${width}px at ${zoom}x with long attachments`, async ({ page }) => withOwner(testOwnerId(), async () => {
     await page.setViewportSize({ width, height: width === 820 ? 390 : 900 });
     await fixtures(page); await page.goto("/");
     await page.evaluate(({ width, zoom }) => {
@@ -72,10 +73,10 @@ for (const { width, zoom } of [...[320, 390, 640, 820, 1024, 1440].map((width) =
         await page.screenshot({ path: `test-results/da112-${width}-${view}.png`, fullPage: true });
       }
     }
-  });
+  }));
 }
 
-test("keeps history at the left, separates settings/schedules, preserves drafts and persists appearance", async ({ page }) => {
+test("keeps history at the left, separates settings/schedules, preserves drafts and persists appearance", async ({ page }) => withOwner(testOwnerId(), async () => {
   await fixtures(page);
   let writes = 0;
   page.on("request", (request) => { if (request.method() !== "GET" && new URL(request.url()).pathname.startsWith("/api/")) writes++; });
@@ -122,9 +123,9 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   await expect(draft).toHaveValue("");
   await expect(draft).toBeFocused();
   expect(writes).toBe(0);
-});
+}));
 
-test("opens mobile history, navigates without overflow and returns to the preserved draft", async ({ page }) => {
+test("opens mobile history, navigates without overflow and returns to the preserved draft", async ({ page }) => withOwner(testOwnerId(), async () => {
   await page.setViewportSize({ width: 390, height: 844 });
   await fixtures(page); await page.goto("/");
   const draft = page.getByLabel("Sorunuz", { exact: true });
@@ -141,4 +142,4 @@ test("opens mobile history, navigates without overflow and returns to the preser
   await expect(draft).toHaveValue("Mobil görünümde korunacak soru taslağı");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: "test-results/da111-dark-mobile.png" });
-});
+}));

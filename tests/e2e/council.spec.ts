@@ -1,5 +1,6 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import {
   closeDatabase,
   fingerprintProviderRequest,
@@ -43,7 +44,7 @@ test.afterEach(async ({ request }) => {
   await closeDatabase();
 });
 
-test("shows the selected three-round limit and the saved later-round review trail", async ({ page, request }) => {
+test("shows the selected three-round limit and the saved later-round review trail", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   test.setTimeout(60_000);
   await page.goto("/"); await revealCouncilControls(page);
   const roundChoice = page.getByLabel("Çapraz inceleme turu");
@@ -79,9 +80,9 @@ test("shows the selected three-round limit and the saved later-round review trai
   expect(persisted.report.reviewExecution).toMatchObject({ requestedRounds: 3, completedRounds: 3 });
   expect(persisted.report.reviews.map((item) => item.round)).toEqual([1, 1, 2, 2, 3, 3]);
   expect(persisted.report.reviewPromptPlans[4]?.input).toContain('"previousRound":2');
-});
+}));
 
-test("shows opt-in self-revision proposals beside unchanged initial claims", async ({ page, request }) => {
+test("shows opt-in self-revision proposals beside unchanged initial claims", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   test.setTimeout(60_000);
   await page.goto("/"); await revealCouncilControls(page);
   const option = page.getByRole("checkbox", { name: "Üyelerin kendi ilk iddiaları için düzeltme önerisi üretmesine izin ver" });
@@ -104,9 +105,9 @@ test("shows opt-in self-revision proposals beside unchanged initial claims", asy
   await expect(review).toContainText("Niteleme önerisi:");
   await review.locator(".review-prompt-plan summary").click();
   await expect(review.locator(".review-prompt-plan")).toContainText("cross-review-v3");
-});
+}));
 
-test("runs a durable council and exposes a partial member failure", async ({ page, request }) => {
+test("runs a durable council and exposes a partial member failure", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   test.setTimeout(60_000);
   let failNextRun = false;
   const submittedRunIds: string[] = [];
@@ -606,4 +607,4 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.locator(".status-card")).toContainText("Çalışma sorusu: Tarayıcıdan başlatılan konsey çalışması kalıcı kuyrukta doğru şekilde sonuçlanıyor mu?");
   await expect(page.getByRole("button", { name: "Raporu indir (JSON)" })).toBeVisible();
   await expect(page.getByLabel("Sorunuz")).toHaveValue(currentQuestion);
-});
+}));

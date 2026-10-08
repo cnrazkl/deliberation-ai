@@ -1,15 +1,16 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
-import { test, expect } from "@playwright/test";
+import {test, expect, testOwnerId } from "./authenticated-test";
 import { eq, sql } from "drizzle-orm";
 import { buildCouncilReport } from "@deliberation-ai/domain";
 import type { CouncilMemberConfig } from "@deliberation-ai/contracts";
-import { closeDatabase, getDatabase, encryptJson, encryptText, LOCAL_OWNER_ID, conversations, conversationRuns, runs, providerConnections,
+import { closeDatabase, getDatabase, encryptJson, encryptText, conversations, conversationRuns, runs, providerConnections,
   conversationPrivateBranches as branches, type PrivateBranchView } from "@deliberation-ai/persistence";
 import { providerOperations } from "@deliberation-ai/persistence";
 
 for (const provider of ["openai-compatible", "anthropic", "openai", "google"] as const) {
-test(`${provider} reviewed private delivery survives a lost enqueue response, returns a local worker reply and forks its transcript`, async ({ page, request }) => {
+test(`${provider} reviewed private delivery survives a lost enqueue response, returns a local worker reply and forks its transcript`, async ({ page, request }) => withOwner(testOwnerId(), async () => {
   test.setTimeout(60_000);
   await expect.poll(async () => (await (await request.get("/api/local-diagnostics")).json()).readyWorkers, { timeout: 15_000 }).toBeGreaterThan(0);
   const sourceId = randomUUID(); const conversationId = randomUUID(); const connectionId = randomUUID(); let calls = 0;
@@ -53,14 +54,14 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
   const report = buildCouncilReport(members.map((m) => ({ memberId: m.id, label: m.label, councilRole: m.councilRole,
     rawText: "Source SQL viewpoint", parsed: { summary: m.label, claims: [{ statement: "SQL join consideration", kind: "shared" as const, quote: "SQL join consideration" }] }, citations: [] })), []);
   try {
-    await getDatabase().insert(providerConnections).values({ id: connectionId, ownerId: LOCAL_OWNER_ID, provider, label: `Private fixture ${sourceId}`,
+    await getDatabase().insert(providerConnections).values({ id: connectionId, ownerId: testOwnerId(), provider, label: `Private fixture ${sourceId}`,
       defaultModel: "offline-private", baseUrl: `http://127.0.0.1:${address.port}${provider === "anthropic" ? "" : provider === "google" ? "/v1beta" : "/v1"}`,
       secretCiphertext: encryptText(provider === "openai-compatible" ? "" : "offline-browser-key", `provider-connection:${connectionId}:secret`) });
-    await getDatabase().insert(runs).values({ id: sourceId, ownerId: LOCAL_OWNER_ID, idempotencyKey: randomUUID(), requestHash: "private-browser-fixture", snapshotId: randomUUID(),
+    await getDatabase().insert(runs).values({ id: sourceId, ownerId: testOwnerId(), idempotencyKey: randomUUID(), requestHash: "private-browser-fixture", snapshotId: randomUUID(),
       question: "[encrypted]", questionCiphertext: encryptText(`SQL private workflow ${sourceId}`, `run:${sourceId}:question`), membersCiphertext: encryptJson(members, `run:${sourceId}:members`),
       reportCiphertext: encryptJson(report, `run:${sourceId}:report`), status: "completed", branchIndexVersion: 1, branchKind: "independent", finishedAt: new Date() });
-    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: LOCAL_OWNER_ID, anchorRunId: sourceId, origin: "native" });
-    await getDatabase().insert(conversationRuns).values({ ownerId: LOCAL_OWNER_ID, conversationId, runId: sourceId, kind: "independent", createdAt: sql`(select created_at from runs where id = ${sourceId}::uuid)` });
+    await getDatabase().insert(conversations).values({ id: conversationId, ownerId: testOwnerId(), anchorRunId: sourceId, origin: "native" });
+    await getDatabase().insert(conversationRuns).values({ ownerId: testOwnerId(), conversationId, runId: sourceId, kind: "independent", createdAt: sql`(select created_at from runs where id = ${sourceId}::uuid)` });
     await getDatabase().insert(providerOperations).values({ id: randomUUID(), runId: sourceId, memberId: "private-worker", provider,
       model: "offline-council-fixture", status: "failed", requestFingerprint: "offline-usage", inputTokens: 9, outputTokens: null });
     await page.route("**/api/runs", (route) => { if (route.request().method() === "POST") throw new Error("Must not create a council"); return route.continue(); });
@@ -279,5 +280,5 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await getDatabase().delete(providerConnections).where(eq(providerConnections.id, connectionId));
     await closeDatabase(); await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
-});
+}));
 }

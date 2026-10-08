@@ -1,8 +1,9 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { createServer } from "node:http";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import { workspaceView } from "./workspace-navigation";
 
-test("reviews one bounded generation, preserves the draft and replays its receipt without another call", async ({ page, request }) => {
+test("reviews one bounded generation, preserves the draft and replays its receipt without another call", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   let calls = 0;
   const server = createServer(async (incoming, outgoing) => {
     const chunks: Buffer[] = []; for await (const chunk of incoming) chunks.push(Buffer.from(chunk));
@@ -57,9 +58,9 @@ test("reviews one bounded generation, preserves the draft and replays its receip
     if (id) await request.delete(`/api/provider-connections?id=${id}`);
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
-});
+}));
 
-test("rejects stale, foreign-origin, unacknowledged and oversized checks before dispatch", async ({ request }) => {
+test("rejects stale, foreign-origin, unacknowledged and oversized checks before dispatch", async ({ request }) => withOwner(testOwnerId(), async () => {
   const created = await request.post("/api/provider-connections", { data: { provider: "openai-compatible", label: `E2E guards ${crypto.randomUUID()}`,
     apiKey: "", defaultModel: "local-check", baseUrl: "http://127.0.0.1:1/v1", endpointPreset: "ollama", reasoningProtocol: "none", structuredOutputMode: "json-object" } });
   const connection = await created.json(); const endpoint = `/api/provider-connections/${connection.id}/generation-check`;
@@ -78,4 +79,4 @@ test("rejects stale, foreign-origin, unacknowledged and oversized checks before 
     expect((await request.patch(endpoint, { data: { id: input.requestId, fingerprint: input.fingerprint, acknowledgeUnknown: true } })).status()).toBe(409);
     expect((await request.get(endpoint)).headers()["cache-control"]).toBe("no-store");
   } finally { await request.delete(`/api/provider-connections?id=${connection.id}`); }
-});
+}));

@@ -51,3 +51,5 @@ export { loadConversationCouncilUsage, type ConversationCouncilUsage } from "./c
 export { getOwnerId, withOwner, requireOwnerContext } from "./owner";
 export * from "./local-auth";
 export * from "./worker-owner";
+export * from "./owner-lifecycle";
+export * from "./local-account-deletion";

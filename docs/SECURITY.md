@@ -1,12 +1,17 @@
 # Security
 
 Local username/password sessions now guard all application APIs. Normal users cannot
-select foreign owners; root can explicitly manage any user's workspace. Passwords are
+select foreign owners; root can manage accounts/connections but council/chat APIs reject
+root even with an ordinary user's selected scope. Passwords are
 salted scrypt hashes, session tokens are random/hashed, cookies HttpOnly/Strict and Secure
 on HTTPS. Host/origin checks, 2-KiB auth-body bounds, throttles and stale-scope rejection
 apply. Root provisioning reads a private local file; there is no committed root password.
 Host DB/key holders remain administrators. Restored sessions must be invalidated before
-real service cutover. [Detailed boundary and limits](LOCAL_ACCOUNTS.md).
+real service cutover. Complete account erasure requires a current actor password,
+matching target username and unchanged fingerprint. It rejects root deletion, foreign
+ordinary-user targets, active work, schema drift and cross-owner references. Shared
+entry-point leases prevent late in-flight writes from recreating a deleted workspace;
+the deleted user identity cannot acquire a new lease. [Detailed boundary and limits](LOCAL_ACCOUNTS.md).
 
 Reviewed synthesis requires an exact frozen fingerprint and explicit live flag.
 Owned source/connection revisions are revalidated before and after each attempt.

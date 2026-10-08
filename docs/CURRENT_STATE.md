@@ -2,6 +2,19 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
+## Membership follow-up — verification in progress
+
+Registration now needs only a chosen username and password. Root opens administration
+only; chat/knowledge/schedule/model generation routes reject the root actor even after
+user-scope selection. Root edits accounts, resets passwords, manages saved connections
+and reviews ordinary-user deletion. Users can review/password-confirm complete erasure
+of their active-database account/data. Shared lifecycle leases fence in-flight web and
+worker activity; the transactional closure checks schema/FKs/cross-owner references and
+preserves other accounts. No migration is added. Passed 460 offline tests, 275 isolated
+PostgreSQL tests, a final eleven-case account rerun, all 53 browser cases, type checking,
+lint and production build. Backed-up local deployment is in progress.
+[Contract](LOCAL_ACCOUNTS.md).
+
 ## Local membership — completed local deployment
 
 The owner requested local registration/login, a unique root with a supplied local

@@ -1,15 +1,16 @@
+import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls } from "./workspace-navigation";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { expect, test } from "@playwright/test";
+import {expect, test, testOwnerId } from "./authenticated-test";
 import { cancelDurableRun, closeDatabase, deleteProviderConnection, getDatabase } from "@deliberation-ai/persistence";
 import { inArray } from "drizzle-orm";
 import { runs } from "../../packages/persistence/src/schema";
 import type { RunRecord } from "@deliberation-ai/application";
 import type { ContinuationCompactionPacket, FrozenContinuation } from "@deliberation-ai/contracts";
 
-test("reviews full history, starts a fresh council against a local mock and exports frozen provenance", async ({ page, request }) => {
+test("reviews full history, starts a fresh council against a local mock and exports frozen provenance", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const sent: string[] = [];
   const server = createServer(async (incoming, outgoing) => {
     const chunks: Buffer[] = [];
@@ -150,9 +151,9 @@ test("reviews full history, starts a fresh council against a local mock and expo
     await closeDatabase();
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
-});
+}));
 
-test("reviews a manual summary and omissions, invalidates approval on edits and keeps original text out of local provider calls", async ({ page, request }) => {
+test("reviews a manual summary and omissions, invalidates approval on edits and keeps original text out of local provider calls", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const sent: string[] = [];
   const server = createServer(async (incoming, outgoing) => {
     const chunks: Buffer[] = [];
@@ -240,4 +241,4 @@ test("reviews a manual summary and omissions, invalidates approval on edits and 
     await closeDatabase();
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
-});
+}));
