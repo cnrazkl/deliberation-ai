@@ -1,5 +1,11 @@
 # Architecture
 
+Non-human verification adds a generated-only study harness and owner/policy-bound v4
+dispatch, preserving source-account data and historical encrypted receipts. A separate
+Docker rehearsal composes a new PostgreSQL, production web/worker and content-free
+30-day observer in its own network/volumes. It does not enter normal CI model tests,
+change domain/provider interfaces or introduce public hosting. [Boundaries](NON_HUMAN_VALIDATION.md).
+
 Local authentication contracts live in contracts; persistence owns scrypt hashes,
 session/token records and per-request AsyncLocalStorage ownership. Every existing BFF
 route binds an authenticated owner centrally; web instrumentation forbids fallback.

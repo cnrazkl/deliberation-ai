@@ -3,12 +3,12 @@ import { preparePromptComparison } from "./prompt-comparison";
 import { sha256 } from "./external-council-intake";
 import { z } from "zod";
 
-export type StudySelection = { kind: "rounds" | "prompt"; caseIds: string[]; memberCount: number; maxCalls: number; outputTokens: number };
+export type StudySelection = { kind: "rounds" | "prompt"; caseIds: string[]; memberCount: number; maxCalls: number; outputTokens: number; maxConcurrentArms?: number | undefined };
 /** No gold is generated. A selected subset remains a diagnostic, never the whole study. */
 export function prepareStudyExecution(suite: unknown, selection: StudySelection) {
   selection = z.object({ kind: z.enum(["rounds", "prompt"]), caseIds: z.array(z.string().min(1).max(120)).min(1).max(40),
     memberCount: z.number().int().min(2).max(6), maxCalls: z.number().int().min(1).max(2_000),
-    outputTokens: z.number().int().min(128).max(4_096) }).strict().parse(selection);
+    outputTokens: z.number().int().min(128).max(4_096), maxConcurrentArms: z.number().int().min(1).max(4).optional() }).strict().parse(selection);
   if (new Set(selection.caseIds).size !== selection.caseIds.length) throw new Error("Duplicate study case");
   const comparison = prepareReviewRoundComparison(suite);
   const prompt = selection.kind === "prompt" ? preparePromptComparison(suite) : null;
@@ -32,3 +32,15 @@ export function prepareStudyExecution(suite: unknown, selection: StudySelection)
   return { ...frozen, fingerprint: sha256(JSON.stringify(frozen)) };
 }
 export type StudyExecutionPlan = ReturnType<typeof prepareStudyExecution>;
+
+export function matchesFrozenStudyReviewPolicy(expected: {memberId:string;round:number;instructions:string}[],
+  actual: {reviewerMemberId:string;round:number;instructions:string}[],attempted: {memberId:string;round:number}[]): boolean {
+  const frozen=new Map(expected.map(item=>[`${item.memberId}:${item.round}`,item.instructions]));
+  const seen=new Set<string>();
+  for (const item of actual) {
+    const key=`${item.reviewerMemberId}:${item.round}`;
+    if (seen.has(key) || frozen.get(key)!==item.instructions) return false;
+    seen.add(key);
+  }
+  return attempted.every(item=>seen.has(`${item.memberId}:${item.round}`));
+}

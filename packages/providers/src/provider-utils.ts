@@ -102,6 +102,7 @@ export const crossReviewInstructions = [
   "Kendi ilk tur yanıtın sana verilmez; yalnızca diğer üyelerin doğrulanmış yapılandırılmış çıktıları verilir.",
   "Her hedef üye için en az bir değerlendirme üret.",
   "Her iddiada targetMemberId alanını aynen kullan ve reviewStance alanını support, qualify veya challenge seç.",
+  "kind alanını yalnızca shared, recommendation, objection veya risk seç; support, qualify ve challenge değerleri kind için geçerli değildir.",
   "quote alanına yalnızca hedef üyenin verilen ifadesinden kısa bir parça koy.",
   "Çoğunluğu doğruluk sayma, yeni kaynak uydurma ve nihai karar verme.",
   "Yalnızca geçerli JSON döndür: {summary:string, claims:[{statement, kind, quote, targetMemberId, reviewStance}]}",

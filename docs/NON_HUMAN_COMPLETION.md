@@ -1,5 +1,10 @@
 # Remaining work without human judgments — 8 October 2026
 
+Subsequent full-cohort measurements and the owner-authorized isolated shared-host
+rehearsal are recorded in [current state](CURRENT_STATE.md) and
+[the isolation/observation contract](NON_HUMAN_VALIDATION.md). The smaller observations
+below remain historical evidence; they are not replaced or promoted to acceptance.
+
 The owner requested every remaining non-human task, and then explicitly cancelled
 provider-authoritative invoice/account/payment acceptance for now. Existing local
 billing evidence is preserved. No invoice, payment or settled cost is invented.

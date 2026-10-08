@@ -2,6 +2,84 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
+## Full-cohort mechanical follow-through — observed
+
+The separate Linux host now runs only the newly created rehearsal project
+`da-rehearsal-60374dd507ec`, final image `deliberationai-rehearsal:60374dd507ec-v8`
+and source archive tree `ce63fe59d06c81af267bf8a1a570ecc05c39ea9c`. Its own database,
+two new networks and two volumes share no existing service/volume state. Only web is
+published, at host `127.0.0.1:33184`; actual host HTTP returned 200. The eight original
+container IDs/start times/restart counts/status/PIDs match the initial inventory.
+No existing PostgreSQL database was queried or changed; no existing cloudflared
+service/DNS/publication was modified. Private SSH/environment files remain excluded
+from Git/images, and the isolation instruction was saved as an owner-authorized
+permanent memory note without credentials.
+
+The frozen-graph production image build and strict types pass. The final image derives
+from that build with separately typechecked diagnostic helpers and reviewed deployment
+configuration. Verification passed 466 offline tests/82 files, all 276 isolated Windows
+PostgreSQL cases and 275 Linux PostgreSQL cases (one Windows-native archive test is
+explicitly excluded on Linux and passed on Windows). The first Linux run retained seven
+failures: six generated-name guard failures were corrected using the required sixteen
+hex characters, without relaxing tests. The Docker HTTP helper preserves the configured
+Host through internal DNS; signed health succeeds without weakening application auth.
+The full browser run passed 52/53 cases, with an ECONNRESET fixture request in member
+rerun; the focused member-rerun suite subsequently passed both cases. Type/lint/audit,
+frozen knowledge status and staged/full-history secret scans pass.
+
+Eleven actual production smoke checks pass: readiness, anonymous/root chat denial,
+ordinary registration/login, a complete fake council/review, foreign-user denial,
+reviewed complete account erasure and revoked sessions. The separate synthetic archive
+restores two accounts/one root, one encrypted connection/value and exactly matching
+definitions/rows across 41 tables. It makes zero provider calls and retains its new
+source/restore databases and archive. These do not certify a clean Windows OS install.
+
+`month-v8` began at 2026-10-08T17:34:16.665Z and is due at
+2026-11-07T17:34:16.665Z (7 November 20:34 Istanbul). First actual sample is healthy;
+status is `window_pending`, not a thirty-day pass. Earlier brief setup observations
+are retained separately. Routine maintenance minutes/continuous uptime remain unknown.
+Total first setup-to-final-ready wall time was 54 minutes 42 seconds, including image
+downloads/builds, investigation and repeated verification. Excludable download/extraction
+time is not fully recorded, so the thirty-minute setup criterion is not certified.
+Public hosting, independent human quality and actual month-long operating acceptance
+remain open; cancelled invoice/input-token/monetary protection work is not reopened.
+
+`nonhuman-v4-full-20261008` executed all forty frozen external cases with saved native
+OpenAI `gpt-5.6-luna` and DeepSeek `deepseek-flash` targets in a generated ordinary
+account/database and dedicated worker. The source installation only supplied read-only
+connection copies; its runs/accounts/unknown receipts were not changed. Four concurrent
+arms, two members and 4096 requested output tokens were frozen; high-risk round-zero
+exclusions and permanent call/output controls remain.
+
+| Selection | Observed/planned arms | Completed | Partial | Recorded operations | Reported input/output tokens |
+|---|---:|---:|---:|---:|---:|
+| 0/1/2/3 rounds | 145/145 | 33 | 112 | 606 | 653065 / 1071379 |
+| Original/additive prompt | 80/80 | 18 | 62 | 308 | 284865 / 513176 |
+
+All new observations have known terminal outcomes and matching frozen review policy.
+Every arm reports input/output counters; invoice cost remains unknown. Round 0/1/2/3
+completion is 24/25, 9/40, 0/40, 0/40; original/candidate completion is 11/40, 7/40.
+Enqueue-to-observation p95 values including failed arms, queue competition and polling
+are 16104/34165/48236/48197 ms and 30218/30164 ms, respectively. These are neither
+isolated provider latency nor evidence that extra rounds/prompts improve accuracy.
+Compatible review failures remain inspectable; the unchanged claim-kind enum is now
+explicitly distinguished from review stance in instructions. No raw output coercion,
+automatic retry, default-round change or semantic acceptance is introduced.
+
+The first diagnostic retains its 145-arm observations and four prompt observations;
+the prompt phase was blocked by a frozen-versus-running-worker instruction mismatch.
+The v4 policy guard now rejects that mismatch before later arms. The revised complete
+study used a fresh current worker and identity; historical results were not overwritten.
+Encrypted journals, private generated-DB keys and database are retained outside Git.
+[Execution and remote isolation contract](NON_HUMAN_VALIDATION.md).
+
+The repeated local knowledge benchmark retains all forty attempts per phase: p95
+150.862 ms (new pool) / 11.570 ms (reused pool), with 22 query refusals and 18 empty
+preparations per phase, plus ten mechanical positive controls / eleven exact citations.
+Its latency acceptance stays false because refused/empty retrieval cannot establish
+successful quality coverage. Human labels, entailment and critical recall remain
+unassessed. Fast refusals do not certify retrieval acceptance.
+
 ## Membership follow-up — completed local deployment
 
 Registration now needs only a chosen username and password. Root opens administration

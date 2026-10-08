@@ -9,6 +9,25 @@ spending protection on 8 October. Existing call/output controls and observations
 remain; the cancelled extension is not an active task or an accepted capability.
 [Execution inventory and live checks](NON_HUMAN_COMPLETION.md).
 
+- [x] Isolated separate-host Linux installation and verification: new directory/image,
+  own PostgreSQL/two networks/volumes, real loopback HTTP 200, 275 Linux checks plus
+  separately passed Windows-native archive test, eleven production account/worker
+  checks and authenticated synthetic archive recovery. Original container lifecycle
+  unchanged; no existing PostgreSQL query/mutation or public hosting.
+- [x] Real thirty-day collection implementation/start: immutable readiness samples,
+  missing/unhealthy interval reporting and no provider requests/service restart.
+- [ ] Actual thirty-day operating coverage and recorded maintenance acceptance: due
+  7 November 2026 at 20:34 Istanbul. Setup's thirty-minute exclusion-adjusted threshold
+  is unproven (54m42s total wall time); a clean Windows prerequisite install is not
+  established by the Linux rehearsal. Human quality gates remain independently open.
+
+- [x] Full-cohort non-human observations: forty cases, all 145 eligible round arms and
+  80 original/additive prompt arms dispatched under owner/policy-bound v4 in an
+  isolated generated database. 33/145 and 18/80 completed; every partial arm is retained.
+  No new unknown receipt or frozen-policy mismatch. Reported tokens/timing are recorded;
+  independent accuracy/drift/early-stop judgment is still open, with no default change.
+  [Actual results](CURRENT_STATE.md), [contract](NON_HUMAN_VALIDATION.md).
+
 - [x] Membership follow-up: username/password-only registration, complete reviewed self
   deletion and administration-only root with user editing/password reset, connection
   management and reviewed user deletion. Passed 460 offline, 275 PostgreSQL and 53 browser

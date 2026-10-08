@@ -1,5 +1,11 @@
 # Product
 
+Opt-in non-human diagnostics can select the complete frozen comparison cohort in a
+separate generated account/database. Failed/unobserved arms remain visible and model
+accuracy remains unassessed. An isolated remote Docker rehearsal and sampled 30-day
+operating observation are verification tools, separate from ordinary browser flows
+and future public hosting. [Scope](NON_HUMAN_VALIDATION.md).
+
 Local membership now offers registration, username/password login, logout and password
 changes. Registration needs only a chosen username and password. Each user owns their
 API connections and full workspace and can review/confirm complete account deletion.

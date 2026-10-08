@@ -1,5 +1,11 @@
 # Providers
 
+Cross-review text explicitly lists allowed claim kinds independently from review
+stances, covering compatible JSON-object/prompt-only transports that do not enforce
+the wire schema. Invalid responses still fail closed; no output coercion, automatic
+retry or historical receipt rewrite is introduced. Diagnostic evidence is recorded
+separately from factual quality acceptance. [Scope](NON_HUMAN_VALIDATION.md).
+
 Reviewed synthesis uses the existing bounded plain-text transport with exactly
 system/user messages for native OpenAI, Anthropic, Gemini or compatible endpoints.
 It adds no model tools or automatic retry; compatible replies require one assistant

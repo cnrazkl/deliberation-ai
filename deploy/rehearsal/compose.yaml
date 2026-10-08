@@ -1,0 +1,95 @@
+# Isolated validation only. No host DB, existing volume, Docker socket or public port.
+x-app: &app
+  image: ${REHEARSAL_IMAGE:?Unique rehearsal image required}
+  environment: &environment
+    DATABASE_URL: postgresql://deliberation:${REHEARSAL_DB_PASSWORD:?New database password required}@db:5432/${REHEARSAL_DB_NAME:?Generated database required}
+    DATA_ENCRYPTION_KEY: ${REHEARSAL_ENCRYPTION_KEY:?New encryption key required}
+    KEY_VERSION: "1"
+    APP_ORIGIN: http://127.0.0.1:${REHEARSAL_HTTP_PORT:?Unused host port required}
+    ENABLE_DECISION_EVALUATOR: "false"
+    NEXT_TELEMETRY_DISABLED: "1"
+    REHEARSAL_SOURCE_TREE: ${REHEARSAL_SOURCE_TREE:?Reviewed source tree required}
+    REHEARSAL_WEB_URL: http://web:3000
+  networks: [isolated]
+  init: true
+  restart: "no"
+  cpus: 1
+  mem_limit: 1536m
+  security_opt: [no-new-privileges:true]
+
+services:
+  db:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_USER: deliberation
+      POSTGRES_PASSWORD: ${REHEARSAL_DB_PASSWORD:?New database password required}
+      POSTGRES_DB: ${REHEARSAL_DB_NAME:?Generated database required}
+    volumes: [database:/var/lib/postgresql]
+    networks: [isolated]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U deliberation -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 24
+    restart: "no"
+    cpus: 1
+    mem_limit: 512m
+    security_opt: [no-new-privileges:true]
+  migrate:
+    <<: *app
+    command: [pnpm, --filter, "@deliberation-ai/persistence", db:migrate]
+    depends_on:
+      db: {condition: service_healthy}
+  web:
+    <<: *app
+    networks: [isolated, access]
+    ports: ["127.0.0.1:${REHEARSAL_HTTP_PORT:?Unused host port required}:3000"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  worker:
+    <<: *app
+    command: [pnpm, --filter, "@deliberation-ai/worker", start]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  verify:
+    <<: *app
+    command: [pnpm, exec, vitest, run, --config, vitest.integration.docker.config.ts]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    profiles: [verification]
+  smoke:
+    <<: *app
+    environment:
+      <<: *environment
+      REHEARSAL_ROOT_PASSWORD: ${REHEARSAL_ROOT_PASSWORD:?Private rehearsal root password required}
+    command: [node, --import, tsx, packages/persistence/scripts/rehearsal-smoke.ts]
+    depends_on:
+      web: {condition: service_started}
+      worker: {condition: service_started}
+    profiles: [verification]
+  observe:
+    <<: *app
+    command: [node, --import, tsx, packages/persistence/scripts/operating-study.ts, watch, "${REHEARSAL_OBSERVATION_NAME:-month}"]
+    volumes: [observations:/app/.local]
+    depends_on:
+      web: {condition: service_started}
+      worker: {condition: service_started}
+    mem_limit: 256m
+    cpus: 0.1
+  recovery:
+    <<: *app
+    environment:
+      <<: *environment
+      REHEARSAL_RESTORE_DB_NAME: ${REHEARSAL_RESTORE_DB_NAME:-}
+    command: [node, --import, tsx, packages/persistence/scripts/rehearsal-recovery.ts, compare]
+    depends_on:
+      db: {condition: service_healthy}
+    profiles: [verification]
+
+networks:
+  isolated:
+    internal: true
+  access: {}
+volumes:
+  database:
+  observations:

@@ -1,5 +1,12 @@
 # Local operations
 
+Shared-host work is restricted to a newly created directory/image and uniquely named
+Docker project with its own network, volumes and PostgreSQL container. Existing Docker
+services/databases are outside both queries and mutations; never reuse their state,
+restart them or perform global cleanup. Rehearsal web publication is host loopback only.
+Cloudflare/public hosting needs a later explicitly selected deployment increment.
+[Isolated installation, checks and real calendar observation](NON_HUMAN_VALIDATION.md).
+
 Local membership setup and additive migration 0055: [Local accounts](LOCAL_ACCOUNTS.md).
 Root provisioning uses an ignored/private password file and retains existing owned
 data. Diagnostic health reads now require a session or short-lived machine-key HMAC;

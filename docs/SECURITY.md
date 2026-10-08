@@ -1,5 +1,14 @@
 # Security
 
+Shared-host verification must use only its new rehearsal directory/image/Compose
+project/network/volumes/database and unused loopback port. Existing containers and
+PostgreSQL databases are outside its mutation/query boundary. No SSH credential,
+personal environment, source database archive or provider secret enters the image or
+Git. Generated study credentials stay independently encrypted in a generated local
+database; owner-bound study dispatch denies root and foreign/deleted accounts.
+The observer stores only timestamped readiness metadata, never content or secrets.
+[Verification boundary](NON_HUMAN_VALIDATION.md).
+
 Local username/password sessions now guard all application APIs. Normal users cannot
 select foreign owners; root can manage accounts/connections but council/chat APIs reject
 root even with an ordinary user's selected scope. Passwords are

@@ -1,0 +1,14 @@
+.git
+.local
+node_modules
+**/node_modules
+**/.next*
+**/*.tsbuildinfo
+.env*
+*.log
+*.key
+*.pem
+playwright-report
+test-results
+coverage
+dist

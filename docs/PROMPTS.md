@@ -1,5 +1,14 @@
 # Prompt contracts
 
+8 October full-cohort diagnostics observed compatible review JSON with invalid `kind`
+values. Cross-review text now explicitly supplies the unchanged claim-kind enum and
+distinguishes it from `reviewStance`, including later/self-revision rounds. Round 0,
+peer inputs, schemas, claim preservation and authority policy remain unchanged.
+Actual instruction fingerprints distinguish old/new observations; failed historic
+receipts are retained. `study-dispatch-v4` additionally binds the live ordinary owner,
+optional 1–4 arm concurrency and saved-versus-frozen worker review policy.
+[Execution scope](NON_HUMAN_VALIDATION.md).
+
 `reviewed-synthesis-v3` supplies the full bounded claim ledger, annotations,
 relations and parsed reviews as untrusted data. Every draft paragraph links known
 claim IDs and complete coverage is required. A separate model checks every paragraph
