@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+export * from "./synthesis";
 import { buildRoundZeroPromptPlan } from "./prompt-plan";
 export { buildRiskPreflight } from "./risk-preflight";
 export { assertKnowledgeInputBudget } from "./knowledge-budget";

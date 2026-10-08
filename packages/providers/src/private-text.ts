@@ -1,4 +1,4 @@
-import { NVIDIA_HOSTED_BASE_URL, privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult } from "@deliberation-ai/contracts";
+import { NVIDIA_HOSTED_BASE_URL, SYNTHESIS_OUTPUT_TOKENS, privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult } from "@deliberation-ai/contracts";
 import { NormalizedProviderError } from "./index";
 import { assertRecoveryGenerationAllowed, providerHttpError, providerNetworkError, withProviderNetworkDeadline } from "./provider-utils";
 import { extractTokenUsage } from "./token-usage";
@@ -9,6 +9,11 @@ const anthropicReplySchema = z.object({
   content: z.array(z.object({ type: z.literal("text"), text: z.string().max(16_384) })).min(1),
   stop_reason: z.enum(["end_turn", "max_tokens"]),
 });
+const synthesisCompatibleReplySchema = z.object({ choices: z.array(z.object({
+  finish_reason: z.enum(["stop", "length"]),
+  message: z.object({ role: z.literal("assistant"), content: z.string().min(1).max(16_384),
+    tool_calls: z.array(z.never()).max(0).optional(), function_call: z.never().optional() }),
+})).length(1) });
 const openaiItemStatus = z.enum(["completed", "incomplete"]);
 const geminiReplySchema = z.object({
   error: z.null().optional(),
@@ -46,12 +51,24 @@ const openaiReplySchema = z.object({
   if (reply.status === "completed" && reply.output.some((item) => item.status === "incomplete")) ctx.addIssue({ code: "custom", message: "Unfinished output item" });
 });
 
-/** Separate plain-text boundary; council schemas/prompts are never reused. */
-export async function generatePrivateText(request: PrivateDeliveryRequest, options: {
+export type PlainTextTransportOptions = {
   provider?: "openai-compatible" | "anthropic" | "openai" | "google"; baseUrl: string; apiKey: string; endpointPreset: string; operationKey: string; fetch?: typeof fetch; timeoutMs?: number;
-}): Promise<PrivateDeliveryResult> {
+};
+
+/** Separate plain-text boundary; council schemas/prompts are never reused. */
+export async function generatePrivateText(request: PrivateDeliveryRequest, options: PlainTextTransportOptions): Promise<PrivateDeliveryResult> {
+  return generateBoundedText(privateDeliveryRequestSchema.parse(request), options);
+}
+
+/** Two-message synthesis task; it neither creates nor impersonates private chat history. */
+export async function generateSynthesisText(request: { model: string; instructions: string; data: string }, options: PlainTextTransportOptions): Promise<PrivateDeliveryResult> {
+  const input = z.object({ model: z.string().trim().min(1).max(120), instructions: z.string().min(1).max(8_000), data: z.string().min(1).max(30_000) }).strict().parse(request);
+  return generateBoundedText({ model: input.model, maxOutputTokens: SYNTHESIS_OUTPUT_TOKENS,
+    messages: [{ role: "system", content: input.instructions }, { role: "user", content: input.data }] }, options, true);
+}
+
+async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" | "messages" | "maxOutputTokens">, options: PlainTextTransportOptions, synthesis = false): Promise<PrivateDeliveryResult> {
   assertRecoveryGenerationAllowed();
-  const input = privateDeliveryRequestSchema.parse(request);
   if (!options.operationKey) throw new NormalizedProviderError("İşlem kimliği gerekli.", "missing_operation_id", "known", false);
   const provider = options.provider ?? "openai-compatible";
   if (options.endpointPreset === "nvidia" && (provider !== "openai-compatible" || options.baseUrl !== NVIDIA_HOSTED_BASE_URL || !options.apiKey.trim())) {
@@ -113,20 +130,46 @@ export async function generatePrivateText(request: PrivateDeliveryRequest, optio
     if (error instanceof NormalizedProviderError) throw error;
     throw providerNetworkError(label);
   }
-  if (anthropic) return normalizeAnthropicReply(value, input.model);
-  if (responses) return normalizeOpenAIReply(value, input.model);
-  if (gemini) return normalizeGeminiReply(value, input.model);
-  const json = value as { id?: unknown; model?: unknown; choices?: Array<{ finish_reason?: string; message?: { content?: unknown; tool_calls?: unknown } }>; usage?: unknown } | null;
-  const choice = json?.choices?.[0]; const raw = choice?.message?.content;
-  const usage = extractTokenUsage("openai-compatible", json?.usage);
-  const parsed = privateDeliveryResultSchema.safeParse({ text: raw, model: typeof json?.model === "string" ? json.model : input.model,
-    remoteResponseId: typeof json?.id === "string" ? json.id : null, inputTokens: usage.inputTokens ?? null, outputTokens: usage.outputTokens ?? null,
-    tokenDetails: usage.tokenDetails ?? null, finishReason: choice?.finish_reason === "stop" || choice?.finish_reason === "length" ? choice.finish_reason : "other" });
-  if (!parsed.success || choice?.message?.tool_calls) throw new NormalizedProviderError("Özel metin yanıtı geçersiz veya çok büyük.", "invalid_private_response", "known", false, undefined, {
-    provider: "openai-compatible", model: typeof json?.model === "string" ? json.model : input.model,
-    remoteResponseId: typeof json?.id === "string" ? json.id : "", ...usage,
-  });
-  return parsed.data;
+  try {
+    if (anthropic) return normalizeAnthropicReply(value, input.model);
+    if (responses) return normalizeOpenAIReply(value, input.model);
+    if (gemini) return normalizeGeminiReply(value, input.model);
+    const json = value as { id?: unknown; model?: unknown; choices?: Array<{ finish_reason?: string; message?: { content?: unknown; tool_calls?: unknown } }>; usage?: unknown } | null;
+    const choice = json?.choices?.[0]; const raw = choice?.message?.content;
+    const usage = extractTokenUsage("openai-compatible", json?.usage);
+    const parsed = privateDeliveryResultSchema.safeParse({ text: raw, model: typeof json?.model === "string" ? json.model : input.model,
+      remoteResponseId: typeof json?.id === "string" ? json.id : null, inputTokens: usage.inputTokens ?? null, outputTokens: usage.outputTokens ?? null,
+      tokenDetails: usage.tokenDetails ?? null, finishReason: choice?.finish_reason === "stop" || choice?.finish_reason === "length" ? choice.finish_reason : "other" });
+    if (!parsed.success || choice?.message?.tool_calls || synthesis && !synthesisCompatibleReplySchema.safeParse(value).success) throw new NormalizedProviderError("Özel metin yanıtı geçersiz veya çok büyük.", "invalid_private_response", "known", false, undefined, {
+      provider: "openai-compatible", model: typeof json?.model === "string" ? json.model : input.model,
+      remoteResponseId: typeof json?.id === "string" ? json.id : "", ...usage,
+    });
+    return parsed.data;
+  } catch (error) {
+    if (synthesis && error instanceof NormalizedProviderError) {
+      // Preserve only bounded visible text, never wire envelopes or opaque reasoning.
+      const record = value && typeof value === "object" ? value as Record<string, unknown> : {};
+      const textPart = (part: unknown) => part && typeof part === "object" && "text" in part &&
+        typeof part.text === "string" && !("thought" in part && part.thought === true) &&
+        (!("type" in part) || part.type === "text" || part.type === "output_text") ? part.text : "";
+      const text = anthropic && Array.isArray(record.content) ? record.content.map(textPart).join("")
+        : responses && Array.isArray(record.output) ? record.output.flatMap((item: unknown) => item && typeof item === "object" && "type" in item &&
+          item.type === "message" && "content" in item && Array.isArray(item.content) ? item.content.map(textPart) : []).join("")
+        : gemini && Array.isArray(record.candidates) ? record.candidates.flatMap((candidate: unknown) => candidate && typeof candidate === "object" &&
+          "content" in candidate && candidate.content && typeof candidate.content === "object" && "parts" in candidate.content &&
+          Array.isArray(candidate.content.parts) ? candidate.content.parts.map(textPart) : []).join("\n")
+        : rawCompatibleText(value);
+      throw new NormalizedProviderError(error.message, error.code, error.outcome, false,
+        text && text.length <= 16_384 ? text : undefined, error.metadata);
+    }
+    throw error;
+  }
+}
+
+function rawCompatibleText(value: unknown): string {
+  if (!value || typeof value !== "object" || !("choices" in value) || !Array.isArray(value.choices)) return "";
+  return value.choices.map((choice: unknown) => choice && typeof choice === "object" && "message" in choice && choice.message &&
+    typeof choice.message === "object" && "content" in choice.message && typeof choice.message.content === "string" ? choice.message.content : "").join("\n");
 }
 
 function normalizeGeminiReply(value: unknown, requestedModel: string): PrivateDeliveryResult {

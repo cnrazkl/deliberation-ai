@@ -529,3 +529,4 @@ export * from "./billing-payment";
 export { summarizeConversationCouncilUsage, type CouncilUsageRecord } from "./conversation-council-usage";
 export * from "./knowledge";
 export * from "./knowledge-packet";
+export * from "./synthesis";

@@ -1,6 +1,48 @@
 # Current state
 
-Updated: 8 October 2026 (owner-reported runtime/window correction)
+Updated: 8 October 2026 (Group 3 reviewed synthesis engineering)
+
+## Current increment — reviewed synthesis, with independent acceptance open
+
+The owner deferred Group 1 because its acceptance needs real independent human
+reviews, and selected Group 3. An opt-in local CLI now prepares a terminal owned
+report or fixed synthetic fixture, freezes the exact source/connection/prompt/cap
+plan, generates a complete claim-linked draft and uses a separate model for a
+paragraph/quote-bound fidelity judgment. One repair is allowed; failure preserves
+the full deterministic claim ledger. Encrypted immutable execution/phase receipts
+precede calls; finished replay makes no call, and interrupted submissions cannot
+be automatically resent. Original reports and evidence remain unchanged.
+[Contract, invocation and evidence](REVIEWED_SYNTHESIS.md).
+
+All five live diagnostics remain recorded: Qwen exceeded the v1 requested output
+cap; Anthropic's native text envelope was invalid; DeepSeek's review text contract
+failed; two Qwen reviews failed rationale-size and exact draft-digest binding,
+respectively. Eight calls, no repair/retry and no accepted hosted synthesis
+candidate. OpenAI draft generation succeeded in three diagnostics. Offline positive
+and one-repair cases pass, but live interoperability and independent semantic
+quality acceptance remain open. Tokens are reported observations; invoice cost
+is unknown. No independent labels or human acceptance were supplied.
+
+446 unit cases/76 files, workspace/scripts typechecking and zero-warning lint pass.
+A separate-output Next.js 16.3.8 production build, frozen dependency installation,
+seven lint compatibility cases, vulnerability audit and three read-only browser
+diagnostics cases pass. Runtime Next.js moved from 16.3.6 to 16.3.8 for six audit
+findings; the separately reviewed lint plugin/alias/patch stays pinned.
+[Security scope](DEPENDENCY_SECURITY_2026_10_08.md).
+
+The final terminal replay preserved every artifact hash without a provider call;
+Markdown export succeeded once and refused replacement. The CLI/export has no new
+browser button, database migration or owner-history mutation. Its encrypted and
+plaintext local artifacts are outside database backup/retention. Group 3's round
+comparison, evidence-based early-stop validation, independent synthesis acceptance
+and full monetary/input/tool guardrails remain open. Group 1 stays deferred.
+
+All 992 local documentation links resolve. After restarting the patched app through
+the owned hidden session task, at 13:49 Istanbul HTTP is 200, DB/one worker are
+ready, pending/running/unresolved application work, unsettled operations and active
+schedules are zero. The 225 older parked queue records remain retained, with none
+active. No visible terminal window is needed for this managed launch.
+Staged changes and full existing Git history pass redacted Gitleaks scans.
 
 ## Current maintenance — Windows session startup
 

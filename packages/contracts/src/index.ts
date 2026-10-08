@@ -1,4 +1,5 @@
 import { z } from "zod";
+export * from "./synthesis";
 export * from "./knowledge";
 import { knowledgePacketReferenceSchema, knowledgeExcerptSchema, knowledgeScopeSchema } from "./knowledge";
 export * from "./pricing";

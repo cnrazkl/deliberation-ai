@@ -1,5 +1,13 @@
 # Providers
 
+Reviewed synthesis uses the existing bounded plain-text transport with exactly
+system/user messages for native OpenAI, Anthropic, Gemini or compatible endpoints.
+It adds no model tools or automatic retry; compatible replies require one assistant
+choice. Calls request 4,096 output tokens, have a sixty-second request/body deadline,
+refuse redirects and return normalized text/usage only. Different endpoint/model
+identities are required for draft and review; aliases remain unproven independence.
+[Contract and live outcomes](REVIEWED_SYNTHESIS.md).
+
 `DELIBERATION_RECOVERY_FORBID_GENERATION=true` rejects real council/private/probe
 generation with `recovery_generation_disabled` before adapter fetch. Offline checks
 cover every family with zero fetches. Ordinary defaults are unchanged.

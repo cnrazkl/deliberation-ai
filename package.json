@@ -50,6 +50,7 @@
     "labeling:adjudication:compile": "tsx scripts/council-review-workflow.ts adjudication-compile",
     "correctness:prepare": "tsx scripts/council-correctness-workflow.ts prepare",
     "correctness:status": "tsx scripts/council-correctness-workflow.ts status",
+    "synthesis": "node scripts/with-root-env.mjs pnpm --filter @deliberation-ai/persistence exec tsx scripts/reviewed-synthesis.ts",
     "prompt:prepare": "tsx scripts/prompt-comparison-workflow.ts prepare",
     "prompt:status": "tsx scripts/prompt-comparison-workflow.ts status",
     "prompt:adjudication:prepare": "tsx scripts/prompt-comparison-workflow.ts adjudication-prepare",

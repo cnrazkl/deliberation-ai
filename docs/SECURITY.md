@@ -1,5 +1,18 @@
 # Security
 
+Reviewed synthesis requires an exact frozen fingerprint and explicit live flag.
+Owned source/connection revisions are revalidated before and after each attempt.
+Context-bound encrypted local plans, execution claims and immutable phase receipts
+are written/flushed before dispatch; interrupted submissions cannot be resent.
+Only bounded claim/annotation/review data is shared, not raw answers or source files.
+Local preview/explicit Markdown export are plaintext independent copies outside
+database backup/retention. No sensitive content or credentials reach general logs.
+[Boundary](REVIEWED_SYNTHESIS.md).
+
+8 October maintenance updates runtime Next.js to 16.3.8 after six advisories were
+observed in 16.3.6. The reviewed 16.3.6 lint plugin/alias/patch remains independently
+pinned and checked. [Security evidence](DEPENDENCY_SECURITY_2026_10_08.md).
+
 The Windows session task binds the checkout/action/current owner SID and refuses
 altered definitions. It runs with limited interactive rights, no automatic trigger
 or restart and no stored account password. Task arguments contain paths only;

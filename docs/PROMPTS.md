@@ -1,5 +1,13 @@
 # Prompt contracts
 
+`reviewed-synthesis-v2` supplies the full bounded claim ledger, annotations,
+relations and parsed reviews as untrusted data. Every draft paragraph links known
+claim IDs and complete coverage is required. A separate model checks every paragraph
+for meaning, scope/conditions, minority preservation and certainty; each judgment
+binds source/draft hashes and quotes every cited claim exactly. One repair receives
+the unchanged source and recorded defects. This checks claim fidelity, not external
+truth; original source files and gold labels are absent. [Contract](REVIEWED_SYNTHESIS.md).
+
 `connection-generation-v1` reuses current analyst round-0 instructions with a
 fixed synthetic 2 + 2 input and no owner history/memory/sources/tools/attachments.
 Review displays actual application strings; fingerprint binds them, settings,

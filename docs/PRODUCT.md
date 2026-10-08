@@ -1,5 +1,11 @@
 # Product
 
+An opt-in local synthesis command generates a claim-linked draft and asks a separate
+model to check meaning against the complete supplied ledger. At most one repair is
+allowed; failure preserves the deterministic ledger. Drafts remain model judgments,
+with original minority/red-team claims and provenance intact. The workflow is local
+CLI/export only; there is no new browser control. [Contract](REVIEWED_SYNTHESIS.md).
+
 Daily local startup runs the app in a hidden Windows session task, without separate
 Node/Next terminal windows. Requested stop preserves the database/history. It adds
 no automatic login/reboot/crash restart. [Operating contract](WINDOWS_SESSION_RUNTIME.md).

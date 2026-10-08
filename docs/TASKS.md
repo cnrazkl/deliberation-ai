@@ -1,5 +1,12 @@
 # Tasks
 
+- [x] Group 3 reviewed synthesis engineering: opt-in owned-run/synthetic preparation,
+  separate model fidelity review, complete paragraph/claim/exact-quote binding,
+  at most one repair, encrypted durable local phase receipts and ledger fallback.
+  Model judgments cannot certify factual quality or promote original claims.
+  CLI/export only; independent acceptance and other Group 3 gates stay open.
+  [Contract and verification](REVIEWED_SYNTHESIS.md).
+
 - [x] Owner-reported runtime/window correction: default startup holds a hidden
   current-user session task and non-detached web/worker pair. Exact stop/ownership
   guards and physical MSIX data root are preserved. The real Windows kill-on-close
@@ -154,6 +161,9 @@ The owner requested this group on 27 September 2026 and then explicitly asked to
 
 Technical preparation is complete. The full group remains open for human and empirical acceptance; no model-accuracy claim or automatic semantic production feature is marked complete.
 
+8 October: the owner explicitly deferred this group because it requires real human
+review and selected Group 3. Human identities/judgments remain unfilled.
+
 ### Group 2 — preflight and risk
 
 - [x] DA-069: apply a visible, versioned conservative rule floor to the question and delivered context; require red-team/review on the server, including schedules; bind previews and retain the encrypted assessment. [Scope and limitations](RISK_PREFLIGHT.md).
@@ -174,7 +184,10 @@ The risk floor, missing-context questions and additive revision control are impl
 - [x] DA-077: add optional bounded self-revision proposals linked to immutable first-round claims, with versioned prompts and durable receipts; preserve minority and red-team outputs.
 - [x] DA-079: add an explicit versioned one-member follow-up that reuses the other frozen first-round outputs, reruns selected reviews, keeps the original report, shows planned provider-call count and preserves source provenance. [Scope](MEMBER_RERUN.md).
 - [ ] Validate evidence-based early-stop criteria against independent source/human judgments before allowing a selected run to stop early on an apparent consensus. DA-078 prepared read-only structural reason codes, but has no automatic stop authority.
-- [ ] Validate any future free-form synthesis semantically, allow at most one repair, and retain a deterministic fallback on failure.
+- [ ] Complete independent semantic acceptance of free-form synthesis. The 8 October
+  [reviewed synthesis](REVIEWED_SYNTHESIS.md) engineering path delivers a separate
+  model fidelity check, at most one repair and the deterministic ledger fallback;
+  model judgments alone cannot close independent quality acceptance.
 - [ ] Complete the selected-member follow-up with semantic/free-form resynthesis validation and a monetary/token cost guardrail. DA-079 supplies the rerun and rebuilt deterministic ledger; verified DA-081 adds inherited local call/output reservations with fresh child allowance. Semantic synthesis, total-input/tool accounting and monetary enforcement remain open.
 
 The original complete quality gate remains open. DA-074 performs mechanical checks only and does not assess whether the source question was fully extracted or any claim is true. DA-077 records model-proposed revisions but does not verify their truth, promote them to the canonical claim ledger, or enable consensus-based early stopping.

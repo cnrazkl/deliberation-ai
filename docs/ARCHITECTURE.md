@@ -1,5 +1,13 @@
 # Architecture
 
+Reviewed synthesis contracts bound paragraphs and per-paragraph fidelity checks.
+Domain code validates complete claim/quote coverage and renders the ledger fallback;
+application code coordinates proposer/reviewer and one repair through normalized
+text ports. Providers reuse bounded native/compatible text transport. The opt-in
+persistence CLI loads owned runs/connections and writes immutable encrypted local
+phase receipts before dispatch, revalidating source and revisions before/after calls.
+No run/schema/worker mutation or browser route is added. [Boundary](REVIEWED_SYNTHESIS.md).
+
 Daily Windows startup is an owned on-demand session task holding a supervisor and
 hidden non-detached web/worker pair. The physical local data root preserves MSIX
 storage; credentials stay in the existing local environment file. Replacement

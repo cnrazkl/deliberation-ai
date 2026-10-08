@@ -1,5 +1,12 @@
 # Orchestration
 
+Opt-in reviewed synthesis follows draft -> separate fidelity review -> at most one
+repair -> separate review of the repair, with a complete ledger fallback. Known
+returned defective drafts/negative judgments permit repair; unknown, incomplete,
+malformed review or stale-source outcomes stop. A permanent local execution claim
+and per-phase submitted receipts precede calls; finished intents replay, interrupted
+ones cannot resume/resend automatically. [Flow](REVIEWED_SYNTHESIS.md).
+
 Recovery hold checks migration compatibility, then opens a heartbeat without queue/
 schedule consumers. Explicit clone queue parking retains cancelled rows. Adapter
 generation is fenced during rehearsal. Post-cutover changes block rollback/cleanup.

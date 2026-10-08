@@ -1,5 +1,11 @@
 # Original PLAN.md versus the running local application
 
+**8 October 2026, Group 3:** [reviewed synthesis](REVIEWED_SYNTHESIS.md) adds opt-in
+local draft/review/one-repair receipts and a deterministic ledger fallback. It is
+CLI/export only, preserves all original claims, and labels fidelity review as a
+model judgment. Earlier free-form-absence statements are superseded in this narrow
+scope; independent semantic quality, early-stop and monetary gates remain open.
+
 **4 October 2026, DA-118:** conversation-level council usage joins private visibility
 through separate timestamped summaries, retaining deletion receipts and unknown history.
 This advances observability only; invoice/price/settled-cost unification remains open.
