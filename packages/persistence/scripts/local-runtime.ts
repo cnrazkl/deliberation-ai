@@ -6,6 +6,9 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createConnection } from "node:net";
 import { sessionRuntimeTask } from "./windows-session-runtime";
+import { createRuntimeReadToken } from "../src/runtime-read-auth";
+import { readHostQuiescence, hostIsQuiescent } from "../src/host-quiescence";
+import { closeDatabase } from "../src/database";
 
 export type RuntimeRecord = { version: "local-runtime-v1"; identity: string; root: string; web: number; worker: number };
 export async function interactivePortOccupied(port = 3000): Promise<boolean> {
@@ -24,9 +27,14 @@ export async function localEnvironment(root: string): Promise<NodeJS.ProcessEnv>
     const index = line.indexOf("="); if (index < 1) throw new Error("Local configuration invalid."); return [line.slice(0, index), line.slice(index + 1)];
   })) };
 }
+async function runtimeHeaders(): Promise<Record<string, string>> {
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+  const env = await localEnvironment(root);
+  return { "x-deliberation-runtime-read": createRuntimeReadToken(env.DATA_ENCRYPTION_KEY ?? "") };
+}
 export async function runtimeHealthy(identity?: string): Promise<boolean> {
   try {
-    const response = await fetch("http://127.0.0.1:3000/api/local-diagnostics", { signal: AbortSignal.timeout(2000) });
+    const response = await fetch("http://127.0.0.1:3000/api/local-diagnostics", { signal: AbortSignal.timeout(2000), headers: await runtimeHeaders() });
     const value = await response.json() as { database?: string; readyWorkers?: number; operational?: { runtimeIdentity?: string } };
     return response.ok && value.database === "ready" && value.readyWorkers === 1 && (!identity || value.operational?.runtimeIdentity === identity);
   } catch { return false; }
@@ -125,13 +133,16 @@ if (process.argv[1] && resolve(process.argv[1]) === here) {
   const root = resolve(dirname(here), "../../..");
   const action = process.argv[2];
   try {
-    if (process.argv.length !== 3 || !["start", "stop", "status", "serve", "remove-launcher"].includes(action ?? "")) throw new Error();
+    const maintenance = action === "stop" && process.argv[3] === "--maintenance";
+    if ((!maintenance && process.argv.length !== 3) || (maintenance && process.argv.length !== 4) || !["start", "stop", "status", "serve", "remove-launcher"].includes(action ?? "")) throw new Error();
     if (action === "serve") await serveSessionRuntime(root);
     else if (action === "remove-launcher") { await sessionRuntimeTask(root, "remove"); console.log("Stopped session launcher removed; database and records retained."); }
     else if (action === "status") console.log(JSON.stringify({ ready: await runtimeHealthy(), session: await sessionRuntimeTask(root, "status") }));
     else if (action === "stop") {
-      const diagnostics = await fetch("http://127.0.0.1:3000/api/local-diagnostics", { signal: AbortSignal.timeout(3000) }).then((response) => response.json()).catch(() => null) as { runningRuns?: number; queuedRuns?: number; unresolvedProviderAttempts?: number; operational?: { unsettled?: number } } | null;
-      if (!diagnostics || diagnostics.runningRuns || diagnostics.queuedRuns || diagnostics.unresolvedProviderAttempts || diagnostics.operational?.unsettled) throw new Error();
+      const diagnostics = await fetch("http://127.0.0.1:3000/api/local-diagnostics", { signal: AbortSignal.timeout(3000), headers: await runtimeHeaders() }).then((response) => response.json()).catch(() => null) as { runningRuns?: number; queuedRuns?: number; unresolvedProviderAttempts?: number; operational?: { unsettled?: number } } | null;
+      Object.assign(process.env, await localEnvironment(root));
+      try { if (!hostIsQuiescent(await readHostQuiescence())) throw new Error(); } finally { await closeDatabase(); }
+      if (!diagnostics || diagnostics.runningRuns || diagnostics.queuedRuns || (!maintenance && (diagnostics.unresolvedProviderAttempts || diagnostics.operational?.unsettled))) throw new Error();
       await sessionRuntimeTask(root, "status"); // Refuse an altered task before any stop mutation.
       const record = JSON.parse(await readFile(join(root, ".local/runtime/managed.json"), "utf8")) as RuntimeRecord;
       await writeFile(join(root, ".local/runtime/stop-request.json"), JSON.stringify({ identity: record.identity, requestedAt: new Date().toISOString() }), { mode: 0o600 });

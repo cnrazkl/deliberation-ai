@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch, sessionOwner } from "../../lib/session-fetch";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { WorkspaceShell, ThemeSelect, type WorkspaceView } from "./workspace-shell";
 import { LocalDiagnosticsPanel } from "./local-diagnostics-panel";
@@ -441,7 +442,7 @@ export function CouncilWorkbench() {
     if (members.some((member) => !member.connectionId || !member.model.trim())) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      void fetch("/api/runs/token-preview", {
+      void ownerFetch("/api/runs/token-preview", {
         method: "POST", headers: { "content-type": "application/json" },
         body: previewRequestKey, signal: controller.signal,
       }).then(async (response) => {
@@ -456,14 +457,14 @@ export function CouncilWorkbench() {
   }, [previewRequestKey, selectedQuestion, attachments.length, members, previewRefresh, compactionDraft, continuationReviewed]);
 
   async function refreshEvidenceSources(runId: string): Promise<void> {
-    const response = await fetch(`/api/evidence-sources?runId=${encodeURIComponent(runId)}`, { cache: "no-store" });
+    const response = await ownerFetch(`/api/evidence-sources?runId=${encodeURIComponent(runId)}`, { cache: "no-store" });
     if (!response.ok) return;
     const body = (await response.json()) as { sources: EvidenceSource[] };
     setEvidenceSources(body.sources);
   }
 
   useEffect(() => {
-    void fetch("/api/provider-connections", { cache: "no-store" })
+    void ownerFetch("/api/provider-connections", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) return;
         const body = (await response.json()) as { connections: ProviderConnection[] };
@@ -472,7 +473,7 @@ export function CouncilWorkbench() {
         setMembers((current) => assignConnectionToUnconfiguredMembers(current, body.connections));
       })
       .catch(() => undefined);
-    void fetch("/api/council-templates", { cache: "no-store" })
+    void ownerFetch("/api/council-templates", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) return;
         const body = (await response.json()) as { templates: CouncilTemplate[] };
@@ -480,7 +481,7 @@ export function CouncilWorkbench() {
       })
       .catch(() => undefined);
     void refreshOperatorOperations();
-    void fetch("/api/memory-entries", { cache: "no-store" })
+    void ownerFetch("/api/memory-entries", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) return;
         const body = (await response.json()) as { entries: SharedMemoryEntry[] };
@@ -491,7 +492,7 @@ export function CouncilWorkbench() {
 
   useEffect(() => {
     if (!evidenceRunId) return;
-    void fetch(`/api/evidence-sources?runId=${encodeURIComponent(evidenceRunId)}`, { cache: "no-store" })
+    void ownerFetch(`/api/evidence-sources?runId=${encodeURIComponent(evidenceRunId)}`, { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) return;
         const body = (await response.json()) as { sources: EvidenceSource[] };
@@ -502,7 +503,7 @@ export function CouncilWorkbench() {
 
   async function refreshOperatorOperations(): Promise<void> {
     try {
-      const response = await fetch("/api/provider-operations", { cache: "no-store" });
+      const response = await ownerFetch("/api/provider-operations", { cache: "no-store" });
       if (!response.ok) return;
       const body = (await response.json()) as { operations: OperatorProviderOperation[] };
       setOperatorOperations(body.operations);
@@ -622,7 +623,7 @@ export function CouncilWorkbench() {
           reader.readAsDataURL(file);
         });
         if (mimeType === "application/pdf") {
-          const response = await fetch("/api/runs/prepare-pdf", {
+          const response = await ownerFetch("/api/runs/prepare-pdf", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ name: file.name, mimeType, dataBase64, sha256: digest }),
@@ -663,7 +664,7 @@ export function CouncilWorkbench() {
     setSavingTemplate(true);
     setError(undefined);
     try {
-      const response = await fetch("/api/council-templates", {
+      const response = await ownerFetch("/api/council-templates", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...draft, requestId: templateIntent.current.requestId }),
@@ -693,7 +694,7 @@ export function CouncilWorkbench() {
     setSavingConnection(true);
     setError(undefined);
     try {
-      const response = await fetch("/api/provider-connections", {
+      const response = await ownerFetch("/api/provider-connections", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -753,7 +754,7 @@ export function CouncilWorkbench() {
   }
 
   async function removeConnection(connectionId: string): Promise<void> {
-    const response = await fetch(`/api/provider-connections?id=${encodeURIComponent(connectionId)}`, { method: "DELETE" });
+    const response = await ownerFetch(`/api/provider-connections?id=${encodeURIComponent(connectionId)}`, { method: "DELETE" });
     if (!response.ok) {
       setError("Bağlantı kaldırılamadı.");
       return;
@@ -772,7 +773,7 @@ export function CouncilWorkbench() {
   async function checkConnectionModels(connectionId: string): Promise<void> {
     setCheckingConnectionId(connectionId);
     try {
-      const response = await fetch(`/api/provider-connections/${encodeURIComponent(connectionId)}/models`, { method: "POST" });
+      const response = await ownerFetch(`/api/provider-connections/${encodeURIComponent(connectionId)}/models`, { method: "POST" });
       if (response.status === 409) {
         setCatalogChecks((current) => {
           const next = { ...current };
@@ -803,7 +804,7 @@ export function CouncilWorkbench() {
     try {
       while (!controller.signal.aborted && activeRunIdRef.current === runId) {
         try {
-          const response = await fetch(`/api/runs/${runId}/events?after=${after}`, {
+          const response = await ownerFetch(`/api/runs/${runId}/events?after=${after}`, {
             cache: "no-store",
             signal: controller.signal,
           });
@@ -859,7 +860,7 @@ export function CouncilWorkbench() {
     }
 
     await new Promise<void>((resolve, reject) => {
-      const source = new EventSource(`/api/runs/${runId}/stream?after=0`);
+      const source = new EventSource(`/api/runs/${runId}/stream?after=0&owner=${encodeURIComponent(sessionOwner())}`);
       let settled = false;
 
       const cancelWatch = (): void => {
@@ -932,7 +933,7 @@ export function CouncilWorkbench() {
         expectedPreflightFingerprint: tokenPreview.value.promptPlan?.fingerprint,
         expectedRiskFingerprint: tokenPreview.value.riskPreflight?.fingerprint, members,
       });
-      const response = await fetch("/api/runs", {
+      const response = await ownerFetch("/api/runs", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: attempt.body,
@@ -974,7 +975,7 @@ export function CouncilWorkbench() {
     setError(undefined);
     setRun(undefined);
     let loaded: RunRecord;
-    try { loaded = await readJson(await fetch(`/api/runs/${runId}`, { cache: "no-store" })); }
+    try { loaded = await readJson(await ownerFetch(`/api/runs/${runId}`, { cache: "no-store" })); }
     catch (reason) {
       if (activeRunIdRef.current === runId) setError("Kayıtlı çalışma açılamadı. İçerik kaldırılmış veya artık erişilemiyor olabilir.");
       throw reason;
@@ -996,7 +997,7 @@ export function CouncilWorkbench() {
     setLoadingContinuation(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/runs/${run.runId}/continuation${mode === "compaction" ? "?mode=compaction" : ""}`, { cache: "no-store" });
+      const response = await ownerFetch(`/api/runs/${run.runId}/continuation${mode === "compaction" ? "?mode=compaction" : ""}`, { cache: "no-store" });
       const body = await response.json() as (FrozenContinuation | ContinuationCompactionPacket) & { error?: string };
       if (!response.ok) throw new Error(body.error ?? "Devam bağlamı okunamadı.");
       if (body.version === "continuation-compaction-source-v1") {
@@ -1027,7 +1028,7 @@ export function CouncilWorkbench() {
     setError(undefined);
     try {
       const attempt = submissionAttemptsRef.current.prepare("member-rerun", { memberId, sourceRunId });
-      const created = await readJson(await fetch(`/api/runs/${sourceRunId}/member-rerun`, {
+      const created = await readJson(await ownerFetch(`/api/runs/${sourceRunId}/member-rerun`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ memberId, idempotencyKey: attempt.idempotencyKey }),
@@ -1052,7 +1053,7 @@ export function CouncilWorkbench() {
     if (!run || terminalStatuses.has(run.status)) return;
     try {
       const cancelled = await readJson(
-        await fetch(`/api/runs/${run.runId}/cancel`, { method: "POST" }),
+        await ownerFetch(`/api/runs/${run.runId}/cancel`, { method: "POST" }),
       );
       setRun(cancelled);
       setHistoryRefreshKey((value) => value + 1);
@@ -1066,7 +1067,7 @@ export function CouncilWorkbench() {
     setExportingRun(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/runs/${run.runId}/export?format=${format}`, { method: "POST", cache: "no-store" });
+      const response = await ownerFetch(`/api/runs/${run.runId}/export?format=${format}`, { method: "POST", cache: "no-store" });
       if (!response.ok) {
         const body = await response.json() as { error?: string };
         throw new Error(body.error ?? "Rapor indirilemedi.");
@@ -1095,7 +1096,7 @@ export function CouncilWorkbench() {
     setError(undefined);
     try {
       const updated = await readJson(
-        await fetch(
+        await ownerFetch(
           `/api/runs/${run.runId}/claims/${encodeURIComponent(claimId)}/evidence-state`,
           {
             method: "PATCH",
@@ -1121,7 +1122,7 @@ export function CouncilWorkbench() {
     setError(undefined);
     try {
       const updated = await readJson(
-        await fetch(
+        await ownerFetch(
           `/api/runs/${run.runId}/claims/${encodeURIComponent(claimId)}/synthesis-coverage`,
           {
             method: "PATCH",
@@ -1143,7 +1144,7 @@ export function CouncilWorkbench() {
     setSavingMemoryClaimId(claimId);
     setError(undefined);
     try {
-      const response = await fetch("/api/memory-entries", {
+      const response = await ownerFetch("/api/memory-entries", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ runId: run.runId, claimId }),
@@ -1168,7 +1169,7 @@ export function CouncilWorkbench() {
   }
 
   async function removeMemoryEntry(memoryEntryId: string): Promise<void> {
-    const response = await fetch(`/api/memory-entries?id=${encodeURIComponent(memoryEntryId)}`, {
+    const response = await ownerFetch(`/api/memory-entries?id=${encodeURIComponent(memoryEntryId)}`, {
       method: "DELETE",
     });
     if (!response.ok) {
@@ -1208,7 +1209,7 @@ export function CouncilWorkbench() {
     setSavingEvidenceSource(true);
     setError(undefined);
     try {
-      const response = await fetch("/api/evidence-sources", {
+      const response = await ownerFetch("/api/evidence-sources", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -1244,7 +1245,7 @@ export function CouncilWorkbench() {
     sourceId: string,
     update: UpdateEvidenceSourceRequest,
   ): Promise<void> {
-    const response = await fetch(`/api/evidence-sources/${sourceId}`, {
+    const response = await ownerFetch(`/api/evidence-sources/${sourceId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(update),
@@ -1261,7 +1262,7 @@ export function CouncilWorkbench() {
   }
 
   async function removeEvidenceSource(sourceId: string): Promise<void> {
-    const response = await fetch(`/api/evidence-sources?id=${encodeURIComponent(sourceId)}`, {
+    const response = await ownerFetch(`/api/evidence-sources?id=${encodeURIComponent(sourceId)}`, {
       method: "DELETE",
     });
     if (!response.ok) {
@@ -1320,7 +1321,7 @@ export function CouncilWorkbench() {
     setResolvingOperationId(operation.id);
     setError(undefined);
     try {
-      const response = await fetch(`/api/provider-operations/${operation.id}/resolve`, {
+      const response = await ownerFetch(`/api/provider-operations/${operation.id}/resolve`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
@@ -1330,7 +1331,7 @@ export function CouncilWorkbench() {
       setOperatorOperations((current) => current.filter((item) => item.id !== operation.id));
       if (body.requeued) {
         const requeued = await readJson(
-          await fetch(`/api/runs/${operation.runId}`, { cache: "no-store" }),
+          await ownerFetch(`/api/runs/${operation.runId}`, { cache: "no-store" }),
         );
         cancelActiveWatchRef.current?.();
         activeRunIdRef.current = operation.runId;

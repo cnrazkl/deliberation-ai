@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { RunDeletionPreview, RunDeletionBlock } from "@deliberation-ai/persistence";
 const labels: Record<RunDeletionBlock, string> = {
@@ -19,7 +20,7 @@ export function RunDeletionPanel({ runId, onCancel, onDeleted, onBusy }: {
   const alive = useRef(true); const submitting = useRef(false);
   useEffect(() => {
     alive.current = true; const controller = new AbortController();
-    void fetch(`/api/runs/${runId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
+    void ownerFetch(`/api/runs/${runId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
       const value = await response.json(); if (!response.ok) throw new Error(value.error ?? "Silme önizlemesi yüklenemedi.");
       if (!controller.signal.aborted) { setPreview(value); setError(null); }
     }).catch((cause) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Önizleme yüklenemedi."); });
@@ -29,7 +30,7 @@ export function RunDeletionPanel({ runId, onCancel, onDeleted, onBusy }: {
     if (!preview?.eligible || !preview.fingerprint || !reviewed || submitting.current) return;
     submitting.current = true; setBusy(true); onBusy(true); setError(null);
     try {
-      const response = await fetch(`/api/runs/${runId}/deletion`, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" },
+      const response = await ownerFetch(`/api/runs/${runId}/deletion`, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ runId, fingerprint: preview.fingerprint, confirmContentDeletion: true, acknowledgeRetainedRecords: true }) });
       const value = await response.json();
       if (!response.ok) { if (alive.current) { setPreview(null); setReviewed(false); } throw new Error(value.error ?? "Çalışma silinemedi."); }

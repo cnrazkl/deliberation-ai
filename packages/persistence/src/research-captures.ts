@@ -5,7 +5,7 @@ import { and, asc, count, eq } from "drizzle-orm";
 import { decryptText, encryptText } from "./crypto";
 import { getDatabase } from "./database";
 import { MAX_EVIDENCE_SOURCES_PER_CLAIM } from "./evidence-sources";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { claims, evidenceSources, researchCaptures, runs } from "./schema";
 import { lockConversationMembership } from "./conversation-membership";
 
@@ -69,7 +69,7 @@ async function findOwnedClaim(runId: string, reportClaimId: string) {
     .from(claims)
     .innerJoin(runs, eq(claims.runId, runs.id))
     .where(and(
-      eq(runs.ownerId, LOCAL_OWNER_ID),
+      eq(runs.ownerId, getOwnerId()),
       eq(claims.runId, runId),
       eq(claims.reportClaimId, reportClaimId),
     ))
@@ -99,7 +99,7 @@ export async function saveResearchCapture(
       .from(claims)
       .innerJoin(runs, eq(claims.runId, runs.id))
       .where(and(
-        eq(runs.ownerId, LOCAL_OWNER_ID),
+        eq(runs.ownerId, getOwnerId()),
         eq(claims.runId, runId),
         eq(claims.reportClaimId, reportClaimId),
       ))
@@ -113,7 +113,7 @@ export async function saveResearchCapture(
     const id = randomUUID();
     const [saved] = await tx.insert(researchCaptures).values({
       id,
-      ownerId: LOCAL_OWNER_ID,
+      ownerId: getOwnerId(),
       runId,
       claimId: claim.id,
       reportClaimId,
@@ -133,17 +133,17 @@ export async function saveResearchCapture(
 
 export async function listResearchCaptures(runId: string): Promise<ResearchCapture[] | undefined> {
   const [ownedRun] = await getDatabase().select({ id: runs.id }).from(runs)
-    .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId()))).limit(1);
   if (!ownedRun) return undefined;
   const rows = await getDatabase().select().from(researchCaptures)
-    .where(and(eq(researchCaptures.ownerId, LOCAL_OWNER_ID), eq(researchCaptures.runId, runId)))
+    .where(and(eq(researchCaptures.ownerId, getOwnerId()), eq(researchCaptures.runId, runId)))
     .orderBy(asc(researchCaptures.capturedAt));
   return rows.map(mapCapture);
 }
 
 export async function rejectResearchCapture(id: string): Promise<ResearchCapture | undefined> {
   const [capture] = await getDatabase().select().from(researchCaptures)
-    .where(and(eq(researchCaptures.id, id), eq(researchCaptures.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(researchCaptures.id, id), eq(researchCaptures.ownerId, getOwnerId()))).limit(1);
   if (!capture) return undefined;
   if (capture.evidenceSourceId) {
     throw new ResearchCaptureStateError("Kanıt kaydına dönüştürülmüş yakalama reddedilemez.");
@@ -151,7 +151,7 @@ export async function rejectResearchCapture(id: string): Promise<ResearchCapture
   const [updated] = await getDatabase().update(researchCaptures).set({
     reviewStatus: "rejected",
     reviewedAt: new Date(),
-  }).where(and(eq(researchCaptures.id, id), eq(researchCaptures.ownerId, LOCAL_OWNER_ID))).returning();
+  }).where(and(eq(researchCaptures.id, id), eq(researchCaptures.ownerId, getOwnerId()))).returning();
   return updated ? mapCapture(updated) : undefined;
 }
 
@@ -162,7 +162,7 @@ export async function promoteResearchCapture(
   return getDatabase().transaction(async (tx) => {
     await lockConversationMembership(tx);
     const [capture] = await tx.select().from(researchCaptures)
-      .where(and(eq(researchCaptures.id, id), eq(researchCaptures.ownerId, LOCAL_OWNER_ID)))
+      .where(and(eq(researchCaptures.id, id), eq(researchCaptures.ownerId, getOwnerId())))
       .for("update").limit(1);
     if (!capture) return undefined;
     if (capture.reviewStatus === "rejected") {
@@ -184,7 +184,7 @@ export async function promoteResearchCapture(
     const capturedAt = new Date();
     await tx.insert(evidenceSources).values({
       id: evidenceSourceId,
-      ownerId: LOCAL_OWNER_ID,
+      ownerId: getOwnerId(),
       runId: capture.runId,
       claimId: capture.claimId,
       reportClaimId: capture.reportClaimId,

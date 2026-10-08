@@ -9,6 +9,12 @@ spending protection on 8 October. Existing call/output controls and observations
 remain; the cancelled extension is not an active task or an accepted capability.
 [Execution inventory and live checks](NON_HUMAN_COMPLETION.md).
 
+- [ ] Owner-requested local membership: username/password registration and unique root,
+  user-owned API connections and full workspace isolation, root user/connection management,
+  guarded BFF/worker ownership and backed-up owner deployment. Implementation and isolated
+  verification in progress; no human-quality or cancelled billing task is reopened.
+  [Contract](LOCAL_ACCOUNTS.md).
+
 - [x] Non-human follow-through: hosted contradiction shadow adapter/owned CLI,
   frozen risk-eligible round/prompt diagnostic dispatch and content-only synthesis v3.
   Live synthesis and one contradiction pair pass their mechanical contracts;
@@ -390,7 +396,9 @@ These items do not block the active local sequence.
 
 ## Held by the local-only product boundary
 
-Public deployment, interactive authentication and multi-owner isolation are not being implemented while the product is explicitly limited to this computer. They become required together if that deployment boundary changes.
+Public deployment remains outside the local-only product boundary. The owner's 8 October
+membership request overrides the earlier deferral of interactive authentication and
+multi-owner isolation for this local installation; it does not request public hosting.
 
 ## History
 

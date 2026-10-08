@@ -16,7 +16,7 @@ import {
 import { and, asc, eq, isNull, lte, sql } from "drizzle-orm";
 import { decryptJson, decryptText, encryptJson, encryptText } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { enqueueDurableRun } from "./run-repository";
 import { localSchedules } from "./schema";
 import { lockConversationMembership } from "./conversation-membership";
@@ -65,7 +65,7 @@ function mapSchedule(row: typeof localSchedules.$inferSelect): LocalSchedule {
 
 export async function listLocalSchedules(): Promise<LocalSchedule[]> {
   const rows = await getDatabase().select().from(localSchedules)
-    .where(and(eq(localSchedules.ownerId, LOCAL_OWNER_ID), isNull(localSchedules.deletedAt))).orderBy(asc(localSchedules.createdAt));
+    .where(and(eq(localSchedules.ownerId, getOwnerId()), isNull(localSchedules.deletedAt))).orderBy(asc(localSchedules.createdAt));
   return rows.map(mapSchedule);
 }
 
@@ -82,7 +82,7 @@ export async function createLocalSchedule(request: CreateScheduleRequest): Promi
   const creationRequestHash = scheduleSnapshotHash({ ...normalized, requestId: creationRequestId });
   return getDatabase().transaction(async (tx) => {
     await lockConversationMembership(tx);
-    const [existing] = await tx.select().from(localSchedules).where(and(eq(localSchedules.ownerId, LOCAL_OWNER_ID), eq(localSchedules.creationRequestId, creationRequestId))).limit(1);
+    const [existing] = await tx.select().from(localSchedules).where(and(eq(localSchedules.ownerId, getOwnerId()), eq(localSchedules.creationRequestId, creationRequestId))).limit(1);
     if (existing) {
       if (existing.deletedAt || existing.creationRequestHash !== creationRequestHash) throw new IdempotencyConflictError();
       return mapSchedule(existing);
@@ -91,7 +91,7 @@ export async function createLocalSchedule(request: CreateScheduleRequest): Promi
     const [row] = await tx.insert(localSchedules).values({
       creationRequestId, creationRequestHash,
       id,
-      ownerId: LOCAL_OWNER_ID,
+      ownerId: getOwnerId(),
       nameCiphertext: encryptText(request.name, `local-schedule:${id}:name`),
       questionCiphertext: encryptText(request.question, `local-schedule:${id}:question`),
       membersCiphertext: encryptJson(request.members, `local-schedule:${id}:members`),
@@ -115,7 +115,7 @@ export async function updateLocalSchedule(id: string, update: UpdateScheduleRequ
   return getDatabase().transaction(async (tx) => {
     await lockConversationMembership(tx);
     const [existing] = await tx.select().from(localSchedules)
-      .where(and(eq(localSchedules.id, id), eq(localSchedules.ownerId, LOCAL_OWNER_ID), isNull(localSchedules.deletedAt))).for("update").limit(1);
+      .where(and(eq(localSchedules.id, id), eq(localSchedules.ownerId, getOwnerId()), isNull(localSchedules.deletedAt))).for("update").limit(1);
     if (!existing) return undefined;
     if (update.status === "active") {
       const schedule = mapSchedule(existing);
@@ -127,7 +127,7 @@ export async function updateLocalSchedule(id: string, update: UpdateScheduleRequ
       }
     }
     const [row] = await tx.update(localSchedules).set({ status: update.status, updatedAt: new Date() })
-      .where(and(eq(localSchedules.id, id), eq(localSchedules.ownerId, LOCAL_OWNER_ID))).returning();
+      .where(and(eq(localSchedules.id, id), eq(localSchedules.ownerId, getOwnerId()))).returning();
     return row ? mapSchedule(row) : undefined;
   });
 }
@@ -137,7 +137,7 @@ export async function dispatchDueLocalSchedules(now = new Date()): Promise<{ dis
   const due = await db.select({ row: localSchedules, exact: sql<unknown>`to_jsonb(${localSchedules})`,
     occurrenceAt: sql<string>`to_char(${localSchedules.nextRunAt} at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')` }).from(localSchedules).where(and(
     isNull(localSchedules.deletedAt),
-    eq(localSchedules.ownerId, LOCAL_OWNER_ID),
+    eq(localSchedules.ownerId, getOwnerId()),
     eq(localSchedules.status, "active"),
     lte(localSchedules.nextRunAt, now),
   )).orderBy(asc(localSchedules.nextRunAt));
@@ -169,9 +169,9 @@ export async function dispatchDueLocalSchedules(now = new Date()): Promise<{ dis
         await db.transaction(async (tx) => {
           await lockConversationMembership(tx);
           const [current] = await tx.select({ exact: sql<unknown>`to_jsonb(${localSchedules})` }).from(localSchedules)
-            .where(and(eq(localSchedules.id, fence.id), eq(localSchedules.ownerId, LOCAL_OWNER_ID), isNull(localSchedules.deletedAt))).for("update").limit(1);
+            .where(and(eq(localSchedules.id, fence.id), eq(localSchedules.ownerId, getOwnerId()), isNull(localSchedules.deletedAt))).for("update").limit(1);
           if (current && scheduleSnapshotHash(current.exact) === fence.fingerprint) await tx.update(localSchedules)
-            .set({ status: "paused", updatedAt: now }).where(and(eq(localSchedules.id, fence.id), eq(localSchedules.ownerId, LOCAL_OWNER_ID)));
+            .set({ status: "paused", updatedAt: now }).where(and(eq(localSchedules.id, fence.id), eq(localSchedules.ownerId, getOwnerId())));
         });
       }
       failed += 1;

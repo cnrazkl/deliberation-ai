@@ -130,7 +130,7 @@ test("private drafts preserve the council draft, retry one committed message, fo
     expect(conversationExport.status()).toBe(200); expect((await conversationExport.json() as { privateBranches: unknown[] }).privateBranches).toHaveLength(2);
     await revealConversationOptions(page);
     await card.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
-    await expect(page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi" })).toContainText("saklanan özel dal taslakları");
+    await expect(page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi" }).getByRole("button", { name: "Özel dal silmeyi incele", exact: true })).toHaveCount(2);
     expect((await request.post(`/api/private-branches/${child.id}/export`, { headers: { origin: "https://external.example" } })).status()).toBe(403);
     expect(generationCalls).toBe(0);
   } finally {

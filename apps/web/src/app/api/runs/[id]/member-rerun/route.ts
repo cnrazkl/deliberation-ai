@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { z } from "zod";
 import { IdempotencyConflictError } from "@deliberation-ai/application";
 import { ExecutionPlanLimitsError } from "@deliberation-ai/domain";
@@ -14,7 +15,7 @@ const requestSchema = z.object({
   idempotencyKey: z.string().min(8).max(128),
 }).strict();
 
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+async function sessionPOST(request: Request, context: { params: Promise<{ id: string }> }) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const { id } = await context.params;
@@ -36,3 +37,5 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return Response.json({ error: "Üye tekrar çalıştırması başlatılamadı." }, { status: 500 });
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

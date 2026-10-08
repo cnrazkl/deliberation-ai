@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { saveDecisionConnectionSchema } from "@deliberation-ai/evaluation";
 import {
   deleteDecisionConnection,
@@ -11,14 +12,14 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+async function sessionGET(): Promise<Response> {
   return Response.json({
     connections: await listDecisionConnections(),
     evaluatorEnabled: process.env.ENABLE_DECISION_EVALUATOR === "true",
   });
 }
 
-export async function DELETE(request: Request): Promise<Response> {
+async function sessionDELETE(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const id = new URL(request.url).searchParams.get("id");
@@ -33,7 +34,7 @@ export async function DELETE(request: Request): Promise<Response> {
   }
 }
 
-export async function POST(request: Request): Promise<Response> {
+async function sessionPOST(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const parsed = saveDecisionConnectionSchema.safeParse(await request.json().catch(() => null));
@@ -52,3 +53,7 @@ export async function POST(request: Request): Promise<Response> {
     throw error;
   }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const DELETE = withLocalSession(sessionDELETE);
+export const POST = withLocalSession(sessionPOST);

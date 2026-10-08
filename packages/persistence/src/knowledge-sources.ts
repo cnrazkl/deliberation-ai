@@ -8,7 +8,7 @@ import { knowledgeExcerptLocator, readKnowledgeExcerpt, validateKnowledgeExtract
 import { extractKnowledgeFile, knowledgeDigest, knowledgeParserVersion, validateKnowledgeFiles, KnowledgeFileError, type KnowledgeFile } from "@deliberation-ai/retrieval";
 import { getDatabase } from "./database";
 import { decryptJson, encryptJson } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
 import { authorizeKnowledgeScope, authorizeKnowledgeScopeInSnapshot, conversationKnowledgeAuthorization,
   exportConversationKnowledge, KnowledgeSelectionConflictError } from "./knowledge-scope";
@@ -29,8 +29,8 @@ function extraction(row: ExtractedVersion) {
 async function ownedVersion(tx: ConversationTransaction, scope: KnowledgeScope, sourceId: string, versionId: string): Promise<ExtractedVersion> {
   if (!knowledgeObjectIdSchema.safeParse(sourceId).success || !knowledgeObjectIdSchema.safeParse(versionId).success) throw new KnowledgeAccessError();
   const [row] = await tx.select(fields).from(knowledgeSourceVersions).innerJoin(knowledgeSources,
-    and(eq(knowledgeSources.id, knowledgeSourceVersions.sourceId), eq(knowledgeSources.ownerId, LOCAL_OWNER_ID), eq(knowledgeSources.collectionId, scope.collectionId)))
-    .where(and(eq(knowledgeSourceVersions.id, versionId), eq(knowledgeSourceVersions.sourceId, sourceId), eq(knowledgeSourceVersions.ownerId, LOCAL_OWNER_ID))).limit(1);
+    and(eq(knowledgeSources.id, knowledgeSourceVersions.sourceId), eq(knowledgeSources.ownerId, getOwnerId()), eq(knowledgeSources.collectionId, scope.collectionId)))
+    .where(and(eq(knowledgeSourceVersions.id, versionId), eq(knowledgeSourceVersions.sourceId, sourceId), eq(knowledgeSourceVersions.ownerId, getOwnerId()))).limit(1);
   if (!row) throw new KnowledgeAccessError(); return row;
 }
 async function scoped<T>(scope: KnowledgeScope, read: (tx: ConversationTransaction) => Promise<T>): Promise<T> {
@@ -58,7 +58,7 @@ export async function importKnowledgeFiles(scope: KnowledgeScope, input: readonl
   // Copy caller buffers before any await; intake accepts selected bytes, never paths.
   const files = input.map((file) => ({ ...file, bytes: new Uint8Array(file.bytes) }));
   validateKnowledgeFiles(files);
-  if (!knowledgeScopeSchema.safeParse(scope).success || scope.ownerId !== LOCAL_OWNER_ID || scope.accountId !== "local"
+  if (!knowledgeScopeSchema.safeParse(scope).success || scope.ownerId !== getOwnerId() || scope.accountId !== "local"
     || new Set(files.map((file) => file.sourceId)).size !== files.length
     || files.some((file) => !knowledgeObjectIdSchema.safeParse(file.sourceId).success
       || file.expectedVersionId !== null && !knowledgeObjectIdSchema.safeParse(file.expectedVersionId).success
@@ -68,21 +68,21 @@ export async function importKnowledgeFiles(scope: KnowledgeScope, input: readonl
   return getDatabase().transaction(async (tx) => {
     await tx.execute(sql`set local statement_timeout = '10s'`);
     await tx.execute(sql`set local lock_timeout = '5s'`);
-    const lease = await tx.execute<{ acquired: boolean }>(sql`select pg_try_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext('knowledge-intake-v1')) as acquired`);
+    const lease = await tx.execute<{ acquired: boolean }>(sql`select pg_try_advisory_xact_lock(hashtext(${getOwnerId()}), hashtext('knowledge-intake-v1')) as acquired`);
     if (!lease.rows[0]?.acquired) throw new KnowledgeIntakeBusyError();
     if (!await authorizeKnowledgeScopeInSnapshot(tx, scope)) throw new KnowledgeAccessError();
     const [inventory] = await tx.select({ count: sql<number>`count(*)::int`, bytes: sql<string>`coalesce(sum(${knowledgeSourceVersions.originalBytes}), 0)::text` })
-      .from(knowledgeSourceVersions).where(eq(knowledgeSourceVersions.ownerId, LOCAL_OWNER_ID));
+      .from(knowledgeSourceVersions).where(eq(knowledgeSourceVersions.ownerId, getOwnerId()));
     const prepared: { sourceId: string; expected: string | null; row: typeof knowledgeSourceVersions.$inferInsert | null; versionId: string;
       body: ReturnType<typeof extraction> }[] = [];
     for (const file of files) {
       const [source] = await tx.select().from(knowledgeSources).where(eq(knowledgeSources.id, file.sourceId)).limit(1);
-      if (source && (source.ownerId !== LOCAL_OWNER_ID || source.collectionId !== scope.collectionId)) throw new KnowledgeAccessError();
+      if (source && (source.ownerId !== getOwnerId() || source.collectionId !== scope.collectionId)) throw new KnowledgeAccessError();
       const originalHash = knowledgeDigest(file.bytes), parserVersion = knowledgeParserVersion(file.mediaType);
       const retryId = file.retryFailed ? retryVersionIdentifier(scope, file.sourceId, file.expectedVersionId, originalHash, parserVersion) : null;
       const [existing] = source ? await tx.select(fields).from(knowledgeSourceVersions).innerJoin(knowledgeSources,
         eq(knowledgeSources.id, knowledgeSourceVersions.sourceId)).where(and(eq(knowledgeSourceVersions.sourceId, source.id),
-          eq(knowledgeSourceVersions.ownerId, LOCAL_OWNER_ID), eq(knowledgeSourceVersions.originalHash, originalHash),
+          eq(knowledgeSourceVersions.ownerId, getOwnerId()), eq(knowledgeSourceVersions.originalHash, originalHash),
           eq(knowledgeSourceVersions.parserVersion, parserVersion)))
           .orderBy(desc(sql`${knowledgeSourceVersions.id} = ${source.activeVersionId}::uuid`), desc(knowledgeSourceVersions.createdAt)).limit(1) : [];
       const replay = existing?.id === source?.activeVersionId && (file.expectedVersionId === null || existing?.id === retryId);
@@ -103,15 +103,15 @@ export async function importKnowledgeFiles(scope: KnowledgeScope, input: readonl
         || Number(inventory!.bytes) + prepared.reduce((sum, value) => sum + (value.row?.originalBytes ?? 0), 0) + file.bytes.length > KNOWLEDGE_STORAGE_LIMITS.originalBytes) throw new KnowledgeCapacityError();
       const parsed = await extractKnowledgeFile(file, file.parseDeadlineMs ?? 10_000), id = retryId ?? randomUUID();
       if (parsed.reason === "active_content") throw new KnowledgeFileError();
-      const identity = { ownerId: LOCAL_OWNER_ID, collectionId: scope.collectionId, sourceId: file.sourceId, versionId: id };
+      const identity = { ownerId: getOwnerId(), collectionId: scope.collectionId, sourceId: file.sourceId, versionId: id };
       const original = { ...identity, name: file.name, mediaType: file.mediaType, originalHash, dataBase64: Buffer.from(file.bytes).toString("base64") };
       const body = { ...identity, name: file.name, mediaType: file.mediaType, originalHash, ...parsed, deadlineMs: file.parseDeadlineMs ?? 10_000, textHash: knowledgeDigest(parsed.text),
         pages: parsed.pages.map((page) => ({ ...page, textHash: knowledgeDigest(parsed.text.slice(page.start, page.end)) })) };
-      const metadata = { id, sourceId: file.sourceId, collectionId: scope.collectionId, ownerId: LOCAL_OWNER_ID, originalHash,
+      const metadata = { id, sourceId: file.sourceId, collectionId: scope.collectionId, ownerId: getOwnerId(), originalHash,
         parserVersion: parsed.parserVersion, status: parsed.status, originalBytes: file.bytes.length, textBytes: Buffer.byteLength(parsed.text, "utf8") };
       validateKnowledgeOriginal(original, metadata); validateKnowledgeExtraction(body, metadata);
       prepared.push({ sourceId: file.sourceId, expected: source?.activeVersionId ?? null, versionId: id, body,
-        row: { id, sourceId: file.sourceId, ownerId: LOCAL_OWNER_ID, originalHash, parserVersion: parsed.parserVersion,
+        row: { id, sourceId: file.sourceId, ownerId: getOwnerId(), originalHash, parserVersion: parsed.parserVersion,
           status: parsed.status, originalBytes: metadata.originalBytes, textBytes: metadata.textBytes,
           originalCiphertext: encryptJson(original, `knowledge-version:${id}:original`), extractionCiphertext: encryptJson(body, `knowledge-version:${id}:extraction`) } });
     }
@@ -119,10 +119,10 @@ export async function importKnowledgeFiles(scope: KnowledgeScope, input: readonl
     await lockConversationMembership(tx);
     if (!await authorizeKnowledgeScopeInSnapshot(tx, scope)) throw new KnowledgeAccessError();
     for (const item of prepared) {
-      if (item.expected === null) await tx.insert(knowledgeSources).values({ id: item.sourceId, ownerId: LOCAL_OWNER_ID, collectionId: scope.collectionId, activeVersionId: item.versionId });
+      if (item.expected === null) await tx.insert(knowledgeSources).values({ id: item.sourceId, ownerId: getOwnerId(), collectionId: scope.collectionId, activeVersionId: item.versionId });
       else {
         const changed = await tx.update(knowledgeSources).set({ activeVersionId: item.versionId }).where(and(eq(knowledgeSources.id, item.sourceId),
-          eq(knowledgeSources.ownerId, LOCAL_OWNER_ID), eq(knowledgeSources.collectionId, scope.collectionId), eq(knowledgeSources.activeVersionId, item.expected))).returning({ id: knowledgeSources.id });
+          eq(knowledgeSources.ownerId, getOwnerId()), eq(knowledgeSources.collectionId, scope.collectionId), eq(knowledgeSources.activeVersionId, item.expected))).returning({ id: knowledgeSources.id });
         if (changed.length !== 1) throw new KnowledgeSelectionConflictError();
       }
       if (item.row) await tx.insert(knowledgeSourceVersions).values(item.row);
@@ -138,7 +138,7 @@ export async function inspectKnowledgeVersion(scope: KnowledgeScope, sourceId: s
 export async function listKnowledgeSources(scope: KnowledgeScope, cursor: string | null = null) {
   if (cursor !== null && !knowledgeObjectIdSchema.safeParse(cursor).success) throw new KnowledgeAccessError();
   return scoped(scope, async (tx) => {
-    const heads = await tx.select().from(knowledgeSources).where(and(eq(knowledgeSources.ownerId, LOCAL_OWNER_ID),
+    const heads = await tx.select().from(knowledgeSources).where(and(eq(knowledgeSources.ownerId, getOwnerId()),
       eq(knowledgeSources.collectionId, scope.collectionId), cursor ? gt(knowledgeSources.id, cursor) : undefined)).orderBy(asc(knowledgeSources.id)).limit(21);
     const items = [];
     for (const head of heads.slice(0, 20)) {
@@ -200,13 +200,13 @@ export async function searchLocalKnowledge(scopes: readonly KnowledgeScope[], qu
   const result = await getDatabase().transaction(async (tx) => {
     await tx.execute(sql`set local statement_timeout = '5s'`);
     for (const scope of selected) if (!await authorizeKnowledgeScopeInSnapshot(tx, scope)) throw new KnowledgeAccessError();
-    const predicate = and(eq(knowledgeSources.ownerId, LOCAL_OWNER_ID), eq(knowledgeSourceVersions.ownerId, LOCAL_OWNER_ID),
+    const predicate = and(eq(knowledgeSources.ownerId, getOwnerId()), eq(knowledgeSourceVersions.ownerId, getOwnerId()),
       inArray(knowledgeSources.collectionId, selected.map((scope) => scope.collectionId)));
     const join = and(eq(knowledgeSourceVersions.sourceId, knowledgeSources.id), eq(knowledgeSourceVersions.id, knowledgeSources.activeVersionId));
     const [inventory] = await tx.select({ count: sql<number>`count(*)::int`, bytes: sql<string>`coalesce(sum(${knowledgeSourceVersions.textBytes}), 0)::text`,
       ciphertextBytes: sql<string>`coalesce(sum(octet_length(${knowledgeSourceVersions.extractionCiphertext})), 0)::text` }).from(knowledgeSources)
       .innerJoin(knowledgeSourceVersions, join).where(predicate);
-    const [heads] = await tx.select({ count: sql<number>`count(*)::int` }).from(knowledgeSources).where(and(eq(knowledgeSources.ownerId, LOCAL_OWNER_ID),
+    const [heads] = await tx.select({ count: sql<number>`count(*)::int` }).from(knowledgeSources).where(and(eq(knowledgeSources.ownerId, getOwnerId()),
       inArray(knowledgeSources.collectionId, selected.map((scope) => scope.collectionId))));
     if (heads!.count !== inventory!.count) throw new KnowledgeAccessError();
     if (inventory!.count > 30 || Number(inventory!.bytes) > 1_000_000 || Number(inventory!.ciphertextBytes) > 3 * 1_048_576) throw new KnowledgeCapacityError();

@@ -3,7 +3,7 @@ import { inspectBillingAccount } from "@deliberation-ai/domain";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDatabase } from "./database";
 import { getStatementHistoryInSnapshot } from "./billing-statement-history";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { readBillingStates } from "./provider-billing";
 import { pricingFingerprint } from "./provider-pricing";
 import { providerBillingRecords } from "./schema";
@@ -24,7 +24,7 @@ export async function inspectOwnedBillingAccount(value: BillingAccountInput, evi
       const records: BillingAccountStatement["records"][number][] = [];
       const ids = [...new Set(history?.packet?.lines.flatMap((line) => line.allocation === "attempt" ? [line.recordId] : []) ?? [])];
       for (let offset = 0; offset < ids.length; offset += 100) {
-        const rows = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID),
+        const rows = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()),
           inArray(providerBillingRecords.id, ids.slice(offset, offset + 100))));
         records.push(...await readBillingStates(rows, tx));
       }

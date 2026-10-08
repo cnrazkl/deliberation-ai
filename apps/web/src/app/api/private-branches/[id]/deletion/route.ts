@@ -1,15 +1,16 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { deletePrivateBranchSchema } from "@deliberation-ai/contracts";
 import { deletePrivateBranch, previewPrivateBranchDeletion, PrivateBranchDeletionBlockedError, PrivateBranchDeletionStaleError } from "@deliberation-ai/persistence";
 import { privateBranchUuid, privateBranchJson as json, privateBranchOrigin, privateBranchRequest, privateBranchError } from "../../../../../lib/private-branches-http";
 export const runtime = "nodejs"; export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ id: string }> };
-export async function GET(_request: Request, context: Context) {
+async function sessionGET(_request: Request, context: Context) {
   const { id } = await context.params;
   if (!privateBranchUuid.test(id)) return json({ error: "Özel dal bulunamadı." }, 404);
   try { const value = await previewPrivateBranchDeletion(id.toLowerCase()); return value ? json(value) : json({ error: "Özel dal bulunamadı." }, 404); }
   catch (error) { return privateBranchError(error); }
 }
-export async function POST(request: Request, context: Context) {
+async function sessionPOST(request: Request, context: Context) {
   const rejected = privateBranchOrigin(request); if (rejected) return rejected;
   const { id } = await context.params;
   if (!privateBranchUuid.test(id)) return json({ error: "Özel dal bulunamadı." }, 404);
@@ -25,3 +26,6 @@ export async function POST(request: Request, context: Context) {
     return privateBranchError(error);
   }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);

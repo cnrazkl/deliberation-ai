@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../lib/local-auth";
 import { evidenceSourceIdSchema, updateEvidenceSourceSchema } from "@deliberation-ai/contracts";
 import {
   EvidenceSourceInUseError,
@@ -8,7 +9,7 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function PATCH(
+async function sessionPATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -31,3 +32,5 @@ export async function PATCH(
     throw error;
   }
 }
+
+export const PATCH = withLocalSession(sessionPATCH);

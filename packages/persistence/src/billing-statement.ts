@@ -2,7 +2,7 @@ import { billingStatementSchema, type BillingState, type BillingStatementInput }
 import { inspectBillingStatement } from "@deliberation-ai/domain";
 import { and, asc, eq, gt, inArray } from "drizzle-orm";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { billingReceiptFingerprint, hydrateProviderBilling, readBillingStates } from "./provider-billing";
 import { pricingFingerprint } from "./provider-pricing";
 import { providerBillingRecords, providerConnections, providerOperations } from "./schema";
@@ -20,7 +20,7 @@ export async function inspectStatementInSnapshot(value: BillingStatementInput, e
     let cursor: string | undefined;
     // Page by stable UUID, never the latest-100 billing detail window. A corrupt chain fails closed.
     for (;;) {
-      const page = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID),
+      const page = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()),
         cursor ? gt(providerBillingRecords.id, cursor) : undefined)).orderBy(asc(providerBillingRecords.id)).limit(100);
       if (!page.length) break;
       const relevant = page.map(hydrateProviderBilling).filter((record) => record.connectionId === input.connectionId && record.statementId === input.statementId);
@@ -40,7 +40,7 @@ export async function inspectStatementInSnapshot(value: BillingStatementInput, e
     }
     if (!records.length) {
       const [connection] = await tx.select({ id: providerConnections.id }).from(providerConnections).where(and(
-        eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, input.connectionId))).limit(1);
+        eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, input.connectionId))).limit(1);
       if (!connection) throw new Error("Owned statement connection or historical billing record was not found.");
     }
     const report = inspectBillingStatement(input, records, mismatched);

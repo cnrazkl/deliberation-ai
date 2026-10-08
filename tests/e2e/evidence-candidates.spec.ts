@@ -40,6 +40,9 @@ test("candidate inbox preserves originals, retries lost replies and separates re
     await panel.getByLabel("Owner false source aday içerik kararı", { exact: true }).selectOption("verified");
     await panel.getByLabel("Owner false source aday güncellik kararı", { exact: true }).selectOption("current");
     const publication = panel.locator(".candidate-publication").first();
+    await expect(panel.getByLabel("Owner false source aday içerik kararı", { exact: true })).toHaveValue("verified");
+    await expect(panel.getByLabel("Owner false source aday güncellik kararı", { exact: true })).toHaveValue("current");
+    await expect(publication.getByLabel("Kanıtın hedef koleksiyonu", { exact: true })).toBeEnabled();
     await publication.getByText("Yeniden kullanılabilir kanıt kaydı", { exact: true }).click();
     await publication.getByLabel("Kanıtın hedef koleksiyonu", { exact: true }).selectOption(collection.id);
     await publication.getByRole("button", { name: "Kanıt kaydını incele", exact: true }).click();

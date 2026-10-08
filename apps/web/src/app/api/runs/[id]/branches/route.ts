@@ -1,10 +1,11 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { loadRunBranches, RunBranchIndexPendingError } from "@deliberation-ai/persistence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+async function sessionGET(request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const search = new URL(request.url).searchParams;
   const childrenBefore = search.get("childrenBefore");
@@ -24,3 +25,5 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       : "Çalışma bağlantıları doğrulanamadı." }, { status: error instanceof RunBranchIndexPendingError ? 503 : 500 });
   }
 }
+
+export const GET = withLocalSession(sessionGET);

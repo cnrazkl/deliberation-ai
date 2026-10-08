@@ -7,7 +7,7 @@ import { privateDeliveryResultSchema, sendPrivateDeliverySchema, controlPrivateD
 import { renderPrivateDelivery, assessPrivateDelivery } from "@deliberation-ai/domain";
 import { getDatabase } from "./database";
 import { decryptText } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { providerConnections } from "./schema";
 import { getBoss, PRIVATE_DELIVERY_QUEUE } from "./queue";
 import { lockConversationMembership, ConversationSizeError, type ConversationTransaction } from "./conversation-membership";
@@ -29,7 +29,7 @@ export type PrivateDeliveryBlock = "no_message" | "already_requested" | "pending
 export class PrivateDeliveryBlockedError extends Error {}
 async function connection(tx: ConversationTransaction, id: string | undefined, lock = false) {
   if (!id) return undefined;
-  const query = tx.select().from(providerConnections).where(and(eq(providerConnections.id, id), eq(providerConnections.ownerId, LOCAL_OWNER_ID))).limit(1);
+  const query = tx.select().from(providerConnections).where(and(eq(providerConnections.id, id), eq(providerConnections.ownerId, getOwnerId()))).limit(1);
   const [value] = await (lock ? query.for("share") : query);
   return value;
 }

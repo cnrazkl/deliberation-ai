@@ -6,7 +6,10 @@ import pg from "pg";
 
 const repoRoot = resolve(import.meta.dirname, "../../..");
 const benchmark = process.argv[2] === "knowledge-benchmark";
-if (process.argv.length > 3 || process.argv[2] && !benchmark) throw new Error("Unsupported isolated verification mode.");
+const e2e = process.argv[2] === "e2e";
+const specs = e2e ? process.argv.slice(3) : [];
+if ((!e2e && process.argv.length > 3) || process.argv[2] && !benchmark && !e2e ||
+    specs.some(file => !/^tests\/e2e\/[a-z0-9-]+\.spec\.ts$/u.test(file))) throw new Error("Unsupported isolated verification mode.");
 const envFile = readFileSync(resolve(repoRoot, ".env.local"), "utf8");
 const localEnv = Object.fromEntries(envFile.split(/\r?\n/u)
   .filter((line) => line && !line.startsWith("#"))
@@ -41,13 +44,14 @@ try {
   await admin.query(`CREATE DATABASE "${name}" OWNER deliberation TEMPLATE template0`);
   created = true;
   const env = { ...process.env, ...localEnv, DATABASE_URL: testUrl.toString(),
+    ...(e2e ? { DELIBERATION_TEST_DATABASE_URL: testUrl.toString(), DELIBERATION_TEST_PASSWORD: randomBytes(24).toString("base64url") } : {}),
     DELIBERATION_KNOWLEDGE_BENCHMARK: benchmark ? "1" : "0" };
   const run = (command) => spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", command], {
     cwd: repoRoot, env, stdio: "inherit",
   });
   const migrated = run("pnpm --filter @deliberation-ai/persistence db:migrate");
   if (migrated.error || migrated.status !== 0) throw migrated.error ?? new Error("Isolated migrations failed.");
-  const tested = run(benchmark ? "pnpm exec vitest run --config vitest.integration.config.ts packages/persistence/src/knowledge-benchmark.integration.test.ts"
+  const tested = run(e2e ? `pnpm exec playwright test ${specs.join(" ")}` : benchmark ? "pnpm exec vitest run --config vitest.integration.config.ts packages/persistence/src/knowledge-benchmark.integration.test.ts"
     : "pnpm exec vitest run --config vitest.integration.config.ts");
   if (tested.error) throw tested.error;
   exitCode = tested.status ?? 1;

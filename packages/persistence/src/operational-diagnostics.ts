@@ -1,7 +1,7 @@
 import { lstat, readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { getPool } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { decodePrivateBranchBody, type PrivateBranchView } from "./private-branches";
 import { readProviderObservations } from "./provider-observations";
 import type { providerConnections } from "./schema";
@@ -33,13 +33,13 @@ export async function readOperationalDiagnostics() {
   const totals = (await pool.query<{ decision_pending: number; decision_unknown: number; queue_exists: boolean }>(`SELECT
     (SELECT count(*)::int FROM decision_assessments WHERE owner_id=$1 AND status IN ('queued','running')) AS decision_pending,
     (SELECT count(*)::int FROM decision_operations o JOIN decision_assessments a ON a.id=o.assessment_id WHERE a.owner_id=$1 AND o.status IN ('submitted','outcome_unknown')) AS decision_unknown,
-    to_regclass('pgboss.job') IS NOT NULL AS queue_exists`, [LOCAL_OWNER_ID])).rows[0]!;
+    to_regclass('pgboss.job') IS NOT NULL AS queue_exists`, [getOwnerId()])).rows[0]!;
   const queue = totals.queue_exists ? { state: "ready" as const, ...(await pool.query<{ pending: number; active: number; oldestDueSeconds: number | null }>(`SELECT
     count(*) FILTER(WHERE state IN ('created','retry','active'))::int AS pending,
     count(*) FILTER(WHERE state='active')::int AS active,
     extract(epoch FROM now()-min(start_after) FILTER(WHERE state IN ('created','retry') AND start_after<=now()))::int AS "oldestDueSeconds"
     FROM pgboss.job`)).rows[0]! } : { state: "unavailable" as const, pending: null, active: null, oldestDueSeconds: null };
-  const rows = (await pool.query<Parameters<typeof decodePrivateBranchBody>[0]>(`SELECT id,conversation_id AS "conversationId",source_run_id AS "sourceRunId",source_member_id AS "sourceMemberId",parent_branch_id AS "parentBranchId",revision,message_count AS "messageCount",body_ciphertext AS "bodyCiphertext" FROM conversation_private_branches WHERE owner_id=$1 LIMIT 257`, [LOCAL_OWNER_ID])).rows;
+  const rows = (await pool.query<Parameters<typeof decodePrivateBranchBody>[0]>(`SELECT id,conversation_id AS "conversationId",source_run_id AS "sourceRunId",source_member_id AS "sourceMemberId",parent_branch_id AS "parentBranchId",revision,message_count AS "messageCount",body_ciphertext AS "bodyCiphertext" FROM conversation_private_branches WHERE owner_id=$1 LIMIT 257`, [getOwnerId()])).rows;
   if (rows.length > 256 || rows.reduce((size, row) => size + Buffer.byteLength(row.bodyCiphertext), 0) > 32 * 1024 * 1024) throw new Error("Operational inspection limit reached.");
   let privatePending = 0, privateUnknown = 0, privateCopied = 0, probePending = 0, probeUnknown = 0;
   for (const row of rows) {
@@ -50,7 +50,7 @@ export async function readOperationalDiagnostics() {
       if (receipt.status === "outcome_unknown") privateUnknown++;
     }
   }
-  const connections = (await pool.query<typeof providerConnections.$inferSelect>(`SELECT id,revision,provider,endpoint_preset AS "endpointPreset",catalog_snapshot_ciphertext AS "catalogSnapshotCiphertext" FROM provider_connections WHERE owner_id=$1 LIMIT 257`, [LOCAL_OWNER_ID])).rows;
+  const connections = (await pool.query<typeof providerConnections.$inferSelect>(`SELECT id,revision,provider,endpoint_preset AS "endpointPreset",catalog_snapshot_ciphertext AS "catalogSnapshotCiphertext" FROM provider_connections WHERE owner_id=$1 LIMIT 257`, [getOwnerId()])).rows;
   if (connections.length > 256) throw new Error("Operational inspection limit reached.");
   for (const row of connections) for (const check of readProviderObservations(row).generationChecks) if (["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt) {
     probePending++; if (check.status === "outcome_unknown") probeUnknown++;

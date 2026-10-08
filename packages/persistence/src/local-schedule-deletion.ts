@@ -3,7 +3,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import { localScheduleDeletionReceiptSchema, type LocalScheduleDeletionReceipt } from "@deliberation-ai/contracts";
 import { getDatabase } from "./database";
 import { decryptJson, decryptText, encryptJson, encryptText } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { localSchedules, runs } from "./schema";
 import { lockConversationMembership, ConversationIntegrityError, type ConversationTransaction } from "./conversation-membership";
 import { scheduleSnapshotHash } from "./schedule-occurrences";
@@ -12,7 +12,7 @@ export class LocalScheduleDeletionBlockedError extends Error {}
 export class LocalScheduleDeletionStaleError extends Error {}
 export type LocalScheduleDeletionPreview = { version: "local-schedule-deletion-v1"; scheduleId: string; status: string;
   retainedRunCount: number; retainedLastRunId: string | null; eligible: boolean; blockedReasons: string[]; fingerprint: string | null; alreadyDeleted?: boolean };
-const owned = (id: string) => and(eq(localSchedules.id, id), eq(localSchedules.ownerId, LOCAL_OWNER_ID));
+const owned = (id: string) => and(eq(localSchedules.id, id), eq(localSchedules.ownerId, getOwnerId()));
 type ReceiptRow = Pick<typeof localSchedules.$inferSelect, "id" | "creationRequestId" | "deletedAt" | "deletionReceiptCiphertext" |
   "nameCiphertext" | "questionCiphertext" | "membersCiphertext" | "executionLimitsCiphertext" | "status">;
 export function decodeLocalScheduleDeletion(row: ReceiptRow): LocalScheduleDeletionReceipt | undefined {
@@ -51,14 +51,14 @@ async function inspect(tx: ConversationTransaction, id: string) {
   if (current.row.status !== "paused") blockedReasons.push("active_schedule");
   if (current.row.lastRunId) {
     const [foreign] = await tx.select({ owner: runs.ownerId }).from(runs).where(eq(runs.id, current.row.lastRunId)).limit(1);
-    if (foreign && foreign.owner !== LOCAL_OWNER_ID) blockedReasons.push("owner_mismatch");
+    if (foreign && foreign.owner !== getOwnerId()) blockedReasons.push("owner_mismatch");
   }
-  const retained = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.ownerId, LOCAL_OWNER_ID), sql`${runs.idempotencyKey} like ${`schedule:${id}:%`}`)).orderBy(asc(runs.id)).limit(1_001);
+  const retained = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.ownerId, getOwnerId()), sql`${runs.idempotencyKey} like ${`schedule:${id}:%`}`)).orderBy(asc(runs.id)).limit(1_001);
   if (retained.length > 1_000) blockedReasons.push("inspection_limit");
   const eligible = blockedReasons.length === 0;
   const preview: LocalScheduleDeletionPreview = { version: "local-schedule-deletion-v1", scheduleId: id, status: current.row.status,
     retainedRunCount: retained.length, retainedLastRunId: current.row.lastRunId, eligible, blockedReasons,
-    fingerprint: eligible ? scheduleSnapshotHash({ owner: LOCAL_OWNER_ID, row: current.exact, retained }) : null };
+    fingerprint: eligible ? scheduleSnapshotHash({ owner: getOwnerId(), row: current.exact, retained }) : null };
   return { current, preview };
 }
 export function previewLocalScheduleDeletion(id: string) {

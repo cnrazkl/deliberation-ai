@@ -3,7 +3,7 @@ import { priceObservationSchema, type PriceObservation, type PriceSnapshot } fro
 import { and, desc, eq } from "drizzle-orm";
 import { decryptJson, encryptJson } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { providerConnections, providerPriceSnapshots } from "./schema";
 
 export function pricingFingerprint(value: unknown): string {
@@ -26,23 +26,23 @@ export async function recordProviderPrice(input: PriceObservation): Promise<Pric
   }
   return getDatabase().transaction(async (tx) => {
     const [connection] = await tx.select().from(providerConnections).where(and(
-      eq(providerConnections.id, observation.connectionId), eq(providerConnections.ownerId, LOCAL_OWNER_ID))).for("share").limit(1);
+      eq(providerConnections.id, observation.connectionId), eq(providerConnections.ownerId, getOwnerId()))).for("share").limit(1);
     if (!connection) throw new Error("Owned provider connection was not found.");
     const fingerprint = pricingFingerprint({ observation, connectionRevision: connection.revision });
     const id = randomUUID();
     const [created] = await tx.insert(providerPriceSnapshots).values({
-      id, ownerId: LOCAL_OWNER_ID, connectionId: connection.id, connectionRevision: connection.revision,
+      id, ownerId: getOwnerId(), connectionId: connection.id, connectionRevision: connection.revision,
       model: observation.model, fingerprint, payloadCiphertext: encryptJson(observation, `provider-price:${id}:payload`),
     }).onConflictDoNothing().returning();
     if (created) return hydratePriceSnapshot(created);
     const [existing] = await tx.select().from(providerPriceSnapshots).where(and(
-      eq(providerPriceSnapshots.ownerId, LOCAL_OWNER_ID), eq(providerPriceSnapshots.fingerprint, fingerprint))).limit(1);
+      eq(providerPriceSnapshots.ownerId, getOwnerId()), eq(providerPriceSnapshots.fingerprint, fingerprint))).limit(1);
     if (!existing) throw new Error("Price snapshot could not be recorded.");
     return hydratePriceSnapshot(existing);
   });
 }
 export async function listProviderPrices(): Promise<PriceSnapshot[]> {
-  const rows = await getDatabase().select().from(providerPriceSnapshots).where(eq(providerPriceSnapshots.ownerId, LOCAL_OWNER_ID))
+  const rows = await getDatabase().select().from(providerPriceSnapshots).where(eq(providerPriceSnapshots.ownerId, getOwnerId()))
     .orderBy(desc(providerPriceSnapshots.recordedAt), desc(providerPriceSnapshots.id)).limit(100);
   return rows.map(hydratePriceSnapshot);
 }

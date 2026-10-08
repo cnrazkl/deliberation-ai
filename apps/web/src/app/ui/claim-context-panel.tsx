@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useState, type FormEvent } from "react";
 import type { RunRecord } from "@deliberation-ai/application";
 import type { ClaimRelationKind } from "@deliberation-ai/contracts";
@@ -42,7 +43,7 @@ export function ClaimContextPanel({ run, onRunUpdated }: {
     setBusy(true);
     setError(undefined);
     try {
-      const response = await fetch(path, {
+      const response = await ownerFetch(path, {
         method,
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),

@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { deleteClaimRelationSchema, saveClaimRelationSchema } from "@deliberation-ai/contracts";
 import { deleteDurableClaimRelation, saveDurableClaimRelation } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "@/lib/request-security";
@@ -5,7 +6,7 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
+async function sessionPOST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -20,7 +21,7 @@ export async function POST(
     : Response.json({ error: "İddialar bulunamadı veya 100 ilişki sınırına ulaşıldı." }, { status: 404 });
 }
 
-export async function DELETE(
+async function sessionDELETE(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -34,3 +35,6 @@ export async function DELETE(
     ? Response.json(run)
     : Response.json({ error: "Çalışma veya ilişki bulunamadı." }, { status: 404 });
 }
+
+export const POST = withLocalSession(sessionPOST);
+export const DELETE = withLocalSession(sessionDELETE);

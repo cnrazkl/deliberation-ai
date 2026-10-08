@@ -3,7 +3,7 @@ import type { SaveDecisionConnectionRequest } from "@deliberation-ai/evaluation"
 import { and, asc, eq } from "drizzle-orm";
 import { decryptText, encryptText } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { decisionConnections } from "./schema";
 
 export type DecisionConnectionSummary = {
@@ -50,7 +50,7 @@ export async function saveDecisionConnection(
           .from(decisionConnections)
           .where(
             and(
-              eq(decisionConnections.ownerId, LOCAL_OWNER_ID),
+              eq(decisionConnections.ownerId, getOwnerId()),
               eq(decisionConnections.id, request.id),
             ),
           )
@@ -60,15 +60,16 @@ export async function saveDecisionConnection(
           .from(decisionConnections)
           .where(
             and(
-              eq(decisionConnections.ownerId, LOCAL_OWNER_ID),
+              eq(decisionConnections.ownerId, getOwnerId()),
               eq(decisionConnections.label, request.label),
             ),
           )
           .limit(1);
+    if (request.id && !existing) throw new Error("Decision connection not found in this account.");
     if (!existing && !request.apiKey) throw new DecisionConnectionSecretRequiredError();
     const id = existing?.id ?? randomUUID();
     const values = {
-      ownerId: LOCAL_OWNER_ID,
+      ownerId: getOwnerId(),
       provider: "typesafe",
       label: request.label,
       defaultModel: request.defaultModel,
@@ -94,7 +95,7 @@ export async function listDecisionConnections(): Promise<DecisionConnectionSumma
   const rows = await getDatabase()
     .select()
     .from(decisionConnections)
-    .where(eq(decisionConnections.ownerId, LOCAL_OWNER_ID))
+    .where(eq(decisionConnections.ownerId, getOwnerId()))
     .orderBy(asc(decisionConnections.label));
   return rows.map(mapConnection);
 }
@@ -107,7 +108,7 @@ export async function loadDecisionConnectionSecret(id: string): Promise<
     .select()
     .from(decisionConnections)
     .where(
-      and(eq(decisionConnections.ownerId, LOCAL_OWNER_ID), eq(decisionConnections.id, id)),
+      and(eq(decisionConnections.ownerId, getOwnerId()), eq(decisionConnections.id, id)),
     )
     .limit(1);
   if (!row) return undefined;
@@ -125,7 +126,7 @@ export async function deleteDecisionConnection(id: string): Promise<boolean> {
     const deleted = await getDatabase()
       .delete(decisionConnections)
       .where(
-        and(eq(decisionConnections.ownerId, LOCAL_OWNER_ID), eq(decisionConnections.id, id)),
+        and(eq(decisionConnections.ownerId, getOwnerId()), eq(decisionConnections.id, id)),
       )
       .returning({ id: decisionConnections.id });
     return deleted.length > 0;

@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../lib/local-auth";
 import { MAX_PDF_ATTACHMENT_BYTES } from "@deliberation-ai/contracts";
 import { AttachmentValidationError, extractUploadedPdf } from "@deliberation-ai/persistence";
 import { z } from "zod";
@@ -13,7 +14,7 @@ const schema = z.object({
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
 });
 
-export async function POST(request: Request): Promise<Response> {
+async function sessionPOST(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   let body: unknown;
@@ -34,3 +35,5 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "PDF hazırlanamadı." }, { status: 500 });
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

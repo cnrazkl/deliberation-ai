@@ -1,9 +1,10 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { cancelDecisionAssessment } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "@/lib/request-security";
 
 export const runtime = "nodejs";
 
-export async function POST(
+async function sessionPOST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -13,3 +14,5 @@ export async function POST(
   const cancelled = await cancelDecisionAssessment(id);
   return Response.json({ cancelled }, { status: cancelled ? 200 : 409 });
 }
+
+export const POST = withLocalSession(sessionPOST);

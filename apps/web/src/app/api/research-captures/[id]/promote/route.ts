@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { promoteResearchCaptureSchema, researchCaptureIdSchema } from "@deliberation-ai/contracts";
 import { promoteResearchCapture, ResearchCaptureStateError } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "@/lib/request-security";
@@ -5,7 +6,7 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
+async function sessionPOST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -28,3 +29,5 @@ export async function POST(
     throw error;
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

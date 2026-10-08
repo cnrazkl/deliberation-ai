@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { ConversationLibraryPage } from "@deliberation-ai/persistence";
 
@@ -23,7 +24,7 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun, onReviewDeleti
     initialRequest.current = true;
     olderRequest.current?.abort();
     const controller = new AbortController();
-    void fetch("/api/conversations", { cache: "no-store", signal: controller.signal }).then(async (response) => {
+    void ownerFetch("/api/conversations", { cache: "no-store", signal: controller.signal }).then(async (response) => {
       const body = await response.json() as ConversationLibraryPage & { error?: string };
       if (!response.ok) throw new Error(body.error ?? "Konuşmalar yüklenemedi.");
       if (!controller.signal.aborted && current === generation.current) { setPage(body); setError(null); }
@@ -42,7 +43,7 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun, onReviewDeleti
     const current = generation.current;
     setOlderLoading(true); setError(null);
     try {
-      const response = await fetch(`/api/conversations?before=${encodeURIComponent(page.nextCursor)}`, { cache: "no-store", signal: controller.signal });
+      const response = await ownerFetch(`/api/conversations?before=${encodeURIComponent(page.nextCursor)}`, { cache: "no-store", signal: controller.signal });
       const body = await response.json() as ConversationLibraryPage & { error?: string };
       if (!response.ok) throw new Error(body.error ?? "Eski konuşmalar yüklenemedi.");
       if (!controller.signal.aborted && current === generation.current) setPage((value) => ({

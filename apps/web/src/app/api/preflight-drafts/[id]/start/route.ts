@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { IdempotencyConflictError, RiskConfigurationError } from "@deliberation-ai/application";
 import { ContinuationUnavailableError, AttachmentValidationError, MemorySelectionError, PreflightDraftError, PreflightMismatchError, startPreflightDraft } from "@deliberation-ai/persistence";
 import { z } from "zod";
@@ -15,7 +16,7 @@ const inputSchema = z.object({
   expectedRiskFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict();
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function sessionPOST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const parsed = inputSchema.safeParse(await request.json().catch(() => null));
@@ -34,3 +35,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return Response.json({ error: "Ön değerlendirmeden çalışma başlatılamadı." }, { status: 500 });
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

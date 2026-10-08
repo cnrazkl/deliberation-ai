@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { resolveProviderOperationSchema } from "@deliberation-ai/contracts";
 import {
   ProviderOperationResolutionError,
@@ -8,7 +9,7 @@ import { rejectCrossOriginMutation } from "../../../../../lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
+async function sessionPOST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -38,3 +39,5 @@ export async function POST(
     return Response.json({ error: "Operatör eylemi tamamlanamadı." }, { status: 500 });
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

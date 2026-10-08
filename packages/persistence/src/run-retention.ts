@@ -1,6 +1,6 @@
 import { and, count, eq, inArray, lt, sql } from "drizzle-orm";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { RUN_COUNCIL_QUEUE, RUN_DECISION_ASSESSMENT_QUEUE } from "./queue";
 import { decisionAssessments, runs } from "./schema";
 
@@ -31,7 +31,7 @@ export async function pruneExpiredRuns(options: PruneExpiredRunsOptions): Promis
   if (onlyRunIds?.length === 0) return { cutoff, count: 0, applied: apply };
 
   const predicate = and(
-    eq(runs.ownerId, LOCAL_OWNER_ID),
+    eq(runs.ownerId, getOwnerId()),
     inArray(runs.status, TERMINAL_STATUSES),
     lt(runs.finishedAt, cutoff),
     // Retention must not erase the operator's record of an in-flight or

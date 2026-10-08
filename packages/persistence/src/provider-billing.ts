@@ -4,7 +4,7 @@ import { foldBillingChanges, validateBillingAmounts, validateBillingReplacement,
 import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { decryptJson, encryptJson } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { pricingFingerprint } from "./provider-pricing";
 import { providerBillingChanges, providerBillingClaims, providerBillingReallocations, providerBillingRecords, providerOperations, runs } from "./schema";
 
@@ -50,11 +50,11 @@ export function hydrateBillingReallocation(row: typeof providerBillingReallocati
 export async function readBillingStates(rows: readonly (typeof providerBillingRecords.$inferSelect)[], db: BillingReader): Promise<BillingState[]> {
   if (!rows.length) return [];
   const ids = rows.map((row) => row.id);
-  const movements = await db.select().from(providerBillingReallocations).where(and(eq(providerBillingReallocations.ownerId, LOCAL_OWNER_ID),
+  const movements = await db.select().from(providerBillingReallocations).where(and(eq(providerBillingReallocations.ownerId, getOwnerId()),
     or(inArray(providerBillingReallocations.sourceRecordId, ids), inArray(providerBillingReallocations.targetRecordId, ids))));
   const linkedIds = [...new Set([...ids, ...movements.flatMap((movement) => [movement.sourceRecordId, movement.targetRecordId])])];
-  const linked = await db.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID), inArray(providerBillingRecords.id, linkedIds)));
-  const changes = await db.select().from(providerBillingChanges).where(and(eq(providerBillingChanges.ownerId, LOCAL_OWNER_ID), inArray(providerBillingChanges.recordId, linkedIds))).orderBy(asc(providerBillingChanges.sequence));
+  const linked = await db.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()), inArray(providerBillingRecords.id, linkedIds)));
+  const changes = await db.select().from(providerBillingChanges).where(and(eq(providerBillingChanges.ownerId, getOwnerId()), inArray(providerBillingChanges.recordId, linkedIds))).orderBy(asc(providerBillingChanges.sequence));
   const base = new Map(linked.map((row) => [row.id, foldBillingChanges(hydrateProviderBilling(row), changes.filter((change) => change.recordId === row.id).map(hydrateProviderBillingChange))]));
   const events = movements.map(hydrateBillingReallocation);
   for (const event of events) {
@@ -80,7 +80,7 @@ export async function validateOwnedBillingReceipt(value: ProviderBillingInput, e
   if (input.documentSha256 !== evidenceSha256) throw new Error("Billing evidence digest does not match.");
   if (Date.parse(input.reviewedAt) > Date.now() || Date.parse(input.billedAt) > Date.parse(input.reviewedAt)) throw new Error("Billing dates are future or unordered.");
   const [owned] = await db.select({ operation: providerOperations, members: runs.membersCiphertext }).from(providerOperations)
-    .innerJoin(runs, eq(runs.id, providerOperations.runId)).where(and(eq(providerOperations.id, input.operationId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .innerJoin(runs, eq(runs.id, providerOperations.runId)).where(and(eq(providerOperations.id, input.operationId), eq(runs.ownerId, getOwnerId()))).limit(1);
   if (!owned) throw new Error("Owned billing operation was not found.");
   const operation = owned.operation;
   const members = owned.members ? decryptJson<Array<{ id: string; connectionId?: string; model: string; provider: string }>>(owned.members, `run:${operation.runId}:members`) : [];
@@ -96,7 +96,7 @@ export async function previewProviderBilling(value: ProviderBillingInput, eviden
   const checked = await validateOwnedBillingReceipt(value, evidenceSha256, db); const input = checked.input;
   const fingerprint = pricingFingerprint({ input, receiptFingerprint: checked.receiptFingerprint, runId: checked.runId });
   const conflicts = await db.select({ fingerprint: providerBillingRecords.fingerprint }).from(providerBillingClaims).innerJoin(providerBillingRecords, eq(providerBillingRecords.id, providerBillingClaims.recordId))
-    .where(and(eq(providerBillingClaims.ownerId, LOCAL_OWNER_ID), or(eq(providerBillingClaims.operationId, input.operationId),
+    .where(and(eq(providerBillingClaims.ownerId, getOwnerId()), or(eq(providerBillingClaims.operationId, input.operationId),
       eq(providerBillingClaims.sourceLineFingerprint, pricingFingerprint({ connectionId: input.connectionId, statementId: input.statementId, lineId: input.lineId })),
       eq(providerBillingClaims.remoteIdentityFingerprint, pricingFingerprint({ connectionId: input.connectionId, remoteResponseId: input.remoteResponseId })))));
   if (conflicts.some((row) => row.fingerprint !== fingerprint)) throw new Error("Billing operation or source line already has a different immutable record.");
@@ -108,26 +108,26 @@ export async function recordProviderBilling(input: ProviderBillingInput, evidenc
   return getDatabase().transaction(async (tx) => {
     const [candidate] = await tx.select({ runId: providerOperations.runId }).from(providerOperations).where(eq(providerOperations.id, input.operationId)).limit(1);
     if (!candidate) throw new Error("Owned billing operation was not found.");
-    const [run] = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.id, candidate.runId), eq(runs.ownerId, LOCAL_OWNER_ID))).for("update").limit(1);
+    const [run] = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.id, candidate.runId), eq(runs.ownerId, getOwnerId()))).for("update").limit(1);
     if (!run) throw new Error("Owned billing operation was not found.");
     const [operation] = await tx.select().from(providerOperations).where(eq(providerOperations.id, input.operationId)).for("update").limit(1);
     if (!operation) throw new Error("Owned billing operation was not found.");
     const checked = await validateOwnedBillingReceipt(input, evidenceSha256, tx);
     const fingerprint = pricingFingerprint({ input: checked.input, receiptFingerprint: checked.receiptFingerprint, runId: checked.runId });
-    const [historical] = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID), eq(providerBillingRecords.fingerprint, fingerprint))).limit(1);
+    const [historical] = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()), eq(providerBillingRecords.fingerprint, fingerprint))).limit(1);
     if (historical) return (await readBillingStates([historical], tx))[0]!;
     await previewProviderBilling(input, evidenceSha256, tx);
     const id = randomUUID();
-    const [created] = await tx.insert(providerBillingRecords).values({ id, ownerId: LOCAL_OWNER_ID, operationId: input.operationId,
+    const [created] = await tx.insert(providerBillingRecords).values({ id, ownerId: getOwnerId(), operationId: input.operationId,
       runId: checked.runId, fingerprint, sourceLineFingerprint: pricingFingerprint({ connectionId: checked.input.connectionId, statementId: checked.input.statementId, lineId: checked.input.lineId }),
       remoteIdentityFingerprint: pricingFingerprint({ connectionId: checked.input.connectionId, remoteResponseId: checked.input.remoteResponseId }),
       payloadCiphertext: encryptJson({ input: checked.input, receiptFingerprint: checked.receiptFingerprint }, `provider-billing:${id}:payload`) }).onConflictDoNothing().returning();
     if (created) {
-      await tx.insert(providerBillingClaims).values({ recordId: created.id, ownerId: LOCAL_OWNER_ID, operationId: created.operationId,
+      await tx.insert(providerBillingClaims).values({ recordId: created.id, ownerId: getOwnerId(), operationId: created.operationId,
         sourceLineFingerprint: created.sourceLineFingerprint, remoteIdentityFingerprint: created.remoteIdentityFingerprint });
       return (await readBillingStates([created], tx))[0]!;
     }
-    const [existing] = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID),
+    const [existing] = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()),
       eq(providerBillingRecords.fingerprint, fingerprint))).limit(1);
     if (existing?.fingerprint === fingerprint) {
       return (await readBillingStates([existing], tx))[0]!;
@@ -137,14 +137,14 @@ export async function recordProviderBilling(input: ProviderBillingInput, evidenc
 }
 export async function listProviderBilling(): Promise<BillingState[]> {
   return getDatabase().transaction(async (db) => {
-  const rows = await db.select().from(providerBillingRecords).where(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID))
+  const rows = await db.select().from(providerBillingRecords).where(eq(providerBillingRecords.ownerId, getOwnerId()))
     .orderBy(desc(providerBillingRecords.recordedAt), desc(providerBillingRecords.id)).limit(100);
   return readBillingStates(rows, db);
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 export async function getProviderBilling(id: string): Promise<BillingState | undefined> {
   return getDatabase().transaction(async (db) => {
-  const [row] = await db.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID),
+  const [row] = await db.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()),
     eq(providerBillingRecords.id, id))).limit(1);
   if (!row) return undefined;
   return (await readBillingStates([row], db))[0];
@@ -155,9 +155,9 @@ export async function previewProviderBillingChange(value: ProviderBillingChangeI
   db: Pick<ReturnType<typeof getDatabase>, "select"> = getDatabase()): Promise<{ input: ProviderBillingChangeInput; sequence: number; duplicate: ProviderBillingChange | null }> {
   const input = providerBillingChangeSchema.parse(value);
   if (input.documentSha256 !== evidenceSha256 || Date.parse(input.reviewedAt) > Date.now()) throw new Error("Billing change evidence/review is invalid.");
-  const [root] = await db.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID), eq(providerBillingRecords.id, input.recordId))).limit(1);
+  const [root] = await db.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()), eq(providerBillingRecords.id, input.recordId))).limit(1);
   if (!root) throw new Error("Owned billing record was not found.");
-  const rows = await db.select().from(providerBillingChanges).where(and(eq(providerBillingChanges.ownerId, LOCAL_OWNER_ID), eq(providerBillingChanges.recordId, input.recordId))).orderBy(asc(providerBillingChanges.sequence));
+  const rows = await db.select().from(providerBillingChanges).where(and(eq(providerBillingChanges.ownerId, getOwnerId()), eq(providerBillingChanges.recordId, input.recordId))).orderBy(asc(providerBillingChanges.sequence));
   const changes = rows.map(hydrateProviderBillingChange);
   const original = hydrateProviderBilling(root);
   const state = foldBillingChanges(original, changes);
@@ -173,12 +173,12 @@ export async function previewProviderBillingChange(value: ProviderBillingChangeI
 export async function recordProviderBillingChange(value: ProviderBillingChangeInput, evidenceSha256: string): Promise<ProviderBillingChange> {
   const input = providerBillingChangeSchema.parse(value);
   return getDatabase().transaction(async (tx) => {
-    const [root] = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID), eq(providerBillingRecords.id, input.recordId))).for("update").limit(1);
+    const [root] = await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()), eq(providerBillingRecords.id, input.recordId))).for("update").limit(1);
     if (!root) throw new Error("Owned billing record was not found.");
     const checked = await previewProviderBillingChange(input, evidenceSha256, tx);
     if (checked.duplicate) return checked.duplicate;
     const id = randomUUID();
-    const [row] = await tx.insert(providerBillingChanges).values({ id, ownerId: LOCAL_OWNER_ID, recordId: input.recordId, sequence: checked.sequence,
+    const [row] = await tx.insert(providerBillingChanges).values({ id, ownerId: getOwnerId(), recordId: input.recordId, sequence: checked.sequence,
       requestFingerprint: pricingFingerprint(checked.input), fingerprint: pricingFingerprint({ input: checked.input, sequence: checked.sequence }),
       payloadCiphertext: encryptJson(checked.input, `provider-billing-change:${id}:payload`) }).returning();
     return hydrateProviderBillingChange(row!);

@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { loadProviderConnectionSecret, saveProviderConnectionCatalogCheck } from "@deliberation-ai/persistence";
 import { checkProviderConnectionModels } from "@deliberation-ai/providers";
 import { rejectCrossOriginMutation } from "../../../../../lib/request-security";
@@ -5,7 +6,7 @@ import { rejectCrossOriginMutation } from "../../../../../lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
+async function sessionPOST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -22,3 +23,5 @@ export async function POST(
   if (!saved) return Response.json({ error: "Bağlantı kontrol sırasında değişti. Yeniden kontrol edin." }, { status: 409, headers: { "Cache-Control": "no-store" } });
   return Response.json(saved, { headers: { "Cache-Control": "no-store" } });
 }
+
+export const POST = withLocalSession(sessionPOST);

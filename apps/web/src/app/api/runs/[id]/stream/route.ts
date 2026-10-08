@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { listDurableRunEvents } from "@deliberation-ai/persistence";
 
 export const runtime = "nodejs";
@@ -27,7 +28,7 @@ function wait(durationMs: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-export async function GET(
+async function sessionGET(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -84,3 +85,5 @@ export async function GET(
     },
   });
 }
+
+export const GET = withLocalSession(sessionGET);

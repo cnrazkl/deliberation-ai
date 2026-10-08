@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../lib/local-auth";
 import { continuationSourceSchema, councilMembersSchema, MAX_RUN_ATTACHMENTS, riskProfileSchema } from "@deliberation-ai/contracts";
 import { ContinuationUnavailableError, PreflightMismatchError, loadRunContinuation, loadFrozenMemoryEntries, loadFrozenToolContexts, loadRelevantToolContexts } from "@deliberation-ai/persistence";
 import { z } from "zod";
@@ -40,7 +41,7 @@ const previewSchema = z.object({
   }
 });
 
-export async function POST(request: Request) {
+async function sessionPOST(request: Request) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   let body: unknown;
@@ -64,3 +65,5 @@ export async function POST(request: Request) {
     return Response.json({ error: "Bağlam okunamadı; token önizlemesi hesaplanamadı." }, { status: 422 });
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

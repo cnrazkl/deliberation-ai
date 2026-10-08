@@ -12,6 +12,7 @@ async function fixtures(page: Page) {
     memberCount: 2, memoryEntryCount: 0, attachmentCount: 0, toolResultCount: 0, createdAt, status: "completed", report: null };
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname.startsWith("/api/auth/")) { await route.continue(); return; }
     const json: Record<string, unknown> = {
       "/api/provider-connections": { connections: [] }, "/api/provider-operations": { operations: [] },
       "/api/council-templates": { templates: [] }, "/api/memory-entries": { entries: [] },

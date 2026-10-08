@@ -1,5 +1,13 @@
 # Security
 
+Local username/password sessions now guard all application APIs. Normal users cannot
+select foreign owners; root can explicitly manage any user's workspace. Passwords are
+salted scrypt hashes, session tokens are random/hashed, cookies HttpOnly/Strict and Secure
+on HTTPS. Host/origin checks, 2-KiB auth-body bounds, throttles and stale-scope rejection
+apply. Root provisioning reads a private local file; there is no committed root password.
+Host DB/key holders remain administrators. Restored sessions must be invalidated before
+real service cutover. [Detailed boundary and limits](LOCAL_ACCOUNTS.md).
+
 Reviewed synthesis requires an exact frozen fingerprint and explicit live flag.
 Owned source/connection revisions are revalidated before and after each attempt.
 Context-bound encrypted local plans, execution claims and immutable phase receipts

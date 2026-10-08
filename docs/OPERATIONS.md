@@ -1,5 +1,13 @@
 # Local operations
 
+Local membership setup and additive migration 0055: [Local accounts](LOCAL_ACCOUNTS.md).
+Root provisioning uses an ignored/private password file and retains existing owned
+data. Diagnostic health reads now require a session or short-lived machine-key HMAC;
+managed runtime/lifetime probes supply the latter. Browser tests run on disposable
+databases through `pnpm test:e2e`, replacing the historical shared-DB test behavior below.
+Maintenance stop checks all accounts and preserves terminal unknown council receipts
+without acknowledging/retrying them; normal stop continues to refuse unresolved work.
+
 Managed Windows runtime: `pnpm app:start`, `pnpm app:status`, `pnpm app:stop`.
 Startup is now an on-demand, hidden current-user Windows session task with a
 long-running supervisor; web/worker do not create detached console windows.

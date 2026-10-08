@@ -1,10 +1,11 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { ContinuationUnavailableError, loadRunContinuation, loadRunContinuationCompaction } from "@deliberation-ai/persistence";
 import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function sessionGET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) return Response.json({ error: "Çalışma kimliği geçersiz." }, { status: 400 });
   const mode = new URL(request.url).searchParams.get("mode");
@@ -16,3 +17,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return Response.json({ error: "Devam bağlamı okunamadı." }, { status: 500 });
   }
 }
+
+export const GET = withLocalSession(sessionGET);

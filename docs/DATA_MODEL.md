@@ -1,5 +1,13 @@
 # Data model
 
+Migration 0055 adds `local_users` (unique normalized username/owner, checked user/root
+role, one reserved root, salted scrypt password hash), `local_sessions` (SHA-256 token
+hash, actor and selected user FKs, eight-hour expiry) and `local_login_attempts` (hashed
+throttle identity, attempts/window). Legacy `local-owner` maps to root, and new users
+receive independent `user:<uuid>` owner strings. Existing data/ciphertext is not rewritten.
+Password hashes are not plaintext passwords or decryptable `*_ciphertext` values.
+[Account/backup contract](LOCAL_ACCOUNTS.md).
+
 Local recovery adds no DDL. Existing private/audit/probe bodies are authenticated
 and retained state is hashed; clone queue parking preserves application receipts.
 Recovery/copy-cleanup receipts are encrypted local files outside Git.

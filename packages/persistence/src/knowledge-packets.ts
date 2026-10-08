@@ -5,7 +5,7 @@ import { KnowledgeAccessError } from "@deliberation-ai/application";
 import { knowledgePacketFingerprint, validateKnowledgePacket } from "@deliberation-ai/domain";
 import { getDatabase } from "./database";
 import { decryptJson, encryptJson } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
 import { authorizeKnowledgeScopeInSnapshot, exportConversationKnowledgeInSnapshot } from "./knowledge-scope";
 import { searchLocalKnowledge, KnowledgeCapacityError } from "./knowledge-sources";
@@ -18,13 +18,13 @@ async function inventory(tx: ConversationTransaction, collections: string[]) {
   const rows = await tx.select({ sourceId: knowledgeSources.id, versionId: knowledgeSources.activeVersionId,
     collectionId: knowledgeSources.collectionId, status: knowledgeSourceVersions.status }).from(knowledgeSources)
     .innerJoin(knowledgeSourceVersions, and(eq(knowledgeSourceVersions.id, knowledgeSources.activeVersionId), eq(knowledgeSourceVersions.sourceId, knowledgeSources.id)))
-    .where(and(eq(knowledgeSources.ownerId, LOCAL_OWNER_ID), eq(knowledgeSourceVersions.ownerId, LOCAL_OWNER_ID), inArray(knowledgeSources.collectionId, collections)))
+    .where(and(eq(knowledgeSources.ownerId, getOwnerId()), eq(knowledgeSourceVersions.ownerId, getOwnerId()), inArray(knowledgeSources.collectionId, collections)))
     .orderBy(asc(knowledgeSources.id)).limit(31);
   if (rows.length > 30) throw new KnowledgeCapacityError(); return rows;
 }
 export async function authorizeKnowledgePacketInSnapshot(tx: ConversationTransaction, packet: KnowledgePacket, fresh = false) {
   const current = await exportConversationKnowledgeInSnapshot(tx, packet.conversationId);
-  if (packet.ownerId !== LOCAL_OWNER_ID || current?.revision !== packet.selectionRevision
+  if (packet.ownerId !== getOwnerId() || current?.revision !== packet.selectionRevision
     || JSON.stringify(current.grants.map((item) => item.scope)) !== JSON.stringify(packet.scopes)) throw new KnowledgeAccessError();
   for (const scope of packet.scopes) if (!await authorizeKnowledgeScopeInSnapshot(tx, scope)) throw new KnowledgeAccessError();
   if (fresh) {
@@ -51,7 +51,7 @@ export async function loadKnowledgePacket(reference: unknown, fresh = true): Pro
   const parsed = knowledgePacketReferenceSchema.parse(reference);
   return getDatabase().transaction(async (tx) => {
     await lockConversationMembership(tx);
-    const [row] = await tx.select().from(knowledgePreparations).where(and(eq(knowledgePreparations.id, parsed.id), eq(knowledgePreparations.ownerId, LOCAL_OWNER_ID))).limit(1);
+    const [row] = await tx.select().from(knowledgePreparations).where(and(eq(knowledgePreparations.id, parsed.id), eq(knowledgePreparations.ownerId, getOwnerId()))).limit(1);
     if (!row || row.packetCiphertext.length > 192 * 1_024) throw new KnowledgeAccessError();
     const packet = validateKnowledgePacket(decryptJson(row.packetCiphertext, `knowledge-preparation:${row.id}:packet`));
     if (packet.id !== row.id || packet.conversationId !== row.conversationId || packet.fingerprint !== parsed.fingerprint) throw new KnowledgeAccessError();
@@ -68,7 +68,7 @@ export async function prepareKnowledgePacket(input: { id: string; conversationId
     if (!selection || selection.revision !== input.selectionRevision || selection.grants.some((item) => !item.available)) throw new KnowledgeAccessError();
     const [previous] = await tx.select().from(knowledgePreparations).where(eq(knowledgePreparations.id, input.id)).limit(1);
     if (previous) {
-      if (previous.ownerId !== LOCAL_OWNER_ID || previous.requestHash !== requestHash) throw new KnowledgePacketStaleError();
+      if (previous.ownerId !== getOwnerId() || previous.requestHash !== requestHash) throw new KnowledgePacketStaleError();
       const packet = validateKnowledgePacket(decryptJson(previous.packetCiphertext, `knowledge-preparation:${input.id}:packet`));
       await authorizeKnowledgePacketInSnapshot(tx, packet, true); return { selection, rows: null, packet };
     }
@@ -88,7 +88,7 @@ export async function prepareKnowledgePacket(input: { id: string; conversationId
     if (excerpts.length < 6) { seen.add(key); excerpts.push(hit.excerpt); }
   }
   if (!excerpts.length && !input.allowWithoutEvidence) throw new KnowledgeEvidenceNotFoundError();
-  const body: Omit<KnowledgePacket, "fingerprint"> = { version: "knowledge-packet-v1", id: input.id, ownerId: LOCAL_OWNER_ID,
+  const body: Omit<KnowledgePacket, "fingerprint"> = { version: "knowledge-packet-v1", id: input.id, ownerId: getOwnerId(),
     conversationId: input.conversationId, selectionRevision: input.selectionRevision, query: input.query, topic: before.selection.topic,
     createdAt: new Date().toISOString(), scopes, policy: "lexical-fair-coverage-v1",
     inventory: before.rows!.map(({ sourceId, versionId }) => ({ sourceId, versionId })), excerpts,
@@ -107,13 +107,13 @@ export async function prepareKnowledgePacket(input: { id: string; conversationId
     await authorizeKnowledgePacketInSnapshot(tx, packet, true);
     const [existing] = await tx.select().from(knowledgePreparations).where(eq(knowledgePreparations.id, input.id)).limit(1);
     if (existing) {
-      if (existing.ownerId !== LOCAL_OWNER_ID || existing.requestHash !== requestHash) throw new KnowledgePacketStaleError();
+      if (existing.ownerId !== getOwnerId() || existing.requestHash !== requestHash) throw new KnowledgePacketStaleError();
       const retained = validateKnowledgePacket(decryptJson(existing.packetCiphertext, `knowledge-preparation:${existing.id}:packet`));
       await authorizeKnowledgePacketInSnapshot(tx, retained, true); return retained;
     }
-    const [count] = await tx.select({ value: sql<number>`count(*)::int` }).from(knowledgePreparations).where(eq(knowledgePreparations.ownerId, LOCAL_OWNER_ID));
+    const [count] = await tx.select({ value: sql<number>`count(*)::int` }).from(knowledgePreparations).where(eq(knowledgePreparations.ownerId, getOwnerId()));
     if (count!.value >= 100) throw new KnowledgeCapacityError();
-    await tx.insert(knowledgePreparations).values({ id: input.id, ownerId: LOCAL_OWNER_ID, conversationId: input.conversationId,
+    await tx.insert(knowledgePreparations).values({ id: input.id, ownerId: getOwnerId(), conversationId: input.conversationId,
       requestHash, packetCiphertext: encryptJson(packet, `knowledge-preparation:${input.id}:packet`) }); return packet;
   });
 }

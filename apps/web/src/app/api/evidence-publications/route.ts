@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { z } from "zod";
 import { evidencePublicationCommitSchema, evidencePublicationPreviewRequestSchema } from "@deliberation-ai/contracts";
 import { previewEvidencePublication, commitEvidencePublication, listEvidencePublications, acknowledgeManualEvidencePublication,
@@ -13,7 +14,7 @@ const mutation = z.discriminatedUnion("action", [
   evidencePublicationCommitSchema.extend({ action: z.literal("commit") }).strict(),
   z.object({ action: z.literal("acknowledge"), id: z.string().uuid(), consent: z.literal(true) }).strict(),
 ]);
-export async function GET(request: Request) {
+async function sessionGET(request: Request) {
   const url = new URL(request.url), runId = z.string().uuid().safeParse(url.searchParams.get("runId"));
   if (!runId.success) return json({ error: "Çalışma kimliği geçersiz." }, 400);
   const publications = await listEvidencePublications(runId.data);
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
   }
   return json({ publications });
 }
-export async function POST(request: Request) {
+async function sessionPOST(request: Request) {
   const rejected = rejectCrossOriginMutation(request); if (rejected) return rejected;
   try {
     if (!request.body) return json({ error: "İstek gerekli." }, 400);
@@ -45,3 +46,6 @@ export async function POST(request: Request) {
     return json({ error: "Kanıt kaydedilemedi; içerik ve hedefi yeniden inceleyin." }, 422);
   }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);

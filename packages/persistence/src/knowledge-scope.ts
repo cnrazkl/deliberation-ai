@@ -4,20 +4,20 @@ import { knowledgeCollectionBodySchema, knowledgeScopeSchema, knowledgeSelection
 import { KnowledgeAccessError, sameKnowledgeScope } from "@deliberation-ai/application";
 import { getDatabase } from "./database";
 import { decryptJson, encryptJson } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
 import { conversations, conversationKnowledge, conversationKnowledgeSelections, knowledgeCollections, knowledgeGrants } from "./schema";
 
 export async function listKnowledgeCollections() {
   const rows = await getDatabase().select({ id: knowledgeCollections.id }).from(knowledgeCollections)
-    .where(and(eq(knowledgeCollections.ownerId, LOCAL_OWNER_ID), eq(knowledgeCollections.accountId, "local"))).orderBy(asc(knowledgeCollections.id)).limit(21);
+    .where(and(eq(knowledgeCollections.ownerId, getOwnerId()), eq(knowledgeCollections.accountId, "local"))).orderBy(asc(knowledgeCollections.id)).limit(21);
   return { items: await Promise.all(rows.slice(0, 20).map((row) => exportKnowledgeCollection(row.id))), hasMore: rows.length > 20 };
 }
 export async function createKnowledgeConversation() {
   return getDatabase().transaction(async (tx) => {
     await lock(tx);
     const id = randomUUID();
-    await tx.insert(conversations).values({ id, ownerId: LOCAL_OWNER_ID, anchorRunId: randomUUID(), origin: "native" });
+    await tx.insert(conversations).values({ id, ownerId: getOwnerId(), anchorRunId: randomUUID(), origin: "native" });
     return { conversationId: id };
   });
 }
@@ -35,18 +35,18 @@ export async function createKnowledgeCollection(title: string) {
   return getDatabase().transaction(async (tx) => {
     await lock(tx);
     const id = randomUUID(), grantId = randomUUID();
-    await tx.insert(knowledgeCollections).values({ id, ownerId: LOCAL_OWNER_ID, accountId: "local",
+    await tx.insert(knowledgeCollections).values({ id, ownerId: getOwnerId(), accountId: "local",
       bodyCiphertext: encryptJson(body, `knowledge-collection:${id}:body`) });
     // Creating a collection does not grant retrieval or select it in a conversation.
-    await tx.insert(knowledgeGrants).values({ id: grantId, collectionId: id, ownerId: LOCAL_OWNER_ID, status: "revoked", revision: 1 });
+    await tx.insert(knowledgeGrants).values({ id: grantId, collectionId: id, ownerId: getOwnerId(), status: "revoked", revision: 1 });
     return { id, title: body.title, grantId, grantRevision: 1, status: "revoked" as const };
   });
 }
 export async function exportKnowledgeCollection(collectionId: string) {
   return getDatabase().transaction(async (tx) => {
     const [row] = await tx.select({ collection: knowledgeCollections, grant: knowledgeGrants }).from(knowledgeCollections)
-      .innerJoin(knowledgeGrants, and(eq(knowledgeGrants.collectionId, knowledgeCollections.id), eq(knowledgeGrants.ownerId, LOCAL_OWNER_ID)))
-      .where(and(eq(knowledgeCollections.id, collectionId), eq(knowledgeCollections.ownerId, LOCAL_OWNER_ID), eq(knowledgeCollections.accountId, "local"))).limit(1);
+      .innerJoin(knowledgeGrants, and(eq(knowledgeGrants.collectionId, knowledgeCollections.id), eq(knowledgeGrants.ownerId, getOwnerId())))
+      .where(and(eq(knowledgeCollections.id, collectionId), eq(knowledgeCollections.ownerId, getOwnerId()), eq(knowledgeCollections.accountId, "local"))).limit(1);
     if (!row) return undefined;
     if (row.collection.bodyCiphertext.length > 4_096) throw new KnowledgeAccessError();
     const body = knowledgeCollectionBodySchema.parse(decryptJson(row.collection.bodyCiphertext, `knowledge-collection:${collectionId}:body`));
@@ -56,10 +56,10 @@ export async function exportKnowledgeCollection(collectionId: string) {
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 export async function authorizeKnowledgeScopeInSnapshot(tx: ConversationTransaction, scope: KnowledgeScope) {
-  if (!knowledgeScopeSchema.safeParse(scope).success || scope.ownerId !== LOCAL_OWNER_ID || scope.accountId !== "local") return false;
+  if (!knowledgeScopeSchema.safeParse(scope).success || scope.ownerId !== getOwnerId() || scope.accountId !== "local") return false;
   const [row] = await tx.select({ id: knowledgeGrants.id }).from(knowledgeGrants).innerJoin(knowledgeCollections,
-    and(eq(knowledgeCollections.id, knowledgeGrants.collectionId), eq(knowledgeCollections.ownerId, LOCAL_OWNER_ID), eq(knowledgeCollections.accountId, scope.accountId)))
-    .where(and(eq(knowledgeGrants.ownerId, LOCAL_OWNER_ID), eq(knowledgeGrants.id, scope.grantId),
+    and(eq(knowledgeCollections.id, knowledgeGrants.collectionId), eq(knowledgeCollections.ownerId, getOwnerId()), eq(knowledgeCollections.accountId, scope.accountId)))
+    .where(and(eq(knowledgeGrants.ownerId, getOwnerId()), eq(knowledgeGrants.id, scope.grantId),
       eq(knowledgeGrants.collectionId, scope.collectionId), eq(knowledgeGrants.revision, scope.grantRevision), eq(knowledgeGrants.status, "active"))).limit(1);
   return !!row;
 }
@@ -72,34 +72,34 @@ export async function changeKnowledgeGrant(collectionId: string, expectedRevisio
   return getDatabase().transaction(async (tx) => {
     await lock(tx);
     const [collection] = await tx.select().from(knowledgeCollections)
-      .where(and(eq(knowledgeCollections.id, collectionId), eq(knowledgeCollections.ownerId, LOCAL_OWNER_ID), eq(knowledgeCollections.accountId, "local"))).limit(1);
+      .where(and(eq(knowledgeCollections.id, collectionId), eq(knowledgeCollections.ownerId, getOwnerId()), eq(knowledgeCollections.accountId, "local"))).limit(1);
     if (!collection) throw new KnowledgeAccessError();
     const [grant] = await tx.update(knowledgeGrants).set({ status, revision: expectedRevision + 1, updatedAt: new Date() })
-      .where(and(eq(knowledgeGrants.collectionId, collectionId), eq(knowledgeGrants.ownerId, LOCAL_OWNER_ID), eq(knowledgeGrants.revision, expectedRevision)))
+      .where(and(eq(knowledgeGrants.collectionId, collectionId), eq(knowledgeGrants.ownerId, getOwnerId()), eq(knowledgeGrants.revision, expectedRevision)))
       .returning();
     if (!grant) throw new KnowledgeSelectionConflictError();
-    return { ownerId: LOCAL_OWNER_ID, accountId: "local", collectionId, grantId: grant.id, grantRevision: grant.revision };
+    return { ownerId: getOwnerId(), accountId: "local", collectionId, grantId: grant.id, grantRevision: grant.revision };
   });
 }
 export async function exportConversationKnowledgeInSnapshot(tx: ConversationTransaction, conversationId: string) {
   const [conversation] = await tx.select({ id: conversations.id }).from(conversations)
-    .where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, getOwnerId()))).limit(1);
   if (!conversation) throw new KnowledgeAccessError();
   const [head] = await tx.select().from(conversationKnowledge).where(eq(conversationKnowledge.conversationId, conversationId)).limit(1);
   const rows = await tx.select().from(conversationKnowledgeSelections).where(eq(conversationKnowledgeSelections.conversationId, conversationId))
     .orderBy(asc(conversationKnowledgeSelections.collectionId)).limit(4);
   if (!head) { if (rows.length) throw new KnowledgeAccessError(); return null; }
-  if (head.ownerId !== LOCAL_OWNER_ID || rows.some((row) => row.ownerId !== LOCAL_OWNER_ID)) throw new KnowledgeAccessError();
+  if (head.ownerId !== getOwnerId() || rows.some((row) => row.ownerId !== getOwnerId())) throw new KnowledgeAccessError();
   if (head.selectionCiphertext.length > 32_768) throw new KnowledgeAccessError();
   const selection = knowledgeSelectionSchema.parse(decryptJson(head.selectionCiphertext, `conversation-knowledge:${conversationId}:${head.revision}:selection`));
-  if (rows.length !== selection.scopes.length || selection.scopes.some((scope) => scope.ownerId !== LOCAL_OWNER_ID || scope.accountId !== "local"
+  if (rows.length !== selection.scopes.length || selection.scopes.some((scope) => scope.ownerId !== getOwnerId() || scope.accountId !== "local"
     || !rows.some((row) => row.collectionId === scope.collectionId && row.grantId === scope.grantId && row.grantRevision === scope.grantRevision))) throw new KnowledgeAccessError();
   const grants = [];
   for (const scope of selection.scopes) {
     const [grant] = await tx.select({ revision: knowledgeGrants.revision, status: knowledgeGrants.status }).from(knowledgeGrants)
       .innerJoin(knowledgeCollections, and(eq(knowledgeCollections.id, knowledgeGrants.collectionId),
-        eq(knowledgeCollections.ownerId, LOCAL_OWNER_ID), eq(knowledgeCollections.accountId, scope.accountId)))
-      .where(and(eq(knowledgeGrants.id, scope.grantId), eq(knowledgeGrants.collectionId, scope.collectionId), eq(knowledgeGrants.ownerId, LOCAL_OWNER_ID))).limit(1);
+        eq(knowledgeCollections.ownerId, getOwnerId()), eq(knowledgeCollections.accountId, scope.accountId)))
+      .where(and(eq(knowledgeGrants.id, scope.grantId), eq(knowledgeGrants.collectionId, scope.collectionId), eq(knowledgeGrants.ownerId, getOwnerId()))).limit(1);
     if (!grant || grant.revision < scope.grantRevision || !["active", "revoked"].includes(grant.status)) throw new KnowledgeAccessError();
     grants.push({ scope, available: grant.revision === scope.grantRevision && grant.status === "active" });
   }
@@ -118,13 +118,13 @@ export async function setConversationKnowledge(conversationId: string, expectedR
     const current = await exportConversationKnowledgeInSnapshot(tx, conversationId);
     if ((current?.revision ?? null) !== expectedRevision) throw new KnowledgeSelectionConflictError();
     if (selection) for (const scope of selection.scopes) if (!await authorizeKnowledgeScopeInSnapshot(tx, scope)) throw new KnowledgeAccessError();
-    await tx.delete(conversationKnowledgeSelections).where(and(eq(conversationKnowledgeSelections.conversationId, conversationId), eq(conversationKnowledgeSelections.ownerId, LOCAL_OWNER_ID)));
-    await tx.delete(conversationKnowledge).where(and(eq(conversationKnowledge.conversationId, conversationId), eq(conversationKnowledge.ownerId, LOCAL_OWNER_ID)));
+    await tx.delete(conversationKnowledgeSelections).where(and(eq(conversationKnowledgeSelections.conversationId, conversationId), eq(conversationKnowledgeSelections.ownerId, getOwnerId())));
+    await tx.delete(conversationKnowledge).where(and(eq(conversationKnowledge.conversationId, conversationId), eq(conversationKnowledge.ownerId, getOwnerId())));
     if (!selection) return null;
     const revision = randomUUID();
-    await tx.insert(conversationKnowledge).values({ conversationId, ownerId: LOCAL_OWNER_ID, revision,
+    await tx.insert(conversationKnowledge).values({ conversationId, ownerId: getOwnerId(), revision,
       selectionCiphertext: encryptJson(selection, `conversation-knowledge:${conversationId}:${revision}:selection`) });
-    await tx.insert(conversationKnowledgeSelections).values(selection.scopes.map((scope) => ({ conversationId, ownerId: LOCAL_OWNER_ID,
+    await tx.insert(conversationKnowledgeSelections).values(selection.scopes.map((scope) => ({ conversationId, ownerId: getOwnerId(),
       collectionId: scope.collectionId, grantId: scope.grantId, grantRevision: scope.grantRevision })));
     return revision;
   });

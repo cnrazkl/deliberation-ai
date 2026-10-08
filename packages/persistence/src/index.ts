@@ -48,3 +48,6 @@ export * from "./preflight-draft-deletion";
 export * from "./local-schedule-deletion";
 export { loadConversationPrivateUsage, type ConversationPrivateUsage } from "./conversation-private-usage";
 export { loadConversationCouncilUsage, type ConversationCouncilUsage } from "./conversation-council-usage";
+export { getOwnerId, withOwner, requireOwnerContext } from "./owner";
+export * from "./local-auth";
+export * from "./worker-owner";

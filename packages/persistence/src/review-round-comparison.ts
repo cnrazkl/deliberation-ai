@@ -2,7 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { buildRoundZeroPromptPlan } from "@deliberation-ai/application";
 import { prepareReviewRoundComparison, sha256, validateReviewRoundComparisonPlan } from "@deliberation-ai/evaluation";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { getRunProviderUsage } from "./provider-operations";
 import { findDurableRunEvaluationSnapshot } from "./run-repository";
 import { runEvents, runs } from "./schema";
@@ -115,7 +115,7 @@ export async function inspectStoredReviewRoundComparison(suiteInput: unknown, pl
         throw new Error("Karşılaştırmada tekrar, belirsiz veya eksik sağlayıcı işlemi var.");
       }
       const [record] = await getDatabase().select({ finishedAt: runs.finishedAt }).from(runs)
-        .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+        .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId()))).limit(1);
       const starts = await getDatabase().select({ createdAt: runEvents.createdAt }).from(runEvents)
         .where(and(eq(runEvents.runId, runId), eq(runEvents.type, "run.running")))
         .orderBy(asc(runEvents.sequence)).limit(2);

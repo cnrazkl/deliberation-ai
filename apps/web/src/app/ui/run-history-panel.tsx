@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { RunHistoryPage } from "@deliberation-ai/persistence";
 import { RunDeletionPanel } from "./run-deletion-panel";
@@ -41,7 +42,7 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun, onDeletedR
     olderRequest.current?.abort();
     olderRequest.current = null;
     const controller = new AbortController();
-    void fetch("/api/runs", { cache: "no-store", signal: controller.signal })
+    void ownerFetch("/api/runs", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("Çalışma geçmişi yüklenemedi.");
         const body = await response.json() as RunHistoryPage;
@@ -71,7 +72,7 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun, onDeletedR
     setLoadingOlder(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/runs?before=${encodeURIComponent(page.nextCursor)}`, { cache: "no-store", signal: controller.signal });
+      const response = await ownerFetch(`/api/runs?before=${encodeURIComponent(page.nextCursor)}`, { cache: "no-store", signal: controller.signal });
       if (!response.ok) throw new Error("Eski çalışmalar yüklenemedi.");
       const older = await response.json() as RunHistoryPage;
       if (!controller.signal.aborted && current === generation.current) setPage((value) => ({

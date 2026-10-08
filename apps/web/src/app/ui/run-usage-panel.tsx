@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useState } from "react";
 import type { RunRecord } from "@deliberation-ai/application";
 import type { RunProviderUsage } from "@deliberation-ai/persistence";
@@ -41,7 +42,7 @@ export function RunUsagePanel({ runId, runStatus }: Props) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetch(`/api/runs/${runId}/usage`, { cache: "no-store", signal: controller.signal })
+    void ownerFetch(`/api/runs/${runId}/usage`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error("Token kullanımı yüklenemedi.");
         setUsage({ key: requestKey, value: await response.json() as RunProviderUsage });

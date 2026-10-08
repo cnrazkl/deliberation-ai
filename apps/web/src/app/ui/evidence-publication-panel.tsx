@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch, sessionOwner } from "../../lib/session-fetch";
 import { useEffect, useState } from "react";
 import type { EvidencePublicationBody, EvidencePublicationPreviewRequest, KnowledgeScope } from "@deliberation-ai/contracts";
 
@@ -13,8 +14,8 @@ export function EvidencePublicationPanel({ runId, candidateId, eligible }: { run
   const [consent, setConsent] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState<string>();
   useEffect(() => {
     const controller = new AbortController();
-    void Promise.all([fetch("/api/knowledge", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ operation: "state", conversationId: null }), cache: "no-store", signal: controller.signal }),
-      fetch(`/api/evidence-publications?runId=${runId}`, { cache: "no-store", signal: controller.signal })]).then(async ([a, b]) => {
+    void Promise.all([ownerFetch("/api/knowledge", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ operation: "state", conversationId: null }), cache: "no-store", signal: controller.signal }),
+      ownerFetch(`/api/evidence-publications?runId=${runId}`, { cache: "no-store", signal: controller.signal })]).then(async ([a, b]) => {
       if (!a.ok || !b.ok) throw new Error();
       const listed = await a.json() as { collections: { items: Collection[] } }, saved = await b.json() as { publications: Receipt[] };
       if (!controller.signal.aborted) { setCollections(listed.collections.items.filter((value) => value?.grantStatus === "active")); setReceipts(saved.publications); }
@@ -23,7 +24,7 @@ export function EvidencePublicationPanel({ runId, candidateId, eligible }: { run
   }, [runId]);
   function invalidate() { setReview(undefined); setConsent(false); }
   async function send(body: object) {
-    const response = await fetch("/api/evidence-publications", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const response = await ownerFetch("/api/evidence-publications", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const value = await response.json() as Receipt & Preview & { error?: string };
     if (!response.ok) throw new Error(value.error ?? "Kaydetme başarısız."); return value;
   }
@@ -32,7 +33,7 @@ export function EvidencePublicationPanel({ runId, candidateId, eligible }: { run
     try {
       const collection = collections.find((value) => value.collectionId === collectionId);
       if (kind === "local" && !collection) throw new Error("İzin verilmiş bir koleksiyon seçin.");
-      const scope: KnowledgeScope | undefined = collection ? { ownerId: "local-owner", accountId: "local", collectionId: collection.collectionId, grantId: collection.grantId, grantRevision: collection.grantRevision } : undefined;
+      const scope: KnowledgeScope | undefined = collection ? { ownerId: sessionOwner(), accountId: "local", collectionId: collection.collectionId, grantId: collection.grantId, grantRevision: collection.grantRevision } : undefined;
       const request: EvidencePublicationPreviewRequest = { candidateId, destination: kind === "local" ? { kind: "local", scope: scope! } : { kind: "manual", name, account, url } };
       setReview({ preview: await send({ action: "preview", ...request }), request, requestId: crypto.randomUUID() }); setConsent(false);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "İnceleme açılamadı."); } finally { setBusy(false); }

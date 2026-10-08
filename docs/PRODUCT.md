@@ -1,5 +1,11 @@
 # Product
 
+Local membership now offers registration, username/password login, logout and password
+changes. Each user owns their API connections and full workspace. Root retains legacy
+records, lists users/connection summaries and explicitly opens any user's workspace.
+API keys are usable/editable through connection management but never displayed in
+account summaries. Switching accounts closes unsaved drafts. [Use and scope](LOCAL_ACCOUNTS.md).
+
 An opt-in local synthesis command generates a claim-linked draft and asks a separate
 model to check meaning against the complete supplied ledger. At most one repair is
 allowed; failure preserves the deterministic ledger. Drafts remain model judgments,

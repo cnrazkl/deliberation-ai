@@ -4,7 +4,8 @@ import {
   DatabaseMigrationCompatibilityError,
   closeBoss,
   closeDatabase,
-  dispatchDueLocalSchedules,
+  dispatchAllUserSchedules,
+  withWorkerOwner,
   executeDurableRun,
   getBoss,
   openWorkerHeartbeat,
@@ -32,7 +33,7 @@ async function main(): Promise<void> {
   const boss = await getBoss();
   await boss.work<{ branchId: string; operationId: string }>(PRIVATE_DELIVERY_QUEUE, {
     batchSize: 1, localConcurrency: 1, pollingIntervalSeconds: 0.5, notifyPollingIntervalSeconds: 1,
-  }, async ([job]) => { if (job) await executeWorkerPrivateDelivery(job.data.branchId, job.data.operationId); });
+  }, async ([job]) => { if (job) await withWorkerOwner("private", job.data.branchId, () => executeWorkerPrivateDelivery(job.data.branchId, job.data.operationId)); });
   await boss.work<RunCouncilJob>(
     RUN_COUNCIL_QUEUE,
     {
@@ -43,7 +44,7 @@ async function main(): Promise<void> {
     },
     async ([job]) => {
       if (!job) return;
-      const run = await executeDurableRun(job.data.runId, executeWorkerCouncil);
+      const run = await withWorkerOwner("run", job.data.runId, () => executeDurableRun(job.data.runId, executeWorkerCouncil));
       return { runId: job.data.runId, status: run?.status ?? "missing" };
     },
   );
@@ -58,12 +59,12 @@ async function main(): Promise<void> {
       },
       async ([job]) => {
         if (!job) return;
-        const status = await executeWorkerDecisionAssessment(job.data.assessmentId);
+        const status = await withWorkerOwner("decision", job.data.assessmentId, () => executeWorkerDecisionAssessment(job.data.assessmentId));
         return { assessmentId: job.data.assessmentId, status };
       },
     );
   }
-  await dispatchDueLocalSchedules();
+  await dispatchAllUserSchedules();
   heartbeatLease = await openWorkerHeartbeat(workerInstanceId);
   heartbeatTimer = setInterval(() => {
     void heartbeatLease?.beat().catch(() => {
@@ -71,7 +72,7 @@ async function main(): Promise<void> {
     });
   }, 15_000);
   scheduleTimer = setInterval(() => {
-    void dispatchDueLocalSchedules().catch(() => {
+    void dispatchAllUserSchedules().catch(() => {
       console.error("Yerel zamanlama taraması tamamlanamadı.");
     });
   }, 30_000);

@@ -3,7 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { preflightDraftDeletionReceiptSchema, type PreflightDraftDeletionReceipt } from "@deliberation-ai/contracts";
 import { getDatabase } from "./database";
 import { lockConversationMembership, ConversationIntegrityError, type ConversationTransaction } from "./conversation-membership";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { preflightDrafts } from "./schema";
 
 export class PreflightDraftDeletionBlockedError extends Error {}
@@ -14,7 +14,7 @@ export type PreflightDraftDeletionPreview = {
   eligible: boolean; blockedReasons: string[]; fingerprint: string | null;
   alreadyDeleted?: boolean;
 };
-const owned = (id: string) => and(eq(preflightDrafts.id, id), eq(preflightDrafts.ownerId, LOCAL_OWNER_ID));
+const owned = (id: string) => and(eq(preflightDrafts.id, id), eq(preflightDrafts.ownerId, getOwnerId()));
 
 // A tombstone uses the existing JSON metadata column, never either content field.
 // Its strict, content-free shape replaces the frozen clarification questions.
@@ -26,7 +26,7 @@ export function readPreflightDraftDeletion(row: { id: string; status: string; qu
 }
 export async function isPreflightIntentClosed(tx: ConversationTransaction, key: string) {
   const [row] = await tx.select({ status: preflightDrafts.status }).from(preflightDrafts)
-    .where(and(eq(preflightDrafts.ownerId, LOCAL_OWNER_ID), eq(preflightDrafts.idempotencyKey, key))).limit(1);
+    .where(and(eq(preflightDrafts.ownerId, getOwnerId()), eq(preflightDrafts.idempotencyKey, key))).limit(1);
   return row?.status === "cancelled";
 }
 async function schemaSupported(tx: ConversationTransaction) {
@@ -64,12 +64,12 @@ async function inspect(tx: ConversationTransaction, id: string) {
   if (!await schemaSupported(tx)) blockedReasons.push("schema_changed");
   if (!["awaiting_input", "started", "cancelled"].includes(row.status)) blockedReasons.push("invalid_state");
   if (row.runId) {
-    const check = await tx.execute<{ foreign: boolean }>(sql`select exists(select 1 from runs where id=${row.runId}::uuid and owner_id<>${LOCAL_OWNER_ID}) as foreign`);
+    const check = await tx.execute<{ foreign: boolean }>(sql`select exists(select 1 from runs where id=${row.runId}::uuid and owner_id<>${getOwnerId()}) as foreign`);
     if (check.rows[0]?.foreign) blockedReasons.push("owner_mismatch");
   }
-  const exact = await tx.execute<{ value: unknown }>(sql`select to_jsonb(d) as value from preflight_drafts d where id=${id}::uuid and owner_id=${LOCAL_OWNER_ID}`);
+  const exact = await tx.execute<{ value: unknown }>(sql`select to_jsonb(d) as value from preflight_drafts d where id=${id}::uuid and owner_id=${getOwnerId()}`);
   const eligible = blockedReasons.length === 0;
-  const fingerprint = eligible ? createHash("sha256").update(JSON.stringify({ version: "preflight-draft-deletion-v1", owner: LOCAL_OWNER_ID, row: exact.rows[0]!.value })).digest("hex") : null;
+  const fingerprint = eligible ? createHash("sha256").update(JSON.stringify({ version: "preflight-draft-deletion-v1", owner: getOwnerId(), row: exact.rows[0]!.value })).digest("hex") : null;
   const preview: PreflightDraftDeletionPreview = { version: "preflight-draft-deletion-v1", draftId: id, status: row.status,
     retainedRunId: row.runId, hasQuestion: row.questionCiphertext !== null, hasRequest: row.requestCiphertext !== null,
     eligible, blockedReasons, fingerprint };

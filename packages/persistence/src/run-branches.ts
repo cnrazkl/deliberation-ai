@@ -2,7 +2,7 @@ import { validateContinuation } from "@deliberation-ai/application";
 import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 import { getDatabase } from "./database";
 import { decryptJson, decryptText } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { runs } from "./schema";
 
 export type RunBranchKind = "independent" | "continuation-full" | "continuation-compacted" | "member-rerun";
@@ -75,12 +75,12 @@ export async function indexExistingRunBranches(): Promise<number> {
   for (;;) {
     const count = await db.transaction(async (tx) => {
       const rows = await tx.select(fields).from(runs).where(and(
-        eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.branchIndexVersion, 0),
+        eq(runs.ownerId, getOwnerId()), eq(runs.branchIndexVersion, 0),
       )).orderBy(asc(runs.id)).limit(100).for("update");
       for (const row of rows) {
         const link = sourceLink(row);
         await tx.update(runs).set({ branchSourceRunId: link.sourceRunId, branchKind: link.kind, branchIndexVersion: 1 })
-          .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.id, row.id)));
+          .where(and(eq(runs.ownerId, getOwnerId()), eq(runs.id, row.id)));
       }
       return rows.length;
     });
@@ -94,11 +94,11 @@ export async function loadRunBranches(runId: string, options: {
 } = {}): Promise<RunBranches | undefined> {
   return getDatabase().transaction(async (tx) => {
     const ownedRow = async (id: string) => (await tx.select(fields).from(runs)
-      .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.id, id))).limit(1))[0];
+      .where(and(eq(runs.ownerId, getOwnerId()), eq(runs.id, id))).limit(1))[0];
     const current = await ownedRow(runId);
     if (!current) return undefined;
     const pending = await tx.select({ id: runs.id }).from(runs).where(and(
-      eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.branchIndexVersion, 0),
+      eq(runs.ownerId, getOwnerId()), eq(runs.branchIndexVersion, 0),
     )).limit(1);
     if (pending.length) throw new RunBranchIndexPendingError();
     const currentItem = project(current);
@@ -122,9 +122,9 @@ export async function loadRunBranches(runId: string, options: {
       if (before && (!cursor || cursor.branchSourceRunId !== parentId || (siblings && cursor.id === current.id))) return undefined;
       if (cursor) project(cursor);
       const rows = await tx.select(fields).from(runs).where(and(
-        eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.branchSourceRunId, parentId),
+        eq(runs.ownerId, getOwnerId()), eq(runs.branchSourceRunId, parentId),
         siblings ? ne(runs.id, runId) : undefined,
-        cursor ? sql`(${runs.createdAt}, ${runs.id}) < (select created_at, id from runs where owner_id = ${LOCAL_OWNER_ID} and id = ${cursor.id}::uuid)` : undefined,
+        cursor ? sql`(${runs.createdAt}, ${runs.id}) < (select created_at, id from runs where owner_id = ${getOwnerId()} and id = ${cursor.id}::uuid)` : undefined,
       )).orderBy(desc(runs.createdAt), desc(runs.id)).limit(RUN_BRANCH_PAGE_SIZE + 1);
       const visible = rows.slice(0, RUN_BRANCH_PAGE_SIZE);
       return { runs: visible.map(project), nextCursor: rows.length > RUN_BRANCH_PAGE_SIZE ? visible.at(-1)!.id : null };

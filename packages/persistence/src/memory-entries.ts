@@ -8,7 +8,7 @@ import type {
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { decryptText, encryptText } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { claims, memoryEntries, runs } from "./schema";
 
 export const MAX_STORED_MEMORY_ENTRIES = 20;
@@ -50,7 +50,7 @@ export async function listMemoryEntries(): Promise<SharedMemoryEntry[]> {
   const rows = await getDatabase()
     .select()
     .from(memoryEntries)
-    .where(eq(memoryEntries.ownerId, LOCAL_OWNER_ID))
+    .where(eq(memoryEntries.ownerId, getOwnerId()))
     .orderBy(asc(memoryEntries.createdAt));
   return rows.map(mapMemoryEntry);
 }
@@ -64,7 +64,7 @@ export async function saveMemoryEntry(
       .from(memoryEntries)
       .where(
         and(
-          eq(memoryEntries.ownerId, LOCAL_OWNER_ID),
+          eq(memoryEntries.ownerId, getOwnerId()),
           eq(memoryEntries.sourceRunId, request.runId),
           eq(memoryEntries.sourceClaimId, request.claimId),
         ),
@@ -83,7 +83,7 @@ export async function saveMemoryEntry(
       .innerJoin(runs, eq(claims.runId, runs.id))
       .where(
         and(
-          eq(runs.ownerId, LOCAL_OWNER_ID),
+          eq(runs.ownerId, getOwnerId()),
           eq(claims.runId, request.runId),
           eq(claims.reportClaimId, request.claimId),
         ),
@@ -94,7 +94,7 @@ export async function saveMemoryEntry(
     const [total] = await tx
       .select({ value: count() })
       .from(memoryEntries)
-      .where(eq(memoryEntries.ownerId, LOCAL_OWNER_ID));
+      .where(eq(memoryEntries.ownerId, getOwnerId()));
     if ((total?.value ?? 0) >= MAX_STORED_MEMORY_ENTRIES) throw new MemoryLimitError();
 
     const id = randomUUID();
@@ -105,7 +105,7 @@ export async function saveMemoryEntry(
       .insert(memoryEntries)
       .values({
         id,
-        ownerId: LOCAL_OWNER_ID,
+        ownerId: getOwnerId(),
         sourceRunId: request.runId,
         sourceClaimId: request.claimId,
         sourceType: request.claimId.startsWith("red-team-")
@@ -124,7 +124,7 @@ export async function deleteMemoryEntry(memoryEntryId: string): Promise<boolean>
     .delete(memoryEntries)
     .where(
       and(
-        eq(memoryEntries.ownerId, LOCAL_OWNER_ID),
+        eq(memoryEntries.ownerId, getOwnerId()),
         eq(memoryEntries.id, memoryEntryId),
       ),
     )
@@ -140,7 +140,7 @@ export async function loadFrozenMemoryEntries(ids: string[]): Promise<FrozenMemo
     .from(memoryEntries)
     .where(
       and(
-        eq(memoryEntries.ownerId, LOCAL_OWNER_ID),
+        eq(memoryEntries.ownerId, getOwnerId()),
         inArray(memoryEntries.id, ids),
       ),
     );

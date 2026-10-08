@@ -3,7 +3,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { privateBranchDeletionAuditSchema, type PrivateBranchDeletionAudit } from "@deliberation-ai/contracts";
 import { getDatabase } from "./database";
 import { decryptJson, encryptJson } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { conversationPrivateBranches as branches, privateBranchDeletions as deletions } from "./schema";
 import { decodePrivateBranchBody, privateDeliveryPending, readPrivateBranch } from "./private-branches";
 import { lockConversationMembership, ConversationIntegrityError, ConversationSizeError, type ConversationTransaction } from "./conversation-membership";
@@ -15,7 +15,7 @@ export type PrivateBranchDeletionPreview = { version: "private-branch-deletion-v
   eligible: boolean; blockedReasons: PrivateBranchDeletionBlock[]; fingerprint: string | null };
 export class PrivateBranchDeletionBlockedError extends Error {}
 export class PrivateBranchDeletionStaleError extends Error {}
-const owned = (id: string) => and(eq(deletions.id, id), eq(deletions.ownerId, LOCAL_OWNER_ID));
+const owned = (id: string) => and(eq(deletions.id, id), eq(deletions.ownerId, getOwnerId()));
 
 export function decodePrivateBranchDeletion(row: { id: string; conversationId: string; requestId: string; auditCiphertext: string; deletedAt: Date }) {
   if (Buffer.byteLength(row.auditCiphertext) > Math.ceil(MAX_AUDIT_BYTES * 4 / 3) + 128) throw new ConversationSizeError();
@@ -36,9 +36,9 @@ export function loadPrivateBranchDeletion(id: string) {
 }
 export async function exportPrivateBranchDeletions(tx: ConversationTransaction, conversationId: string) {
   const [size] = await tx.select({ count: sql<string>`count(*)::text`, bytes: sql<string>`coalesce(sum(octet_length(${deletions.auditCiphertext})), 0)::text` })
-    .from(deletions).where(and(eq(deletions.ownerId, LOCAL_OWNER_ID), eq(deletions.conversationId, conversationId)));
+    .from(deletions).where(and(eq(deletions.ownerId, getOwnerId()), eq(deletions.conversationId, conversationId)));
   if (Number(size!.count) > MAX_ROWS || Number(size!.bytes) > MAX_SCAN_BYTES) throw new ConversationSizeError();
-  const rows = await tx.select().from(deletions).where(and(eq(deletions.ownerId, LOCAL_OWNER_ID), eq(deletions.conversationId, conversationId))).orderBy(asc(deletions.id));
+  const rows = await tx.select().from(deletions).where(and(eq(deletions.ownerId, getOwnerId()), eq(deletions.conversationId, conversationId))).orderBy(asc(deletions.id));
   return rows.map(decodePrivateBranchDeletion);
 }
 async function schemaSupported(tx: ConversationTransaction) {
@@ -71,19 +71,19 @@ async function inspect(tx: ConversationTransaction, id: string) {
   const blockedReasons: PrivateBranchDeletionBlock[] = [];
   if (!await schemaSupported(tx)) blockedReasons.push("schema_changed");
   if (privateDeliveryPending(current.value.body)) blockedReasons.push("pending_delivery");
-  const [foreign] = await tx.select({ id: branches.id }).from(branches).where(sql`${branches.ownerId} <> ${LOCAL_OWNER_ID}`).limit(1);
+  const [foreign] = await tx.select({ id: branches.id }).from(branches).where(sql`${branches.ownerId} <> ${getOwnerId()}`).limit(1);
   if (foreign) blockedReasons.push("owner_mismatch");
   // Direct references include foreign rows; never delete someone's copy or expose its ID.
   const direct = await tx.select({ id: branches.id, ownerId: branches.ownerId }).from(branches).where(eq(branches.parentBranchId, id)).limit(MAX_ROWS + 1);
-  const copied = new Set(direct.filter((row) => row.ownerId === LOCAL_OWNER_ID).map((row) => row.id));
+  const copied = new Set(direct.filter((row) => row.ownerId === getOwnerId()).map((row) => row.id));
   if (direct.length) blockedReasons.push("copied_branches");
   const [size] = await tx.select({ count: sql<string>`count(*)::text`, bytes: sql<string>`coalesce(sum(octet_length(${branches.bodyCiphertext})), 0)::text` })
-    .from(branches).where(eq(branches.ownerId, LOCAL_OWNER_ID));
+    .from(branches).where(eq(branches.ownerId, getOwnerId()));
   if (Number(size!.count) > MAX_ROWS || Number(size!.bytes) > MAX_SCAN_BYTES || direct.length > MAX_ROWS) blockedReasons.push("inspection_limit");
   else {
     // Authenticate every bounded owned copy, including detached/cross-conversation
     // provenance references. Unreadable bodies close the boundary.
-    const rows = await tx.select().from(branches).where(eq(branches.ownerId, LOCAL_OWNER_ID)).orderBy(asc(branches.id));
+    const rows = await tx.select().from(branches).where(eq(branches.ownerId, getOwnerId())).orderBy(asc(branches.id));
     for (const row of rows) {
       if (row.id === id) continue;
       const body = decodePrivateBranchBody(row);
@@ -92,14 +92,14 @@ async function inspect(tx: ConversationTransaction, id: string) {
     if (copied.size && !blockedReasons.includes("copied_branches")) blockedReasons.push("copied_branches");
   }
   const [count] = await tx.select({ value: sql<string>`count(*)::text` }).from(deletions)
-    .where(and(eq(deletions.ownerId, LOCAL_OWNER_ID), eq(deletions.conversationId, current.row.conversationId)));
+    .where(and(eq(deletions.ownerId, getOwnerId()), eq(deletions.conversationId, current.row.conversationId)));
   if (Number(count!.value) >= MAX_ROWS) blockedReasons.push("audit_capacity");
   const eligible = blockedReasons.length === 0;
   const receipts = current.value.body.deliveries ?? [];
   const preview: PrivateBranchDeletionPreview = { version: "private-branch-deletion-v1", branchId: id, conversationId: current.row.conversationId,
     messageCount: current.row.messageCount, receiptCount: receipts.length, ownReceiptCount: receipts.filter((item) => item.originBranchId === id).length,
     copiedBranchIds: [...copied].sort(), eligible, blockedReasons, fingerprint: eligible ? createHash("sha256").update(JSON.stringify({
-      version: "private-branch-deletion-v1", owner: LOCAL_OWNER_ID, row: current.row,
+      version: "private-branch-deletion-v1", owner: getOwnerId(), row: current.row,
     })).digest("hex") : null };
   return { preview, current };
 }
@@ -134,9 +134,9 @@ export function deletePrivateBranch(id: string, fingerprint: string) {
         usage: item.usage ?? (item.result ? { model: item.result.model, remoteResponseId: item.result.remoteResponseId, inputTokens: item.result.inputTokens,
           outputTokens: item.result.outputTokens, tokenDetails: item.result.tokenDetails } : null) })) });
     if (Buffer.byteLength(JSON.stringify(audit)) > MAX_AUDIT_BYTES) throw new ConversationSizeError();
-    await tx.insert(deletions).values({ id, ownerId: LOCAL_OWNER_ID, conversationId: row.conversationId, requestId: row.requestId,
+    await tx.insert(deletions).values({ id, ownerId: getOwnerId(), conversationId: row.conversationId, requestId: row.requestId,
       deletedAt: new Date(audit.deletedAt), auditCiphertext: encryptJson(audit, `private-branch-deletion:${id}:audit`) });
-    const removed = await tx.delete(branches).where(and(eq(branches.id, id), eq(branches.ownerId, LOCAL_OWNER_ID))).returning({ id: branches.id });
+    const removed = await tx.delete(branches).where(and(eq(branches.id, id), eq(branches.ownerId, getOwnerId()))).returning({ id: branches.id });
     if (removed.length !== 1) throw new PrivateBranchDeletionStaleError();
     return audit;
   });

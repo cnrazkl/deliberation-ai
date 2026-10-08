@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch, sessionOwner } from "../../lib/session-fetch";
 import { useState } from "react";
 import type { KnowledgePacket, KnowledgeScope, CreateRunRequest } from "@deliberation-ai/contracts";
 import { inspectKnowledgeQuery } from "@deliberation-ai/contracts";
@@ -7,7 +8,7 @@ type Collection = { collectionId: string; title: string; grantId: string; grantR
 type Selection = { revision: string; topic: string; grants: { scope: KnowledgeScope; available: boolean }[] };
 type Source = { sourceId: string; versionId: string; name: string; status: string; reason: string | null; originalHash: string };
 async function command<T>(value: unknown): Promise<T> {
-  const response = await fetch("/api/knowledge", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(value), cache: "no-store" });
+  const response = await ownerFetch("/api/knowledge", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(value), cache: "no-store" });
   const body = await response.json() as T & { error?: string }; if (!response.ok) throw new Error(body.error ?? "Kaynak işlemi tamamlanamadı."); return body;
 }
 export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
@@ -30,13 +31,13 @@ export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
   }
   function scopeFor(id: string): KnowledgeScope {
     const item = collections.find((collection) => collection.collectionId === id)!;
-    return { ownerId: "local-owner", accountId: "local", collectionId: id, grantId: item.grantId, grantRevision: item.grantRevision };
+    return { ownerId: sessionOwner(), accountId: "local", collectionId: id, grantId: item.grantId, grantRevision: item.grantRevision };
   }
   return <details className="composer-disclosure knowledge-panel"><summary>Yerel bilgi kaynakları</summary>
     <p>Büyük veya tekrar kullanılan dosyaları koleksiyona kaydedin. Yalnız seçtiğiniz alıntılar ilk turdaki bütün üyelere gönderilir; tam dosyalar ve ikinci tur kaynakları gönderilmez. Görsel/OCR doğrulaması ve bağımsız kalite değerlendirmesi henüz yoktur.</p>
     <button type="button" disabled={busy} onClick={() => void work(async () => { await refresh(); })}>Koleksiyonları göster</button>
     <button type="button" disabled={busy} onClick={() => void work(async () => { invalidate(); const next = await command<{ conversationId: string }>({ operation: "conversation" }); setConversationId(next.conversationId); await refresh(next.conversationId); })}>Yeni kaynak sohbeti</button>
-    {runId && <button type="button" disabled={busy} onClick={() => void work(async () => { invalidate(); const response = await fetch(`/api/runs/${runId}/conversation`, { cache: "no-store" }); const next = await response.json() as { conversationId: string }; if (!response.ok) throw new Error("Sohbet okunamadı."); setConversationId(next.conversationId); await refresh(next.conversationId); })}>Açık raporun sohbetini seç</button>}
+    {runId && <button type="button" disabled={busy} onClick={() => void work(async () => { invalidate(); const response = await ownerFetch(`/api/runs/${runId}/conversation`, { cache: "no-store" }); const next = await response.json() as { conversationId: string }; if (!response.ok) throw new Error("Sohbet okunamadı."); setConversationId(next.conversationId); await refresh(next.conversationId); })}>Açık raporun sohbetini seç</button>}
     <label>Koleksiyon adı<input disabled={busy} value={title} maxLength={200} onChange={(event) => setTitle(event.target.value)} /></label>
     <button type="button" disabled={busy || !title.trim()} onClick={() => void work(async () => { await command({ operation: "collection", title }); setTitle(""); await refresh(); })}>Koleksiyon oluştur</button>
     {hasMore && <p>İlk 20 koleksiyon gösteriliyor; diğer koleksiyonlar bu seçimde aranmaz.</p>}

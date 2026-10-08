@@ -73,7 +73,7 @@ import { getDatabase } from "./database";
 import { decryptJson, decryptText, encryptJson, encryptText } from "./crypto";
 import { getBoss, RUN_COUNCIL_QUEUE } from "./queue";
 import { validateRunAttachments } from "./run-attachments";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { isRunIntentDeleted } from "./run-deletion";
 import { attachRunToConversation, lockConversationMembership } from "./conversation-membership";
 import { loadFrozenMemoryEntries } from "./memory-entries";
@@ -355,7 +355,7 @@ function continuationSelectionFromRow(row: RunRow, compaction?: ManualContinuati
 
 async function ownedContinuationSourceRow(sourceRunId: string) {
   const [row] = await getDatabase().select().from(runs)
-    .where(and(eq(runs.id, sourceRunId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(runs.id, sourceRunId), eq(runs.ownerId, getOwnerId()))).limit(1);
   if (!row) throw new ContinuationUnavailableError();
   return row;
 }
@@ -381,13 +381,13 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
   const db = getDatabase();
   const requestHash = hashRunRequest(request);
   const [previous] = await db.select().from(runs)
-    .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, request.idempotencyKey)))
+    .where(and(eq(runs.ownerId, getOwnerId()), eq(runs.idempotencyKey, request.idempotencyKey)))
     .limit(1);
   if (previous && !scheduleFence) {
     return db.transaction(async (tx) => {
       await lockConversationMembership(tx);
       if (await isPreflightIntentClosed(tx, request.idempotencyKey) || await isRunIntentDeleted(tx, request.idempotencyKey)) throw new IdempotencyConflictError();
-      const [current] = await tx.select().from(runs).where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, request.idempotencyKey))).limit(1);
+      const [current] = await tx.select().from(runs).where(and(eq(runs.ownerId, getOwnerId()), eq(runs.idempotencyKey, request.idempotencyKey))).limit(1);
       if (!current || current.requestHash !== requestHash) throw new IdempotencyConflictError();
       return mapRun(current);
     });
@@ -443,11 +443,11 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
     // Serialize an owner's intent, including the absent-row case. The unique index
     // alone cannot replay two concurrent requests after both observe no run.
     await lockConversationMembership(tx);
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext(${request.idempotencyKey}))`);
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${getOwnerId()}), hashtext(${request.idempotencyKey}))`);
     if (await isPreflightIntentClosed(tx, request.idempotencyKey) || await isRunIntentDeleted(tx, request.idempotencyKey)) throw new IdempotencyConflictError();
     if (scheduleFence) await assertScheduleOccurrence(tx, scheduleFence, request.idempotencyKey);
     const [alreadyQueued] = await tx.select().from(runs)
-      .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, request.idempotencyKey))).limit(1);
+      .where(and(eq(runs.ownerId, getOwnerId()), eq(runs.idempotencyKey, request.idempotencyKey))).limit(1);
     if (alreadyQueued) {
       if (alreadyQueued.requestHash !== requestHash) throw new IdempotencyConflictError();
       if (scheduleFence) await completeScheduleOccurrence(tx, scheduleFence, alreadyQueued.id);
@@ -456,7 +456,7 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
     if (knowledgePacket) await authorizeKnowledgePacketInSnapshot(tx, knowledgePacket, true);
     const connectionIds = members.flatMap((member) => member.connectionId ? [member.connectionId] : []);
     const selectedConnections = connectionIds.length ? await tx.select().from(providerConnections)
-      .where(and(eq(providerConnections.ownerId, LOCAL_OWNER_ID), inArray(providerConnections.id, connectionIds))).for("share") : [];
+      .where(and(eq(providerConnections.ownerId, getOwnerId()), inArray(providerConnections.id, connectionIds))).for("share") : [];
     for (const member of members) {
       const connection = selectedConnections.find((item) => item.id === member.connectionId);
       if (connection?.endpointPreset === "nvidia") {
@@ -469,14 +469,14 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
       // Same row lock as retention and report edits. Snapshot remains independent
       // of the source after this transaction commits, including source deletion.
       const [source] = await tx.select().from(runs)
-        .where(and(eq(runs.id, continuationContext.sourceRunId), eq(runs.ownerId, LOCAL_OWNER_ID))).for("update").limit(1);
+        .where(and(eq(runs.id, continuationContext.sourceRunId), eq(runs.ownerId, getOwnerId()))).for("update").limit(1);
       if (!source) throw new ContinuationUnavailableError();
       if (continuationSelectionFromRow(source, request.continuationSource?.compaction).context.sha256 !== continuationContext.sha256) throw new PreflightMismatchError();
     }
     if (request.preflightDecision) {
       const decision = request.preflightDecision;
       const [draft] = await tx.select().from(preflightDrafts).where(and(
-        eq(preflightDrafts.id, decision.draftId), eq(preflightDrafts.ownerId, LOCAL_OWNER_ID),
+        eq(preflightDrafts.id, decision.draftId), eq(preflightDrafts.ownerId, getOwnerId()),
       )).for("update").limit(1);
       if (!draft || draft.status !== "awaiting_input" || !draft.requestCiphertext) throw new PreflightMismatchError();
       const saved = createRunRequestSchema.parse(decryptJson<unknown>(draft.requestCiphertext, `preflight-draft:${draft.id}:request`));
@@ -502,7 +502,7 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
       .insert(runs)
       .values({
         id: runId,
-        ownerId: LOCAL_OWNER_ID,
+        ownerId: getOwnerId(),
         idempotencyKey: request.idempotencyKey,
         requestHash,
         question: "[encrypted]",
@@ -587,16 +587,16 @@ export async function enqueueSelectedMemberRerun(input: {
   const boss = await getBoss();
   return db.transaction(async (tx) => {
     await lockConversationMembership(tx);
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext(${input.idempotencyKey}))`);
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${getOwnerId()}), hashtext(${input.idempotencyKey}))`);
     if (await isPreflightIntentClosed(tx, input.idempotencyKey) || await isRunIntentDeleted(tx, input.idempotencyKey)) throw new IdempotencyConflictError();
     const [existing] = await tx.select().from(runs)
-      .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.idempotencyKey, input.idempotencyKey))).limit(1);
+      .where(and(eq(runs.ownerId, getOwnerId()), eq(runs.idempotencyKey, input.idempotencyKey))).limit(1);
     if (existing) {
       if (existing.requestHash !== requestHash) throw new IdempotencyConflictError();
       return mapRun(existing);
     }
     const [source] = await tx.select().from(runs)
-      .where(and(eq(runs.id, input.sourceRunId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+      .where(and(eq(runs.id, input.sourceRunId), eq(runs.ownerId, getOwnerId())))
       .for("update").limit(1);
     if (!source || source.status !== "completed" || source.providerMode !== "remote" ||
         !source.membersCiphertext || !source.reportCiphertext || !source.promptFingerprint || !source.riskAssessmentCiphertext) {
@@ -625,7 +625,7 @@ export async function enqueueSelectedMemberRerun(input: {
     const requiredMembers = source.reviewRounds > 0 ? members : members.filter((member) => member.id === input.memberId);
     const requiredIds = requiredMembers.flatMap((member) => member.connectionId ? [member.connectionId] : []);
     const connections = requiredIds.length > 0 ? await tx.select({ id: providerConnections.id, provider: providerConnections.provider })
-      .from(providerConnections).where(and(inArray(providerConnections.id, requiredIds), eq(providerConnections.ownerId, LOCAL_OWNER_ID))) : [];
+      .from(providerConnections).where(and(inArray(providerConnections.id, requiredIds), eq(providerConnections.ownerId, getOwnerId()))) : [];
     if (requiredMembers.some((member) => !connections.some((connection) => connection.id === member.connectionId && connection.provider === member.provider))) {
       throw new FollowUpUnavailableError("Yeniden analiz veya inceleme için gereken kayıtlı sağlayıcı bağlantısı artık kullanılamıyor.");
     }
@@ -674,7 +674,7 @@ export async function enqueueSelectedMemberRerun(input: {
     };
     const runId = randomUUID();
     const [inserted] = await tx.insert(runs).values({
-      id: runId, ownerId: LOCAL_OWNER_ID, idempotencyKey: input.idempotencyKey, requestHash,
+      id: runId, ownerId: getOwnerId(), idempotencyKey: input.idempotencyKey, requestHash,
       question: "[encrypted]", questionCiphertext: encryptText(question, `run:${runId}:question`),
       scenario: "success", providerMode: "remote", riskProfile: source.riskProfile,
       riskAssessmentCiphertext: encryptJson(currentRisk.assessment, `run:${runId}:risk-assessment`),
@@ -718,7 +718,7 @@ export async function enqueueSelectedMemberRerun(input: {
 /** Offline measurement reads report and frozen settings from the same owner-scoped row snapshot. */
 export async function findDurableRunEvaluationSnapshot(runId: string) {
   const [row] = await getDatabase().select().from(runs)
-    .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId()))).limit(1);
   if (!row) return undefined;
   return { run: mapRun(row), members: reportMembers(row), providerMode: row.providerMode, reviewRounds: row.reviewRounds, selfRevisionEnabled: row.selfRevisionEnabled };
 }
@@ -727,7 +727,7 @@ export async function findDurableRunById(runId: string): Promise<RunRecord | und
   const [row] = await getDatabase()
     .select()
     .from(runs)
-    .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+    .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId())))
     .limit(1);
   return row ? mapRun(row) : undefined;
 }
@@ -742,7 +742,7 @@ export async function listDurableRuns(
   const db = getDatabase();
   const [cursor] = beforeRunId
     ? await db.select({ id: runs.id, createdAt: sql<string>`${runs.createdAt}::text` }).from(runs)
-      .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.id, beforeRunId))).limit(1)
+      .where(and(eq(runs.ownerId, getOwnerId()), eq(runs.id, beforeRunId))).limit(1)
     : [];
   if (beforeRunId && !cursor) return undefined;
 
@@ -757,11 +757,11 @@ export async function listDurableRuns(
     createdAt: runs.createdAt,
     hasReport: sql<boolean>`${runs.reportCiphertext} is not null or ${runs.report} is not null`,
   }).from(runs).where(cursor
-    ? and(eq(runs.ownerId, LOCAL_OWNER_ID), or(
+    ? and(eq(runs.ownerId, getOwnerId()), or(
       lt(runs.createdAt, sql`${cursor.createdAt}::timestamptz`),
       and(eq(runs.createdAt, sql`${cursor.createdAt}::timestamptz`), lt(runs.id, cursor.id)),
     ))
-    : eq(runs.ownerId, LOCAL_OWNER_ID))
+    : eq(runs.ownerId, getOwnerId()))
     .orderBy(desc(runs.createdAt), desc(runs.id))
     .limit(pageSize + 1);
 
@@ -833,7 +833,7 @@ export async function executeDurableRun(
     );
     if (!lock.rows[0]?.acquired) {
       const [row] = await db.select().from(runs)
-        .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+        .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId()))).limit(1);
       return row ? mapRun(row) : undefined;
     }
     acquired = true;
@@ -859,7 +859,7 @@ async function executeDurableRunLocked(
     const [row] = await tx
       .select()
       .from(runs)
-      .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+      .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId())))
       .for("update")
       .limit(1);
     if (!row || !["queued", "running"].includes(row.status)) return undefined;
@@ -989,7 +989,7 @@ async function executeDurableRunLocked(
     const [current] = await tx
       .select()
       .from(runs)
-      .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+      .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId())))
       .for("update")
       .limit(1);
     if (!current) return undefined;
@@ -1156,7 +1156,7 @@ async function updateDurableClaimAnnotation(
     const [row] = await tx
       .select()
       .from(runs)
-      .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+      .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId())))
       .for("update")
       .limit(1);
     if (!row) return undefined;
@@ -1293,7 +1293,7 @@ async function mutateDurableClaimContext(
   const db = getDatabase();
   return db.transaction(async (tx) => {
     const [row] = await tx.select().from(runs)
-      .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+      .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId())))
       .for("update").limit(1);
     if (!row) return undefined;
     const stored = row.reportCiphertext
@@ -1367,7 +1367,7 @@ export async function cancelDurableRun(runId: string): Promise<RunRecord | undef
     const [row] = await tx
       .select()
       .from(runs)
-      .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+      .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId())))
       .for("update")
       .limit(1);
     if (!row) return undefined;

@@ -53,6 +53,8 @@ jobs:
         run: pnpm exec vitest run packages/persistence/src/migration-compatibility.test.ts
       - name: Verify offline local diagnostics warnings
         run: pnpm exec vitest run apps/web/src/lib/local-diagnostics-alerts.test.ts
+      - name: Verify offline account guards and password isolation
+        run: pnpm exec vitest run apps/web/src/lib/local-auth.test.ts packages/persistence/src/local-password.test.ts
       - name: Verify offline recovery inventory boundaries
         run: pnpm exec vitest run packages/persistence/scripts/backup-recovery-inventory.test.ts packages/persistence/scripts/backup-queue-inventory.test.ts packages/persistence/scripts/backup-queue-targets.test.ts
       - name: Verify offline local recovery and selected copy cleanup

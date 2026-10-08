@@ -1,9 +1,10 @@
+import { withLocalSession } from "../../../../lib/local-auth";
 import { findDurableRunById } from "@deliberation-ai/persistence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(
+async function sessionGET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -14,3 +15,5 @@ export async function GET(
   }
   return Response.json(run);
 }
+
+export const GET = withLocalSession(sessionGET);

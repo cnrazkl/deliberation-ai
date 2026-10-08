@@ -9,7 +9,7 @@ import { and, eq } from "drizzle-orm";
 import { encryptText, decryptText } from "./crypto";
 import { readProviderObservations, encryptProviderObservations } from "./provider-observations";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { providerConnections } from "./schema";
 
 export type ProviderConnectionSummary = {
@@ -65,7 +65,7 @@ export async function saveProviderConnection(
           .from(providerConnections)
           .where(
             and(
-              eq(providerConnections.ownerId, LOCAL_OWNER_ID),
+              eq(providerConnections.ownerId, getOwnerId()),
               eq(providerConnections.id, request.id),
             ),
           )
@@ -75,11 +75,12 @@ export async function saveProviderConnection(
           .from(providerConnections)
           .where(
             and(
-              eq(providerConnections.ownerId, LOCAL_OWNER_ID),
+              eq(providerConnections.ownerId, getOwnerId()),
               eq(providerConnections.label, request.label),
             ),
           )
           .for("update").limit(1);
+    if (request.id && !existing) throw new Error("Provider connection not found in this account.");
     const id = existing?.id ?? randomUUID();
     const localPreset = ["ollama", "vllm", "litellm"].includes(request.endpointPreset);
     if ((!existing && !localPreset && !request.apiKey) ||
@@ -88,7 +89,7 @@ export async function saveProviderConnection(
       throw new ProviderConnectionSecretRequiredError();
     }
     const values = {
-      ownerId: LOCAL_OWNER_ID,
+      ownerId: getOwnerId(),
       provider: request.provider,
       label: request.label,
       defaultModel: request.defaultModel,
@@ -120,7 +121,7 @@ export async function listProviderConnections(): Promise<ProviderConnectionSumma
   const rows = await getDatabase()
     .select()
     .from(providerConnections)
-    .where(eq(providerConnections.ownerId, LOCAL_OWNER_ID));
+    .where(eq(providerConnections.ownerId, getOwnerId()));
   return rows.map(summary);
 }
 
@@ -134,7 +135,7 @@ export async function loadProviderConnectionSecret(
     .select()
     .from(providerConnections)
     .where(
-      and(eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, connectionId)),
+      and(eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, connectionId)),
     )
     .limit(1);
   if (!row) return undefined;
@@ -161,7 +162,7 @@ export async function saveProviderConnectionCatalogCheck(
   const snapshot = modelCatalogCheckSchema.parse({ ...check, checkedAt: new Date().toISOString() });
   return getDatabase().transaction(async (tx) => {
     const [row] = await tx.select().from(providerConnections).where(and(
-      eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, connectionId),
+      eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, connectionId),
       eq(providerConnections.revision, expectedRevision),
     )).for("update").limit(1);
     if (!row) return undefined;
@@ -179,7 +180,7 @@ export async function saveProviderConnectionCatalogCheck(
 export async function deleteProviderConnection(connectionId: string): Promise<boolean> {
   return getDatabase().transaction(async (tx) => {
     const [row] = await tx.select().from(providerConnections).where(and(
-      eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, connectionId),
+      eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, connectionId),
     )).for("update").limit(1);
     if (!row) return false;
     if (readProviderObservations(row).generationChecks.some((check) => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt)) {

@@ -11,7 +11,7 @@ import { evidenceCandidateProvenanceSchema } from "@deliberation-ai/contracts";
 import { and, asc, count, eq } from "drizzle-orm";
 import { decryptJson, decryptText, encryptText } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { claims, evidenceSources, knowledgeSources, runs } from "./schema";
 import { authorizeKnowledgeScopeInSnapshot } from "./knowledge-scope";
 import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
@@ -26,7 +26,7 @@ export async function candidateSourceAvailable(tx: ConversationTransaction, row:
   if (!quote) return true; // Remote content/freshness is an explicit human assessment.
   if (!await authorizeKnowledgeScopeInSnapshot(tx, quote.source.scope)) return false;
   const [head] = await tx.select({ version: knowledgeSources.activeVersionId }).from(knowledgeSources)
-    .where(and(eq(knowledgeSources.id, quote.source.sourceId), eq(knowledgeSources.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(knowledgeSources.id, quote.source.sourceId), eq(knowledgeSources.ownerId, getOwnerId()))).limit(1);
   return head?.version === quote.source.versionId;
 }
 
@@ -93,13 +93,13 @@ export async function listEvidenceSources(runId: string): Promise<EvidenceSource
   const [ownedRun] = await getDatabase()
     .select({ id: runs.id })
     .from(runs)
-    .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+    .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId())))
     .limit(1);
   if (!ownedRun) return undefined;
   const rows = await getDatabase()
     .select()
     .from(evidenceSources)
-    .where(and(eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.runId, runId)))
+    .where(and(eq(evidenceSources.ownerId, getOwnerId()), eq(evidenceSources.runId, runId)))
     .orderBy(asc(evidenceSources.createdAt));
   return rows.map(mapEvidenceSource);
 }
@@ -115,7 +115,7 @@ export async function saveEvidenceSource(
       .innerJoin(runs, eq(claims.runId, runs.id))
       .where(
         and(
-          eq(runs.ownerId, LOCAL_OWNER_ID),
+          eq(runs.ownerId, getOwnerId()),
           eq(claims.runId, request.runId),
           eq(claims.reportClaimId, request.claimId),
         ),
@@ -135,7 +135,7 @@ export async function saveEvidenceSource(
       .insert(evidenceSources)
       .values({
         id,
-        ownerId: LOCAL_OWNER_ID,
+        ownerId: getOwnerId(),
         runId: request.runId,
         claimId: claim.id,
         reportClaimId: request.claimId,
@@ -173,7 +173,7 @@ export async function updateEvidenceSourceReview(
       })
       .from(evidenceSources)
       .innerJoin(claims, eq(evidenceSources.claimId, claims.id))
-      .where(and(eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.id, id)))
+      .where(and(eq(evidenceSources.ownerId, getOwnerId()), eq(evidenceSources.id, id)))
       .limit(1)
       .for("update");
     if (!source) return undefined;
@@ -207,7 +207,7 @@ export async function updateEvidenceSourceReview(
         freshnessReviewedAt,
         updatedAt: new Date(),
       })
-      .where(and(eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.id, id)))
+      .where(and(eq(evidenceSources.ownerId, getOwnerId()), eq(evidenceSources.id, id)))
       .returning();
     return updated ? mapEvidenceSource(updated) : undefined;
   });
@@ -233,17 +233,17 @@ export async function deleteEvidenceSource(id: string): Promise<boolean> {
       })
       .from(evidenceSources)
       .innerJoin(claims, eq(evidenceSources.claimId, claims.id))
-      .where(and(eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.id, id)))
+      .where(and(eq(evidenceSources.ownerId, getOwnerId()), eq(evidenceSources.id, id)))
       .limit(1);
     if (!source) return false;
     if (source.candidateProvenanceCiphertext) throw new EvidenceSourceInUseError("Adayın özgün kaydı korunur; reddetme kararını kullanın. İçerik, çalışma için incelenmiş silme işlemiyle kaldırılabilir.");
-    const linked = await tx.select().from(evidenceSources).where(and(eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.claimId, source.claimId))).limit(MAX_EVIDENCE_SOURCES_PER_CLAIM);
+    const linked = await tx.select().from(evidenceSources).where(and(eq(evidenceSources.ownerId, getOwnerId()), eq(evidenceSources.claimId, source.claimId))).limit(MAX_EVIDENCE_SOURCES_PER_CLAIM);
     if (linked.some((row) => mapEvidenceSource(row).candidateProvenance?.relatedSourceId === id)) throw new EvidenceSourceInUseError("Kaynak bir adayın önceki kaydıdır; özgün bağlantı korunur.");
     const requiredByClaim = sourceSupportsClaimState(source.relation, source.evidenceState);
     if (requiredByClaim) throw new EvidenceSourceInUseError();
     const deleted = await tx
       .delete(evidenceSources)
-      .where(and(eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.id, id)))
+      .where(and(eq(evidenceSources.ownerId, getOwnerId()), eq(evidenceSources.id, id)))
       .returning({ id: evidenceSources.id });
     return deleted.length > 0;
   });

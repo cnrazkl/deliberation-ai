@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useState, type FormEvent } from "react";
 
 type Connection = { id: string; label: string; endpoint: string };
@@ -44,8 +45,8 @@ export function LocalToolsPanel({
 
   async function refresh(): Promise<void> {
     const [connectionsResponse, resultsResponse] = await Promise.all([
-      fetch("/api/mcp-connections", { cache: "no-store" }),
-      fetch("/api/mcp-tool-results", { cache: "no-store" }),
+      ownerFetch("/api/mcp-connections", { cache: "no-store" }),
+      ownerFetch("/api/mcp-tool-results", { cache: "no-store" }),
     ]);
     if (connectionsResponse.ok) {
       const body = (await connectionsResponse.json()) as { connections: Connection[] };
@@ -62,8 +63,8 @@ export function LocalToolsPanel({
 
   useEffect(() => {
     void Promise.all([
-      fetch("/api/mcp-connections", { cache: "no-store" }),
-      fetch("/api/mcp-tool-results", { cache: "no-store" }),
+      ownerFetch("/api/mcp-connections", { cache: "no-store" }),
+      ownerFetch("/api/mcp-tool-results", { cache: "no-store" }),
     ]).then(async ([connectionsResponse, resultsResponse]) => {
       if (connectionsResponse.ok) {
         const body = (await connectionsResponse.json()) as { connections: Connection[] };
@@ -82,7 +83,7 @@ export function LocalToolsPanel({
     setPending(true);
     setError(undefined);
     try {
-      const response = await fetch("/api/mcp-connections", {
+      const response = await ownerFetch("/api/mcp-connections", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ label, endpoint }),
@@ -100,7 +101,7 @@ export function LocalToolsPanel({
     setPending(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/mcp-connections/${connectionId}/tools`, { cache: "no-store" });
+      const response = await ownerFetch(`/api/mcp-connections/${connectionId}/tools`, { cache: "no-store" });
       if (!response.ok) throw new Error(await responseError(response, "MCP araçları alınamadı."));
       const body = (await response.json()) as { tools: Tool[] };
       setTools(body.tools);
@@ -117,7 +118,7 @@ export function LocalToolsPanel({
     try {
       const args = JSON.parse(argumentsJson) as unknown;
       if (!args || typeof args !== "object" || Array.isArray(args)) throw new Error("Araç girdisi bir JSON nesnesi olmalı.");
-      const response = await fetch("/api/mcp-tool-results", {
+      const response = await ownerFetch("/api/mcp-tool-results", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ connectionId, toolName, arguments: args }),
@@ -133,7 +134,7 @@ export function LocalToolsPanel({
     setPending(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/mcp-connections?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const response = await ownerFetch(`/api/mcp-connections?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!response.ok) throw new Error(await responseError(response, "MCP bağlantısı kaldırılamadı."));
       const body = await response.json() as { deleted: boolean };
       if (!body.deleted) throw new Error("MCP bağlantısı bulunamadı.");
@@ -154,7 +155,7 @@ export function LocalToolsPanel({
     setPending(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/mcp-tool-results?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const response = await ownerFetch(`/api/mcp-tool-results?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!response.ok) throw new Error(await responseError(response, "MCP sonucu silinemedi."));
       const body = await response.json() as { deleted: boolean };
       if (!body.deleted) throw new Error("MCP sonucu bulunamadı.");

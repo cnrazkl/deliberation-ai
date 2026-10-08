@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CouncilMemberConfig, ExecutionLimits, RiskProfile, ReviewRoundCount, ScheduleCadence } from "@deliberation-ai/contracts";
 import { LocalScheduleDeletionPanel } from "./local-schedule-deletion-panel";
@@ -51,14 +52,14 @@ export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevis
   const limitsError = executionLimitError(executionLimits, members.length * (1 + reviewRounds));
 
   async function refresh(): Promise<void> {
-    const response = await fetch("/api/local-schedules", { cache: "no-store" });
+    const response = await ownerFetch("/api/local-schedules", { cache: "no-store" });
     if (!response.ok) throw new Error("Zamanlamalar yüklenemedi.");
     const body = (await response.json()) as { schedules: Schedule[] };
     setSchedules(body.schedules);
   }
 
   useEffect(() => {
-    void fetch("/api/local-schedules", { cache: "no-store" }).then(async (response) => {
+    void ownerFetch("/api/local-schedules", { cache: "no-store" }).then(async (response) => {
       if (!response.ok) throw new Error("Zamanlamalar yüklenemedi.");
       const body = (await response.json()) as { schedules: Schedule[] };
       setSchedules(body.schedules);
@@ -84,7 +85,7 @@ export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevis
       };
       const serialized = JSON.stringify(payload);
       if (creationIntent.current?.body !== serialized) creationIntent.current = { id: crypto.randomUUID(), body: serialized };
-      const response = await fetch("/api/local-schedules", {
+      const response = await ownerFetch("/api/local-schedules", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...payload, requestId: creationIntent.current!.id }),
@@ -103,7 +104,7 @@ export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevis
     setPending(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/local-schedules?id=${encodeURIComponent(id)}`, {
+      const response = await ownerFetch(`/api/local-schedules?id=${encodeURIComponent(id)}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status }),

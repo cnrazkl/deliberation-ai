@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { createEvidenceCandidateSchema, evidenceSourceIdSchema } from "@deliberation-ai/contracts";
 import { createEvidenceCandidate, listEvidenceCandidates, EvidenceCandidateConflictError, EvidenceSourceLimitError } from "@deliberation-ai/persistence";
 import { KnowledgeAccessError } from "@deliberation-ai/application";
@@ -6,7 +7,7 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const response = (value: unknown, status = 200) => Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
-export async function GET(request: Request) {
+async function sessionGET(request: Request) {
   const parsed = evidenceSourceIdSchema.safeParse(new URL(request.url).searchParams.get("runId"));
   if (!parsed.success) return response({ error: "Çalışma kimliği geçersiz." }, 400);
   const candidates = await listEvidenceCandidates(parsed.data);
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
   });
   return candidates ? response({ candidates }) : response({ error: "Çalışma bulunamadı." }, 404);
 }
-export async function POST(request: Request) {
+async function sessionPOST(request: Request) {
   const rejected = rejectCrossOriginMutation(request); if (rejected) return rejected;
   try {
     if (!request.body) return response({ error: "İstek gerekli." }, 400);
@@ -32,3 +33,6 @@ export async function POST(request: Request) {
     return response({ error: "Aday kaydedilemedi; gönderiyi ve kaynak iznini kontrol edin." }, 422);
   }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);

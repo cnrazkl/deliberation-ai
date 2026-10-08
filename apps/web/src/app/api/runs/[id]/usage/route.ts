@@ -1,9 +1,10 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { getRunProviderUsage } from "@deliberation-ai/persistence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(
+async function sessionGET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -15,3 +16,5 @@ export async function GET(
   if (!usage) return Response.json({ error: "Çalışma bulunamadı." }, { status: 404 });
   return Response.json(usage, { headers: { "Cache-Control": "no-store" } });
 }
+
+export const GET = withLocalSession(sessionGET);

@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { CreatePrivateBranch, AppendPrivateDraft, PrivateBranchSeed } from "@deliberation-ai/contracts";
 import type { PrivateBranchSummary, PrivateBranchView } from "@deliberation-ai/persistence";
@@ -8,7 +9,7 @@ import { ConversationPrivateUsagePanel } from "./conversation-private-usage-pane
 import { readPrivateOutputDefault } from "../../lib/private-output-default";
 
 async function jsonRequest<T>(url: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...options, cache: "no-store" });
+  const response = await ownerFetch(url, { ...options, cache: "no-store" });
   const body = await response.json() as T & { error?: string };
   if (!response.ok) throw Object.assign(new Error(body.error ?? "Özel dal işlemi tamamlanamadı."), { status: response.status });
   return body;

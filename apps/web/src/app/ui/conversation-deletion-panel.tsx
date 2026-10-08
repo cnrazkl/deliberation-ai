@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { ConversationDeletionBlock, ConversationDeletionPreview } from "@deliberation-ai/persistence";
 import { RunDeletionPanel } from "./run-deletion-panel";
@@ -35,7 +36,7 @@ export function ConversationDeletionPanel({ conversationId, onDeleted, onDeleted
   useEffect(() => {
     alive.current = true;
     const controller = new AbortController();
-    void fetch(`/api/conversations/${conversationId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
+    void ownerFetch(`/api/conversations/${conversationId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
       const value = await response.json() as ConversationDeletionPreview & { error?: string };
       if (!response.ok) throw new Error(value.error ?? "Silme önizlemesi yüklenemedi.");
       if (!controller.signal.aborted) { setPreview(value); setError(null); }
@@ -58,7 +59,7 @@ export function ConversationDeletionPanel({ conversationId, onDeleted, onDeleted
     if (!preview?.eligible || !preview.fingerprint || !reviewed || contentReview || submitting.current) return;
     submitting.current = true; setDeleting(true); setError(null);
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/deletion`, { method: "POST", cache: "no-store",
+      const response = await ownerFetch(`/api/conversations/${conversationId}/deletion`, { method: "POST", cache: "no-store",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId, fingerprint: preview.fingerprint, confirmMetadataDeletion: true }) });
       const value = await response.json() as { error?: string };
       if (!response.ok) throw new Error(value.error ?? "Konuşma kaydı silinemedi.");

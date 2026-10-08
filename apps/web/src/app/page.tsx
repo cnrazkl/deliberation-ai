@@ -1,3 +1,3 @@
-import { CouncilWorkbench } from "./ui/council-workbench";
+import { AuthShell } from "./ui/auth-shell";
 
-export default function Home() { return <CouncilWorkbench />; }
+export default function Home() { return <AuthShell />; }

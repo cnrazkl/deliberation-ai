@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { PrivateBranchDeletionPreview, PrivateBranchDeletionBlock } from "@deliberation-ai/persistence";
 const reasons: Record<PrivateBranchDeletionBlock, string> = {
@@ -18,7 +19,7 @@ export function PrivateBranchDeletionPanel({ branchId, onDeleted, onCancel, onBu
   const alive = useRef(true); const submitting = useRef(false);
   useEffect(() => {
     alive.current = true; const controller = new AbortController();
-    void fetch(`/api/private-branches/${branchId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
+    void ownerFetch(`/api/private-branches/${branchId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
       const value = await response.json(); if (!response.ok) throw new Error(value.error ?? "Silme önizlemesi yüklenemedi.");
       if (!controller.signal.aborted) { setPreview(value); setError(null); }
     }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Önizleme yüklenemedi."); });
@@ -28,7 +29,7 @@ export function PrivateBranchDeletionPanel({ branchId, onDeleted, onCancel, onBu
     if (!reviewed || !preview?.eligible || !preview.fingerprint || submitting.current) return;
     submitting.current = true; setBusy(true); onBusy(true); setError(null);
     try {
-      const response = await fetch(`/api/private-branches/${branchId}/deletion`, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" },
+      const response = await ownerFetch(`/api/private-branches/${branchId}/deletion`, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ branchId, fingerprint: preview.fingerprint, confirmContentDeletion: true, acknowledgeRetainedMetadata: true }) });
       const value = await response.json();
       if (!response.ok) {

@@ -1,5 +1,5 @@
 import { getPool } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { readOperationalDiagnostics } from "./operational-diagnostics";
 
 const HEARTBEAT_FRESH_SECONDS = 45;
@@ -95,7 +95,7 @@ export async function readLocalDiagnostics(): Promise<LocalDiagnostics> {
        WHERE r.owner_id = $1 AND (po.status = 'outcome_unknown' OR
          (po.status = 'submitted' AND r.status IN ('completed','partially_completed','failed','cancelled')))) AS unresolved_provider_attempts,
       (SELECT count(*)::int FROM public.local_schedules WHERE owner_id = $1 AND status = 'active') AS active_schedules`,
-    [LOCAL_OWNER_ID],
+    [getOwnerId()],
   );
   const row = result.rows[0];
   if (!row) throw new Error("Local diagnostics could not be read.");

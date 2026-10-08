@@ -24,6 +24,27 @@ export const runStatus = pgEnum("run_status", [
   "cancelled",
 ]);
 
+export const localUsers = pgTable("local_users", {
+  id: uuid("id").primaryKey().defaultRandom(), ownerId: text("owner_id").notNull(),
+  username: text("username").notNull(), displayName: text("display_name").notNull(),
+  role: text("role").notNull().default("user"), passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [uniqueIndex("local_users_username_uq").on(table.username), uniqueIndex("local_users_owner_uq").on(table.ownerId),
+  uniqueIndex("local_users_single_root_uq").on(table.role).where(sql`${table.role} = 'root'`),
+  check("local_users_role_valid", sql`${table.role} in ('root','user')`),
+  check("local_users_root_owner_valid", sql`(${table.role} = 'root' and ${table.ownerId} = 'local-owner' and ${table.username} = 'root') or (${table.role} = 'user' and ${table.ownerId} <> 'local-owner' and ${table.username} <> 'root')`),
+]);
+export const localSessions = pgTable("local_sessions", {
+  tokenHash: text("token_hash").primaryKey(), userId: uuid("user_id").notNull().references(() => localUsers.id, { onDelete: "cascade" }),
+  scopeUserId: uuid("scope_user_id").notNull().references(() => localUsers.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [index("local_sessions_user_idx").on(table.userId), index("local_sessions_expiry_idx").on(table.expiresAt)]);
+export const localLoginAttempts = pgTable("local_login_attempts", {
+  identityHash: text("identity_hash").primaryKey(), attempts: integer("attempts").notNull(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull(),
+});
+
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerId: text("owner_id").notNull(),

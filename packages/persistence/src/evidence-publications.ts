@@ -7,7 +7,7 @@ import { validateKnowledgeOriginal, validateKnowledgeExtraction } from "@deliber
 import { extractKnowledgeFile, knowledgeDigest } from "@deliberation-ai/retrieval";
 import { getDatabase } from "./database";
 import { decryptJson, encryptJson } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { evidencePublications, evidenceSources, knowledgeCollections, knowledgeSources, knowledgeSourceVersions } from "./schema";
 import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
 import { candidateSourceAvailable, mapEvidenceSource } from "./evidence-sources";
@@ -44,7 +44,7 @@ async function lock(tx: ConversationTransaction) {
   await lockConversationMembership(tx);
 }
 async function preview(tx: ConversationTransaction, input: EvidencePublicationPreviewRequest) {
-  const [row] = await tx.select().from(evidenceSources).where(and(eq(evidenceSources.id, input.candidateId), eq(evidenceSources.ownerId, LOCAL_OWNER_ID))).limit(1);
+  const [row] = await tx.select().from(evidenceSources).where(and(eq(evidenceSources.id, input.candidateId), eq(evidenceSources.ownerId, getOwnerId()))).limit(1);
   if (!row) throw new KnowledgeAccessError();
   const source = mapEvidenceSource(row);
   if (!source.candidateProvenance || !source.excerpt || source.reviewStatus !== "verified" || source.freshnessStatus !== "current" || !source.freshnessReviewedAt
@@ -70,14 +70,14 @@ export async function commitEvidencePublication(input: EvidencePublicationCommit
   return getDatabase().transaction(async (tx) => {
     // Same ordering as selected-file intake; original and receipt commit atomically.
     await tx.execute(sql`set local lock_timeout = '5s'`);
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext('knowledge-intake-v1'))`);
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${getOwnerId()}), hashtext('knowledge-intake-v1'))`);
     await lock(tx);
     const [existing] = await tx.select().from(evidencePublications).where(eq(evidencePublications.id, request.requestId)).limit(1);
     if (existing) {
-      if (existing.ownerId !== LOCAL_OWNER_ID || existing.requestHash !== requestHash) throw new EvidencePublicationConflictError();
+      if (existing.ownerId !== getOwnerId() || existing.requestHash !== requestHash) throw new EvidencePublicationConflictError();
       return decodeEvidencePublication(existing); // Historical acknowledgement, no fresh source access.
     }
-    const [total] = await tx.select({ value: count() }).from(evidencePublications).where(eq(evidencePublications.ownerId, LOCAL_OWNER_ID));
+    const [total] = await tx.select({ value: count() }).from(evidencePublications).where(eq(evidencePublications.ownerId, getOwnerId()));
     if (Number(total?.value ?? 0) >= 500) throw new KnowledgeCapacityError();
     const reviewed = await preview(tx, request);
     if (reviewed.fingerprint !== request.fingerprint) throw new EvidencePublicationConflictError();
@@ -85,14 +85,14 @@ export async function commitEvidencePublication(input: EvidencePublicationCommit
     const dedupHash = originalDestinationHash(request.candidateId, reviewed.candidate.provenance!, reviewed.candidate.excerpt!, request.destination);
     let sourceId: string | null = null, versionId: string | null = null;
     if (request.destination.kind === "local") {
-      const [prior] = await tx.select().from(evidencePublications).where(and(eq(evidencePublications.ownerId, LOCAL_OWNER_ID), eq(evidencePublications.dedupHash, dedupHash))).orderBy(asc(evidencePublications.createdAt)).limit(1);
+      const [prior] = await tx.select().from(evidencePublications).where(and(eq(evidencePublications.ownerId, getOwnerId()), eq(evidencePublications.dedupHash, dedupHash))).orderBy(asc(evidencePublications.createdAt)).limit(1);
       if (prior) {
         ({ sourceId, versionId } = decodeEvidencePublication(prior));
-        const [head] = await tx.select().from(knowledgeSources).where(and(eq(knowledgeSources.id, sourceId!), eq(knowledgeSources.ownerId, LOCAL_OWNER_ID), eq(knowledgeSources.collectionId, request.destination.scope.collectionId))).limit(1);
+        const [head] = await tx.select().from(knowledgeSources).where(and(eq(knowledgeSources.id, sourceId!), eq(knowledgeSources.ownerId, getOwnerId()), eq(knowledgeSources.collectionId, request.destination.scope.collectionId))).limit(1);
         if (head?.activeVersionId !== versionId) throw new EvidencePublicationConflictError();
       }
       else {
-        const [inventory] = await tx.select({ total: count(), bytes: sql<string>`coalesce(sum(${knowledgeSourceVersions.originalBytes}), 0)::text` }).from(knowledgeSourceVersions).where(eq(knowledgeSourceVersions.ownerId, LOCAL_OWNER_ID));
+        const [inventory] = await tx.select({ total: count(), bytes: sql<string>`coalesce(sum(${knowledgeSourceVersions.originalBytes}), 0)::text` }).from(knowledgeSourceVersions).where(eq(knowledgeSourceVersions.ownerId, getOwnerId()));
         const bytes = Buffer.from(reviewed.candidate.excerpt!, "utf8");
         if (Number(inventory!.total) >= KNOWLEDGE_STORAGE_LIMITS.versions || Number(inventory!.bytes) + bytes.length > KNOWLEDGE_STORAGE_LIMITS.originalBytes) throw new KnowledgeCapacityError();
         sourceId = randomUUID(); versionId = randomUUID();
@@ -101,36 +101,36 @@ export async function commitEvidencePublication(input: EvidencePublicationCommit
         // No slicing, normalization or secondary model output becomes the source.
         if (parsed.status !== "complete" || parsed.text !== reviewed.candidate.excerpt) throw new EvidencePublicationConflictError();
         const originalHash = knowledgeDigest(bytes), textHash = knowledgeDigest(parsed.text);
-        const identity = { ownerId: LOCAL_OWNER_ID, collectionId: request.destination.scope.collectionId, sourceId, versionId };
+        const identity = { ownerId: getOwnerId(), collectionId: request.destination.scope.collectionId, sourceId, versionId };
         const original = { ...identity, name: file.name, mediaType: file.mediaType, originalHash, dataBase64: bytes.toString("base64") };
         const extracted = { ...identity, name: file.name, mediaType: file.mediaType, originalHash, ...parsed, textHash, deadlineMs: 10000,
           pages: parsed.pages.map((page) => ({ ...page, textHash: knowledgeDigest(parsed.text.slice(page.start, page.end)) })) };
         const metadata = { id: versionId, ...identity, originalHash, parserVersion: parsed.parserVersion, status: parsed.status, originalBytes: bytes.length, textBytes: bytes.length };
         validateKnowledgeOriginal(original, metadata); validateKnowledgeExtraction(extracted, metadata);
-        await tx.insert(knowledgeSources).values({ id: sourceId, ownerId: LOCAL_OWNER_ID, collectionId: identity.collectionId, activeVersionId: versionId });
-        await tx.insert(knowledgeSourceVersions).values({ id: versionId, sourceId, ownerId: LOCAL_OWNER_ID, originalHash, parserVersion: parsed.parserVersion, status: parsed.status,
+        await tx.insert(knowledgeSources).values({ id: sourceId, ownerId: getOwnerId(), collectionId: identity.collectionId, activeVersionId: versionId });
+        await tx.insert(knowledgeSourceVersions).values({ id: versionId, sourceId, ownerId: getOwnerId(), originalHash, parserVersion: parsed.parserVersion, status: parsed.status,
           originalBytes: bytes.length, textBytes: bytes.length, originalCiphertext: encryptJson(original, `knowledge-version:${versionId}:original`), extractionCiphertext: encryptJson(extracted, `knowledge-version:${versionId}:extraction`) });
       }
-      const [stored] = await tx.select().from(knowledgeSourceVersions).where(and(eq(knowledgeSourceVersions.id, versionId!), eq(knowledgeSourceVersions.sourceId, sourceId!), eq(knowledgeSourceVersions.ownerId, LOCAL_OWNER_ID))).limit(1);
+      const [stored] = await tx.select().from(knowledgeSourceVersions).where(and(eq(knowledgeSourceVersions.id, versionId!), eq(knowledgeSourceVersions.sourceId, sourceId!), eq(knowledgeSourceVersions.ownerId, getOwnerId()))).limit(1);
       const extracted = stored && decryptJson(stored.extractionCiphertext, `knowledge-version:${versionId}:extraction`) as { text?: unknown } | undefined;
       if (extracted?.text !== reviewed.candidate.excerpt) throw new EvidencePublicationConflictError();
     }
-    const body = evidencePublicationBodySchema.parse({ version: "evidence-publication-v1", id: request.requestId, ownerId: LOCAL_OWNER_ID, requestHash,
+    const body = evidencePublicationBodySchema.parse({ version: "evidence-publication-v1", id: request.requestId, ownerId: getOwnerId(), requestHash,
       fingerprint: request.fingerprint, candidate: reviewed.candidate, destination: reviewed.destination, destinationTitle: reviewed.destinationTitle,
       createdAt: new Date().toISOString(), sourceId, versionId });
-    const [saved] = await tx.insert(evidencePublications).values({ id: body.id, ownerId: LOCAL_OWNER_ID, runId: body.candidate.runId, candidateId: body.candidate.id, requestHash, dedupHash,
+    const [saved] = await tx.insert(evidencePublications).values({ id: body.id, ownerId: getOwnerId(), runId: body.candidate.runId, candidateId: body.candidate.id, requestHash, dedupHash,
       bodyCiphertext: encryptJson(body, `evidence-publication:${body.id}:body`), status: request.destination.kind === "local" ? "local_saved" : "awaiting_manual_addition" }).returning();
     return decodeEvidencePublication(saved!);
   });
 }
 export async function listEvidencePublications(runId: string) {
-  const rows = await getDatabase().select().from(evidencePublications).where(and(eq(evidencePublications.ownerId, LOCAL_OWNER_ID), eq(evidencePublications.runId, runId))).orderBy(asc(evidencePublications.createdAt)).limit(501);
+  const rows = await getDatabase().select().from(evidencePublications).where(and(eq(evidencePublications.ownerId, getOwnerId()), eq(evidencePublications.runId, runId))).orderBy(asc(evidencePublications.createdAt)).limit(501);
   if (rows.length > 500) throw new KnowledgeCapacityError(); return rows.map(decodeEvidencePublication);
 }
 export async function acknowledgeManualEvidencePublication(id: string) {
   return getDatabase().transaction(async (tx) => {
     await lock(tx);
-    const [row] = await tx.select().from(evidencePublications).where(and(eq(evidencePublications.id, id), eq(evidencePublications.ownerId, LOCAL_OWNER_ID))).limit(1);
+    const [row] = await tx.select().from(evidencePublications).where(and(eq(evidencePublications.id, id), eq(evidencePublications.ownerId, getOwnerId()))).limit(1);
     if (!row) throw new KnowledgeAccessError();
     if (decodeEvidencePublication(row).destination.kind !== "manual") throw new EvidencePublicationConflictError();
     if (row.status === "manual_acknowledged") return decodeEvidencePublication(row);

@@ -5,7 +5,7 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { decryptJson, encryptJson } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { councilTemplates } from "./schema";
 import { ConversationIntegrityError, type ConversationTransaction } from "./conversation-membership";
 
@@ -13,14 +13,14 @@ export class CouncilTemplateConflictError extends Error {}
 export class CouncilTemplateDeletionBlockedError extends Error {}
 export class CouncilTemplateDeletionStaleError extends Error {}
 type Row = typeof councilTemplates.$inferSelect;
-const owned = (id: string) => and(eq(councilTemplates.ownerId, LOCAL_OWNER_ID), eq(councilTemplates.id, id));
+const owned = (id: string) => and(eq(councilTemplates.ownerId, getOwnerId()), eq(councilTemplates.id, id));
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const contentHash = (value: Pick<SaveCouncilTemplateRequest, "name" | "description" | "members">) => hash({ name: value.name, description: value.description, members: value.members });
 
 async function lockWrites(tx: ConversationTransaction) {
   await tx.execute(sql`set local lock_timeout='5s'`);
   await tx.execute(sql`set local statement_timeout='10s'`);
-  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCAL_OWNER_ID}), hashtext('council-template-writes-v1'))`);
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${getOwnerId()}), hashtext('council-template-writes-v1'))`);
   await tx.execute(sql`lock table council_templates in share row exclusive mode`);
 }
 export type CouncilTemplate = { id: string; name: string; description: string; members: CouncilMemberConfig[];
@@ -46,7 +46,7 @@ function mapTemplate(row: Row): CouncilTemplate {
 }
 export async function listCouncilTemplates(): Promise<CouncilTemplate[]> {
   return (await getDatabase().select().from(councilTemplates)
-    .where(and(eq(councilTemplates.ownerId, LOCAL_OWNER_ID), isNull(councilTemplates.deletedAt), isNull(councilTemplates.deletionReceiptCiphertext)))
+    .where(and(eq(councilTemplates.ownerId, getOwnerId()), isNull(councilTemplates.deletedAt), isNull(councilTemplates.deletionReceiptCiphertext)))
     .orderBy(asc(councilTemplates.name))).map(mapTemplate);
 }
 export async function saveCouncilTemplate(input: SaveCouncilTemplateRequest): Promise<CouncilTemplate> {
@@ -54,7 +54,7 @@ export async function saveCouncilTemplate(input: SaveCouncilTemplateRequest): Pr
   return getDatabase().transaction(async (tx) => {
     await lockWrites(tx);
     const [existing] = await tx.select().from(councilTemplates).where(request.id ? owned(request.id) :
-      and(eq(councilTemplates.ownerId, LOCAL_OWNER_ID), eq(councilTemplates.creationRequestId, request.requestId!))).limit(1);
+      and(eq(councilTemplates.ownerId, getOwnerId()), eq(councilTemplates.creationRequestId, request.requestId!))).limit(1);
     if (existing) {
       const saved = mapTemplate(existing);
       if (!request.id) {
@@ -63,10 +63,10 @@ export async function saveCouncilTemplate(input: SaveCouncilTemplateRequest): Pr
       }
     } else if (request.id) throw new CouncilTemplateConflictError();
     const [sameName] = await tx.select({ id: councilTemplates.id }).from(councilTemplates)
-      .where(and(eq(councilTemplates.ownerId, LOCAL_OWNER_ID), eq(councilTemplates.name, request.name), isNull(councilTemplates.deletedAt))).limit(1);
+      .where(and(eq(councilTemplates.ownerId, getOwnerId()), eq(councilTemplates.name, request.name), isNull(councilTemplates.deletedAt))).limit(1);
     if (sameName && sameName.id !== existing?.id) throw new CouncilTemplateConflictError();
     const id = existing?.id ?? randomUUID();
-    const values = { ownerId: LOCAL_OWNER_ID, name: request.name, description: request.description,
+    const values = { ownerId: getOwnerId(), name: request.name, description: request.description,
       membersCiphertext: encryptJson(request.members, `council-template:${id}:members`), memberCount: request.members.length, updatedAt: new Date() };
     const [saved] = existing ? await tx.update(councilTemplates).set(values).where(owned(id)).returning() :
       await tx.insert(councilTemplates).values({ id, ...values, creationRequestId: request.requestId!, creationRequestHash: contentHash(request) }).returning();
@@ -110,7 +110,7 @@ async function inspect(tx: ConversationTransaction, id: string) {
   const template = mapTemplate(current.row);
   const blockedReasons = await schemaSupported(tx) ? [] : ["schema_changed"];
   const preview: CouncilTemplateDeletionPreview = { version: "council-template-deletion-v1", templateId: id, name: template.name, memberCount: template.memberCount,
-    eligible: !blockedReasons.length, blockedReasons, fingerprint: blockedReasons.length ? null : hash({ owner: LOCAL_OWNER_ID, row: current.exact }) };
+    eligible: !blockedReasons.length, blockedReasons, fingerprint: blockedReasons.length ? null : hash({ owner: getOwnerId(), row: current.exact }) };
   return { current, preview };
 }
 export function previewCouncilTemplateDeletion(id: string) {

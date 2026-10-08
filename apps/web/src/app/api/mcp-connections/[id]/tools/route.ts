@@ -1,10 +1,11 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { discoverMcpTools } from "@deliberation-ai/persistence";
 import { LocalMcpError } from "@deliberation-ai/tools";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+async function sessionGET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   try {
     const tools = await discoverMcpTools(id);
@@ -15,3 +16,5 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return Response.json({ error: "MCP araçları alınamadı." }, { status: 500 });
   }
 }
+
+export const GET = withLocalSession(sessionGET);

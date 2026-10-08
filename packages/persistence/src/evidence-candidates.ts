@@ -5,7 +5,7 @@ import { createEvidenceCandidateSchema, evidenceCandidateProvenanceSchema,
 import { KnowledgeAccessError } from "@deliberation-ai/application";
 import { getDatabase } from "./database";
 import { encryptJson, encryptText } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { claims, evidenceSources, knowledgeSources, runs } from "./schema";
 import { EvidenceSourceLimitError, listEvidenceSources, mapEvidenceSource } from "./evidence-sources";
 import { mapStoredRun } from "./run-repository";
@@ -24,14 +24,14 @@ export async function createEvidenceCandidate(input: CreateEvidenceCandidate) {
     // Serializes quota, source intake, grant revocation and reviewed run deletion.
     await lockConversationMembership(tx);
     const [runRow] = await tx.select().from(runs)
-      .where(and(eq(runs.id, request.runId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1).for("update");
+      .where(and(eq(runs.id, request.runId), eq(runs.ownerId, getOwnerId()))).limit(1).for("update");
     if (!runRow) return undefined;
     const [claimRow] = await tx.select().from(claims)
       .where(and(eq(claims.runId, request.runId), eq(claims.reportClaimId, request.claimId))).limit(1).for("update");
     if (!claimRow) return undefined;
     const [existing] = await tx.select().from(evidenceSources).where(eq(evidenceSources.id, request.requestId)).limit(1);
     if (existing) {
-      if (existing.ownerId !== LOCAL_OWNER_ID || existing.runId !== request.runId || existing.claimId !== claimRow.id) throw new EvidenceCandidateConflictError();
+      if (existing.ownerId !== getOwnerId() || existing.runId !== request.runId || existing.claimId !== claimRow.id) throw new EvidenceCandidateConflictError();
       const mapped = mapEvidenceSource(existing);
       if (mapped.candidateProvenance?.requestHash !== requestHash) throw new EvidenceCandidateConflictError();
       return mapped; // An acknowledgement replay creates no new capture or access.
@@ -40,7 +40,7 @@ export async function createEvidenceCandidate(input: CreateEvidenceCandidate) {
     if ((total?.value ?? 0) >= 10) throw new EvidenceSourceLimitError();
     if (request.relatedSourceId) {
       const [related] = await tx.select({ id: evidenceSources.id }).from(evidenceSources)
-        .where(and(eq(evidenceSources.id, request.relatedSourceId), eq(evidenceSources.ownerId, LOCAL_OWNER_ID), eq(evidenceSources.claimId, claimRow.id))).limit(1);
+        .where(and(eq(evidenceSources.id, request.relatedSourceId), eq(evidenceSources.ownerId, getOwnerId()), eq(evidenceSources.claimId, claimRow.id))).limit(1);
       if (!related) throw new EvidenceCandidateConflictError();
     }
     const run = mapStoredRun(runRow);
@@ -70,7 +70,7 @@ export async function createEvidenceCandidate(input: CreateEvidenceCandidate) {
       note = "Çalışmanın donmuş paketinden birebir alıntı; güncellik ayrıca incelenmelidir.";
     }
     const id = request.requestId;
-    const [saved] = await tx.insert(evidenceSources).values({ id, ownerId: LOCAL_OWNER_ID, runId: request.runId,
+    const [saved] = await tx.insert(evidenceSources).values({ id, ownerId: getOwnerId(), runId: request.runId,
       claimId: claimRow.id, reportClaimId: request.claimId, relation: request.relation,
       titleCiphertext: encryptText(title, `evidence-source:${id}:title`), urlCiphertext: encryptText(url, `evidence-source:${id}:url`),
       excerptCiphertext: excerpt === null ? null : encryptText(excerpt, `evidence-source:${id}:excerpt`),
@@ -94,7 +94,7 @@ export async function listEvidenceCandidates(runId: string) {
         if (!await authorizeKnowledgeScopeInSnapshot(tx, quote.source.scope)) availability = "inaccessible";
         else {
           const [source] = await tx.select({ version: knowledgeSources.activeVersionId }).from(knowledgeSources)
-            .where(and(eq(knowledgeSources.id, quote.source.sourceId), eq(knowledgeSources.ownerId, LOCAL_OWNER_ID))).limit(1);
+            .where(and(eq(knowledgeSources.id, quote.source.sourceId), eq(knowledgeSources.ownerId, getOwnerId()))).limit(1);
           availability = !source ? "inaccessible" : source.version === quote.source.versionId ? "same-version" : "changed";
         }
       }

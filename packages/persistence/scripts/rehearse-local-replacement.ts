@@ -11,6 +11,7 @@ import { encryptJson } from "../src/crypto";
 import { auditRestoredEncryption } from "./backup-encryption-audit";
 import { snapshotRecoveryDatabase, requireMatchingRecovery, changedRecoveryTables, inspectRecoveryWork, requireQuiescentRecovery, parkRestoredQueue, type RecoverySnapshot } from "./recovery-integrity";
 import { interactivePortOccupied, localEnvironment, startManagedRuntime, startSessionRuntime, stopManagedRuntime, type RuntimeRecord } from "./local-runtime";
+import { auditRestoredAccounts } from "./backup-account-audit";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const localRoot = join(process.env.LOCALAPPDATA ?? "", "DeliberationAI"), recoveryRoot = join(localRoot, "recovery");
@@ -100,7 +101,7 @@ try {
     await restored!.connect();
     phase = "verify-migration-history";
     assertMigrationTimeline((await restored!.query<{ created_at: string }>("SELECT created_at FROM drizzle.__drizzle_migrations ORDER BY created_at")).rows.map((row) => Number(row.created_at)), journal.entries.map((entry) => entry.when));
-    phase = "verify-encrypted-fields"; await auditRestoredEncryption(restored!);
+    phase = "verify-encrypted-fields"; await auditRestoredEncryption(restored!); await auditRestoredAccounts(restored!);
     phase = "compare-restored-records"; compare(baseline, await snapshotRecoveryDatabase(restored!));
     phase = "recheck-current-source"; compare(baseline, await snapshotRecoveryDatabase(source!));
     phase = "inspect-restored-work"; requireQuiescentRecovery(await inspectRecoveryWork(restored!));
@@ -117,15 +118,25 @@ try {
   await stamp("reviewed-queue-parking-and-operational-cutover", async () => {
     parked = await parkRestoredQueue(restored!, true);
     replacementMayHaveChanges = true;
+    // This host-admin probe has direct access to the already verified clone. Its
+    // short-lived root session is removed before comparing retained records.
+    const rootAccount = (await restored!.query<{ id: string }>("SELECT id FROM local_users WHERE role='root'")).rows[0];
+    if (!rootAccount) throw new Error("Provisioned root is required for authenticated recovery verification.");
+    const sessionToken = randomBytes(32).toString("base64url");
+    const sessionHash = createHash("sha256").update(sessionToken).digest("hex");
+    await restored!.query("INSERT INTO local_sessions(token_hash,user_id,scope_user_id,expires_at) VALUES($1,$2,$2,now()+interval '10 minutes')", [sessionHash, rootAccount.id]);
+    const accountHeaders = { Cookie: `deliberation-session=${sessionToken}`, "X-Deliberation-Owner": "local-owner", Origin: "http://127.0.0.1:3000" };
     runtime = await startManagedRuntime(checkout, { ...runtimeEnv, DELIBERATION_RECOVERY_HOLD: "false" });
     let fixture: string | undefined;
     try {
-      const response = await fetch("http://127.0.0.1:3000/api/provider-connections", { method: "POST", headers: { "Content-Type": "application/json", Origin: "http://127.0.0.1:3000" }, body: JSON.stringify({
+      const response = await fetch("http://127.0.0.1:3000/api/provider-connections", { method: "POST", headers: { ...accountHeaders, "Content-Type": "application/json" }, body: JSON.stringify({
         provider: "openai-compatible", label: `Recovery verification ${identity}`, defaultModel: "local-fixture", apiKey: "", baseUrl: "http://127.0.0.1:1/v1", endpointPreset: "ollama", reasoningProtocol: "none", structuredOutputMode: "json-object",
       }), signal: AbortSignal.timeout(10_000) });
       if (!response.ok) throw new Error(); fixture = ((await response.json()) as { id: string }).id;
     } finally {
-      if (fixture && !(await fetch(`http://127.0.0.1:3000/api/provider-connections?id=${fixture}`, { method: "DELETE", headers: { Origin: "http://127.0.0.1:3000" }, signal: AbortSignal.timeout(10_000) })).ok) throw new Error();
+      try {
+        if (fixture && !(await fetch(`http://127.0.0.1:3000/api/provider-connections?id=${fixture}`, { method: "DELETE", headers: accountHeaders, signal: AbortSignal.timeout(10_000) })).ok) throw new Error();
+      } finally { await restored!.query("DELETE FROM local_sessions WHERE token_hash=$1", [sessionHash]); }
     }
     await stopManagedRuntime(runtime!); runtime = undefined;
     requireMatchingRecovery(baseline, await snapshotRecoveryDatabase(restored!), true);

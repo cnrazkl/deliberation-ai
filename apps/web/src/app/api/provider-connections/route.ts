@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { saveProviderConnectionSchema } from "@deliberation-ai/contracts";
 import {
   deleteProviderConnection,
@@ -11,11 +12,11 @@ import { rejectCrossOriginMutation } from "../../../lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+async function sessionGET(): Promise<Response> {
   return Response.json({ connections: await listProviderConnections() });
 }
 
-export async function POST(request: Request): Promise<Response> {
+async function sessionPOST(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const parsed = saveProviderConnectionSchema.safeParse(await request.json());
@@ -32,7 +33,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 }
 
-export async function DELETE(request: Request): Promise<Response> {
+async function sessionDELETE(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const id = new URL(request.url).searchParams.get("id");
@@ -43,3 +44,7 @@ export async function DELETE(request: Request): Promise<Response> {
     throw error;
   }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);
+export const DELETE = withLocalSession(sessionDELETE);

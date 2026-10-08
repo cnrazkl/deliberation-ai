@@ -1,5 +1,11 @@
 # Orchestration
 
+Council, private-delivery and decision queue handlers derive owner context from the
+persisted job target before loading inputs/connections/receipts. Missing targets cause
+no root fallback. Schedule dispatch enumerates stored owners and binds each separately.
+Round independence, frozen snapshots, receipts and no-resend rules remain unchanged.
+[User scope](LOCAL_ACCOUNTS.md).
+
 Opt-in reviewed synthesis follows draft -> separate fidelity review -> at most one
 repair -> separate review of the repair, with a complete ledger fallback. Known
 returned defective drafts/negative judgments permit repair; unknown, incomplete,

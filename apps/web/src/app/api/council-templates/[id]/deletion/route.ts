@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { deleteCouncilTemplateSchema } from "@deliberation-ai/contracts";
 import { deleteCouncilTemplateContent, previewCouncilTemplateDeletion, CouncilTemplateDeletionBlockedError,
   CouncilTemplateDeletionStaleError, ConversationIntegrityError } from "@deliberation-ai/persistence";
@@ -10,7 +11,7 @@ function failure(error: unknown) {
   if (error instanceof ConversationIntegrityError) return json({ error: "Şablon kayıt tutarlılığı doğrulanamadı." }, 409);
   return json({ error: "Şablon silme işlemi tamamlanamadı." }, 500);
 }
-export async function GET(_request: Request, context: Context) {
+async function sessionGET(_request: Request, context: Context) {
   const { id } = await context.params;
   if (!uuid.test(id)) return json({ error: "Şablon bulunamadı." }, 404);
   try {
@@ -18,7 +19,7 @@ export async function GET(_request: Request, context: Context) {
     return preview ? json(preview) : json({ error: "Şablon bulunamadı." }, 404);
   } catch (error) { return failure(error); }
 }
-export async function POST(request: Request, context: Context) {
+async function sessionPOST(request: Request, context: Context) {
   const rejected = privateBranchOrigin(request); if (rejected) return rejected;
   const { id } = await context.params;
   if (!uuid.test(id)) return json({ error: "Şablon bulunamadı." }, 404);
@@ -30,3 +31,6 @@ export async function POST(request: Request, context: Context) {
     return receipt ? json({ deleted: true, receipt }) : json({ error: "Şablon bulunamadı." }, 404);
   } catch (error) { return failure(error); }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);

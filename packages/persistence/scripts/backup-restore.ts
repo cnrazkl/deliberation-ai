@@ -8,6 +8,7 @@ import { auditRestoredEncryption, type EncryptionAudit } from "./backup-encrypti
 import { inspectAdditionalRecovery, type AdditionalRecoveryInventory } from "./backup-recovery-inventory";
 import { inspectRestoredQueue, type RestoredQueueInventory } from "./backup-queue-inventory";
 import { inspectRestoredQueueTargets, type QueueTargetCounts } from "./backup-queue-targets";
+import { auditRestoredAccounts } from "./backup-account-audit";
 
 const localAppData = process.env.LOCALAPPDATA;
 if (!localAppData) throw new Error("LOCALAPPDATA is required for local backup operations.");
@@ -26,6 +27,7 @@ interface BackupManifest {
 }
 
 interface RecoveryInspection extends AdditionalRecoveryInventory {
+  accounts: Awaited<ReturnType<typeof auditRestoredAccounts>>;
   conversations: { count: number; members: number; unavailableMembers: number; privateBranches: number } | null;
   runs: number;
   encryptionAudit: EncryptionAudit;
@@ -201,6 +203,7 @@ async function verifyBackup(manifestPath: string, sourceUrl: URL): Promise<Recov
         conversationInventory.privateBranches = Number(count.rows[0]!.total);
       }
       return {
+        accounts: await auditRestoredAccounts(restored),
         ...await inspectAdditionalRecovery(restored),
         queueJobs: await inspectRestoredQueue(restored),
         queueTargets: await inspectRestoredQueueTargets(restored),

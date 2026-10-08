@@ -1,6 +1,6 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { conversations, conversationRuns, runs } from "./schema";
 import { projectRunBranch, type RunBranchItem } from "./run-branches";
 import { mapStoredRun } from "./run-repository";
@@ -20,22 +20,22 @@ export type ConversationView = {
 };
 
 async function snapshot(tx: ConversationTransaction, conversationId: string) {
-  const [conversation] = await tx.select().from(conversations).where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, LOCAL_OWNER_ID))).limit(1);
+  const [conversation] = await tx.select().from(conversations).where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, getOwnerId()))).limit(1);
   if (!conversation) return undefined;
-  const pending = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.ownerId, LOCAL_OWNER_ID),
-    sql`not exists (select 1 from conversation_runs cr where cr.owner_id = ${LOCAL_OWNER_ID} and cr.run_id = ${runs.id})`,
+  const pending = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.ownerId, getOwnerId()),
+    sql`not exists (select 1 from conversation_runs cr where cr.owner_id = ${getOwnerId()} and cr.run_id = ${runs.id})`,
   )).limit(1);
   if (pending.length) throw new ConversationPendingError();
-  const predicate = and(eq(conversationRuns.ownerId, LOCAL_OWNER_ID), eq(conversationRuns.conversationId, conversation.id));
+  const predicate = and(eq(conversationRuns.ownerId, getOwnerId()), eq(conversationRuns.conversationId, conversation.id));
   const members = await tx.select().from(conversationRuns).where(predicate)
     .orderBy(asc(conversationRuns.createdAt), asc(conversationRuns.runId)).limit(MAX_CONVERSATION_RUNS + 1);
   if (members.length > MAX_CONVERSATION_RUNS) throw new ConversationSizeError();
   // Refuse before loading/decrypting potentially large report and archive bodies.
   const [size] = await tx.select({ bytes: sql<string>`coalesce(sum(octet_length(row_to_json(${runs})::text)), 0)::text` }).from(conversationRuns)
-    .innerJoin(runs, and(eq(runs.id, conversationRuns.runId), eq(runs.ownerId, LOCAL_OWNER_ID))).where(predicate);
+    .innerJoin(runs, and(eq(runs.id, conversationRuns.runId), eq(runs.ownerId, getOwnerId()))).where(predicate);
   if (Number(size?.bytes ?? 0) > MAX_CONVERSATION_EXPORT_BYTES) throw new ConversationSizeError();
   const rows = await tx.select({ member: conversationRuns, run: runs }).from(conversationRuns)
-    .leftJoin(runs, and(eq(runs.id, conversationRuns.runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+    .leftJoin(runs, and(eq(runs.id, conversationRuns.runId), eq(runs.ownerId, getOwnerId())))
     .where(predicate).orderBy(asc(conversationRuns.createdAt), asc(conversationRuns.runId));
   const byId = new Map(members.map((member) => [member.runId, member]));
   for (const member of members) {
@@ -49,7 +49,7 @@ async function snapshot(tx: ConversationTransaction, conversationId: string) {
     }
     if (source) {
       const [other] = await tx.select({ id: conversationRuns.conversationId }).from(conversationRuns)
-        .where(and(eq(conversationRuns.ownerId, LOCAL_OWNER_ID), eq(conversationRuns.runId, source))).limit(1);
+        .where(and(eq(conversationRuns.ownerId, getOwnerId()), eq(conversationRuns.runId, source))).limit(1);
       if (other) throw new ConversationIntegrityError();
     }
     if ((source ?? terminal) !== conversation.anchorRunId) throw new ConversationIntegrityError();
@@ -69,9 +69,9 @@ async function snapshot(tx: ConversationTransaction, conversationId: string) {
 
 export async function loadRunConversation(runId: string): Promise<ConversationView | undefined> {
   return getDatabase().transaction(async (tx) => {
-    const [member] = await tx.select().from(conversationRuns).where(and(eq(conversationRuns.ownerId, LOCAL_OWNER_ID), eq(conversationRuns.runId, runId))).limit(1);
+    const [member] = await tx.select().from(conversationRuns).where(and(eq(conversationRuns.ownerId, getOwnerId()), eq(conversationRuns.runId, runId))).limit(1);
     if (!member) {
-      const [existing] = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.id, runId))).limit(1);
+      const [existing] = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.ownerId, getOwnerId()), eq(runs.id, runId))).limit(1);
       if (existing) throw new ConversationPendingError();
       return undefined;
     }

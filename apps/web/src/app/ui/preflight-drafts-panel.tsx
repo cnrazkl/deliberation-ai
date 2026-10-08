@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useCallback, useEffect, useState } from "react";
 import type { RunRecord } from "@deliberation-ai/application";
 import { auditPromptRevision, composeClarifiedQuestion, PROMPT_REVISION_VERSION, suggestStructuredQuestion } from "@deliberation-ai/domain";
@@ -52,7 +53,7 @@ export function PreflightDraftsPanel({ refreshKey, focusDraftId, onStarted }: { 
 
   useEffect(() => {
     let live = true;
-    void fetch("/api/preflight-drafts", { cache: "no-store" })
+    void ownerFetch("/api/preflight-drafts", { cache: "no-store" })
       .then((response) => responseBody<{ drafts: Draft[] }>(response))
       .then((body) => { if (live) {
         setDrafts(body.drafts);
@@ -80,7 +81,7 @@ export function PreflightDraftsPanel({ refreshKey, focusDraftId, onStarted }: { 
     setError(undefined);
     setPrepared(undefined);
     try {
-      const response = await fetch(`/api/preflight-drafts/${encodeURIComponent(selected.id)}/preview`, {
+      const response = await ownerFetch(`/api/preflight-drafts/${encodeURIComponent(selected.id)}/preview`, {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ choice, ...(choice === "answer" ? { answer } : {}), promptRevision }),
       });
@@ -95,7 +96,7 @@ export function PreflightDraftsPanel({ refreshKey, focusDraftId, onStarted }: { 
     setBusy(true);
     setError(undefined);
     try {
-      const response = await fetch(`/api/preflight-drafts/${encodeURIComponent(selected.id)}/start`, {
+      const response = await ownerFetch(`/api/preflight-drafts/${encodeURIComponent(selected.id)}/start`, {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ choice, ...(choice === "answer" ? { answer } : {}),
           promptRevision,

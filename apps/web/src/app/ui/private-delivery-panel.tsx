@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { PrivateDelivery } from "@deliberation-ai/contracts";
 import type { PrivateBranchView, PrivateDeliveryPreview } from "@deliberation-ai/persistence";
@@ -14,7 +15,7 @@ const reasons: Record<PrivateDeliveryPreview["blocks"][number], string> = {
 const states: Record<PrivateDelivery["status"], string> = { prepared: "Kuyrukta", submitted: "Sağlayıcıya gönderildi", succeeded: "Yanıt alındı",
   failed: "Başarısız", outcome_unknown: "Sonuç belirsiz", cancelled: "Gönderilmeden iptal edildi", discarded: "Belirsiz kayıt kapatıldı" };
 async function request<T>(id: string, options?: RequestInit, maxOutputTokens?: number): Promise<T> {
-  const response = await fetch(`/api/private-branches/${id}/deliveries${maxOutputTokens === undefined ? "" : `?maxOutputTokens=${maxOutputTokens}`}`, { ...options, cache: "no-store" });
+  const response = await ownerFetch(`/api/private-branches/${id}/deliveries${maxOutputTokens === undefined ? "" : `?maxOutputTokens=${maxOutputTokens}`}`, { ...options, cache: "no-store" });
   const value = await response.json();
   if (!response.ok) throw Object.assign(new Error(value.error ?? "Özel gönderim tamamlanamadı."), { status: response.status });
   return value as T;

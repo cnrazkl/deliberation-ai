@@ -1,5 +1,11 @@
 # Decisions
 
+8 October local membership uses DB-backed sessions and explicit per-request/job owner
+context over existing owner columns. Legacy data belongs to the unique root account,
+with actor identity distinct from root's selected workspace. All application routes are
+guarded together rather than leaving readable history/connection APIs anonymous.
+No provider/domain SDK boundary or council authority changes. [Contract](LOCAL_ACCOUNTS.md).
+
 Group 5 local replacement uses a fresh source/store and separate PG cluster, exact
 authenticated current/archive comparison, a held API/worker and explicit restored
 queue parking before operational cutover. Later writes prevent rollback/cleanup.

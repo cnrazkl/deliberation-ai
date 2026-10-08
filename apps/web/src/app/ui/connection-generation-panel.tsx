@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useState } from "react";
 import type { CatalogModelDetail, GenerationObservation, ProviderObservations } from "@deliberation-ai/contracts";
 type Review = { revision: number; model: string; fingerprint: string; version: string; system: string; user: string;
@@ -21,7 +22,7 @@ export function ConnectionGenerationPanel({ connection }: { connection: { id: st
   async function refresh(fresh: boolean) {
     setBusy(true); setError(null); setAcknowledge(false); setUnknownAcknowledgement(false); setCloseId(null);
     try {
-      const response = await fetch(`${endpoint}?model=${encodeURIComponent(model)}`, { cache: "no-store" });
+      const response = await ownerFetch(`${endpoint}?model=${encodeURIComponent(model)}`, { cache: "no-store" });
       const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "İnceleme alınamadı.");
       setReview(body); if (fresh || !requestId) setRequestId(crypto.randomUUID());
     } catch (caught) { setReview(null); setError(caught instanceof Error ? caught.message : "İnceleme alınamadı."); }
@@ -31,7 +32,7 @@ export function ConnectionGenerationPanel({ connection }: { connection: { id: st
     if (!review || !requestId || !acknowledge) return;
     setBusy(true); setError(null);
     try {
-      const response = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      const response = await ownerFetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         requestId, model: review.model, fingerprint: review.fingerprint, acknowledge: true, acknowledgeUnknown: unknownAcknowledgement,
       }) });
       const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Deneme kaydı alınamadı.");
@@ -44,7 +45,7 @@ export function ConnectionGenerationPanel({ connection }: { connection: { id: st
   async function closeUnknown(check: GenerationObservation) {
     setBusy(true); setError(null);
     try {
-      const response = await fetch(endpoint, { method: "PATCH", headers: { "Content-Type": "application/json" },
+      const response = await ownerFetch(endpoint, { method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: check.id, fingerprint: check.fingerprint, acknowledgeUnknown: true }) });
       const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Kayıt güncellenemedi.");
       setReview((current) => current ? { ...current, observations: { ...current.observations,

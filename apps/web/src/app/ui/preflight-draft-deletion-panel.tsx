@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { PreflightDraftDeletionPreview } from "@deliberation-ai/persistence";
 
@@ -11,7 +12,7 @@ export function PreflightDraftDeletionPanel({ draftId, onCancel, onDeleted, onBu
   const alive = useRef(true); const submitting = useRef(false);
   useEffect(() => {
     alive.current = true; const controller = new AbortController();
-    void fetch(`/api/preflight-drafts/${draftId}/deletion`, { cache: "no-store", signal: controller.signal })
+    void ownerFetch(`/api/preflight-drafts/${draftId}/deletion`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Silme önizlemesi yüklenemedi.");
         if (!controller.signal.aborted) {
@@ -25,7 +26,7 @@ export function PreflightDraftDeletionPanel({ draftId, onCancel, onDeleted, onBu
     if (!preview?.eligible || !preview.fingerprint || !reviewed || submitting.current) return;
     submitting.current = true; setBusy(true); onBusy(true); setError(undefined);
     try {
-      const response = await fetch(`/api/preflight-drafts/${draftId}/deletion`, {
+      const response = await ownerFetch(`/api/preflight-drafts/${draftId}/deletion`, {
         method: "POST", headers: { "content-type": "application/json" }, cache: "no-store",
         body: JSON.stringify({ draftId, fingerprint: preview.fingerprint, confirmContentDeletion: true, acknowledgeRetainedRecords: true }),
       });

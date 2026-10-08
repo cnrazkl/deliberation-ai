@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { CouncilTemplateDeletionPreview } from "@deliberation-ai/persistence";
 
@@ -11,7 +12,7 @@ export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, 
   const alive = useRef(true); const submitting = useRef(false);
   useEffect(() => {
     alive.current = true; const controller = new AbortController();
-    void fetch(`/api/council-templates/${templateId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
+    void ownerFetch(`/api/council-templates/${templateId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
       const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "Silme önizlemesi yüklenemedi.");
       if (!controller.signal.aborted) {
         if (body.alreadyDeleted) { onDeleted(); return; }
@@ -24,7 +25,7 @@ export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, 
     if (!preview?.eligible || !preview.fingerprint || !reviewed || submitting.current) return;
     submitting.current = true; setBusy(true); onBusy(true); setError(undefined);
     try {
-      const response = await fetch(`/api/council-templates/${templateId}/deletion`, { method: "POST", cache: "no-store", headers: { "content-type": "application/json" },
+      const response = await ownerFetch(`/api/council-templates/${templateId}/deletion`, { method: "POST", cache: "no-store", headers: { "content-type": "application/json" },
         body: JSON.stringify({ templateId, fingerprint: preview.fingerprint, confirmContentDeletion: true, acknowledgeRetainedCopies: true }) });
       const body = await response.json();
       if (!response.ok) { if (alive.current) { setPreview(undefined); setReviewed(false); } throw new Error(body.error ?? "Şablon silinemedi."); }

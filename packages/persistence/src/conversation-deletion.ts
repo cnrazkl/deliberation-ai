@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { conversations, conversationRuns, conversationPrivateBranches, runs } from "./schema";
 import { lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
 
@@ -70,52 +70,52 @@ async function supportsMetadataDeletion(tx: ConversationTransaction): Promise<bo
 async function inspect(tx: ConversationTransaction, conversationId: string): Promise<ConversationDeletionPreview | undefined> {
   const [conversation] = await tx.select({ id: conversations.id, anchorRunId: conversations.anchorRunId,
     origin: conversations.origin, createdAt: sql<string>`${conversations.createdAt}::text` }).from(conversations)
-    .where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, getOwnerId()))).limit(1);
   if (!conversation) return undefined;
   const blockedReasons: ConversationDeletionBlock[] = [];
   if (!await supportsMetadataDeletion(tx)) blockedReasons.push("schema_changed");
   const [count] = await tx.select({ value: sql<string>`count(*)::text` }).from(conversationRuns)
-    .where(and(eq(conversationRuns.conversationId, conversationId), eq(conversationRuns.ownerId, LOCAL_OWNER_ID)));
+    .where(and(eq(conversationRuns.conversationId, conversationId), eq(conversationRuns.ownerId, getOwnerId())));
   const recordedRunCount = Number(count!.value);
   if (recordedRunCount > MAX_CONVERSATION_DELETION_MEMBERS) blockedReasons.push("too_many_members");
   const members = await tx.select({ runId: conversationRuns.runId, sourceRunId: conversationRuns.sourceRunId,
     kind: conversationRuns.kind, createdAt: sql<string>`${conversationRuns.createdAt}::text` }).from(conversationRuns)
-    .where(and(eq(conversationRuns.conversationId, conversationId), eq(conversationRuns.ownerId, LOCAL_OWNER_ID)))
+    .where(and(eq(conversationRuns.conversationId, conversationId), eq(conversationRuns.ownerId, getOwnerId())))
     .orderBy(asc(conversationRuns.runId)).limit(MAX_CONVERSATION_DELETION_MEMBERS + 1);
   // Metadata only: content review remains at the existing per-body boundary.
   const available = await tx.select({ id: runs.id }).from(conversationRuns)
-    .innerJoin(runs, and(eq(runs.id, conversationRuns.runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
-    .where(and(eq(conversationRuns.conversationId, conversationId), eq(conversationRuns.ownerId, LOCAL_OWNER_ID)))
+    .innerJoin(runs, and(eq(runs.id, conversationRuns.runId), eq(runs.ownerId, getOwnerId())))
+    .where(and(eq(conversationRuns.conversationId, conversationId), eq(conversationRuns.ownerId, getOwnerId())))
     .orderBy(asc(runs.id)).limit(MAX_CONVERSATION_DELETION_MEMBERS + 1);
   const privateBranches = await tx.select({ id: conversationPrivateBranches.id }).from(conversationPrivateBranches)
-    .where(and(eq(conversationPrivateBranches.conversationId, conversationId), eq(conversationPrivateBranches.ownerId, LOCAL_OWNER_ID)))
+    .where(and(eq(conversationPrivateBranches.conversationId, conversationId), eq(conversationPrivateBranches.ownerId, getOwnerId())))
     .orderBy(asc(conversationPrivateBranches.id)).limit(MAX_CONVERSATION_DELETION_MEMBERS + 1);
   if (privateBranches.length > MAX_CONVERSATION_DELETION_MEMBERS && !blockedReasons.includes("too_many_members")) blockedReasons.push("too_many_members");
   const checks = await tx.execute<{ available: boolean; pending: boolean; foreign: boolean; referenced: boolean; private: boolean; knowledge: boolean }>(sql`
     select
       exists(select 1 from runs r join conversation_runs cr on cr.run_id = r.id
-        where cr.conversation_id = ${conversationId}::uuid and cr.owner_id = ${LOCAL_OWNER_ID} and r.owner_id = ${LOCAL_OWNER_ID}) as available,
-      exists(select 1 from runs r where r.owner_id = ${LOCAL_OWNER_ID}
-        and not exists(select 1 from conversation_runs cr where cr.owner_id = ${LOCAL_OWNER_ID} and cr.run_id = r.id)) as pending,
+        where cr.conversation_id = ${conversationId}::uuid and cr.owner_id = ${getOwnerId()} and r.owner_id = ${getOwnerId()}) as available,
+      exists(select 1 from runs r where r.owner_id = ${getOwnerId()}
+        and not exists(select 1 from conversation_runs cr where cr.owner_id = ${getOwnerId()} and cr.run_id = r.id)) as pending,
       exists(select 1 from conversation_private_branches b where b.conversation_id = ${conversationId}::uuid) as private,
       (exists(select 1 from conversation_knowledge k where k.conversation_id = ${conversationId}::uuid)
        or exists(select 1 from conversation_knowledge_selections k where k.conversation_id = ${conversationId}::uuid)
        or exists(select 1 from knowledge_preparations k where k.conversation_id = ${conversationId}::uuid)) as knowledge,
-      (exists(select 1 from conversation_runs cr where cr.conversation_id = ${conversationId}::uuid and cr.owner_id <> ${LOCAL_OWNER_ID})
-       or exists(select 1 from conversation_private_branches b where b.conversation_id = ${conversationId}::uuid and b.owner_id <> ${LOCAL_OWNER_ID})
-       or exists(select 1 from conversation_knowledge k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${LOCAL_OWNER_ID})
-       or exists(select 1 from conversation_knowledge_selections k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${LOCAL_OWNER_ID})
-       or exists(select 1 from knowledge_preparations k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${LOCAL_OWNER_ID})
+      (exists(select 1 from conversation_runs cr where cr.conversation_id = ${conversationId}::uuid and cr.owner_id <> ${getOwnerId()})
+       or exists(select 1 from conversation_private_branches b where b.conversation_id = ${conversationId}::uuid and b.owner_id <> ${getOwnerId()})
+       or exists(select 1 from conversation_knowledge k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${getOwnerId()})
+       or exists(select 1 from conversation_knowledge_selections k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${getOwnerId()})
+       or exists(select 1 from knowledge_preparations k where k.conversation_id = ${conversationId}::uuid and k.owner_id <> ${getOwnerId()})
        or exists(select 1 from runs r join conversation_runs cr on cr.run_id = r.id
-         where cr.conversation_id = ${conversationId}::uuid and cr.owner_id = ${LOCAL_OWNER_ID} and r.owner_id <> ${LOCAL_OWNER_ID})) as foreign,
-      (exists(select 1 from conversation_private_branches b where b.owner_id = ${LOCAL_OWNER_ID} and b.conversation_id <> ${conversationId}::uuid and
-         (b.source_run_id = ${conversation.anchorRunId}::uuid or b.source_run_id in (select run_id from conversation_runs where owner_id = ${LOCAL_OWNER_ID} and conversation_id = ${conversationId}::uuid)))
-       or exists(select 1 from runs r where r.owner_id = ${LOCAL_OWNER_ID} and
+         where cr.conversation_id = ${conversationId}::uuid and cr.owner_id = ${getOwnerId()} and r.owner_id <> ${getOwnerId()})) as foreign,
+      (exists(select 1 from conversation_private_branches b where b.owner_id = ${getOwnerId()} and b.conversation_id <> ${conversationId}::uuid and
+         (b.source_run_id = ${conversation.anchorRunId}::uuid or b.source_run_id in (select run_id from conversation_runs where owner_id = ${getOwnerId()} and conversation_id = ${conversationId}::uuid)))
+       or exists(select 1 from runs r where r.owner_id = ${getOwnerId()} and
          (r.id = ${conversation.anchorRunId}::uuid or r.branch_source_run_id = ${conversation.anchorRunId}::uuid or
-          r.branch_source_run_id in (select run_id from conversation_runs where owner_id = ${LOCAL_OWNER_ID} and conversation_id = ${conversationId}::uuid)))
-       or exists(select 1 from conversation_runs cr where cr.owner_id = ${LOCAL_OWNER_ID} and cr.conversation_id <> ${conversationId}::uuid and
+          r.branch_source_run_id in (select run_id from conversation_runs where owner_id = ${getOwnerId()} and conversation_id = ${conversationId}::uuid)))
+       or exists(select 1 from conversation_runs cr where cr.owner_id = ${getOwnerId()} and cr.conversation_id <> ${conversationId}::uuid and
          (cr.run_id = ${conversation.anchorRunId}::uuid or cr.source_run_id = ${conversation.anchorRunId}::uuid or
-          cr.source_run_id in (select run_id from conversation_runs where owner_id = ${LOCAL_OWNER_ID} and conversation_id = ${conversationId}::uuid)))) as referenced
+          cr.source_run_id in (select run_id from conversation_runs where owner_id = ${getOwnerId()} and conversation_id = ${conversationId}::uuid)))) as referenced
   `);
   const flags = checks.rows[0]!;
   if (flags.available) blockedReasons.push("available_runs");
@@ -125,7 +125,7 @@ async function inspect(tx: ConversationTransaction, conversationId: string): Pro
   if (flags.referenced || flags.knowledge) blockedReasons.push("retained_references");
   const eligible = blockedReasons.length === 0;
   const fingerprint = eligible ? createHash("sha256").update(JSON.stringify({
-    version: "empty-conversation-deletion-v1", ownerId: LOCAL_OWNER_ID, conversation, members,
+    version: "empty-conversation-deletion-v1", ownerId: getOwnerId(), conversation, members,
   })).digest("hex") : null;
   return { version: "empty-conversation-deletion-v1", conversationId, createdAt: new Date(conversation.createdAt).toISOString(),
     origin: conversation.origin as ConversationDeletionPreview["origin"], recordedRunCount,
@@ -158,9 +158,9 @@ export async function deleteEmptyConversation(conversationId: string, fingerprin
     if (!preview.eligible) throw new ConversationDeletionBlockedError();
     if (!/^[a-f0-9]{64}$/.test(fingerprint) || fingerprint !== preview.fingerprint) throw new ConversationDeletionStaleError();
     const removed = await tx.delete(conversationRuns).where(and(eq(conversationRuns.conversationId, conversationId),
-      eq(conversationRuns.ownerId, LOCAL_OWNER_ID))).returning({ runId: conversationRuns.runId });
+      eq(conversationRuns.ownerId, getOwnerId()))).returning({ runId: conversationRuns.runId });
     if (removed.length !== preview.recordedRunCount) throw new ConversationDeletionStaleError();
-    const deleted = await tx.delete(conversations).where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, LOCAL_OWNER_ID)))
+    const deleted = await tx.delete(conversations).where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, getOwnerId())))
       .returning({ id: conversations.id });
     if (deleted.length !== 1) throw new ConversationDeletionStaleError();
     return { deleted: true as const, conversationId, deletedMembershipCount: removed.length };

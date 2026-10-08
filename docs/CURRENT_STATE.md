@@ -2,6 +2,17 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
+## Local membership — verification in progress
+
+The owner requested local registration/login, a unique root with a supplied local
+password, private user API connections and root visibility/management across users.
+The implementation adds account tables in additive migration 0055, session-bound BFF
+ownership, persisted-target worker ownership and a root user/scope management UI.
+Legacy owned records remain assigned to root without content/ciphertext rewrites.
+459 offline tests, 271 isolated PostgreSQL cases and all 53 browser cases passed; local deployment,
+final review and backed-up personal deployment are in progress. Root is not yet
+provisioned in the personal database. [Contract](LOCAL_ACCOUNTS.md).
+
 ## Current scope change — budget extension cancelled
 
 On 8 October the owner explicitly cancelled input/tool-token budget accounting and

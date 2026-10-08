@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { z } from "zod";
 import { ConversationDeletionBlockedError, ConversationDeletionStaleError,
   deleteEmptyConversation, previewConversationDeletion } from "@deliberation-ai/persistence";
@@ -11,7 +12,7 @@ const confirmation = z.object({ conversationId: z.string().regex(uuid),
 type Context = { params: Promise<{ id: string }> };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 
-export async function GET(_request: Request, context: Context) {
+async function sessionGET(_request: Request, context: Context) {
   const { id } = await context.params;
   if (!uuid.test(id)) return json({ error: "Konuşma bulunamadı." }, 404);
   try {
@@ -20,7 +21,7 @@ export async function GET(_request: Request, context: Context) {
   } catch { return json({ error: "Silme önizlemesi hazırlanamadı." }, 500); }
 }
 
-export async function POST(request: Request, context: Context) {
+async function sessionPOST(request: Request, context: Context) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) { rejected.headers.set("Cache-Control", "no-store"); return rejected; }
   const { id } = await context.params;
@@ -52,3 +53,6 @@ export async function POST(request: Request, context: Context) {
     return json({ error: "Konuşma kaydı silinemedi." }, 500);
   }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);

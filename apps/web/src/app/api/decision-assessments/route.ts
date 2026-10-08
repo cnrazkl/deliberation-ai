@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { createDecisionAssessmentSchema } from "@deliberation-ai/evaluation";
 import {
   createDecisionAssessment,
@@ -9,7 +10,7 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request): Promise<Response> {
+async function sessionGET(request: Request): Promise<Response> {
   const runId = new URL(request.url).searchParams.get("runId");
   if (!runId) return Response.json({ error: "Çalışma kimliği gerekli." }, { status: 400 });
   const assessments = await listDecisionAssessments(runId);
@@ -17,7 +18,7 @@ export async function GET(request: Request): Promise<Response> {
   return Response.json({ assessments });
 }
 
-export async function POST(request: Request): Promise<Response> {
+async function sessionPOST(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   if (process.env.ENABLE_DECISION_EVALUATOR !== "true") {
@@ -42,3 +43,6 @@ export async function POST(request: Request): Promise<Response> {
     throw error;
   }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);

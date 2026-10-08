@@ -1,10 +1,11 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { sendPrivateDeliverySchema, controlPrivateDeliverySchema, privateDeliverySettingsSchema } from "@deliberation-ai/contracts";
 import { previewPrivateDelivery, enqueuePrivateDelivery, controlPrivateDelivery } from "@deliberation-ai/persistence";
 import { privateBranchError, privateBranchJson, privateBranchOrigin, privateBranchRequest, privateBranchUuid } from "../../../../../lib/private-branches-http";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ id: string }> };
-export async function GET(request: Request, context: Context) {
+async function sessionGET(request: Request, context: Context) {
   const { id } = await context.params;
   if (!privateBranchUuid.test(id)) return privateBranchJson({ error: "Geçersiz dal." }, 400);
   const values = new URL(request.url).searchParams.getAll("maxOutputTokens");
@@ -15,7 +16,7 @@ export async function GET(request: Request, context: Context) {
     return preview ? privateBranchJson(preview) : privateBranchJson({ error: "Dal bulunamadı." }, 404);
   } catch (error) { return privateBranchError(error); }
 }
-export async function POST(request: Request, context: Context) {
+async function sessionPOST(request: Request, context: Context) {
   const rejected = privateBranchOrigin(request); if (rejected) return rejected;
   const { id } = await context.params;
   if (!privateBranchUuid.test(id)) return privateBranchJson({ error: "Geçersiz dal." }, 400);
@@ -25,7 +26,7 @@ export async function POST(request: Request, context: Context) {
     return result ? privateBranchJson(result, 202) : privateBranchJson({ error: "Dal bulunamadı." }, 404);
   } catch (error) { return privateBranchError(error); }
 }
-export async function PATCH(request: Request, context: Context) {
+async function sessionPATCH(request: Request, context: Context) {
   const rejected = privateBranchOrigin(request); if (rejected) return rejected;
   const { id } = await context.params;
   if (!privateBranchUuid.test(id)) return privateBranchJson({ error: "Geçersiz dal." }, 400);
@@ -35,3 +36,7 @@ export async function PATCH(request: Request, context: Context) {
     return result ? privateBranchJson(result) : privateBranchJson({ error: "Dal veya işlem bulunamadı." }, 404);
   } catch (error) { return privateBranchError(error); }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);
+export const PATCH = withLocalSession(sessionPATCH);

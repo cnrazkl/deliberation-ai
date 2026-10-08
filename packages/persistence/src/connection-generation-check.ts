@@ -4,7 +4,7 @@ import { executeBoundedConnectionCheck, generationCheckPrompt, GENERATION_CHECK_
 import { and, eq } from "drizzle-orm";
 import { getDatabase } from "./database";
 import { decryptText } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { providerConnections } from "./schema";
 import { readProviderObservations, encryptProviderObservations } from "./provider-observations";
 
@@ -19,7 +19,7 @@ function fingerprint(row: Row, model: string) {
 }
 export async function reviewConnectionGenerationCheck(id: string, model?: string) {
   const [row] = await getDatabase().select().from(providerConnections).where(and(
-    eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, id),
+    eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, id),
   )).limit(1);
   if (!row) return undefined;
   const selected = generationCheckRequestSchema.shape.model.parse(model ?? row.defaultModel);
@@ -33,7 +33,7 @@ export async function runConnectionGenerationCheck(id: string, input: unknown, e
   const request = generationCheckRequestSchema.parse(input);
   const claim = await getDatabase().transaction(async (tx) => {
     const [row] = await tx.select().from(providerConnections).where(and(
-      eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, id),
+      eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, id),
     )).for("update").limit(1);
     if (!row) return undefined;
     const observations = readProviderObservations(row);
@@ -74,7 +74,7 @@ export async function runConnectionGenerationCheck(id: string, input: unknown, e
   }
   return getDatabase().transaction(async (tx) => {
     const [row] = await tx.select().from(providerConnections).where(and(
-      eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, id),
+      eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, id),
     )).for("update").limit(1);
     if (!row) return undefined;
     const observations = readProviderObservations(row);
@@ -91,7 +91,7 @@ export async function acknowledgeConnectionGenerationCheck(id: string, input: un
   const request = acknowledgeGenerationCheckSchema.parse(input);
   return getDatabase().transaction(async (tx) => {
     const [row] = await tx.select().from(providerConnections).where(and(
-      eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.id, id),
+      eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, id),
     )).for("update").limit(1);
     if (!row) return undefined;
     const observations = readProviderObservations(row);

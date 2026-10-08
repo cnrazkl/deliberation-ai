@@ -32,6 +32,28 @@
 
 
 * { box-sizing: border-box; }
+
+.account-login { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+.account-login-card { width: min(100%, 430px); padding: 32px; border: 1px solid var(--line); background: var(--surface); border-radius: 20px; }
+.account-login-card h1 { margin: 12px 0; font-size: 30px; }
+.account-login-card > p { color: var(--muted); line-height: 1.6; }
+.account-login-card form, .account-panel form { display: grid; gap: 16px; margin: 22px 0; }
+.account-login-card label, .account-panel form label { display: grid; gap: 8px; }
+.account-login-card input, .account-panel input { width: 100%; min-height: 44px; }
+.account-login-card > button { width: 100%; }
+.account-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.account-bar > div:first-child { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.account-bar small, .account-user-list small { color: var(--muted); }
+.account-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.account-actions button { font-size: 12px; }
+.account-scope { color: var(--amber); background: var(--amber-soft); padding: 5px 8px; border-radius: 8px; }
+.account-panel { width: min(100% - 32px, 920px); margin: 20px auto; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.account-panel form { max-width: 440px; }
+.account-user-list { display: grid; gap: 10px; }
+.account-user-list article { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px; background: var(--surface-subtle); border-radius: 10px; }
+.account-user-list article > div { display: grid; gap: 5px; margin-right: auto; }
+.account-message { margin: 12px 24px; }
+@media (max-width: 560px) { .account-bar { padding: 12px 16px; } .account-login-card { padding: 24px; } }
 [hidden] { display: none !important; }
 
 body {

@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type {
   DecisionAssessmentResult,
@@ -82,7 +83,7 @@ async function loadDecisionConnections(): Promise<{
   evaluatorEnabled: boolean;
 }> {
   return responseBody(
-    await fetch("/api/decision-connections", { cache: "no-store" }),
+    await ownerFetch("/api/decision-connections", { cache: "no-store" }),
   );
 }
 
@@ -92,12 +93,12 @@ async function loadAssessmentState(runId: string): Promise<{
 }> {
   const [assessmentBody, operationBody] = await Promise.all([
     responseBody<{ assessments: DecisionAssessment[] }>(
-      await fetch(`/api/decision-assessments?runId=${encodeURIComponent(runId)}`, {
+      await ownerFetch(`/api/decision-assessments?runId=${encodeURIComponent(runId)}`, {
         cache: "no-store",
       }),
     ),
     responseBody<{ operations: DecisionOperation[] }>(
-      await fetch("/api/decision-operations", { cache: "no-store" }),
+      await ownerFetch("/api/decision-operations", { cache: "no-store" }),
     ),
   ]);
   return { assessments: assessmentBody.assessments, operations: operationBody.operations };
@@ -174,7 +175,7 @@ export function DecisionAssessmentPanel({
     setError(undefined);
     try {
       const saved = await responseBody<DecisionConnection>(
-        await fetch("/api/decision-connections", {
+        await ownerFetch("/api/decision-connections", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -204,7 +205,7 @@ export function DecisionAssessmentPanel({
     setError(undefined);
     try {
       const created = await responseBody<DecisionAssessment>(
-        await fetch("/api/decision-assessments", {
+        await ownerFetch("/api/decision-assessments", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -231,7 +232,7 @@ export function DecisionAssessmentPanel({
     setError(undefined);
     try {
       await responseBody<{ deleted: boolean }>(
-        await fetch(`/api/decision-connections?id=${encodeURIComponent(connectionId)}`, {
+        await ownerFetch(`/api/decision-connections?id=${encodeURIComponent(connectionId)}`, {
           method: "DELETE",
         }),
       );
@@ -249,7 +250,7 @@ export function DecisionAssessmentPanel({
     setBusyId(assessmentId);
     try {
       await responseBody<{ cancelled: boolean }>(
-        await fetch(`/api/decision-assessments/${assessmentId}/cancel`, { method: "POST" }),
+        await ownerFetch(`/api/decision-assessments/${assessmentId}/cancel`, { method: "POST" }),
       );
       await refreshAssessments();
     } catch (reason) {
@@ -266,7 +267,7 @@ export function DecisionAssessmentPanel({
     setBusyId(operationId);
     try {
       await responseBody<{ requeued: boolean }>(
-        await fetch(`/api/decision-operations/${operationId}/resolve`, {
+        await ownerFetch(`/api/decision-operations/${operationId}/resolve`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ action }),

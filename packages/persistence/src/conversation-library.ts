@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "./database";
 import { decryptText } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { conversations, runs } from "./schema";
 import { ConversationPendingError } from "./conversation-membership";
 import type { RunHistoryPage } from "./run-repository";
@@ -34,17 +34,17 @@ export async function listConversations(beforeConversationId?: string): Promise<
   return getDatabase().transaction(async (tx) => {
     if (beforeConversationId) {
       const [cursor] = await tx.select({ id: conversations.id }).from(conversations)
-        .where(and(eq(conversations.ownerId, LOCAL_OWNER_ID), eq(conversations.id, beforeConversationId))).limit(1);
+        .where(and(eq(conversations.ownerId, getOwnerId()), eq(conversations.id, beforeConversationId))).limit(1);
       if (!cursor) return undefined;
     }
-    const pending = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.ownerId, LOCAL_OWNER_ID),
-      sql`not exists (select 1 from conversation_runs cr where cr.owner_id = ${LOCAL_OWNER_ID} and cr.run_id = ${runs.id})`,
+    const pending = await tx.select({ id: runs.id }).from(runs).where(and(eq(runs.ownerId, getOwnerId()),
+      sql`not exists (select 1 from conversation_runs cr where cr.owner_id = ${getOwnerId()} and cr.run_id = ${runs.id})`,
     )).limit(1);
     if (pending.length) throw new ConversationPendingError();
 
     // Compare timestamps inside PostgreSQL: a JS Date would lose sub-millisecond precision.
     const before = beforeConversationId ? sql`and (c.created_at, c.id) < (
-      select created_at, id from conversations where owner_id = ${LOCAL_OWNER_ID} and id = ${beforeConversationId}::uuid
+      select created_at, id from conversations where owner_id = ${getOwnerId()} and id = ${beforeConversationId}::uuid
     )` : sql``;
     const result = await tx.execute<LibraryRow>(sql`
       select c.id, c.created_at as "createdAt", c.origin,
@@ -52,18 +52,18 @@ export async function listConversations(beforeConversationId?: string): Promise<
         latest.id as "runId", latest.question, latest.question_ciphertext as "questionCiphertext", latest.status
       from (
         select id, created_at, origin from conversations c
-        where c.owner_id = ${LOCAL_OWNER_ID} ${before}
+        where c.owner_id = ${getOwnerId()} ${before}
         order by c.created_at desc, c.id desc limit ${CONVERSATION_LIBRARY_PAGE_SIZE + 1}
       ) c
       cross join lateral (
         select count(*) as recorded, count(r.id) as available
-        from conversation_runs cr left join runs r on r.id = cr.run_id and r.owner_id = ${LOCAL_OWNER_ID}
-        where cr.owner_id = ${LOCAL_OWNER_ID} and cr.conversation_id = c.id
+        from conversation_runs cr left join runs r on r.id = cr.run_id and r.owner_id = ${getOwnerId()}
+        where cr.owner_id = ${getOwnerId()} and cr.conversation_id = c.id
       ) counts
       left join lateral (
         select r.id, r.question, r.question_ciphertext, r.status
-        from conversation_runs cr join runs r on r.id = cr.run_id and r.owner_id = ${LOCAL_OWNER_ID}
-        where cr.owner_id = ${LOCAL_OWNER_ID} and cr.conversation_id = c.id
+        from conversation_runs cr join runs r on r.id = cr.run_id and r.owner_id = ${getOwnerId()}
+        where cr.owner_id = ${getOwnerId()} and cr.conversation_id = c.id
         order by cr.created_at desc, cr.run_id desc limit 1
       ) latest on true
       order by c.created_at desc, c.id desc

@@ -8,7 +8,7 @@ import { callLocalMcpTool, listLocalMcpTools, parseLocalMcpUrl, type McpToolSumm
 import { and, asc, eq } from "drizzle-orm";
 import { decryptText, encryptJson, encryptText } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { mcpConnections, mcpToolResults } from "./schema";
 
 export type McpConnection = {
@@ -35,13 +35,13 @@ function mapConnection(row: typeof mcpConnections.$inferSelect): McpConnection {
 
 async function findConnection(id: string): Promise<McpConnection | undefined> {
   const [row] = await getDatabase().select().from(mcpConnections)
-    .where(and(eq(mcpConnections.id, id), eq(mcpConnections.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(mcpConnections.id, id), eq(mcpConnections.ownerId, getOwnerId()))).limit(1);
   return row ? mapConnection(row) : undefined;
 }
 
 export async function listMcpConnections(): Promise<McpConnection[]> {
   const rows = await getDatabase().select().from(mcpConnections)
-    .where(eq(mcpConnections.ownerId, LOCAL_OWNER_ID)).orderBy(asc(mcpConnections.createdAt));
+    .where(eq(mcpConnections.ownerId, getOwnerId())).orderBy(asc(mcpConnections.createdAt));
   return rows.map(mapConnection);
 }
 
@@ -56,15 +56,15 @@ export async function saveMcpConnection(request: SaveMcpConnectionRequest): Prom
   };
   const [row] = request.id
     ? await db.update(mcpConnections).set(encrypted)
-        .where(and(eq(mcpConnections.id, id), eq(mcpConnections.ownerId, LOCAL_OWNER_ID))).returning()
-    : await db.insert(mcpConnections).values({ id, ownerId: LOCAL_OWNER_ID, ...encrypted }).returning();
+        .where(and(eq(mcpConnections.id, id), eq(mcpConnections.ownerId, getOwnerId()))).returning()
+    : await db.insert(mcpConnections).values({ id, ownerId: getOwnerId(), ...encrypted }).returning();
   if (!row) throw new Error("MCP connection could not be saved.");
   return mapConnection(row);
 }
 
 export async function deleteMcpConnection(id: string): Promise<boolean> {
   const deleted = await getDatabase().delete(mcpConnections)
-    .where(and(eq(mcpConnections.id, id), eq(mcpConnections.ownerId, LOCAL_OWNER_ID)))
+    .where(and(eq(mcpConnections.id, id), eq(mcpConnections.ownerId, getOwnerId())))
     .returning({ id: mcpConnections.id });
   return deleted.length > 0;
 }
@@ -82,7 +82,7 @@ export async function invokeMcpTool(request: InvokeMcpToolRequest): Promise<Stor
   const sha256 = createHash("sha256").update(result.text).digest("hex");
   const [row] = await getDatabase().insert(mcpToolResults).values({
     id,
-    ownerId: LOCAL_OWNER_ID,
+    ownerId: getOwnerId(),
     connectionId: connection.id,
     toolName: request.toolName,
     argumentsCiphertext: encryptJson(request.arguments, `mcp-tool-result:${id}:arguments`),
@@ -108,7 +108,7 @@ export async function listMcpToolResults(): Promise<StoredMcpToolResult[]> {
   const rows = await db.select({ result: mcpToolResults, connection: mcpConnections })
     .from(mcpToolResults)
     .innerJoin(mcpConnections, eq(mcpToolResults.connectionId, mcpConnections.id))
-    .where(eq(mcpToolResults.ownerId, LOCAL_OWNER_ID))
+    .where(eq(mcpToolResults.ownerId, getOwnerId()))
     .orderBy(asc(mcpToolResults.createdAt));
   return rows.map(({ result, connection }) => ({
     id: result.id,
@@ -124,7 +124,7 @@ export async function listMcpToolResults(): Promise<StoredMcpToolResult[]> {
 
 export async function deleteMcpToolResult(id: string): Promise<boolean> {
   const deleted = await getDatabase().delete(mcpToolResults)
-    .where(and(eq(mcpToolResults.id, id), eq(mcpToolResults.ownerId, LOCAL_OWNER_ID)))
+    .where(and(eq(mcpToolResults.id, id), eq(mcpToolResults.ownerId, getOwnerId())))
     .returning({ id: mcpToolResults.id });
   return deleted.length > 0;
 }

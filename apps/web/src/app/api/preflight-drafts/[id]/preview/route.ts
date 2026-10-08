@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { ContinuationUnavailableError, preparePreflightDraft, PreflightDraftError, PreflightMismatchError } from "@deliberation-ai/persistence";
 import { z } from "zod";
 import { promptRevisionSchema } from "@deliberation-ai/contracts";
@@ -13,7 +14,7 @@ const inputSchema = z.object({
   promptRevision: promptRevisionSchema.optional(),
 }).strict();
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function sessionPOST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const parsed = inputSchema.safeParse(await request.json().catch(() => null));
@@ -42,3 +43,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return Response.json({ error: "Açıklama önizlemesi hazırlanamadı; seçili bağlamı kontrol edin." }, { status: 422 });
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

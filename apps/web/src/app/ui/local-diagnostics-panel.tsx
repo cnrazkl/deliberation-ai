@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useState } from "react";
 import { localDiagnosticsAlerts } from "../../lib/local-diagnostics-alerts";
 
@@ -24,7 +25,7 @@ const workerLabels: Record<Diagnostics["workerStatus"], string> = {
 };
 
 async function fetchDiagnostics(): Promise<Diagnostics> {
-  const response = await fetch("/api/local-diagnostics", { cache: "no-store" });
+  const response = await ownerFetch("/api/local-diagnostics", { cache: "no-store" });
   if (!response.ok) throw new Error("Local diagnostics unavailable.");
   return (await response.json()) as Diagnostics;
 }

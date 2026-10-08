@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { RunRecord } from "@deliberation-ai/application";
 import type { EvidenceCandidateProvenance, EvidenceFreshnessStatus, EvidenceRelation, EvidenceReviewStatus } from "@deliberation-ai/contracts";
@@ -25,14 +26,14 @@ export function EvidenceCandidatePanel({ run, onSourcesChanged }: { run: RunReco
   const [retry, setRetry] = useState<{ body: string; id: string }>();
   const alive = useRef(true);
   async function refresh() {
-    const response = await fetch(`/api/evidence-candidates?runId=${run.runId}`, { cache: "no-store" });
+    const response = await ownerFetch(`/api/evidence-candidates?runId=${run.runId}`, { cache: "no-store" });
     if (!response.ok) throw new Error("Aday kutusu yüklenemedi.");
     setCandidates((await response.json() as { candidates: Candidate[] }).candidates);
   }
   useEffect(() => {
     alive.current = true;
     const controller = new AbortController();
-    void fetch(`/api/evidence-candidates?runId=${run.runId}`, { cache: "no-store", signal: controller.signal })
+    void ownerFetch(`/api/evidence-candidates?runId=${run.runId}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => { if (!response.ok) throw new Error(); return response.json() as Promise<{ candidates: Candidate[] }>; })
       .then((body) => setCandidates(body.candidates)).catch(() => { if (!controller.signal.aborted) setError("Aday kutusu yüklenemedi."); });
     return () => { alive.current = false; controller.abort(); };
@@ -40,7 +41,7 @@ export function EvidenceCandidatePanel({ run, onSourcesChanged }: { run: RunReco
   async function send(path: string, body: object, method = "POST") {
     setBusy(true); setError(undefined);
     try {
-      const response = await fetch(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const response = await ownerFetch(path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       if (!response.ok) { const value = await response.json().catch(() => null) as { error?: string } | null; throw new Error(value?.error ?? "Aday işlemi tamamlanamadı."); }
       if (!alive.current) return false;
       await refresh(); if (alive.current) onSourcesChanged(); return true;
@@ -50,7 +51,7 @@ export function EvidenceCandidatePanel({ run, onSourcesChanged }: { run: RunReco
   async function exportCandidates() {
     setBusy(true); setError(undefined);
     try {
-      const response = await fetch(`/api/evidence-candidates?runId=${run.runId}&download=1`, { cache: "no-store" });
+      const response = await ownerFetch(`/api/evidence-candidates?runId=${run.runId}&download=1`, { cache: "no-store" });
       if (!response.ok) throw new Error("Adaylar indirilemedi.");
       const link = document.createElement("a"), objectUrl = URL.createObjectURL(await response.blob());
       link.href = objectUrl; link.download = `deliberationai-candidates-${run.runId}.json`; link.click();

@@ -19,7 +19,7 @@ import { fromDrizzle } from "pg-boss";
 import { getDatabase } from "./database";
 import { decryptJson, decryptText, encryptJson, encryptText } from "./crypto";
 import { getBoss, RUN_COUNCIL_QUEUE } from "./queue";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { providerBillingClaims, providerBillingRecords, providerConnections, providerOperations, providerPriceSnapshots, runEvents, runs } from "./schema";
 import { readBillingStates, projectBillingState } from "./provider-billing";
 import { hydratePriceSnapshot, pricingFingerprint } from "./provider-pricing";
@@ -96,7 +96,7 @@ export async function getRunProviderUsage(runId: string): Promise<RunProviderUsa
   const db = getDatabase();
   return db.transaction(async (tx) => {
     const [owned] = await tx.select({ id: runs.id, limits: runs.executionLimitsCiphertext }).from(runs)
-      .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+      .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId()))).limit(1);
     if (!owned) return undefined;
 
     const [totals] = await tx.select({
@@ -150,10 +150,10 @@ export async function getRunProviderUsage(runId: string): Promise<RunProviderUsa
         resultMetadataCiphertext: providerOperations.resultMetadataCiphertext, costEstimateCiphertext: providerOperations.costEstimateCiphertext })
         .from(providerOperations).where(and(eq(providerOperations.runId, runId),
           cursor ? gt(providerOperations.id, cursor) : undefined)).orderBy(asc(providerOperations.id)).limit(100);
-      const billRows = page.length ? await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, LOCAL_OWNER_ID),
+      const billRows = page.length ? await tx.select().from(providerBillingRecords).where(and(eq(providerBillingRecords.ownerId, getOwnerId()),
         inArray(providerBillingRecords.operationId, page.map((row) => row.id)))).orderBy(desc(providerBillingRecords.recordedAt), desc(providerBillingRecords.id)) : [];
       const states = await readBillingStates(billRows, tx);
-      const claims = page.length ? await tx.select().from(providerBillingClaims).where(and(eq(providerBillingClaims.ownerId, LOCAL_OWNER_ID), inArray(providerBillingClaims.operationId, page.map((row) => row.id)))) : [];
+      const claims = page.length ? await tx.select().from(providerBillingClaims).where(and(eq(providerBillingClaims.ownerId, getOwnerId()), inArray(providerBillingClaims.operationId, page.map((row) => row.id)))) : [];
       for (const row of page) {
         const cost = projectCost(row);
         const claim = claims.find((claim) => claim.operationId === row.id);
@@ -252,7 +252,7 @@ export async function prepareProviderOperation(input: {
   return db.transaction(async (tx) => {
     // Serialize receipt creation and admission with the same run -> operation lock order.
     const [owned] = await tx.select({ id: runs.id }).from(runs)
-      .where(and(eq(runs.id, input.runId), eq(runs.ownerId, LOCAL_OWNER_ID))).for("update").limit(1);
+      .where(and(eq(runs.id, input.runId), eq(runs.ownerId, getOwnerId()))).for("update").limit(1);
     if (!owned) throw new Error("Provider operation run was not found.");
     const [existing] = await tx
       .select()
@@ -303,7 +303,7 @@ export async function claimProviderOperationSubmission(id: string, maxOutputToke
       .where(eq(providerOperations.id, id)).limit(1);
     if (!candidate) return false;
     const [run] = await tx.select().from(runs)
-      .where(and(eq(runs.id, candidate.runId), eq(runs.ownerId, LOCAL_OWNER_ID))).for("update").limit(1);
+      .where(and(eq(runs.id, candidate.runId), eq(runs.ownerId, getOwnerId()))).for("update").limit(1);
     if (!run) return false;
     const [operation] = await tx.select().from(providerOperations).where(eq(providerOperations.id, id)).for("update").limit(1);
     if (!operation || operation.status !== "prepared") return false;
@@ -330,10 +330,10 @@ export async function claimProviderOperationSubmission(id: string, maxOutputToke
         && decryptJson<Array<{ mimeType: string }>>(run.attachmentsCiphertext, `run:${run.id}:attachments`).some((item) => item.mimeType !== "application/pdf");
       if (!hasImages && member?.connectionId === pricingConnection.id && member.model === operation.model && member.provider === operation.provider) {
         const [connection] = await tx.select().from(providerConnections).where(and(eq(providerConnections.id, pricingConnection.id),
-          eq(providerConnections.ownerId, LOCAL_OWNER_ID), eq(providerConnections.revision, pricingConnection.revision),
+          eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.revision, pricingConnection.revision),
           eq(providerConnections.provider, operation.provider))).for("share").limit(1);
         if (connection) {
-          const [candidatePrice] = await tx.select().from(providerPriceSnapshots).where(and(eq(providerPriceSnapshots.ownerId, LOCAL_OWNER_ID),
+          const [candidatePrice] = await tx.select().from(providerPriceSnapshots).where(and(eq(providerPriceSnapshots.ownerId, getOwnerId()),
             eq(providerPriceSnapshots.connectionId, connection.id), eq(providerPriceSnapshots.connectionRevision, connection.revision),
             eq(providerPriceSnapshots.model, operation.model))).orderBy(desc(providerPriceSnapshots.recordedAt), desc(providerPriceSnapshots.id)).limit(1);
           if (candidatePrice) {
@@ -390,7 +390,7 @@ export async function updateProviderOperation(
       let priceIntegrityUnavailable = false;
       if (existing.priceSnapshotId) {
         const [storedPrice] = await tx.select().from(providerPriceSnapshots).where(and(eq(providerPriceSnapshots.id, existing.priceSnapshotId),
-          eq(providerPriceSnapshots.ownerId, LOCAL_OWNER_ID))).limit(1);
+          eq(providerPriceSnapshots.ownerId, getOwnerId()))).limit(1);
         if (storedPrice) {
           try { price = hydratePriceSnapshot(storedPrice); }
           catch { priceIntegrityUnavailable = true; }
@@ -451,7 +451,7 @@ export async function listProviderOperationsNeedingAction(): Promise<
     .innerJoin(runs, eq(runs.id, providerOperations.runId))
     .where(
       and(
-        eq(runs.ownerId, LOCAL_OWNER_ID),
+        eq(runs.ownerId, getOwnerId()),
         or(eq(providerOperations.status, "outcome_unknown"),
           and(eq(providerOperations.status, "submitted"), inArray(runs.status, ["completed", "partially_completed", "failed", "cancelled"]))),
       ),
@@ -483,7 +483,7 @@ export async function resolveProviderOperation(
     const [run] = await tx
       .select()
       .from(runs)
-      .where(and(eq(runs.id, candidate.runId), eq(runs.ownerId, LOCAL_OWNER_ID)))
+      .where(and(eq(runs.id, candidate.runId), eq(runs.ownerId, getOwnerId())))
       .for("update")
       .limit(1);
     if (!run) return undefined;

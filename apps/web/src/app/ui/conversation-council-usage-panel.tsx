@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { ConversationCouncilUsage } from "@deliberation-ai/persistence";
 import type { PrivateUsageCounter } from "@deliberation-ai/domain";
@@ -15,7 +16,7 @@ export function ConversationCouncilUsagePanel({ conversationId }: { conversation
     active.current?.abort(); const controller = new AbortController(); active.current = controller;
     const current = ++generation.current; setBusy(true); setError(""); setUsage(undefined);
     try {
-      const response = await fetch(`/api/conversations/${conversationId}/council-usage`, { cache: "no-store", signal: controller.signal });
+      const response = await ownerFetch(`/api/conversations/${conversationId}/council-usage`, { cache: "no-store", signal: controller.signal });
       const body = await response.json() as { usage: ConversationCouncilUsage; error?: string };
       if (!response.ok) throw new Error(body.error ?? "Konsey kullanımı okunamadı.");
       if (current === generation.current && !controller.signal.aborted) setUsage(body.usage);

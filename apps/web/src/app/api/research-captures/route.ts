@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { createResearchCaptureSchema, evidenceSourceIdSchema } from "@deliberation-ai/contracts";
 import {
   authorizeResearchCapture,
@@ -11,7 +12,7 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request): Promise<Response> {
+async function sessionGET(request: Request): Promise<Response> {
   const parsed = evidenceSourceIdSchema.safeParse(new URL(request.url).searchParams.get("runId"));
   if (!parsed.success) return Response.json({ error: "Çalışma kimliği geçersiz." }, { status: 400 });
   const captures = await listResearchCaptures(parsed.data);
@@ -19,7 +20,7 @@ export async function GET(request: Request): Promise<Response> {
   return Response.json({ captures });
 }
 
-export async function POST(request: Request): Promise<Response> {
+async function sessionPOST(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const parsed = createResearchCaptureSchema.safeParse(await request.json().catch(() => null));
@@ -44,3 +45,6 @@ export async function POST(request: Request): Promise<Response> {
     throw error;
   }
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);

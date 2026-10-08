@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { RunBranches, RunBranchItem, RunBranchKind } from "@deliberation-ai/persistence";
 
@@ -24,7 +25,7 @@ export function RunBranchesPanel({ runId, refreshKey, onOpenRun }: {
   useEffect(() => {
     const controller = new AbortController();
     activeRequest.current = controller;
-    void fetch(`/api/runs/${runId}/branches`, { cache: "no-store", signal: controller.signal })
+    void ownerFetch(`/api/runs/${runId}/branches`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const value = await response.json() as RunBranches & { error?: string };
         if (!response.ok) throw new Error(value.error ?? "Çalışma bağlantıları yüklenemedi.");
@@ -42,7 +43,7 @@ export function RunBranchesPanel({ runId, refreshKey, onOpenRun }: {
     setBusy(true);
     setError(null);
     try {
-      const response = await fetch(`/api/runs/${runId}/branches?${section}Before=${encodeURIComponent(cursor)}`, { cache: "no-store", signal: controller.signal });
+      const response = await ownerFetch(`/api/runs/${runId}/branches?${section}Before=${encodeURIComponent(cursor)}`, { cache: "no-store", signal: controller.signal });
       const value = await response.json() as RunBranches & { error?: string };
       if (!response.ok) throw new Error(value.error ?? "Diğer bağlantılar yüklenemedi.");
       if (controller.signal.aborted) return;

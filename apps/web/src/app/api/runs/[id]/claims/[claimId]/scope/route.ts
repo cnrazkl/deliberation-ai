@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../../../lib/local-auth";
 import { updateClaimScopeSchema } from "@deliberation-ai/contracts";
 import { updateDurableClaimScope } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "@/lib/request-security";
@@ -5,7 +6,7 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function PATCH(
+async function sessionPATCH(
   request: Request,
   context: { params: Promise<{ id: string; claimId: string }> },
 ): Promise<Response> {
@@ -19,3 +20,5 @@ export async function PATCH(
     ? Response.json(run)
     : Response.json({ error: "Çalışma veya iddia bulunamadı." }, { status: 404 });
 }
+
+export const PATCH = withLocalSession(sessionPATCH);

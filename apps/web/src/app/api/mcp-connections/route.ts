@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { saveMcpConnectionSchema } from "@deliberation-ai/contracts";
 import { deleteMcpConnection, listMcpConnections, saveMcpConnection } from "@deliberation-ai/persistence";
 import { LocalMcpError } from "@deliberation-ai/tools";
@@ -6,11 +7,11 @@ import { rejectCrossOriginMutation } from "../../../lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+async function sessionGET() {
   return Response.json({ connections: await listMcpConnections() }, { headers: { "cache-control": "no-store" } });
 }
 
-export async function POST(request: Request) {
+async function sessionPOST(request: Request) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const parsed = saveMcpConnectionSchema.safeParse(await request.json().catch(() => null));
@@ -23,10 +24,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function sessionDELETE(request: Request) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "Bağlantı kimliği gerekli." }, { status: 422 });
   return Response.json({ deleted: await deleteMcpConnection(id) });
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);
+export const DELETE = withLocalSession(sessionDELETE);

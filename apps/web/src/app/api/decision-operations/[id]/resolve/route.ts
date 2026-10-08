@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { resolveDecisionOperationSchema } from "@deliberation-ai/evaluation";
 import {
   DecisionOperationResolutionError,
@@ -7,7 +8,7 @@ import { rejectCrossOriginMutation } from "@/lib/request-security";
 
 export const runtime = "nodejs";
 
-export async function POST(
+async function sessionPOST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ): Promise<Response> {
@@ -27,3 +28,5 @@ export async function POST(
     throw error;
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { createScheduleSchema, updateScheduleSchema } from "@deliberation-ai/contracts";
 import { IdempotencyConflictError, MissingContextError, RiskConfigurationError } from "@deliberation-ai/application";
 import { ExecutionPlanLimitsError } from "@deliberation-ai/domain";
@@ -7,11 +8,11 @@ import { rejectCrossOriginMutation } from "../../../lib/request-security";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+async function sessionGET() {
   return Response.json({ schedules: await listLocalSchedules() }, { headers: { "cache-control": "no-store" } });
 }
 
-export async function POST(request: Request) {
+async function sessionPOST(request: Request) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const parsed = createScheduleSchema.safeParse(await request.json().catch(() => null));
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PATCH(request: Request) {
+async function sessionPATCH(request: Request) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const id = new URL(request.url).searchParams.get("id");
@@ -45,10 +46,15 @@ export async function PATCH(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function sessionDELETE(request: Request) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "Zamanlama kimliği gerekli." }, { status: 422 });
   return Response.json({ error: "Zamanlamayı silmek için önizlemeyi inceleyip onaylayın." }, { status: 409, headers: { "Cache-Control": "no-store" } });
 }
+
+export const GET = withLocalSession(sessionGET);
+export const POST = withLocalSession(sessionPOST);
+export const PATCH = withLocalSession(sessionPATCH);
+export const DELETE = withLocalSession(sessionDELETE);

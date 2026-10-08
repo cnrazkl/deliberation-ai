@@ -6,7 +6,7 @@ import { appendPrivateDraftSchema, councilMembersSchema, createPrivateBranchSche
 import type { CouncilReport } from "@deliberation-ai/domain";
 import { getDatabase } from "./database";
 import { decryptJson, decryptText, encryptJson } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { conversationPrivateBranches as branches, conversations, conversationRuns, runs, privateBranchDeletions } from "./schema";
 import { ConversationIntegrityError, ConversationPendingError, ConversationSizeError,
   lockConversationMembership, type ConversationTransaction } from "./conversation-membership";
@@ -19,7 +19,7 @@ type BranchRow = typeof branches.$inferSelect;
 export type PrivateBranchSummary = Pick<BranchRow, "id" | "conversationId" | "sourceRunId" | "sourceMemberId" | "parentBranchId" | "revision" | "messageCount"> & { createdAt: string; updatedAt: string };
 export type PrivateBranchView = PrivateBranchSummary & { body: PrivateBranchBody };
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
-const owned = (id: string) => and(eq(branches.id, id), eq(branches.ownerId, LOCAL_OWNER_ID));
+const owned = (id: string) => and(eq(branches.id, id), eq(branches.ownerId, getOwnerId()));
 function summary(row: Omit<BranchRow, "bodyCiphertext" | "requestHash" | "requestId" | "ownerId">): PrivateBranchSummary {
   return { id: row.id, conversationId: row.conversationId, sourceRunId: row.sourceRunId, sourceMemberId: row.sourceMemberId,
     parentBranchId: row.parentBranchId, revision: row.revision, messageCount: row.messageCount,
@@ -51,7 +51,7 @@ function view(row: BranchRow): PrivateBranchView {
 }
 async function assertConversation(tx: ConversationTransaction, conversationId: string) {
   const [conversation] = await tx.select({ id: conversations.id }).from(conversations)
-    .where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, getOwnerId()))).limit(1);
   if (!conversation) throw new ConversationIntegrityError();
 }
 export async function readPrivateBranch(tx: ConversationTransaction, id: string, forUpdate = false) {
@@ -68,18 +68,18 @@ async function seedSnapshot(tx: ConversationTransaction, runId: string, memberId
   // Bound the stored source before reading its authenticated report. No other
   // member, continuation archive, attachments or receipts enter the new seed.
   const sizeQuery = tx.select({ bytes: sql<number>`octet_length(row_to_json(${runs})::text)` }).from(runs)
-    .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId()))).limit(1);
   const [size] = await (lock ? sizeQuery.for("share") : sizeQuery);
   if (!size) return undefined;
   if (size.bytes > 32 * 1024 * 1024) throw new ConversationSizeError();
   const query = tx.select({ id: runs.id, status: runs.status, stateVersion: runs.stateVersion, question: runs.question,
     questionCiphertext: runs.questionCiphertext, membersCiphertext: runs.membersCiphertext, reportCiphertext: runs.reportCiphertext,
     riskProfile: runs.riskProfile, promptVersion: runs.promptVersion, promptFingerprint: runs.promptFingerprint }).from(runs)
-    .where(and(eq(runs.id, runId), eq(runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(runs.id, runId), eq(runs.ownerId, getOwnerId()))).limit(1);
   const [row] = await (lock ? query.for("share") : query);
   if (!row) return undefined;
   const [membership] = await tx.select({ conversationId: conversationRuns.conversationId }).from(conversationRuns)
-    .where(and(eq(conversationRuns.runId, runId), eq(conversationRuns.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(conversationRuns.runId, runId), eq(conversationRuns.ownerId, getOwnerId()))).limit(1);
   if (!membership) throw new ConversationPendingError();
   await assertConversation(tx, membership.conversationId);
   if (!["completed", "partially_completed"].includes(row.status) || !row.membersCiphertext || !row.reportCiphertext) throw new PrivateBranchSourceError();
@@ -111,13 +111,13 @@ export async function createPrivateBranch(input: CreatePrivateBranch): Promise<P
     await tx.execute(sql`set local lock_timeout = '5s'`);
     await lockConversationMembership(tx);
     const [existing] = await tx.select({ id: branches.id, requestHash: branches.requestHash }).from(branches)
-      .where(and(eq(branches.ownerId, LOCAL_OWNER_ID), eq(branches.requestId, request.requestId))).limit(1);
+      .where(and(eq(branches.ownerId, getOwnerId()), eq(branches.requestId, request.requestId))).limit(1);
     if (existing) {
       if (existing.requestHash !== hash(request)) throw new PrivateBranchConflictError();
       return (await readPrivateBranch(tx, existing.id, true))?.value;
     }
     const [deleted] = await tx.select({ id: privateBranchDeletions.id }).from(privateBranchDeletions)
-      .where(and(eq(privateBranchDeletions.ownerId, LOCAL_OWNER_ID), eq(privateBranchDeletions.requestId, request.requestId))).limit(1);
+      .where(and(eq(privateBranchDeletions.ownerId, getOwnerId()), eq(privateBranchDeletions.requestId, request.requestId))).limit(1);
     if (deleted) throw new PrivateBranchConflictError();
     let conversationId: string; let body: PrivateBranchBody; let parentBranchId: string | null = null;
     if (request.action === "create") {
@@ -135,10 +135,10 @@ export async function createPrivateBranch(input: CreatePrivateBranch): Promise<P
       body = { ...parent.value.body, deliveryVersion: 0, forkedFrom: { branchId: parent.row.id, revision: parent.row.revision, messageCount: parent.row.messageCount } };
     }
     const [count] = await tx.select({ value: sql<number>`count(*)::int` }).from(branches)
-      .where(and(eq(branches.ownerId, LOCAL_OWNER_ID), eq(branches.conversationId, conversationId)));
+      .where(and(eq(branches.ownerId, getOwnerId()), eq(branches.conversationId, conversationId)));
     if (count!.value >= MAX_PRIVATE_BRANCHES) throw new ConversationSizeError();
     const id = randomUUID();
-    const [created] = await tx.insert(branches).values({ id, ownerId: LOCAL_OWNER_ID, conversationId,
+    const [created] = await tx.insert(branches).values({ id, ownerId: getOwnerId(), conversationId,
       sourceRunId: body.seed.sourceRunId, sourceMemberId: body.seed.member.id, parentBranchId,
       requestId: request.requestId, requestHash: hash(request), messageCount: body.messages.length,
       bodyCiphertext: encryptJson(boundedPrivateBody(body), `private-branch:${id}:body`) }).returning();
@@ -174,15 +174,15 @@ export async function loadPrivateBranch(id: string) {
 }
 export async function listPrivateBranchesInSnapshot(tx: ConversationTransaction, conversationId: string) {
   const [conversation] = await tx.select({ id: conversations.id }).from(conversations)
-    .where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(conversations.id, conversationId), eq(conversations.ownerId, getOwnerId()))).limit(1);
   if (!conversation) return undefined;
   const [foreign] = await tx.select({ id: branches.id }).from(branches).where(and(eq(branches.conversationId, conversationId),
-    sql`${branches.ownerId} <> ${LOCAL_OWNER_ID}`)).limit(1);
+    sql`${branches.ownerId} <> ${getOwnerId()}`)).limit(1);
   if (foreign) throw new ConversationIntegrityError();
   const rows = await tx.select({ id: branches.id, conversationId: branches.conversationId, sourceRunId: branches.sourceRunId,
     sourceMemberId: branches.sourceMemberId, parentBranchId: branches.parentBranchId, revision: branches.revision, messageCount: branches.messageCount,
     createdAt: branches.createdAt, updatedAt: branches.updatedAt }).from(branches)
-    .where(and(eq(branches.ownerId, LOCAL_OWNER_ID), eq(branches.conversationId, conversationId)))
+    .where(and(eq(branches.ownerId, getOwnerId()), eq(branches.conversationId, conversationId)))
     .orderBy(asc(branches.createdAt), asc(branches.id)).limit(MAX_PRIVATE_BRANCHES + 1);
   if (rows.length > MAX_PRIVATE_BRANCHES) throw new ConversationSizeError();
   return rows.map(summary);
@@ -194,9 +194,9 @@ export async function exportPrivateBranchesInSnapshot(tx: ConversationTransactio
   const listed = await listPrivateBranchesInSnapshot(tx, conversationId);
   if (!listed) return undefined;
   const [size] = await tx.select({ bytes: sql<number>`coalesce(sum(octet_length(${branches.bodyCiphertext})), 0)::int` }).from(branches)
-    .where(and(eq(branches.ownerId, LOCAL_OWNER_ID), eq(branches.conversationId, conversationId)));
+    .where(and(eq(branches.ownerId, getOwnerId()), eq(branches.conversationId, conversationId)));
   if (size!.bytes > 32 * 1024 * 1024) throw new ConversationSizeError();
-  const rows = await tx.select().from(branches).where(and(eq(branches.ownerId, LOCAL_OWNER_ID), eq(branches.conversationId, conversationId)))
+  const rows = await tx.select().from(branches).where(and(eq(branches.ownerId, getOwnerId()), eq(branches.conversationId, conversationId)))
     .orderBy(asc(branches.createdAt), asc(branches.id));
   return rows.map(view);
 }

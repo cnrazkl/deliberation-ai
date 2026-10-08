@@ -1,5 +1,13 @@
 # Architecture
 
+Local authentication contracts live in contracts; persistence owns scrypt hashes,
+session/token records and per-request AsyncLocalStorage ownership. Every existing BFF
+route binds an authenticated owner centrally; web instrumentation forbids fallback.
+Root selects an explicit user scope, keeping actor identity separate. Worker job
+ownership comes from persisted targets; schedules scan every owner. Providers/domain
+remain independent of authentication and SDK boundaries are unchanged.
+[Account boundaries](LOCAL_ACCOUNTS.md).
+
 Reviewed synthesis contracts bound paragraphs and per-paragraph fidelity checks.
 Domain code validates complete claim/quote coverage and renders the ledger fallback;
 application code coordinates proposer/reviewer and one repair through normalized

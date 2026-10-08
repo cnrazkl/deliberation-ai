@@ -15,7 +15,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { fromDrizzle } from "pg-boss";
 import { decryptJson, decryptText, encryptJson } from "./crypto";
 import { getDatabase } from "./database";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import { getBoss, RUN_DECISION_ASSESSMENT_QUEUE } from "./queue";
 import {
   claims,
@@ -157,7 +157,7 @@ export async function createDecisionAssessment(
       .innerJoin(runs, eq(runs.id, claims.runId))
       .where(
         and(
-          eq(runs.ownerId, LOCAL_OWNER_ID),
+          eq(runs.ownerId, getOwnerId()),
           eq(runs.id, request.runId),
           eq(claims.reportClaimId, request.claimId),
         ),
@@ -171,7 +171,7 @@ export async function createDecisionAssessment(
       .from(evidenceSources)
       .where(
         and(
-          eq(evidenceSources.ownerId, LOCAL_OWNER_ID),
+          eq(evidenceSources.ownerId, getOwnerId()),
           eq(evidenceSources.id, request.sourceId),
           eq(evidenceSources.runId, request.runId),
           eq(evidenceSources.claimId, claim.id),
@@ -187,7 +187,7 @@ export async function createDecisionAssessment(
       .from(decisionConnections)
       .where(
         and(
-          eq(decisionConnections.ownerId, LOCAL_OWNER_ID),
+          eq(decisionConnections.ownerId, getOwnerId()),
           eq(decisionConnections.id, request.connectionId),
         ),
       )
@@ -223,7 +223,7 @@ export async function createDecisionAssessment(
       .insert(decisionAssessments)
       .values({
         id: assessmentId,
-        ownerId: LOCAL_OWNER_ID,
+        ownerId: getOwnerId(),
         runId: request.runId,
         claimId: claim.id,
         reportClaimId: request.claimId,
@@ -261,7 +261,7 @@ export async function listDecisionAssessments(
   const [ownedRun] = await getDatabase()
     .select({ stateVersion: runs.stateVersion })
     .from(runs)
-    .where(and(eq(runs.ownerId, LOCAL_OWNER_ID), eq(runs.id, runId)))
+    .where(and(eq(runs.ownerId, getOwnerId()), eq(runs.id, runId)))
     .limit(1);
   if (!ownedRun) return undefined;
   const rows = await getDatabase()
@@ -269,7 +269,7 @@ export async function listDecisionAssessments(
     .from(decisionAssessments)
     .where(
       and(
-        eq(decisionAssessments.ownerId, LOCAL_OWNER_ID),
+        eq(decisionAssessments.ownerId, getOwnerId()),
         eq(decisionAssessments.runId, runId),
       ),
     )
@@ -286,7 +286,7 @@ export async function startDecisionAssessment(
       .from(decisionAssessments)
       .where(
         and(
-          eq(decisionAssessments.ownerId, LOCAL_OWNER_ID),
+          eq(decisionAssessments.ownerId, getOwnerId()),
           eq(decisionAssessments.id, assessmentId),
         ),
       )
@@ -325,7 +325,7 @@ export async function completeDecisionAssessment(
     })
     .where(
       and(
-        eq(decisionAssessments.ownerId, LOCAL_OWNER_ID),
+        eq(decisionAssessments.ownerId, getOwnerId()),
         eq(decisionAssessments.id, assessmentId),
         eq(decisionAssessments.status, "running"),
       ),
@@ -349,7 +349,7 @@ export async function failDecisionAssessment(
     })
     .where(
       and(
-        eq(decisionAssessments.ownerId, LOCAL_OWNER_ID),
+        eq(decisionAssessments.ownerId, getOwnerId()),
         eq(decisionAssessments.id, assessmentId),
         eq(decisionAssessments.status, "running"),
       ),
@@ -364,7 +364,7 @@ export async function cancelDecisionAssessment(assessmentId: string): Promise<bo
     .set({ status: "cancelled", updatedAt: new Date(), finishedAt: new Date() })
     .where(
       and(
-        eq(decisionAssessments.ownerId, LOCAL_OWNER_ID),
+        eq(decisionAssessments.ownerId, getOwnerId()),
         eq(decisionAssessments.id, assessmentId),
         sql`${decisionAssessments.status} in ('queued', 'running')`,
       ),
@@ -484,7 +484,7 @@ export async function listDecisionOperationsNeedingAction(): Promise<
     .innerJoin(decisionAssessments, eq(decisionAssessments.id, decisionOperations.assessmentId))
     .where(
       and(
-        eq(decisionAssessments.ownerId, LOCAL_OWNER_ID),
+        eq(decisionAssessments.ownerId, getOwnerId()),
         eq(decisionOperations.status, "outcome_unknown"),
       ),
     )
@@ -509,7 +509,7 @@ export async function resolveDecisionOperation(
       .where(
         and(
           eq(decisionOperations.id, operationId),
-          eq(decisionAssessments.ownerId, LOCAL_OWNER_ID),
+          eq(decisionAssessments.ownerId, getOwnerId()),
         ),
       )
       .for("update")

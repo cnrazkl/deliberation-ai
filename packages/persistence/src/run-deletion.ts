@@ -4,7 +4,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import { runDeletionAuditSchema, type RunDeletionAudit } from "@deliberation-ai/contracts";
 import { getDatabase } from "./database";
 import { decryptJson, encryptJson } from "./crypto";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId } from "./owner";
 import * as s from "./schema";
 import { lockConversationMembership, ConversationIntegrityError, ConversationSizeError, type ConversationTransaction } from "./conversation-membership";
 import { decodePrivateBranchBody } from "./private-branches";
@@ -33,7 +33,7 @@ export class RunDeletionBlockedError extends Error {}
 export class RunDeletionStaleError extends Error {}
 export async function isRunIntentDeleted(tx: ConversationTransaction, key: string) {
   const [row] = await tx.select({ id: s.runDeletions.id }).from(s.runDeletions)
-    .where(and(eq(s.runDeletions.ownerId, LOCAL_OWNER_ID), eq(s.runDeletions.intentKeyHash, hash(key)))).limit(1);
+    .where(and(eq(s.runDeletions.ownerId, getOwnerId()), eq(s.runDeletions.intentKeyHash, hash(key)))).limit(1);
   return Boolean(row);
 }
 export function decodeRunDeletion(row: typeof s.runDeletions.$inferSelect) {
@@ -44,7 +44,7 @@ export function decodeRunDeletion(row: typeof s.runDeletions.$inferSelect) {
   return audit;
 }
 async function readAudit(tx: ConversationTransaction, id: string) {
-  const predicate = and(eq(s.runDeletions.id, id), eq(s.runDeletions.ownerId, LOCAL_OWNER_ID));
+  const predicate = and(eq(s.runDeletions.id, id), eq(s.runDeletions.ownerId, getOwnerId()));
   const [size] = await tx.select({ bytes: sql<number>`octet_length(${s.runDeletions.auditCiphertext})` }).from(s.runDeletions).where(predicate).limit(1);
   if (!size) return undefined;
   if (size.bytes > MAX_AUDIT_BYTES * 2) throw new ConversationSizeError();
@@ -55,7 +55,7 @@ export function loadRunDeletion(id: string) {
   return getDatabase().transaction((tx) => readAudit(tx, id), { isolationLevel: "repeatable read", accessMode: "read only" });
 }
 export async function exportRunDeletions(tx: ConversationTransaction, conversationId: string) {
-  const predicate = and(eq(s.runDeletions.ownerId, LOCAL_OWNER_ID), eq(s.runDeletions.conversationId, conversationId));
+  const predicate = and(eq(s.runDeletions.ownerId, getOwnerId()), eq(s.runDeletions.conversationId, conversationId));
   const [size] = await tx.select({ count: sql<string>`count(*)::text`, bytes: sql<string>`coalesce(sum(octet_length(${s.runDeletions.auditCiphertext})),0)::text` })
     .from(s.runDeletions).where(predicate);
   if (Number(size!.count) > MAX_ROWS || Number(size!.bytes) > 32 * 1024 * 1024) throw new ConversationSizeError();
@@ -135,30 +135,30 @@ function references(value: unknown, id: string): boolean {
 }
 async function inspect(tx: ConversationTransaction, id: string) {
   const [targetSize] = await tx.select({ bytes: sql<number>`octet_length(row_to_json(${s.runs})::text)` }).from(s.runs)
-    .where(and(eq(s.runs.id, id), eq(s.runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(s.runs.id, id), eq(s.runs.ownerId, getOwnerId()))).limit(1);
   if (targetSize && targetSize.bytes > MAX_BYTES) throw new ConversationSizeError();
-  const [row] = await tx.select().from(s.runs).where(and(eq(s.runs.id, id), eq(s.runs.ownerId, LOCAL_OWNER_ID))).limit(1);
+  const [row] = await tx.select().from(s.runs).where(and(eq(s.runs.id, id), eq(s.runs.ownerId, getOwnerId()))).limit(1);
   if (!row) return undefined;
   const reasons: RunDeletionBlock[] = [];
   if (!await schemaSupported(tx)) reasons.push("schema_changed");
   if (!terminal.has(row.status)) reasons.push("active_run");
   const [membership] = await tx.select().from(s.conversationRuns).innerJoin(s.conversations, eq(s.conversations.id, s.conversationRuns.conversationId))
-    .where(and(eq(s.conversationRuns.runId, id), eq(s.conversationRuns.ownerId, LOCAL_OWNER_ID))).limit(1);
+    .where(and(eq(s.conversationRuns.runId, id), eq(s.conversationRuns.ownerId, getOwnerId()))).limit(1);
   if (!membership || row.branchIndexVersion !== 1) reasons.push("pending_index");
   else {
     projectRunBranch(row);
-    if (membership.conversations.ownerId !== LOCAL_OWNER_ID || membership.conversation_runs.sourceRunId !== row.branchSourceRunId ||
+    if (membership.conversations.ownerId !== getOwnerId() || membership.conversation_runs.sourceRunId !== row.branchSourceRunId ||
       membership.conversation_runs.kind !== row.branchKind) reasons.push("owner_mismatch");
   }
   if (row.queueJobId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(row.queueJobId)) reasons.push("invalid_queue_job");
   const [limits] = await tx.execute<{ count: string; bytes: string }>(sql`
-    select ((select count(*) from runs where owner_id=${LOCAL_OWNER_ID})+(select count(*) from conversation_private_branches where owner_id=${LOCAL_OWNER_ID}))::text as count,
-      ((select coalesce(sum(octet_length(row_to_json(r)::text)),0) from runs r where owner_id=${LOCAL_OWNER_ID})+
-       (select coalesce(sum(octet_length(body_ciphertext)),0) from conversation_private_branches where owner_id=${LOCAL_OWNER_ID}))::text as bytes`).then((value) => value.rows);
+    select ((select count(*) from runs where owner_id=${getOwnerId()})+(select count(*) from conversation_private_branches where owner_id=${getOwnerId()}))::text as count,
+      ((select coalesce(sum(octet_length(row_to_json(r)::text)),0) from runs r where owner_id=${getOwnerId()})+
+       (select coalesce(sum(octet_length(body_ciphertext)),0) from conversation_private_branches where owner_id=${getOwnerId()}))::text as bytes`).then((value) => value.rows);
   const copies = new Set<string>(); const privateCopies = new Set<string>();
   if (Number(limits!.count) > MAX_ROWS || Number(limits!.bytes) > MAX_BYTES) reasons.push("inspection_limit");
   else {
-    const peers = await tx.select().from(s.runs).where(eq(s.runs.ownerId, LOCAL_OWNER_ID)).orderBy(asc(s.runs.id));
+    const peers = await tx.select().from(s.runs).where(eq(s.runs.ownerId, getOwnerId())).orderBy(asc(s.runs.id));
     for (const peer of peers) {
       if (peer.id === id) continue;
       if (peer.branchIndexVersion !== 1) { reasons.push("pending_index"); continue; }
@@ -169,7 +169,7 @@ async function inspect(tx: ConversationTransaction, id: string) {
         peer.followUpCiphertext && decryptJson(peer.followUpCiphertext, `run:${peer.id}:follow-up`)];
       if (peer.branchSourceRunId === id || references(value, id) || references(extra, id)) copies.add(peer.id);
     }
-    const privateRows = await tx.select().from(s.conversationPrivateBranches).where(eq(s.conversationPrivateBranches.ownerId, LOCAL_OWNER_ID));
+    const privateRows = await tx.select().from(s.conversationPrivateBranches).where(eq(s.conversationPrivateBranches.ownerId, getOwnerId()));
     for (const peer of privateRows) if (peer.sourceRunId === id || references(decodePrivateBranchBody(peer), id)) privateCopies.add(peer.id);
   }
   if (copies.size || privateCopies.size) reasons.push("copied_content");
@@ -180,17 +180,17 @@ async function inspect(tx: ConversationTransaction, id: string) {
   // Catalog guard covers unknown cascading dependencies. Cross-run references in
   // known tables and foreign-owned rows must not be swept up by a valid FK graph.
   const foreign = await tx.execute(sql`select 1 where
-    exists(select 1 from runs where owner_id<>${LOCAL_OWNER_ID} and branch_source_run_id=${id}::uuid) or
-    exists(select 1 from conversation_private_branches where owner_id<>${LOCAL_OWNER_ID} and source_run_id=${id}::uuid) or
-    exists(select 1 from conversation_runs where run_id=${id}::uuid and owner_id<>${LOCAL_OWNER_ID}) or
-    exists(select 1 from memory_entries where source_run_id=${id}::uuid and owner_id<>${LOCAL_OWNER_ID}) or
-    exists(select 1 from preflight_drafts where run_id=${id}::uuid and owner_id<>${LOCAL_OWNER_ID}) or
-    exists(select 1 from local_schedules where last_run_id=${id}::uuid and owner_id<>${LOCAL_OWNER_ID}) or
-    exists(select 1 from evidence_sources e join claims c on c.id=e.claim_id where (e.run_id=${id}::uuid or c.run_id=${id}::uuid) and (e.owner_id<>${LOCAL_OWNER_ID} or e.run_id<>c.run_id)) or
+    exists(select 1 from runs where owner_id<>${getOwnerId()} and branch_source_run_id=${id}::uuid) or
+    exists(select 1 from conversation_private_branches where owner_id<>${getOwnerId()} and source_run_id=${id}::uuid) or
+    exists(select 1 from conversation_runs where run_id=${id}::uuid and owner_id<>${getOwnerId()}) or
+    exists(select 1 from memory_entries where source_run_id=${id}::uuid and owner_id<>${getOwnerId()}) or
+    exists(select 1 from preflight_drafts where run_id=${id}::uuid and owner_id<>${getOwnerId()}) or
+    exists(select 1 from local_schedules where last_run_id=${id}::uuid and owner_id<>${getOwnerId()}) or
+    exists(select 1 from evidence_sources e join claims c on c.id=e.claim_id where (e.run_id=${id}::uuid or c.run_id=${id}::uuid) and (e.owner_id<>${getOwnerId()} or e.run_id<>c.run_id)) or
     exists(select 1 from research_captures r join claims c on c.id=r.claim_id left join evidence_sources e on e.id=r.evidence_source_id
-      where (r.run_id=${id}::uuid or c.run_id=${id}::uuid or e.run_id=${id}::uuid) and (r.owner_id<>${LOCAL_OWNER_ID} or r.run_id<>c.run_id or (e.id is not null and r.run_id<>e.run_id))) or
+      where (r.run_id=${id}::uuid or c.run_id=${id}::uuid or e.run_id=${id}::uuid) and (r.owner_id<>${getOwnerId()} or r.run_id<>c.run_id or (e.id is not null and r.run_id<>e.run_id))) or
     exists(select 1 from decision_assessments d join claims c on c.id=d.claim_id join evidence_sources e on e.id=d.source_id
-      where (d.run_id=${id}::uuid or c.run_id=${id}::uuid or e.run_id=${id}::uuid) and (d.owner_id<>${LOCAL_OWNER_ID} or d.run_id<>c.run_id or d.run_id<>e.run_id)) or
+      where (d.run_id=${id}::uuid or c.run_id=${id}::uuid or e.run_id=${id}::uuid) and (d.owner_id<>${getOwnerId()} or d.run_id<>c.run_id or d.run_id<>e.run_id)) or
     exists(select 1 from claim_occurrences o join claims c on c.id=o.claim_id join model_runs m on m.id=o.model_run_id
       where (c.run_id=${id}::uuid or m.run_id=${id}::uuid) and c.run_id<>m.run_id)`);
   if (foreign.rows.length) reasons.push("owner_mismatch");
@@ -218,10 +218,10 @@ async function inspect(tx: ConversationTransaction, id: string) {
   const schedules = await tx.select({ id: s.localSchedules.id }).from(s.localSchedules).where(eq(s.localSchedules.lastRunId, id)).orderBy(asc(s.localSchedules.id)).limit(MAX_ROWS + 1);
   const billing = await tx.select({ id: s.providerBillingRecords.id }).from(s.providerBillingRecords).where(eq(s.providerBillingRecords.runId, id)).orderBy(asc(s.providerBillingRecords.id)).limit(MAX_ROWS + 1);
   if (preflight.length > MAX_ROWS || schedules.length > MAX_ROWS || billing.length > MAX_ROWS) reasons.push("inspection_limit");
-  const [auditCount] = await tx.select({ count: sql<string>`count(*)::text` }).from(s.runDeletions).where(eq(s.runDeletions.ownerId, LOCAL_OWNER_ID));
+  const [auditCount] = await tx.select({ count: sql<string>`count(*)::text` }).from(s.runDeletions).where(eq(s.runDeletions.ownerId, getOwnerId()));
   if (Number(auditCount!.count) >= MAX_ROWS) reasons.push("audit_capacity");
   const blockedReasons = [...new Set(reasons)]; const eligible = !blockedReasons.length;
-  const fingerprint = eligible ? hash(JSON.stringify({ version: "run-body-deletion-v1", owner: LOCAL_OWNER_ID, snapshot, membership, preflight, schedules, billing })) : null;
+  const fingerprint = eligible ? hash(JSON.stringify({ version: "run-body-deletion-v1", owner: getOwnerId(), snapshot, membership, preflight, schedules, billing })) : null;
   const preview: RunDeletionPreview = { version: "run-body-deletion-v1", runId: id, conversationId: membership?.conversations.id ?? null,
     eligible, fingerprint, blockedReasons, copiedRunIds: [...copies].sort(), privateBranchIds: [...privateCopies].sort(),
     contentCounts: Object.fromEntries(Object.entries(snapshot).map(([name, values]) => [name, values.length])), receiptCount: operations.length,
@@ -252,10 +252,10 @@ export function deleteRunBody(id: string, fingerprint: string) {
         inputTokens: item.inputTokens, outputTokens: item.outputTokens, priceSnapshotId: item.priceSnapshotId,
         tokenDetails: item.resultMetadataCiphertext ? readTokenDetails(decryptJson(item.resultMetadataCiphertext, `provider-operation:${item.id}:metadata`)) : null })) });
     if (Buffer.byteLength(JSON.stringify(audit)) > MAX_AUDIT_BYTES) throw new ConversationSizeError();
-    await tx.insert(s.runDeletions).values({ id, ownerId: LOCAL_OWNER_ID, conversationId: audit.conversationId, intentKeyHash: audit.creationIntentHash,
+    await tx.insert(s.runDeletions).values({ id, ownerId: getOwnerId(), conversationId: audit.conversationId, intentKeyHash: audit.creationIntentHash,
       deletedAt: new Date(audit.deletedAt), auditCiphertext: encryptJson(audit, `run-deletion:${id}:audit`) });
     if (value.row.queueJobId) await tx.execute(sql`delete from pgboss.job where name=${RUN_COUNCIL_QUEUE} and id=${value.row.queueJobId}::uuid`);
-    const removed = await tx.delete(s.runs).where(and(eq(s.runs.id, id), eq(s.runs.ownerId, LOCAL_OWNER_ID))).returning({ id: s.runs.id });
+    const removed = await tx.delete(s.runs).where(and(eq(s.runs.id, id), eq(s.runs.ownerId, getOwnerId()))).returning({ id: s.runs.id });
     if (removed.length !== 1) throw new RunDeletionStaleError();
     return audit;
   });

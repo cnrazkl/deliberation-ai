@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { exportConversation } from "@deliberation-ai/persistence";
 import { conversationError } from "../../../../../lib/conversation-errors";
 import { rejectCrossOriginMutation } from "../../../../../lib/request-security";
@@ -5,7 +6,7 @@ import { createConversationMarkdown, MarkdownExportSizeError } from "../../../..
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+async function sessionPOST(request: Request, context: { params: Promise<{ id: string }> }) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
   const format = new URL(request.url).searchParams.get("format") ?? "json";
@@ -28,3 +29,5 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return conversationError(error);
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

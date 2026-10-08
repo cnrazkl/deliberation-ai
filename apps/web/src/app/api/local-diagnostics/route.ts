@@ -1,9 +1,10 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { readLocalDiagnostics } from "@deliberation-ai/persistence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+async function sessionGET(): Promise<Response> {
   try {
     return Response.json(await readLocalDiagnostics(), {
       headers: { "Cache-Control": "no-store" },
@@ -15,3 +16,5 @@ export async function GET(): Promise<Response> {
     );
   }
 }
+
+export const GET = withLocalSession(sessionGET);

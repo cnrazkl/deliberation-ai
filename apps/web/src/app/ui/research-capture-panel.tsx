@@ -1,5 +1,6 @@
 "use client";
 
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useState, type FormEvent } from "react";
 import type { EvidenceRelation } from "@deliberation-ai/contracts";
 
@@ -52,14 +53,14 @@ export function ResearchCapturePanel({
   const [error, setError] = useState<string>();
 
   async function refresh(): Promise<void> {
-    const response = await fetch(`/api/research-captures?runId=${encodeURIComponent(runId)}`, { cache: "no-store" });
+    const response = await ownerFetch(`/api/research-captures?runId=${encodeURIComponent(runId)}`, { cache: "no-store" });
     if (!response.ok) return;
     const body = (await response.json()) as { captures: ResearchCapture[] };
     setCaptures(body.captures);
   }
 
   useEffect(() => {
-    void fetch(`/api/research-captures?runId=${encodeURIComponent(runId)}`, { cache: "no-store" })
+    void ownerFetch(`/api/research-captures?runId=${encodeURIComponent(runId)}`, { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) return;
         const body = (await response.json()) as { captures: ResearchCapture[] };
@@ -77,7 +78,7 @@ export function ResearchCapturePanel({
     setFetching(true);
     setError(undefined);
     try {
-      const response = await fetch("/api/research-captures", {
+      const response = await ownerFetch("/api/research-captures", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ runId, claimId: effectiveClaimId, url, renderMode: browserRender ? "browser" : "direct" }),
@@ -97,7 +98,7 @@ export function ResearchCapturePanel({
     setPendingId(id);
     setError(undefined);
     try {
-      const response = await fetch(`/api/research-captures/${id}`, {
+      const response = await ownerFetch(`/api/research-captures/${id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "reject" }),
@@ -115,7 +116,7 @@ export function ResearchCapturePanel({
     setPendingId(id);
     setError(undefined);
     try {
-      const response = await fetch(`/api/research-captures/${id}/promote`, {
+      const response = await ownerFetch(`/api/research-captures/${id}/promote`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

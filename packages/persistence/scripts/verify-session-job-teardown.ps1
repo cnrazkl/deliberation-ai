@@ -69,7 +69,13 @@ try {
     foreach ($taskDelay in @(2, 12)) {
         Start-Sleep -Seconds $taskDelay
         $taskPage = Invoke-WebRequest http://127.0.0.1:3000/ -UseBasicParsing -TimeoutSec 10
-        $taskDiagnostics = Invoke-RestMethod http://127.0.0.1:3000/api/local-diagnostics -TimeoutSec 10
+        $taskKeyLine = Get-Content -LiteralPath (Join-Path $taskRoot '.env.local') | Where-Object { $_.StartsWith('DATA_ENCRYPTION_KEY=') }
+        $taskKey = [Convert]::FromBase64String($taskKeyLine.Substring('DATA_ENCRYPTION_KEY='.Length))
+        $taskAt = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds().ToString()
+        $taskHmac = New-Object System.Security.Cryptography.HMACSHA256
+        $taskHmac.Key = $taskKey
+        try { $taskDigest = ([BitConverter]::ToString($taskHmac.ComputeHash([Text.Encoding]::UTF8.GetBytes('local-diagnostics-read-v1:' + $taskAt)))).Replace('-', '').ToLowerInvariant() } finally { $taskHmac.Dispose() }
+        $taskDiagnostics = Invoke-RestMethod http://127.0.0.1:3000/api/local-diagnostics -TimeoutSec 10 -Headers @{'X-Deliberation-Runtime-Read'=($taskAt + '.' + $taskDigest)}
         if ($taskPage.StatusCode -ne 200 -or $taskDiagnostics.database -ne 'ready' -or $taskDiagnostics.readyWorkers -ne 1 -or $taskDiagnostics.operational.runtimeIdentity -ne $taskRecord.identity) { throw 'Runtime did not survive launcher job teardown.' }
     }
     $taskProof = @{ version='local-session-job-proof-v1'; at=[DateTime]::UtcNow.ToString('o'); launcherExited=$true; jobClosed=$true; http=200; database='ready'; readyWorkers=1; identity=$taskRecord.identity }

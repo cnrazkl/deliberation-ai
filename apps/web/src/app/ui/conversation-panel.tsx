@@ -1,4 +1,5 @@
 "use client";
+import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useState } from "react";
 import type { ConversationView } from "@deliberation-ai/persistence";
 import { ConversationCouncilUsagePanel } from "./conversation-council-usage-panel";
@@ -12,7 +13,7 @@ export function ConversationPanel({ runId, onOpenRun }: { runId: string; onOpenR
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    void fetch(`/api/runs/${runId}/conversation`, { signal: controller.signal, cache: "no-store" }).then(async (response) => {
+    void ownerFetch(`/api/runs/${runId}/conversation`, { signal: controller.signal, cache: "no-store" }).then(async (response) => {
       const body = await response.json() as ConversationView & { error?: string };
       if (!response.ok) throw new Error(body.error ?? "Konuşma yüklenemedi.");
       if (!controller.signal.aborted) { setLoaded({ runId, value: body }); setError(null); }
@@ -23,7 +24,7 @@ export function ConversationPanel({ runId, onOpenRun }: { runId: string; onOpenR
     if (!conversation || busy) return;
     setBusy(true); setError(null);
     try {
-      const response = await fetch(`/api/conversations/${conversation.conversationId}/export?format=${format}`, { method: "POST", cache: "no-store" });
+      const response = await ownerFetch(`/api/conversations/${conversation.conversationId}/export?format=${format}`, { method: "POST", cache: "no-store" });
       if (!response.ok) { const body = await response.json() as { error?: string }; throw new Error(body.error ?? "Konuşma indirilemedi."); }
       const url = URL.createObjectURL(await response.blob());
       const link = document.createElement("a"); link.href = url;

@@ -2,7 +2,8 @@ import type { Page } from "@playwright/test";
 
 export async function workspaceView(page: Page, name: "Sohbet" | "Ayarlar" | "Zamanlayıcı") {
   const toggle = page.getByRole("button", { name: "Sohbet geçmişini aç", exact: true });
-  const nav = page.getByRole("navigation", { name: "Ana menü" });
+  const nav = page.getByRole("navigation", { name: "Ana menü", includeHidden: true });
+  await nav.waitFor({ state: "attached" });
   if (!await nav.isVisible()) await toggle.click();
   await nav.getByRole("button", { name, exact: true }).click();
 }

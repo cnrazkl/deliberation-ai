@@ -1,10 +1,11 @@
+import { withLocalSession } from "../../../../../lib/local-auth";
 import { cancelDurableRun } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../../../lib/request-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(
+async function sessionPOST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
@@ -17,3 +18,5 @@ export async function POST(
   }
   return Response.json(run);
 }
+
+export const POST = withLocalSession(sessionPOST);

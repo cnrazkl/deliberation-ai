@@ -1,3 +1,4 @@
+import { withLocalSession } from "../../../lib/local-auth";
 import { z } from "zod";
 import { knowledgeFileMediaSchema, knowledgeScopeSchema, knowledgeSelectionSchema } from "@deliberation-ai/contracts";
 import { createKnowledgeCollection, createKnowledgeConversation, listKnowledgeCollections, changeKnowledgeGrant, exportConversationKnowledge,
@@ -21,7 +22,7 @@ const commands = z.discriminatedUnion("operation", [
     query: z.string().trim().min(1).max(4_000), allowWithoutEvidence: z.boolean() }).strict(),
 ]);
 const response = (value: unknown, status = 200) => Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
-export async function POST(request: Request) {
+async function sessionPOST(request: Request) {
   const rejected = rejectCrossOriginMutation(request); if (rejected) return rejected;
   try {
     if (!request.body) return response({ error: "İstek gövdesi gerekli." }, 400);
@@ -56,3 +57,5 @@ export async function POST(request: Request) {
     error instanceof KnowledgePacketStaleError || error instanceof KnowledgeSelectionConflictError ? 409 : 422);
   }
 }
+
+export const POST = withLocalSession(sessionPOST);

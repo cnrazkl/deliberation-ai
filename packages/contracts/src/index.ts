@@ -975,3 +975,4 @@ export const resolveProviderOperationSchema = z.object({
 export type ResolveProviderOperationRequest = z.infer<
   typeof resolveProviderOperationSchema
 >;
+export * from "./local-auth";
