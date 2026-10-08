@@ -8,7 +8,7 @@ databases through `pnpm test:e2e`, replacing the historical shared-DB test behav
 Maintenance stop checks all accounts and preserves terminal unknown council receipts
 without acknowledging/retrying them; normal stop continues to refuse unresolved work.
 
-Root now opens user administration only; ordinary users register with username/password
+The deployed follow-up makes root open user administration only; ordinary users register with username/password
 and can review complete account erasure. No new migration is required for this follow-up.
 Browser fixtures authenticate as an ordinary user, with a separate root session for
 administration tests. `DELIBERATION_E2E_PORT` can select a free test port (default 3100,

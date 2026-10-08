@@ -2,7 +2,7 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
-## Membership follow-up — verification in progress
+## Membership follow-up — completed local deployment
 
 Registration now needs only a chosen username and password. Root opens administration
 only; chat/knowledge/schedule/model generation routes reject the root actor even after
@@ -12,10 +12,23 @@ of their active-database account/data. Shared lifecycle leases fence in-flight w
 worker activity; the transactional closure checks schema/FKs/cross-owner references and
 preserves other accounts. No migration is added. Passed 460 offline tests, 275 isolated
 PostgreSQL tests, a final eleven-case account rerun, all 53 browser cases, type checking,
-lint and production build. Backed-up local deployment is in progress.
+lint and production build. The personal installation is updated and the hidden Windows
+session runtime reports ready at `http://127.0.0.1:3000/`. Live checks verified root login
+with chat denial (403), username/password-only registration, ordinary workspace access,
+root connection inspection and complete deletion of a generated account with one saved
+MCP connection. Its session is revoked and the original account inventory is identical.
+No provider/network generation occurred and the temporary password file was removed.
+
+Restore-verified pre/post deployment archives are
+`deliberation-20261008T155943Z-93b6cb94eb10.manifest.json` and
+`deliberation-20261008T160222Z-a2405f26cc67.manifest.json`, each restoring 440 runs,
+7,601 encrypted rows, 12,273 decrypted values and 510 conversations/579 memberships.
+Database fingerprints confirm every pre-existing application table is unchanged except
+auth throttle metadata; queue maintenance metadata in `pgboss.version`/`pgboss.queue` also moved.
+All original queue jobs and the one terminal unknown provider receipt remain unchanged.
 [Contract](LOCAL_ACCOUNTS.md).
 
-## Local membership — completed local deployment
+## Initial local membership — initial deployment
 
 The owner requested local registration/login, a unique root with a supplied local
 password, private user API connections and root visibility/management across users.

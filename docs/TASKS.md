@@ -9,9 +9,12 @@ spending protection on 8 October. Existing call/output controls and observations
 remain; the cancelled extension is not an active task or an accepted capability.
 [Execution inventory and live checks](NON_HUMAN_COMPLETION.md).
 
-- [ ] Membership follow-up: username/password-only registration, complete reviewed self
+- [x] Membership follow-up: username/password-only registration, complete reviewed self
   deletion and administration-only root with user editing/password reset, connection
-  management and reviewed user deletion. Verification/deployment in progress; no new DDL.
+  management and reviewed user deletion. Passed 460 offline, 275 PostgreSQL and 53 browser
+  cases, a final eleven-case account rerun, types/lint/build and backed-up personal
+  deployment/live fixture erasure. Root chats are denied; other accounts/data preserved.
+  No new DDL or provider generation.
 
 - [x] Owner-requested local membership: username/password registration and unique root,
   user-owned API connections and full workspace isolation, root user/connection management,

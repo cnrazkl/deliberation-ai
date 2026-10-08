@@ -109,6 +109,24 @@ new leases. Confirmation password attempts are limited to ten per actor per 15 m
 
 ## Verification
 
+The administration/erasure follow-up passes 460 offline, 275 isolated PostgreSQL and
+53 browser cases, plus a final eleven-case account rerun, type checking, lint and a
+production build. Coverage includes populated erasure, all-session revocation, stale
+fingerprints, wrong passwords, root-only updates/reset, root deletion refusal, an
+in-flight owner lease, schema drift and foreign-owner data/session references. Browser
+coverage checks mobile self-registration/deletion and root's dedicated management,
+connection editing, reset and deletion, with server-side chat denial.
+
+Actual-installation verification registered/logged in a generated user without a display
+name, saved one generated MCP connection without contacting its endpoint, inspected it
+as root and erased the fixture account completely. Root chat requests return 403 and
+the erased cookie returns 401. Original account inventory and existing application rows
+stay identical apart from auth throttles; queue maintenance updates `pgboss.version`/`pgboss.queue` metadata.
+The pre/post archives `deliberation-20261008T155943Z-93b6cb94eb10.manifest.json` and
+`deliberation-20261008T160222Z-a2405f26cc67.manifest.json` both restore-verify 440 runs,
+7,601 encrypted rows, 12,273 decrypted values and valid account integrity. The app remains
+ready in its hidden Windows session runtime. No new migration or model call occurred.
+
 Offline guard coverage checks every application route, concurrent owner isolation,
 password derivation and runtime-token rejection. Isolated PostgreSQL tests cover
 root uniqueness, privilege injection, normalized duplicate names, session hashing,
@@ -118,7 +136,7 @@ and real session cookies; it never seeds or authenticates against the personal d
 It covers registration/login/logout, root connection inspection, account switching,
 stale mutation rejection and existing application regressions.
 
-Accepted locally on 8 October 2026: 459 offline tests, 271 isolated PostgreSQL tests,
+Initial membership acceptance on 8 October 2026: 459 offline tests, 271 isolated PostgreSQL tests,
 all 53 browser tests, type checking, lint, production build and dependency/secret
 checks pass. Personal deployment applied only migration 0055 and provisioned root;
 the temporary ignored password file was removed. Live HTTP checks confirm anonymous
