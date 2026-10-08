@@ -6,6 +6,14 @@ allowed; failure preserves the deterministic ledger. Drafts remain model judgmen
 with original minority/red-team claims and provenance intact. The workflow is local
 CLI/export only; there is no new browser control. [Contract](REVIEWED_SYNTHESIS.md).
 
+The separate local contradiction shadow command can call one hosted model against
+frozen claim pairs; it cannot create production relations or certify truth. Frozen
+round/prompt diagnostic studies dispatch selected source cases through the existing
+council worker and retain every failed/unknown arm. Independent quality acceptance
+remains pending. Terminal council runs with unfinished submitted receipts now appear
+in the existing operator-decision controls, without automatic retry. Reported output
+above a requested cap is preserved as a failure. [Scope](NON_HUMAN_COMPLETION.md).
+
 Daily local startup runs the app in a hidden Windows session task, without separate
 Node/Next terminal windows. Requested stop preserves the database/history. It adds
 no automatic login/reboot/crash restart. [Operating contract](WINDOWS_SESSION_RUNTIME.md).
@@ -191,7 +199,7 @@ The [offline prompt-comparison preparation](evaluation/PROMPT_COMPARISON.md) fre
 
 A local operator can retrospectively inspect saved review rounds with a [read-only early-stop shadow command](evaluation/EARLY_STOP_SHADOW.md). It shows why exact output repetition cannot yet justify ending a council early. The running product continues every selected review round unless an existing failure barrier or the selected round ceiling ends it.
 
-The first broad correctness package now has [an offline acceptance workflow](evaluation/COUNCIL_CORRECTNESS.md): externally sourced candidate questions, independent human labeling/adjudication, persisted source-bound run measurements and held-out recall gates. Its human reviews and real model measurements remain pending. The semantic contradiction prototype is offline and shadow-only; the running UI continues to expose owner-authored relations. These tools do not attach a factual-accuracy badge to ordinary reports.
+The first broad correctness package has [an independent acceptance workflow](evaluation/COUNCIL_CORRECTNESS.md): externally sourced candidate questions, human labeling/adjudication, persisted source-bound run measurements and held-out recall gates. Its full human/model-quality study remains pending. An opt-in hosted contradiction CLI is shadow-only; the running UI continues to expose owner-authored relations. Limited diagnostic runs are recorded separately and do not attach a factual-accuracy badge to ordinary reports.
 
 ## First acceptance slice
 

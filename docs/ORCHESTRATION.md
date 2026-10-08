@@ -7,6 +7,16 @@ malformed review or stale-source outcomes stop. A permanent local execution clai
 and per-phase submitted receipts precede calls; finished intents replay, interrupted
 ones cannot resume/resend automatically. [Flow](REVIEWED_SYNTHESIS.md).
 
+The opt-in study CLI takes permanent local execution ownership, records an arm
+submission before durable enqueue, and preserves queue acknowledgements and terminal
+observations. Ambiguous enqueue, unknown receipts, polling timeout or drift stops
+later arms; a timeout does not cancel a run. Fixed risk/red-team/barrier rules remain.
+Only terminal submitted receipts join unknown receipts in explicit operator controls;
+active submitted work cannot be resolved through this extension. Locking, fresh retry
+capacity and permanent prior reservations remain enforced. Reported output exceeding
+the requested cap is a known failed receipt, without automatic resend.
+[Workflow](NON_HUMAN_COMPLETION.md).
+
 Recovery hold checks migration compatibility, then opens a heartbeat without queue/
 schedule consumers. Explicit clone queue parking retains cancelled rows. Adapter
 generation is fenced during rehearsal. Post-cutover changes block rollback/cleanup.

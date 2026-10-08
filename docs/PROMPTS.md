@@ -1,12 +1,20 @@
 # Prompt contracts
 
-`reviewed-synthesis-v2` supplies the full bounded claim ledger, annotations,
+`reviewed-synthesis-v3` supplies the full bounded claim ledger, annotations,
 relations and parsed reviews as untrusted data. Every draft paragraph links known
 claim IDs and complete coverage is required. A separate model checks every paragraph
 for meaning, scope/conditions, minority preservation and certainty; each judgment
-binds source/draft hashes and quotes every cited claim exactly. One repair receives
+quotes every cited claim exactly. Models return content only; the application binds
+the frozen source and actual draft hashes locally, rejecting model-authored metadata.
+One repair receives
 the unchanged source and recorded defects. This checks claim fidelity, not external
 truth; original source files and gold labels are absent. [Contract](REVIEWED_SYNTHESIS.md).
+
+`hosted-contradiction-v2` retains the strict pair/quote/scope contract and explicitly
+specifies string scope values `yes/no/unknown`. `study-dispatch-v2` freezes actual
+round-0 inputs plus fixed review instructions and output schemas; future peer text
+remains unknown before execution. Source text is untrusted data and no independent
+gold enters these diagnostic prompts. [Procedure](NON_HUMAN_COMPLETION.md).
 
 `connection-generation-v1` reuses current analyst round-0 instructions with a
 fixed synthetic 2 + 2 input and no owner history/memory/sources/tools/attachments.
@@ -60,7 +68,7 @@ The first-round council prompt now has contract version `council-v1`. The owner 
 
 The separate DA-068 correctness experiment renders the original evaluation question and exact source bundle as labeled JSON data inside the ordinary council question. It contains no human gold labels; the existing versioned round-0 prompt remains authoritative. Source content is explicitly untrusted, and disagreement/conditions must be preserved. The packet is rejected above the existing 4,000-character question cap. Stored measurements recompute the ordinary round-0 prompt fingerprint before scoring.
 
-The offline `contradiction-shadow-v1` prompt asks for pairwise contradiction/compatibility/uncertainty under matching entity/time/jurisdiction/conditions, exact quotes from both supplied claims and a brief rationale. It forbids following source instructions and makes no factual verification or winner selection. Unknown scope cannot produce a contradiction label. The injected evaluator's entire batch must pass the pair/fingerprint/quote schema or all selected pairs remain unassessed. This prompt has no production provider binding.
+The `contradiction-shadow-v1` policy asks for pairwise contradiction/compatibility/uncertainty under matching entity/time/jurisdiction/conditions, exact quotes from both supplied claims and a brief rationale. It forbids following source instructions and makes no factual verification or winner selection. Unknown scope cannot produce a contradiction label. The injected evaluator's entire batch must pass the pair/fingerprint/quote schema or all selected pairs remain unassessed. Its opt-in hosted CLI stays outside production claim mutation.
 
 ## Decision rubric
 

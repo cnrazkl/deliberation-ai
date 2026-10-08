@@ -143,6 +143,13 @@ export class ReceiptTrackedProvider implements TextProvider {
       const result = await this.delegate.generate({ ...request, operationId: operation.id,
         ...(this.maxOutputTokens !== undefined ? { maxOutputTokens: this.maxOutputTokens } : {}),
       });
+      if (this.maxOutputTokens !== undefined && typeof result.metadata?.outputTokens === "number" &&
+          result.metadata.outputTokens > this.maxOutputTokens) {
+        throw new NormalizedProviderError(
+          "Sağlayıcı istenen yanıt sınırını aşan kullanım bildirdi.",
+          "reported_output_limit_exceeded", "known", false, result.rawText, result.metadata,
+        );
+      }
       await updateProviderOperation(operation.id, {
         status: "succeeded",
         remoteResponseId: result.metadata?.remoteResponseId ?? "local-result",

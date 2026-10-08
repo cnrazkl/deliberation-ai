@@ -14,7 +14,7 @@ import { executionLimitsSchema, reviewRoundCountSchema } from "@deliberation-ai/
 import { executionReservationAllowed, estimateTokenCost, picoUsdToUsd, usdToPico } from "@deliberation-ai/domain";
 import { readRunKnowledgePacket, authorizeKnowledgePacketInSnapshot } from "./knowledge-packets";
 import { lockConversationMembership } from "./conversation-membership";
-import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import { fromDrizzle } from "pg-boss";
 import { getDatabase } from "./database";
 import { decryptJson, decryptText, encryptJson, encryptText } from "./crypto";
@@ -452,7 +452,8 @@ export async function listProviderOperationsNeedingAction(): Promise<
     .where(
       and(
         eq(runs.ownerId, LOCAL_OWNER_ID),
-        eq(providerOperations.status, "outcome_unknown"),
+        or(eq(providerOperations.status, "outcome_unknown"),
+          and(eq(providerOperations.status, "submitted"), inArray(runs.status, ["completed", "partially_completed", "failed", "cancelled"]))),
       ),
     )
     .orderBy(asc(providerOperations.startedAt));
@@ -488,7 +489,8 @@ export async function resolveProviderOperation(
     if (!run) return undefined;
     const [operation] = await tx.select().from(providerOperations).where(eq(providerOperations.id, operationId)).for("update").limit(1);
     if (!operation) return undefined;
-    if (operation.status !== "outcome_unknown") {
+    if (operation.status !== "outcome_unknown" && !(operation.status === "submitted" &&
+      ["completed", "partially_completed", "failed", "cancelled"].includes(run.status))) {
       throw new ProviderOperationResolutionError(
         "Sağlayıcı operasyonu artık operatör kararı beklemiyor.",
       );

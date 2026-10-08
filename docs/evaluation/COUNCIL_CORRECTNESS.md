@@ -7,7 +7,7 @@ DA-068, 27 September 2026. The owner requested the first broad work package and 
 | External-domain, source-bound candidate intake | 40 cases, 11 frozen primary-source excerpts, 10 document/question families, six declared domains; 20 development / 20 held out; hashes and leakage checks | Technical preparation complete; human coverage approval pending |
 | Independent gold labels | Two separate blank claim worksheets, quote-to-span compiler, third-person adjudication, explicit coordinator attestation | Tools complete; two people and a third adjudicator pending |
 | Authentic source-level model measurement | Source-inclusive question packets; read-only PostgreSQL binding; report-bound assessment worksheet; held-out and pooled metrics; strict acceptance CLI | Tools complete; real runs and human output judgments pending |
-| Automatic semantic contradiction design | Bounded candidate ranking, one injected evaluator batch, complete unassessed inventory, exact quote/scope validation, two human pair-review worksheets and adjudication, candidate recall / end-to-end recall / false alarms | Offline shadow prototype and regression tests complete; hosted adapter, independent pair labels and live evaluation pending before product activation |
+| Automatic semantic contradiction design | Bounded candidate ranking, one injected evaluator batch, complete unassessed inventory, exact quote/scope validation, two human pair-review worksheets and adjudication, candidate recall / end-to-end recall / false alarms | Offline and opt-in hosted CLI engineering complete; one v2 live pair valid, v1 failure retained. Independent pair labels and full live quality evaluation pending before product activation |
 | Acceptance result | `pnpm correctness:status`; scoring only from regenerated adjudicated gold and persisted, source-bound runs | Correctly blocked pending human review and measurements |
 
 ## External candidate suite
@@ -39,7 +39,10 @@ After adjudication the coordinator copies `attestation.template.json` to `attest
 
 ## Model measurements after labels exist
 
-The existing council UI/worker remains the generation path. A new bulk provider runner is not introduced. For each configuration being tested:
+The existing council worker remains the generation path. An opt-in bounded diagnostic
+study CLI can dispatch explicitly frozen selected round/prompt arms without gold;
+it does not replace this source-approved acceptance compiler or grant a quality pass.
+[Limited live results](../NON_HUMAN_COMPLETION.md). For each configuration being tested:
 
 After DA-069, source packets may trigger the automatic lexical risk floor. For this mixed-domain study, pre-register the high profile, red-team and review consistently for every case rather than changing controls between cases. This setup instruction does not authorize running the study or alter the frozen questions/gold protocol.
 

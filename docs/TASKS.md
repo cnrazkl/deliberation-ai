@@ -1,5 +1,20 @@
 # Tasks
 
+8 October owner scope: complete remaining work that does not require independent
+human verification. Provider-authoritative invoice/account/payment acceptance is
+cancelled for now at the owner's explicit request. Existing records are retained;
+it is neither passed nor required for the current local-use sequence.
+[Execution inventory and live checks](NON_HUMAN_COMPLETION.md).
+
+- [x] Non-human follow-through: hosted contradiction shadow adapter/owned CLI,
+  frozen risk-eligible round/prompt diagnostic dispatch and content-only synthesis v3.
+  Live synthesis and one contradiction pair pass their mechanical contracts;
+  partial/unknown study arms remain retained, without independent quality approval.
+- [x] Observed runtime guards: expose submitted receipts on terminal owned runs to
+  explicit operator decisions; exclude active/foreign work and preserve reservations.
+  Reject reported over-cap council output while retaining raw output/usage and no-resend
+  behavior. Isolated PostgreSQL regression checks cover these cases.
+
 - [x] Group 3 reviewed synthesis engineering: opt-in owned-run/synthetic preparation,
   separate model fidelity review, complete paragraph/claim/exact-quote binding,
   at most one repair, encrypted durable local phase receipts and ledger fallback.
@@ -204,7 +219,10 @@ The original complete quality gate remains open. DA-074 performs mechanical chec
 - [x] DA-087: correct reviewed source/call identities through immutable reallocation events and new billing roots, atomically transfer current duplicate guards and retain original history, pending coverage and statement freshness. [Scope](BILLING_REALLOCATION.md).
 - [x] DA-088 technical account inspection: bind reviewed statement heads across declared connections, reconcile invoice totals and shared charges, reject duplicate source lines/responses and preserve unknown account/payment authority. [Scope](BILLING_ACCOUNT.md).
 - [x] DA-089 technical payment-evidence inspection: compare declared exact-invoice payments/refunds with a current account invoice snapshot, locally hash sources and reject duplicate transactions/lines, wrong allocation, missing evidence and stale invoices. Actual payment status stays unknown. [Scope](BILLING_PAYMENT.md).
-- [ ] Complete provider-authoritative invoice/account/payment evidence and real-account acceptance for a settled-cost ledger, then hard input/tool/money reservations. DA-089 local payment-evidence inspection, DA-088 account inspection, DA-087 identity reallocation, DA-086 owner-reviewed history, DA-085 inspection, DA-084 corrections, DA-083 evidence, DA-082 token estimates and DA-081 output reservations do not complete this gate.
+- **Cancelled for now by owner, 8 October:** provider-authoritative invoice/account/
+  payment evidence and real-account settled-cost acceptance. Existing DA-081–089
+  evidence and call/output reservations remain. Total input/tool accounting and
+  monetary enforcement are not certified by their local observations.
 - [x] DA-090: review complete owned source question/report context and continue with a new question in a fresh independent council; freeze encrypted source provenance, bind prompt/risk/token preview, preserve history across clarification/member reruns and source retention, reject drift/oversize and expose exact context in details/export. [Scope](CONVERSATION_CONTINUATION.md).
 - [x] DA-091: add explicit owner-written/reviewed history compaction, per-section omission digests and an encrypted original archive that survives source retention; preserve source questions, original risk controls, clarification/member-rerun provenance and private archive inheritance without retransmitting omitted raw text. [Scope](CONVERSATION_COMPACTION.md).
 - [x] DA-092: navigate authenticated source-linked run branches, distinguish full/compacted continuation and immediate member reruns, backfill durable owned links, bound ancestry, paginate siblings/children and preserve drafts and surviving links after source retention. [Scope](RUN_BRANCHES.md).

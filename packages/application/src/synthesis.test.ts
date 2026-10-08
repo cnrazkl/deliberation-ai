@@ -15,8 +15,14 @@ function report() {
   ], []);
 }
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
-const returned = (value: unknown): SynthesisTextOutcome => ({ status: "returned", result: { text: JSON.stringify(value), model: "offline", remoteResponseId: "fixture",
-  inputTokens: null, outputTokens: 120, tokenDetails: null, finishReason: "stop" } });
+const returned = (value: unknown, keepMetadata = false): SynthesisTextOutcome => {
+  const wire = value !== null && typeof value === "object" ? { ...value } as Record<string, unknown> : value;
+  if (!keepMetadata && wire !== null && typeof wire === "object") {
+    delete (wire as Record<string, unknown>).sourceFingerprint; delete (wire as Record<string, unknown>).draftSha256;
+  }
+  return { status: "returned", result: { text: JSON.stringify(wire), model: "offline", remoteResponseId: "fixture",
+    inputTokens: null, outputTokens: 120, tokenDetails: null, finishReason: "stop" } };
+};
 function draft(plan = prepareSynthesis("Test", report())): SynthesisDraft {
   return { sourceFingerprint: plan.fingerprint, paragraphs: plan.source.claims.map((claim) => ({ text: claim.statement, claimIds: [claim.claimId] })) };
 }
@@ -39,6 +45,8 @@ describe("reviewed synthesis with bounded repair and claim-ledger fallback", () 
     expect(result).toMatchObject({ status: "model_reviewed_candidate", semanticValidation: "model_judgment_only", humanAcceptance: "not_assessed" });
     expect(result.fallback).toContain("closed at 10"); expect(result.renderedCandidate).toContain("unsupported");
     expect(result.attempts).toHaveLength(2); expect(original).toEqual(before);
+    expect(result.reviews[0]).toMatchObject({ sourceFingerprint: plan.fingerprint, draftSha256: hash(candidate) });
+    expect(JSON.parse(result.attempts[1]!.data)).not.toHaveProperty("draftSha256");
   });
   it("attempts only one repair and rechecks the repaired meaning using the same reviewer", async () => {
     const plan = prepareSynthesis("Test", report()); const candidate = draft(plan);
@@ -47,6 +55,14 @@ describe("reviewed synthesis with bounded repair and claim-ledger fallback", () 
     const result = await runReviewedSynthesis(plan, generator, reviewer);
     expect(result.status).toBe("model_reviewed_candidate");
     expect(result.attempts.map((attempt) => attempt.stage)).toEqual(["draft", "review", "repair", "repair_review"]);
+  });
+  it("refuses a historical protocol before dispatch and rejects provider-authored binding metadata", async () => {
+    const plan = prepareSynthesis("Test", report()); const candidate = draft(plan);
+    const generator = port("a", async () => returned(candidate)); const reviewer = port("b", async () => returned(review(plan, candidate), true));
+    expect(await runReviewedSynthesis({ ...plan, version: "reviewed-synthesis-v2" }, generator, reviewer)).toMatchObject({ reason: "source_version_changed" });
+    expect(generator.call).not.toHaveBeenCalled();
+    expect(await runReviewedSynthesis(plan, generator, reviewer)).toMatchObject({ reason: "review_invalid", status: "fallback" });
+    expect(reviewer.call).toHaveBeenCalledTimes(1);
   });
   it("falls back after the single repair is still uncertain, preserving rejected drafts and reviews", async () => {
     const plan = prepareSynthesis("Test", report()); const candidate = draft(plan);
@@ -72,7 +88,7 @@ describe("reviewed synthesis with bounded repair and claim-ledger fallback", () 
     if (kind === "index") response.checks[0]!.paragraphIndex = 7;
     if (kind === "duplicate") response.checks[1] = structuredClone(response.checks[0]!);
     if (kind === "oversized_rationale") response.checks[0]!.rationale = "x".repeat(401);
-    const result = await runReviewedSynthesis(plan, port("a", async () => returned(candidate)), port("b", async () => returned(response)));
+    const result = await runReviewedSynthesis(plan, port("a", async () => returned(candidate)), port("b", async () => returned(response, kind === "stale")));
     expect(result).toMatchObject({ status: "fallback", reason: "review_invalid" }); expect(result.attempts).toHaveLength(2);
   });
   it("rejects missing/unknown/duplicate draft claims and exact-quote swapping", () => {

@@ -1,5 +1,12 @@
 # Prompt comparison preparation — DA-073
 
+8 October: the opt-in study dispatch CLI freezes and executes selected source-bound
+original/additive pairs using identical members and one review round. One case was
+tested with OpenAI/Qwen: both arms were partial, all eight attempts retained. Output
+failures and reported over-cap usage cannot imply an accuracy improvement. Independent
+drift/gold/answer reviews and the full comparison remain pending.
+[Diagnostic execution](../NON_HUMAN_COMPLETION.md).
+
 This offline protocol prepares a **paired** comparison for the current `prompt-revision-v1` additive candidate. It freezes the original source-inclusive question and its candidate for each of the 40 external-suite cases, with source, split and text digests. The candidate must retain the complete original exactly once, add visible text and fit the application question limit. The suite is implementer-selected and its sources are English; it is not a representative accuracy benchmark.
 
 Run `pnpm prompt:prepare` once to write `plan.json` and two separate blank semantic-drift worksheets under ignored `.local/prompt-comparison/`. The command never calls a model and refuses to overwrite any existing preparation file. `pnpm prompt:status` reports the current structural state without printing question/source text. The current prepared state is 40 pairs, with both human reviews, adjudication, paired model runs and output judgments pending; measured accuracy is `null` and acceptance is blocked.

@@ -1,8 +1,56 @@
 # Current state
 
-Updated: 8 October 2026 (Group 3 reviewed synthesis engineering)
+Updated: 8 October 2026 (non-human technical follow-through)
 
-## Current increment — reviewed synthesis, with independent acceptance open
+## Current increment — bounded hosted shadow, studies and synthesis v3
+
+The owner requested remaining tasks without independent human verification, then
+cancelled provider-authoritative invoice/account/payment acceptance for current local
+use. Existing billing evidence remains; no settled cost is declared. Human-dependent
+full quality studies stay open. Separate-machine setup and month-long maintenance
+need external observations. [Scope and all recorded results](NON_HUMAN_COMPLETION.md).
+
+An opt-in owned contradiction CLI now freezes source pairs, target revision and
+instructions, makes one bounded hosted request and records encrypted local receipts.
+Its suggestions are shadow-only and cannot modify production relations/evidence.
+The study CLI freezes selected source cases, member identities, risk-eligible arms,
+round-0 plans and fixed review instructions/output schemas. It uses existing worker
+queues and permanent call/output reservations. Unknown delivery, timeout or drift
+stops subsequent arms; it does not auto-resume, omit failed arms or generate gold.
+
+Synthesis v3 asks models for content only and derives frozen source/actual draft hash
+bindings locally. Strict paragraph/claim/quote validation remains. The updated live
+OpenAI/Qwen test returned a model-reviewed candidate in two calls; OpenAI contradiction
+v2 returned one valid pair in one call. Both terminal replays preserve every artifact
+hash without another request. Historical failed v1/v2 attempts remain intact.
+
+One source case's 0/1/2/3 round arms produced two completed and two partial runs;
+fourteen operations include one unresolved submitted Qwen review. Original/additive
+prompt arms were both partial, with eight operations retained. These subset runs do
+not measure accuracy or complete the forty-case study. A read-only early-stop check
+keeps automatic stopping disabled. Reported over-cap answers now fail the council
+receipt contract, preserving raw encrypted output, usage and permanent reservations.
+Terminal submitted receipts now appear in existing explicit operator controls;
+active/foreign work is excluded. No real unknown receipt was discarded or resent.
+
+452 unit cases/78 files, 264 isolated PostgreSQL cases/36 files, workspace/scripts
+typechecking and zero-warning lint pass. Four read-only browser cases, separate-output
+Next.js production build, frozen install and vulnerability audit pass; all 1006 local
+documentation links resolve. Final focused shadow/study/synthesis checks pass (22).
+No schema migration or owner history
+deletion is introduced. Plaintext previews/exports and encrypted study sidecars remain
+outside database backups/retention. The workflow is local CLI/export, with no new
+synthesis/contradiction browser button. Independent human quality remains unassessed.
+
+At 14:57 Istanbul the existing hidden session app returns HTTP 200, DB/one worker
+are ready, queued/running application work and active schedules are zero. The patched
+diagnostics/operator endpoint correctly show one terminal submitted operation needing
+an explicit decision; 225 old parked queue records remain with zero active jobs.
+The managed stop correctly refuses while that unknown receipt exists, so no forced
+restart or owner mutation was used. Development reload serves the updated behavior
+and the app remains running without visible terminal windows.
+
+## Previous increment — synthesis v2 engineering and initial failures
 
 The owner deferred Group 1 because its acceptance needs real independent human
 reviews, and selected Group 3. An opt-in local CLI now prepares a terminal owned

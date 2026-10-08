@@ -92,7 +92,8 @@ export async function readLocalDiagnostics(): Promise<LocalDiagnostics> {
       (SELECT count(*)::int FROM public.runs WHERE owner_id = $1 AND status = 'running') AS running_runs,
       (SELECT count(*)::int FROM public.provider_operations po
        JOIN public.runs r ON r.id = po.run_id
-       WHERE r.owner_id = $1 AND po.status = 'outcome_unknown') AS unresolved_provider_attempts,
+       WHERE r.owner_id = $1 AND (po.status = 'outcome_unknown' OR
+         (po.status = 'submitted' AND r.status IN ('completed','partially_completed','failed','cancelled')))) AS unresolved_provider_attempts,
       (SELECT count(*)::int FROM public.local_schedules WHERE owner_id = $1 AND status = 'active') AS active_schedules`,
     [LOCAL_OWNER_ID],
   );

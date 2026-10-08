@@ -8,6 +8,15 @@ refuse redirects and return normalized text/usage only. Different endpoint/model
 identities are required for draft and review; aliases remain unproven independence.
 [Contract and live outcomes](REVIEWED_SYNTHESIS.md).
 
+The hosted contradiction shadow reuses this bounded text transport with one request.
+The source-bound study runner uses ordinary council adapters through the existing
+worker. Reported output above a requested cap now produces the known failure
+`reported_output_limit_exceeded`; usage and encrypted raw output remain available
+and replay does not resend. Missing counters stay unknown. This local acceptance
+guard cannot prevent a provider from billing an already returned over-cap answer.
+Native OpenAI/Qwen synthesis v3 and one OpenAI contradiction v2 diagnostic returned
+valid candidates; partial round/prompt arms remain recorded. [Evidence](NON_HUMAN_COMPLETION.md).
+
 `DELIBERATION_RECOVERY_FORBID_GENERATION=true` rejects real council/private/probe
 generation with `recovery_generation_disabled` before adapter fetch. Offline checks
 cover every family with zero fetches. Ordinary defaults are unchanged.

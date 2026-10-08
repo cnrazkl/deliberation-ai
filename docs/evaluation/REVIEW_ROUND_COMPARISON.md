@@ -1,5 +1,12 @@
 # Review-round comparison preparation
 
+8 October: a separate opt-in bounded dispatch runner now executes selected frozen
+arms through the existing council worker. One of forty cases was tested with
+OpenAI/Qwen across 0/1/2/3 limits: two completed, two partial, fourteen actual
+operations and one unresolved submission. Failed/missing later rounds remain in the
+record; this is a diagnostic, not a complete quality comparison. Elapsed time includes
+enqueue/queue/polling. [Execution and results](../NON_HUMAN_COMPLETION.md).
+
 DA-076 prepares a local, read-only comparison of the selected 0/1/2/3 cross-review limits. It does **not** run models, spend provider credits, compute invoice cost, or claim that more review improves accuracy. The frozen source-inclusive questions come from `COUNCIL_EXTERNAL_SUITE.json`; changing that source creates a different plan version rather than silently reusing run ids.
 
 `pnpm review-rounds:prepare` writes `.local/review-round-comparison/plan.json` once and refuses to overwrite it. Each case contains its exact question, source-suite and question digests, effective risk profile, eligible review counts, and empty run-id slots. The local lexical risk policy excludes the zero-round slot for high-risk cases. The current 40-case suite has 145 eligible slots, including 15 cases where zero review is forbidden. Running every slot would require real provider calls and is **not** part of preparation.

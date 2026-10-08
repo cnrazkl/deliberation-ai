@@ -307,7 +307,7 @@ type OperatorProviderOperation = {
   attempt: number;
   provider: string;
   model: string;
-  status: "outcome_unknown";
+  status: "outcome_unknown" | "submitted";
   errorCode: string | null;
   startedAt: string;
   runStatus: string;

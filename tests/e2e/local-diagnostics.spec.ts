@@ -1,6 +1,24 @@
 import { workspaceView } from "./workspace-navigation";
 import { expect, test } from "@playwright/test";
 
+test("terminal submitted council receipts are shown for manual decision without sending anything", async ({ page }) => {
+  const writes: string[] = [];
+  page.on("request", request => { if (request.method() === "POST") writes.push(request.url()); });
+  await page.route("**/api/provider-operations", route => route.fulfill({ json: { operations: [{
+    id: "00000000-0000-4000-8000-000000000001", runId: "00000000-0000-4000-8000-000000000002",
+    memberId: "Offline terminal fixture", round: 1, attempt: 1, provider: "offline", model: "offline",
+    status: "submitted", errorCode: null, startedAt: "2026-10-08T10:00:00Z", runStatus: "partially_completed",
+  }] } }));
+  await page.goto("/"); await workspaceView(page, "Ayarlar");
+  const panel = page.getByRole("region", { name: "Operatör kararı bekleyen işlemler" });
+  await expect(panel.getByText("1 belirsiz sağlayıcı işlemi")).toBeVisible();
+  await expect(panel.getByText(/ikinci kez ücretlenmesine/)).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Başarısız say ve kapat" })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Yeni denemeye izin ver" })).toBeVisible();
+  await panel.getByRole("button", { name: "Yenile", exact: true }).click();
+  expect(writes).toEqual([]);
+});
+
 test("shows read-only local database and worker diagnostics", async ({ page }) => {
   await page.goto("/"); await workspaceView(page, "Ayarlar");
   const panel = page.locator(".diagnostics-card");

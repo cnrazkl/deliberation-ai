@@ -17,6 +17,7 @@ import {
   ExecutionLimitsExceededError,
   fingerprintProviderRequest,
   getRunProviderUsage,
+  loadProviderOperationFailureRawText,
   prepareProviderOperation,
   ProviderOperationResolutionError,
   resolveProviderOperation,
@@ -165,6 +166,31 @@ test("successful receipt replay after reconnect returns saved output without ano
   expect((await getRunProviderUsage(run.runId))?.executionBudget).toMatchObject({
     submittedCalls: 1, reservedOutputTokens: 128, remainingCalls: 1, remainingOutputTokens: 128,
   });
+});
+
+test("reported output above the requested cap is retained as failure and cannot be silently replayed or resent", async () => {
+  const run = await createFixture();
+  const memberId = defaultFakeCouncilMembers[0]!.id;
+  let dispatched = 0;
+  const delegate: TextProvider = {
+    id: memberId, label: "Offline over-cap receipt", councilRole: "analyst",
+    async generate() {
+      dispatched += 1;
+      return { rawText: '{"summary":"Offline over-cap result","claims":[]}',
+        parsed: { summary: "Offline over-cap result", claims: [] },
+        metadata: { provider: "offline-fixture", model: "offline-model", remoteResponseId: "offline-over-cap", inputTokens: 20, outputTokens: 129 } };
+    },
+  };
+  const tracked = new ReceiptTrackedProvider(run.runId, "offline-fixture", "offline-model", "off", delegate, undefined, 128);
+  const input = providerRequest(run, memberId);
+  await expect(tracked.generate(input)).rejects.toMatchObject({ code: "reported_output_limit_exceeded", outcome: "known" });
+  await closeDatabase();
+  await expect(tracked.generate(input)).rejects.toMatchObject({ code: "reported_output_limit_exceeded" });
+  expect(dispatched).toBe(1);
+  const [receipt] = await getDatabase().select().from(providerOperations).where(eq(providerOperations.runId, run.runId));
+  expect(receipt).toMatchObject({ status: "failed", outputTokens: 129, inputTokens: 20, reservedOutputTokens: 128 });
+  expect(await loadProviderOperationFailureRawText(receipt!.id)).toContain("Offline over-cap result");
+  expect((await getRunProviderUsage(run.runId))?.executionBudget).toMatchObject({ submittedCalls: 1, reservedOutputTokens: 128 });
 });
 
 test("budget rejection never contacts the delegate and leaves a replayable failed unreserved receipt", async () => {

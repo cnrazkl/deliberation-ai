@@ -1,5 +1,13 @@
 # Original PLAN.md versus the running local application
 
+**8 October non-human scope:** hosted contradiction shadow, frozen bounded
+round/prompt dispatch, content-only synthesis v3, terminal submitted-receipt alerts
+and reported-output-cap failure handling are delivered. Limited live diagnostics
+include success, partial failure and one unresolved submission; they do not replace
+independent quality acceptance. The owner cancelled invoice/account/payment acceptance
+for now. Separate-machine and month-long measurements remain external evidence.
+[Reconciled inventory](NON_HUMAN_COMPLETION.md).
+
 **8 October 2026, Group 3:** [reviewed synthesis](REVIEWED_SYNTHESIS.md) adds opt-in
 local draft/review/one-repair receipts and a deterministic ledger fallback. It is
 CLI/export only, preserves all original claims, and labels fidelity review as a

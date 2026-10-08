@@ -1,9 +1,17 @@
 # Reviewed synthesis — Group 3
 
-8 October 2026. `reviewed-synthesis-v2` implements an opt-in local command for
+8 October 2026. `reviewed-synthesis-v3` implements an opt-in local command for
 source-linked free-form drafts. It is separate from council execution and is not
 an automatic final answer, evidence promotion, chair or accuracy certification.
 The owner deferred Group 1 human review and selected this Group 3 engineering work.
+
+V3 models return strict content only. The application derives the source/draft
+bindings from the actual frozen local attempt, without asking models to copy hashes.
+All existing paragraph/claim/quote coverage and hash validators remain. Extra model
+metadata is rejected. Historical v1/v2 results remain readable/exportable; a previous
+protocol's plan cannot start new work under v3. The v3 OpenAI/Qwen diagnostic returned
+a model-reviewed candidate with two calls, no repair and no independent human pass.
+[Current evidence and remaining boundaries](NON_HUMAN_COMPLETION.md).
 
 ## Input and outcome
 

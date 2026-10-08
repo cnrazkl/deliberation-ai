@@ -9,6 +9,16 @@ Local preview/explicit Markdown export are plaintext independent copies outside
 database backup/retention. No sensitive content or credentials reach general logs.
 [Boundary](REVIEWED_SYNTHESIS.md).
 
+Hosted contradiction and study dispatch use the same ignored encrypted local journal
+and plaintext-review boundary. Source/connection/protocol drift blocks current
+dispatch; exclusive creation prevents concurrent ownership or resumed submissions.
+No gold labels, payment claims or sensitive error contents enter general logs.
+Terminal submitted council receipts require explicit owner action; foreign/active
+work is excluded, and prior output reservations cannot be refunded by discarding it.
+Provider-authoritative invoice/account/payment acceptance was cancelled for current
+local use on 8 October; existing records remain, without cost certification.
+[Scope and diagnostics](NON_HUMAN_COMPLETION.md).
+
 8 October maintenance updates runtime Next.js to 16.3.8 after six advisories were
 observed in 16.3.6. The reviewed 16.3.6 lint plugin/alias/patch remains independently
 pinned and checked. [Security evidence](DEPENDENCY_SECURITY_2026_10_08.md).

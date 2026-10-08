@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 export * from "./synthesis";
+export * from "./contradiction-hosted";
 import { buildRoundZeroPromptPlan } from "./prompt-plan";
 export { buildRiskPreflight } from "./risk-preflight";
 export { assertKnowledgeInputBudget } from "./knowledge-budget";
@@ -7,7 +8,7 @@ export { freezeContinuation, validateContinuation } from "./continuation";
 export { prepareContinuationCompaction, buildCompactedContinuation, validateContinuationArchive } from "./continuation-compaction";
 export { RiskConfigurationError } from "@deliberation-ai/domain";
 export { MissingContextError, findCriticalMissingContext } from "@deliberation-ai/domain";
-export { buildRoundZeroPromptPlan, COUNCIL_PROMPT_VERSION, type RoundZeroPromptPlan } from "./prompt-plan";
+export { buildRoundZeroPromptPlan, buildReviewInstructionPlan, COUNCIL_PROMPT_VERSION, type RoundZeroPromptPlan } from "./prompt-plan";
 import {
   crossReviewOutputSchema,
   crossReviewWithRevisionOutputSchema,

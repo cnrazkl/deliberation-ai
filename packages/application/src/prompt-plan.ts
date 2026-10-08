@@ -1,9 +1,18 @@
 import { createHash } from "node:crypto";
 import type { CouncilMemberConfig, FrozenMemoryEntry, FrozenToolContext, FrozenContinuation } from "@deliberation-ai/contracts";
-import { inputFor, instructionsFor, type ProviderRequest } from "@deliberation-ai/providers";
+import { inputFor, instructionsFor, outputJsonSchemaFor, type ProviderRequest } from "@deliberation-ai/providers";
 import type { KnowledgePacket } from "@deliberation-ai/contracts";
 
 export const COUNCIL_PROMPT_VERSION = "council-v1";
+
+/** Future peer text is unknown; only the actual fixed review instructions/schema are previewable. */
+export function buildReviewInstructionPlan(members: CouncilMemberConfig[]) {
+  return members.flatMap((member) => ([1, 2, 3] as const).map((round) => ({
+    memberId: member.id, round, instructions: instructionsFor({ memberId: member.id, role: member.role,
+      councilRole: member.councilRole, round, input: { snapshotId: "review-policy-preview", question: "" } }),
+    outputSchema: outputJsonSchemaFor(round), initialOutputSchema: outputJsonSchemaFor(0),
+  })));
+}
 
 export type RoundZeroPromptPlan = {
   version: string;

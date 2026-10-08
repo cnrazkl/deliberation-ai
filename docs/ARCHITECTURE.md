@@ -8,6 +8,16 @@ persistence CLI loads owned runs/connections and writes immutable encrypted loca
 phase receipts before dispatch, revalidating source and revisions before/after calls.
 No run/schema/worker mutation or browser route is added. [Boundary](REVIEWED_SYNTHESIS.md).
 
+Synthesis v3 accepts strict model content without hashes; application code binds
+validated content to the frozen source and actual normalized draft receipt. The
+hosted contradiction adapter implements the evaluation port through normalized text
+transport and the same encrypted journal. A persistence study CLI freezes source
+cases, connections, round-0 plans and fixed review instructions/output schemas, then
+uses existing durable enqueue/worker boundaries. Unknown delivery stops subsequent
+arms. Terminal submitted receipts are visible to explicit operator resolution;
+worker receipt handling refuses reported over-cap output while retaining usage/raw
+data. No schema migration is introduced. [Details](NON_HUMAN_COMPLETION.md).
+
 Daily Windows startup is an owned on-demand session task holding a supervisor and
 hidden non-detached web/worker pair. The physical local data root preserves MSIX
 storage; credentials stay in the existing local environment file. Replacement
@@ -281,7 +291,7 @@ DA-071's pure domain revision rule builds an additive candidate and independentl
 
 DA-068 extends the offline evaluation boundary with a multi-document external source registry, blinded human review/adjudication, an explicit coordinator attestation and held-out acceptance checks. The stronger `loadStoredCouncilMeasurementRuns` path reads report/settings from one owner-scoped row, verifies the source-inclusive question, a matching current prompt fingerprint, fixed remote configuration, no extra context/search and successful operation receipts. Human assessment worksheets bind the report digest and reject stale decisions. CLI measurement commands make no provider request and cannot mutate application reports. [The correctness guide](evaluation/COUNCIL_CORRECTNESS.md) defines the limits and acceptance policy.
 
-A separate offline contradiction prototype plans a bounded set of claim pairs and invokes an injected evaluator in one validated batch. It masks provider identity/raw responses, records every omitted or failed pair as unassessed, versions the source/scope/evaluator inputs, and returns only shadow suggestions. An all-pair two-reviewer/third-adjudicator workflow supports measuring selection misses and false alarms. No hosted adapter, queue integration or automatic relation/evidence mutation is enabled; semantic promotion awaits independent measurements.
+A separate contradiction prototype plans a bounded set of claim pairs and invokes an injected evaluator in one validated batch. It masks provider identity/raw responses, records every omitted or failed pair as unassessed, versions the source/scope/evaluator inputs, and returns only shadow suggestions. An all-pair two-reviewer/third-adjudicator workflow supports measuring selection misses and false alarms. The opt-in hosted CLI adapter has encrypted local receipts; no production queue integration or automatic relation/evidence mutation is enabled. Semantic promotion awaits independent measurements.
 
 The provider-independent evaluation package contains a separate offline council-coverage contract. It takes source-anchored human gold claims, explicit judgments, and loaded domain `CouncilReport` snapshots. It audits exact claim transfer, derives occurrence ids from each report, then computes conservative recall bounds and slices. It has no worker, provider call, automatic semantic matcher or authority to change a live report. The caller must load and authenticate the persisted run; this pure evaluator cannot establish database provenance by itself.
 
