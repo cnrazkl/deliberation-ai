@@ -9,10 +9,13 @@ spending protection on 8 October. Existing call/output controls and observations
 remain; the cancelled extension is not an active task or an accepted capability.
 [Execution inventory and live checks](NON_HUMAN_COMPLETION.md).
 
-- [ ] Owner-requested local membership: username/password registration and unique root,
+- [x] Owner-requested local membership: username/password registration and unique root,
   user-owned API connections and full workspace isolation, root user/connection management,
-  guarded BFF/worker ownership and backed-up owner deployment. Implementation and isolated
-  verification in progress; no human-quality or cancelled billing task is reopened.
+  guarded BFF/worker ownership and backed-up owner deployment. Passed 459 offline,
+  271 isolated PostgreSQL and 53 browser tests; the personal installation passes root
+  login, connection inspection and logout revocation after migration 0055. Existing
+  records and unknown receipts are preserved; no human-quality or cancelled billing
+  task is reopened.
   [Contract](LOCAL_ACCOUNTS.md).
 
 - [x] Non-human follow-through: hosted contradiction shadow adapter/owned CLI,

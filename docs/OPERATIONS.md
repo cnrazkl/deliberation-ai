@@ -8,6 +8,11 @@ databases through `pnpm test:e2e`, replacing the historical shared-DB test behav
 Maintenance stop checks all accounts and preserves terminal unknown council receipts
 without acknowledging/retrying them; normal stop continues to refuse unresolved work.
 
+Personal installation deployed migration 0055 and provisioned root on 8 October 2026.
+Both pre/post archives were restore-verified and all pre-existing tables stayed identical
+during the stopped migration/provisioning interval. The app is running from the updated
+`c853` checkout under its hidden session task. [Deployment evidence](LOCAL_ACCOUNTS.md).
+
 Managed Windows runtime: `pnpm app:start`, `pnpm app:status`, `pnpm app:stop`.
 Startup is now an on-demand, hidden current-user Windows session task with a
 long-running supervisor; web/worker do not create detached console windows.

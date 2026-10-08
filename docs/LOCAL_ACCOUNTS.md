@@ -86,3 +86,19 @@ The browser suite runs on generated migrated databases with generated root passw
 and real session cookies; it never seeds or authenticates against the personal database.
 It covers registration/login/logout, root connection inspection, account switching,
 stale mutation rejection and existing application regressions.
+
+Accepted locally on 8 October 2026: 459 offline tests, 271 isolated PostgreSQL tests,
+all 53 browser tests, type checking, lint, production build and dependency/secret
+checks pass. Personal deployment applied only migration 0055 and provisioned root;
+the temporary ignored password file was removed. Live HTTP checks confirm anonymous
+401, root login, unique-root inventory, all seven existing provider connections,
+root connection inspection and logout revocation. The hidden Windows session runtime
+reports ready. No paid generation was required.
+
+Restore-verified pre/post archives are
+`deliberation-20261008T151647Z-53c6fa90af46.manifest.json` and
+`deliberation-20261008T152204Z-e60346c3ed1c.manifest.json`. Each restores 440 runs,
+7,601 encrypted rows and 12,273 decrypted values; the latter also passes the account
+integrity audit. Stopped-runtime database fingerprints prove that all pre-existing
+tables stayed identical during migration/provisioning. The one terminal unknown
+provider receipt remains retained without acknowledgement or resend.

@@ -2,16 +2,31 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
-## Local membership — verification in progress
+## Local membership — completed local deployment
 
 The owner requested local registration/login, a unique root with a supplied local
 password, private user API connections and root visibility/management across users.
 The implementation adds account tables in additive migration 0055, session-bound BFF
 ownership, persisted-target worker ownership and a root user/scope management UI.
 Legacy owned records remain assigned to root without content/ciphertext rewrites.
-459 offline tests, 271 isolated PostgreSQL cases and all 53 browser cases passed; local deployment,
-final review and backed-up personal deployment are in progress. Root is not yet
-provisioned in the personal database. [Contract](LOCAL_ACCOUNTS.md).
+459 offline tests, 271 isolated PostgreSQL cases and all 53 browser cases passed,
+alongside type checking, lint, production build, dependency audit and secret scans.
+Migration 0055 and the unique root account are deployed in the personal database;
+the supplied password was provisioned from an ignored temporary file, then removed.
+The hidden Windows session runtime is ready at `http://127.0.0.1:3000/`.
+Real-installation checks passed anonymous rejection, root login/scope, account listing,
+inspection of all seven retained provider connections, cookie flags and logout revocation.
+
+Before deployment, verified backup `deliberation-20261008T151647Z-53c6fa90af46.manifest.json`
+restored 440 runs, 7,601 encrypted rows and 12,273 decrypted values across eleven
+populated encrypted tables. A stopped-runtime fingerprint comparison confirmed that
+only the three new account tables and migration journal changed; every existing table
+and the one terminal unknown provider receipt remained unchanged. Post-deployment backup
+`deliberation-20261008T152204Z-e60346c3ed1c.manifest.json` passed the same restore checks,
+including account integrity. Both archives retain 510 conversations, 579 memberships,
+140 unavailable member bodies and zero private branches; encryption keys remain separate.
+No model/provider generation was needed. Local membership does not complete the existing
+independent human-quality gates or introduce public hosting. [Contract](LOCAL_ACCOUNTS.md).
 
 ## Current scope change — budget extension cancelled
 
