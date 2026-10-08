@@ -9,6 +9,13 @@ spending protection on 8 October. Existing call/output controls and observations
 remain; the cancelled extension is not an active task or an accepted capability.
 [Execution inventory and live checks](NON_HUMAN_COMPLETION.md).
 
+- [x] Workspace/admin frontend follow-up: question-first composer, visible fields and
+  consistent navigation/actions, API-first settings and local root user search/cards.
+  Nineteen focused browser cases plus twelve layout-order reruns, types/lint/build,
+  eleven production smoke checks and actual LAN visual fixture cleanup pass. Existing
+  authorization/dispatch/consent and foreign services/owned database-worker preserved.
+  [Deployment and evidence](CURRENT_STATE.md).
+
 - [x] Owner-requested account frontend refresh: visible light/dark input fields,
   responsive entry layout, registration hints, accessible password reveal/focus and
   inline status/errors; consistent management/password-change fields. Three focused
@@ -31,7 +38,7 @@ remain; the cancelled extension is not an active task or an accepted capability.
 - [x] Real thirty-day collection implementation/start: immutable readiness samples,
   missing/unhealthy interval reporting and no provider requests/service restart.
 - [ ] Actual thirty-day operating coverage and recorded maintenance acceptance: due
-  7 November 2026 at 22:13 Istanbul for the current frontend deployment. Setup's thirty-minute exclusion-adjusted threshold
+  7 November 2026 at 23:47 Istanbul for the current workspace deployment. Setup's thirty-minute exclusion-adjusted threshold
   is unproven (54m42s total wall time); a clean Windows prerequisite install is not
   established by the Linux rehearsal. Human quality gates remain independently open.
 

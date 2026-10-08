@@ -99,6 +99,15 @@ test("root has only administration, manages connections, resets passwords and de
     expect((await admin.request.post("/api/private-branches", { data: {} })).status()).toBe(403);
     expect((await admin.request.post("/api/knowledge", { data: { operation: "state" } })).status()).toBe(403);
     const row = page.locator(".account-user-list article").filter({ hasText: username });
+    const search = page.getByLabel("Kullanıcı ara", { exact: true });
+    await search.fill(username); await expect(row).toHaveCount(1);
+    await search.fill("no-account-matches-this-query"); await expect(page.locator(".account-user-list article")).toHaveCount(0);
+    await expect(page.getByText("Eşleşen kullanıcı yok", { exact: true })).toBeVisible();
+    await search.fill(""); await expect(row).toHaveCount(1);
+    await page.screenshot({ path: "test-results/workspace-refresh-admin-mobile.png", fullPage: true });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.screenshot({ path: "test-results/workspace-refresh-admin-desktop.png", fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
     await row.getByRole("button", { name: "Bağlantıları yönet" }).click();
     const connections = page.getByRole("region", { name: `${username} bağlantıları` }); await expect(connections).toContainText("Member private API");
     expect((await admin.request.post("/api/runs", { headers: { "X-Deliberation-Owner": user.ownerId }, data: {} })).status()).toBe(403);

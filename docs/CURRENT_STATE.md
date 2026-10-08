@@ -2,7 +2,40 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
-## Account frontend refresh — deployed
+## Workspace and administration frontend refresh — deployed
+
+The question composer now precedes detailed council configuration and provides a
+clear heading, writing guidance, visible text area, placeholder and character count.
+Its existing explicit send, previews/consent and configured members remain unchanged;
+**Konseyi düzenle** still opens and scrolls to the configuration. Empty-connection onboarding
+leads to settings, where API connections precede appearance/private defaults/tools.
+Navigation uses consistent icons, form fields/actions share visible styling in both
+themes, and the account bar identifies personal/admin roles. Root has a locally
+filtered user list, counts, identity cards, selected-account indication and separated
+delete actions. Loading/no-user/no-match states are explicit; authorization is unchanged.
+
+Nineteen focused browser cases pass across account lifecycle/root search, model
+catalogs/NVIDIA/explicit generation, real fake-council reports and responsive workspace
+navigation. The composer-order refinement passes twelve additional focused reruns,
+including 320/390/640/820/1024/1440px, a short viewport and 200% zoom. Draft preservation
+and navigation with no API writes remain checked. Desktop/mobile/light/dark screenshots
+were reviewed; full strict types/zero-warning lint and Linux production web types/build
+pass. Actual LAN browser login/new chat/settings were checked in a generated ordinary
+account, which was completely erased afterward with its sessions revoked. No model
+request or saved connection was created by that visual check. All eleven production
+smoke checks pass with zero paid provider calls and Windows HTTP remains 200.
+
+Owned web/observer use `deliberationai-rehearsal:60374dd507ec-workspace-ui1`, manifest
+`sha256:6482878853c10cfa3a183d5eb7061cd01acaeb6e202fecb60319930cdb7b38ac`,
+exported source tree `0be61832830bb6de86f8bafc4a499c0301986c34` before this final
+evidence update. Fresh foreign-container lifecycle and owned database/worker lifecycle
+match the pre-change baseline. No schema/migration, foreign database, firewall,
+Cloudflare or Windows personal-data change was made. The current source-bound window
+`month-workspace-20261008` starts 2026-10-08T20:47:12.339Z and is due
+2026-11-07T20:47:12.339Z (7 November 23:47 Istanbul); its first sample is healthy and
+monthly acceptance remains pending. All earlier source-bound samples are retained.
+
+## Account frontend refresh — initial deployment
 
 Login and registration now use a responsive branded introduction and a clear form,
 with visible bordered fields in light/dark themes, placeholders, keyboard focus,
@@ -23,11 +56,11 @@ Only the owned web/observer changed to
 exported source tree `b43a14806c70458a1af4f69f781d215c81f908d4` (before this final
 evidence update). Fresh foreign-container lifecycle and the owned database/worker
 lifecycle are unchanged. No schema/migration, personal data transfer, paid model call,
-firewall or Cloudflare change was needed. The current source-bound observation is
+firewall or Cloudflare change was needed. That source-bound observation is
 `month-authui-20261008`, started 2026-10-08T19:13:56.334Z and due
 2026-11-07T19:13:56.334Z (7 November at 22:13 Istanbul). Its first sample is healthy;
-the actual month remains pending. Previous `month-lan-20261008`/`month-v8` samples
-are retained separately.
+it was superseded by the workspace refresh above. Its samples and previous
+`month-lan-20261008`/`month-v8` samples are retained separately, without monthly acceptance.
 
 ## Owner-selected homelab LAN access — initial deployment
 

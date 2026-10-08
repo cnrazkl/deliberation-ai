@@ -1614,10 +1614,9 @@ export function CouncilWorkbench() {
 
     </>}>
       <section className="workspace workspace-view" hidden={view !== "settings"} aria-label="Ayarlar alanı">
-        <PrivateOutputDefaultPanel />
         <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
-        <section className="settings-card appearance-card" aria-label="Görünüm ayarları"><h2>Görünüm</h2><ThemeSelect /></section>
-      <details className="settings-card">
+        <div className="settings-section-heading"><span className="eyebrow">MODELLERİNİZ</span><h2>API bağlantılarınız</h2><p>Bir bağlantı ekleyin, ardından sohbetinizde kullanacak modelleri seçin.</p></div>
+      <details className="settings-card primary-connections">
         <summary>Yerel sağlayıcı bağlantıları ({connections.length})</summary>
         <div className="connection-guide" aria-label="Bağlantı kullanım adımları">
           <div><strong>1</strong><span>Sağlayıcıyı veya OpenRouter, LiteLLM, Ollama gibi uç noktayı bir kez kaydedin.</span></div>
@@ -1718,6 +1717,9 @@ export function CouncilWorkbench() {
         <p className="hint">OpenAI, Claude ve Gemini yerel adaptörleri; Kimi, Qwen, vLLM, Ollama, LiteLLM, OpenRouter ve özel uç noktalar OpenAI uyumlu adaptörü kullanır. Model listesi yalnızca düğmeye basınca sorgulanır; üretim, ücretlendirme ve düşünme seviyesi desteğini doğrulamaz.</p>
       </details>
 
+      <div className="settings-section-heading"><span className="eyebrow">TERCİHLER VE ARAÇLAR</span><h2>Çalışma ortamınız</h2></div>
+      <section className="settings-card appearance-card" aria-label="Görünüm ayarları"><h2>Görünüm</h2><ThemeSelect /></section>
+      <PrivateOutputDefaultPanel />
       <LocalToolsPanel
         selectedResultIds={selectedToolResultIds}
         onSelectionChange={setSelectedToolResultIds}
@@ -1788,8 +1790,139 @@ export function CouncilWorkbench() {
 
       </section>
       <section className="workspace workspace-view" hidden={view !== "chat"} aria-label="Konsey çalışma alanı">
-        <p className="view-intro">Sorunuzu yazın. Konsey farklı bakış açılarını, itirazları ve dayanakları birlikte görünür kılsın.</p>
-        {!connections.length ? <div className="connection-onboarding">Başlamak için bir sağlayıcı bağlantısı ekleyin.<button type="button" className="secondary-button" onClick={() => setView("settings")}>Bağlantıları ayarla</button></div> : null}
+        {!connections.length ? <div className="connection-onboarding"><div><strong>İlk adım: modellerinizi bağlayın</strong><p>Başlamak için bir sağlayıcı bağlantısı ekleyin. API anahtarınızı kendi hesabınızda kaydedin.</p></div><button type="button" className="secondary-button" onClick={() => setView("settings")}>Bağlantıları ayarla <span aria-hidden="true">→</span></button></div> : null}
+      <form className="question-card" onSubmit={submit}>
+        <div className="composer-heading"><span className="eyebrow">SORUNUZLA BAŞLAYIN</span><h2>Konseye ne sormak istersiniz?</h2><p>Kararı veya problemi yazın. Önemli koşulları ve beklediğiniz sonucu ekleyin.</p></div>
+        {compactionDraft ? <ContinuationCompactionEditor packet={compactionDraft.packet} summary={compactionDraft.summary}
+          reviewed={continuationReviewed} disabled={pending || loadingContinuation}
+          onSummaryChange={(summary) => { setCompactionDraft((current) => current ? { ...current, summary } : undefined); setContinuationReviewed(false); }}
+          onReviewedChange={setContinuationReviewed} onRemove={() => { setCompactionDraft(undefined); setContinuationReviewed(false); }} /> : null}
+        {continuationContext ? <section aria-label="Yeni çalışmanın geçmiş bağlamı">
+          <h3>Önceki rapordan devam</h3>
+          <p>Kaynak çalışma: {continuationContext.sourceRunId}. Kaynak soru, raporun tamamı ve varsa önceki devam bağlamı bütün üyelere gönderilir. Eski ekler, bellek, araç girdileri ve kaynak paketi ayrıca gönderilmez. Kaynak alıntılarını yeniden göndermek için Yerel bilgi kaynakları bölümünde yeni paketi hazırlayıp inceleyin. Yeni soru için tüm üyeler yeni yanıt verir; geçmiş uzlaşı doğruluk onayı değildir.</p>
+          <details><summary>Gönderilecek geçmiş bağlamın tamamını incele</summary><pre>{continuationContext.content}</pre></details>
+          <label><input type="checkbox" checked={continuationReviewed} onChange={(event) => setContinuationReviewed(event.target.checked)} />Geçmiş bağlamı inceledim; yeni soruma dahil et</label>
+          <button type="button" className="secondary-button" disabled={pending || loadingContinuation} onClick={() => { setContinuationContext(undefined); setContinuationReviewed(false); }}>Geçmiş bağlamı kaldır</button>
+          <p className="hint">Kaynak rapor değişirse yeniden seçin. 256 KiB üzerindeki geçmiş otomatik kısaltılmaz. Token tahmini geçmiş metni her üye için içerir; yeni çalışma kendi gönderim rezervasyonunu tutar.</p>
+        </section> : null}
+        <div className="composer-field-label"><label htmlFor="question">Sorunuz</label><span>{question.length.toLocaleString("tr-TR")} / 4.000 karakter</span></div>
+        <textarea
+          id="question"
+          placeholder="Örn. Bu proje için iki yaklaşımı maliyet, risk ve sürdürülebilirlik açısından karşılaştır…"
+          aria-describedby="question-hint"
+          value={question}
+          minLength={10}
+          maxLength={4000}
+          onChange={(event) => {
+            setQuestion(event.target.value);
+            setPromptCandidate(suggestStructuredQuestion(event.target.value));
+            setPromptChoice("original");
+          }}
+          onKeyDown={(event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
+          required
+        />
+        <div className="form-row">
+          <div className="composer-council-summary"><strong>{members.length} üye · {reviewRounds} inceleme turu</strong><button type="button" className="secondary-button" onClick={() => { if (configRef.current) { configRef.current.open = true; configRef.current.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } }}>Konseyi düzenle</button></div>
+          <button disabled={knowledgeBlocked || pending || loadingContinuation || (Boolean(continuationSource) && !continuationReviewed) || preparingAttachments || Boolean(limitsError) || selectedQuestion.length < 10 || (!needsContext && promptChoice === "candidate" && !revisionAudit.canSelectCandidate) || !memberConfigurationValid || !highRiskReady || (attachments.length > 0 && !members.some((member) => member.receiveAttachments === true)) || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.promptPlan || !tokenPreview.value.riskPreflight || Boolean(currentPreviewError)} type="submit">
+            {pending ? "Değerlendiriliyor…" : (tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0) ? "Açıklama sorularını aç" : "Konseyi çalıştır"}
+          </button>
+        </div>
+        {!highRiskReady ? <p className="inline-warning">Yüksek risk profili için en az bir red-team üyesi ve bir çapraz inceleme turu seçin.</p> : null}
+        <p className="hint" id="question-hint">En az 10 karakter yazın. Ctrl/⌘ + Enter ile gönderin. Seçili modellere gerçek API isteği yapılır.</p>
+        {originalQuestion.length >= 10 ? <details className="composer-disclosure"><summary>İstemi düzenle ve karşılaştır</summary><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
+          choice={promptChoice} disabled={needsContext} onCandidateChange={setPromptCandidate} onChoiceChange={setPromptChoice} /></details> : null}
+        {needsContext ? <p className="hint">Önce eksik bilgi sorularını yanıtlayın; istem sürümü seçimi bu yanıttan sonra açılır.</p> : null}
+        <KnowledgePanel key={knowledgePanelGeneration} runId={run?.runId} onChange={(reference, blocked) => { setKnowledgePacket(reference); setKnowledgeBlocked(blocked); }} />
+        {knowledgeBlocked && <p role="status">Kaynak paketini inceleyin veya açıkça paketsiz devam etmeyi seçin.</p>}
+        <details className="attachment-picker composer-disclosure"><summary>Dosya ekle{attachments.length > 0 ? ` · ${attachments.length} ek` : ""}</summary>
+        <p>Büyük (1 MiB üzeri PDF) veya tekrar kullanılan TXT/Markdown/PDF/PNG/JPEG dosyalarını Yerel bilgi kaynakları bölümüne kaydedin. Kaynak paketi seçiliyken aynı kütüphane dosyasını ayrıca tam ek olarak göndermeyin.</p>
+          <label htmlFor="task-attachments">Görev ekleri (isteğe bağlı)</label>
+          <input
+            id="task-attachments"
+            ref={attachmentInputRef}
+            hidden
+            type="file"
+            accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            disabled={pending || preparingAttachments}
+            onChange={(event) => {
+              const files = Array.from(event.currentTarget.files ?? []);
+              event.currentTarget.value = "";
+              void selectAttachments(files);
+            }}
+          />
+          <button type="button" className="secondary-button attachment-select-button"
+            disabled={pending || preparingAttachments} onClick={() => attachmentInputRef.current?.click()}>
+            {preparingAttachments ? "Dosyalar hazırlanıyor…" : "＋ Dosya seç"}
+          </button>
+          <small>
+            En fazla 6 dosya; görsel başına 2 MiB, PDF başına 5 MiB, toplam 12 MiB. PDF’nin seçilebilir metni çıkarılır; taranmış PDF için OCR henüz yok. Ekler şifreli saklanır ve yalnızca “Bu üyeye gönder” seçili modellere iletilir.
+          </small>
+          {attachmentError ? <p className="inline-warning" role="alert">{attachmentError}</p> : null}
+          {attachments.length > 0 ? (
+            <div className="attachment-list">
+              {attachments.map((attachment, index) => (
+                <span key={`${attachment.sha256}-${index}`}>
+                  {attachment.mimeType === "application/pdf" ? "PDF · " : "Görsel · "}{attachment.name}
+                  <button type="button" className="icon-button" aria-label={`${attachment.name} ekini kaldır`} onClick={() => {
+                    setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index));
+                    setAttachmentDimensions((current) => current.filter((item) => item.sha256 !== attachment.sha256));
+                    setAttachmentError(undefined);
+                  }}>×</button>
+                </span>
+              ))}
+              <button type="button" className="secondary-button" onClick={() => { setAttachments([]); setAttachmentDimensions([]); setAttachmentError(undefined); }}>Ekleri kaldır</button>
+            </div>
+          ) : null}
+          {attachments.length > 0 && !members.some((member) => member.receiveAttachments === true) ? (
+            <p className="inline-warning">Ekler seçildi, fakat hiçbir üye için “Bu üyeye gönder” açık değil.</p>
+          ) : null}
+        </details>
+        <details className="token-preview composer-disclosure"><summary>Gönderilecek bağlam ve token tahmini{selectedMemoryEntryIds.length + selectedToolResultIds.length > 0 ? ` · ${selectedMemoryEntryIds.length + selectedToolResultIds.length} seçili bağlam` : ""}</summary>
+          {!question.trim() && attachments.length === 0 ? (
+            <><strong>Sorunuz ve ekleriniz: 0 token</strong><p className="hint">Soru alanı boş; henüz gönderilecek bir görev yok.</p></>
+          ) : !memberConfigurationValid ? (
+            <p className="hint">Token tahmini için önce geçerli sağlayıcı bağlantılarını ve modelleri seçin.</p>
+          ) : currentPreviewError ? null : tokenPreview?.key === previewRequestKey ? (
+            <>
+              <strong>Sorunuz ve ekleriniz: ≈{(tokenPreview.value.questionTokens + tokenPreview.value.documentTokens + tokenPreview.value.imageTokens).toLocaleString("tr-TR")} token</strong>
+              <p className="hint">Soru ≈{tokenPreview.value.questionTokens.toLocaleString("tr-TR")}{tokenPreview.value.documentTokens > 0 ? ` · PDF metni ≈${tokenPreview.value.documentTokens.toLocaleString("tr-TR")}` : ""}{tokenPreview.value.imageTokens > 0 ? ` · Seçili üyelere gönderilecek görseller ≈${tokenPreview.value.imageTokens.toLocaleString("tr-TR")}` : ""}</p>
+              {question.trim().length >= 10 ? <>
+                <p><strong>Konseyin ilk turu ≈{tokenPreview.value.totalTokens.toLocaleString("tr-TR")} giriş tokenı</strong> ({tokenPreview.value.members.length} üye, sistem yönergeleri ve seçili bağlam dahil).</p>
+                {tokenPreview.value.contextEntryCount > 0 ? <p className="hint">{tokenPreview.value.contextEntryCount} bağlam kaydı hesaba katıldı.</p> : null}
+                <details><summary>Üyelere göre tahmin</summary><ul>{tokenPreview.value.members.map((member) => <li key={member.id}>{member.label} ({member.model}): ≈{member.totalTokens.toLocaleString("tr-TR")}{member.documentTokens > 0 ? ` (PDF metni ≈${member.documentTokens.toLocaleString("tr-TR")})` : ""}{member.imageTokens > 0 ? ` (görsel ≈${member.imageTokens.toLocaleString("tr-TR")})` : ""}</li>)}</ul></details>
+                {tokenPreview.value.promptPlan ? <details className="prompt-plan-preview"><summary>Üyelere gönderilecek metni incele · {tokenPreview.value.promptPlan.version}</summary>
+                  <p className="hint">Bu, ilk turdaki sistem yönergesi ve kullanıcı metnidir. Görseller ayrı içerik olarak gönderilir; sonraki çapraz inceleme turu ve sağlayıcının kendi çerçevesi burada gösterilmez. Otomatik istem iyileştirmesi yapılmadı.</p>
+                  {tokenPreview.value.promptPlan.members.map((prompt) => <article key={prompt.id}>
+                    <strong>{prompt.label} · {prompt.model}</strong>
+                    <small>{prompt.documentCount} PDF · {prompt.imageCount} görsel</small>
+                    <label>Sistem yönergesi<pre>{prompt.instructions}</pre></label>
+                    <label>Gönderilecek kullanıcı metni<pre>{prompt.userInput}</pre></label>
+                  </article>)}
+                </details> : null}
+              </> : null}
+              <p className="hint">Yerel tahmindir; PDF metni her seçili üyeye ayrı gönderilir, bu nedenle konsey toplamında tekrar sayılır. Sağlayıcının gerçek sayımı farklı olabilir. Düşünme, yanıt ve {reviewRounds > 0 ? "seçilen çapraz inceleme" : "sonraki"} turlarının tokenları bu toplamda yoktur. Ek inceleme turları ek sağlayıcı çağrıları ve maliyet oluşturabilir. Tahmin için modele istek gönderilmez.</p>
+            </>
+          ) : <p className="hint">{compactionDraft && !continuationReviewed ? "Özeti yazıp atlanan bilgileri inceleyin; ardından gönderilecek metin ve token tahmini hazırlanır." : "Token tahmini hesaplanıyor…"}</p>}
+        </details>
+        {currentPreviewError ? <p className="inline-warning" role="alert">{currentPreviewError}</p> : null}
+        {!memberConfigurationValid && connections.length > 0 ? <p className="inline-warning">Konseydeki bağlantı veya model seçimlerini kontrol edin. “Konseyi düzenle” ile ayrıntıları açabilirsiniz.</p> : null}
+        {currentRisk ? <>
+          {effectiveRiskProfile === "high" ? <RiskAssessmentSummary assessment={currentRisk.assessment} /> : <details className="composer-disclosure"><summary>Risk denetimi · Standart profil</summary><RiskAssessmentSummary assessment={currentRisk.assessment} /></details>}
+          {!highRiskReady ? <>
+            <button type="button" className="secondary-button" onClick={() => { setReviewRounds((current) => current === 0 ? 1 : current); setRedTeamComparison(true); }}>Gerekli risk kontrollerini ekle</button>
+            <p className="hint">Red-team yoksa son üyenin bağlantısıyla eklenir; altı üyede son üyenin görevi değiştirilir. Göndermeden önce bağlantısını ve modelini düzenleyebilirsiniz.</p>
+          </> : null}
+        </> : null}
+        {tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0 ?
+          <div className="inline-warning">Bu soruda kritik bağlam eksik olabilir. Devam ettiğinizde açıklama soruları açılır; siz incelemeden model çağrısı başlamaz.</div> : null}
+        <details className="composer-disclosure"><summary>Çalışma sınırları{executionLimitsEnabled ? " · Etkin" : " · Kapalı"}</summary><ExecutionLimitsEditor enabled={executionLimitsEnabled} limits={configuredExecutionLimits} plannedProviderCalls={plannedProviderCalls} onEnabledChange={setExecutionLimitsEnabled} onChange={setConfiguredExecutionLimits} /></details>
+      </form>
+
       <details ref={configRef} className="settings-card council-config" role="region" aria-label="Konsey yapılandırması"><summary>Konsey yapılandırması <span>{members.length} üye · {reviewRounds} inceleme turu</span></summary>
         <div className="config-heading">
           <div>
@@ -2063,135 +2196,6 @@ export function CouncilWorkbench() {
           </div>
         ) : <p className="hint">Henüz kayıtlı yerel şablon yok.</p>}
       </details>
-
-      <form className="question-card" onSubmit={submit}>
-        {compactionDraft ? <ContinuationCompactionEditor packet={compactionDraft.packet} summary={compactionDraft.summary}
-          reviewed={continuationReviewed} disabled={pending || loadingContinuation}
-          onSummaryChange={(summary) => { setCompactionDraft((current) => current ? { ...current, summary } : undefined); setContinuationReviewed(false); }}
-          onReviewedChange={setContinuationReviewed} onRemove={() => { setCompactionDraft(undefined); setContinuationReviewed(false); }} /> : null}
-        {continuationContext ? <section aria-label="Yeni çalışmanın geçmiş bağlamı">
-          <h3>Önceki rapordan devam</h3>
-          <p>Kaynak çalışma: {continuationContext.sourceRunId}. Kaynak soru, raporun tamamı ve varsa önceki devam bağlamı bütün üyelere gönderilir. Eski ekler, bellek, araç girdileri ve kaynak paketi ayrıca gönderilmez. Kaynak alıntılarını yeniden göndermek için Yerel bilgi kaynakları bölümünde yeni paketi hazırlayıp inceleyin. Yeni soru için tüm üyeler yeni yanıt verir; geçmiş uzlaşı doğruluk onayı değildir.</p>
-          <details><summary>Gönderilecek geçmiş bağlamın tamamını incele</summary><pre>{continuationContext.content}</pre></details>
-          <label><input type="checkbox" checked={continuationReviewed} onChange={(event) => setContinuationReviewed(event.target.checked)} />Geçmiş bağlamı inceledim; yeni soruma dahil et</label>
-          <button type="button" className="secondary-button" disabled={pending || loadingContinuation} onClick={() => { setContinuationContext(undefined); setContinuationReviewed(false); }}>Geçmiş bağlamı kaldır</button>
-          <p className="hint">Kaynak rapor değişirse yeniden seçin. 256 KiB üzerindeki geçmiş otomatik kısaltılmaz. Token tahmini geçmiş metni her üye için içerir; yeni çalışma kendi gönderim rezervasyonunu tutar.</p>
-        </section> : null}
-        <label htmlFor="question">Sorunuz</label>
-        <textarea
-          id="question"
-          value={question}
-          minLength={10}
-          maxLength={4000}
-          onChange={(event) => {
-            setQuestion(event.target.value);
-            setPromptCandidate(suggestStructuredQuestion(event.target.value));
-            setPromptChoice("original");
-          }}
-          onKeyDown={(event) => {
-            if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-              event.currentTarget.form?.requestSubmit();
-            }
-          }}
-          required
-        />
-        <div className="form-row">
-          <div className="composer-council-summary"><strong>{members.length} üye · {reviewRounds} inceleme turu</strong><button type="button" className="secondary-button" onClick={() => { if (configRef.current) { configRef.current.open = true; configRef.current.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } }}>Konseyi düzenle</button></div>
-          <button disabled={knowledgeBlocked || pending || loadingContinuation || (Boolean(continuationSource) && !continuationReviewed) || preparingAttachments || Boolean(limitsError) || selectedQuestion.length < 10 || (!needsContext && promptChoice === "candidate" && !revisionAudit.canSelectCandidate) || !memberConfigurationValid || !highRiskReady || (attachments.length > 0 && !members.some((member) => member.receiveAttachments === true)) || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.promptPlan || !tokenPreview.value.riskPreflight || Boolean(currentPreviewError)} type="submit">
-            {pending ? "Değerlendiriliyor…" : (tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0) ? "Açıklama sorularını aç" : "Konseyi çalıştır"}
-          </button>
-        </div>
-        {!highRiskReady ? <p className="inline-warning">Yüksek risk profili için en az bir red-team üyesi ve bir çapraz inceleme turu seçin.</p> : null}
-        <p className="hint">Ctrl/⌘ + Enter ile gönderin. Seçili modellere gerçek API isteği yapılır.</p>
-        {originalQuestion.length >= 10 ? <details className="composer-disclosure"><summary>İstemi düzenle ve karşılaştır</summary><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
-          choice={promptChoice} disabled={needsContext} onCandidateChange={setPromptCandidate} onChoiceChange={setPromptChoice} /></details> : null}
-        {needsContext ? <p className="hint">Önce eksik bilgi sorularını yanıtlayın; istem sürümü seçimi bu yanıttan sonra açılır.</p> : null}
-        <KnowledgePanel key={knowledgePanelGeneration} runId={run?.runId} onChange={(reference, blocked) => { setKnowledgePacket(reference); setKnowledgeBlocked(blocked); }} />
-        {knowledgeBlocked && <p role="status">Kaynak paketini inceleyin veya açıkça paketsiz devam etmeyi seçin.</p>}
-        <details className="attachment-picker composer-disclosure"><summary>Dosya ekle{attachments.length > 0 ? ` · ${attachments.length} ek` : ""}</summary>
-        <p>Büyük (1 MiB üzeri PDF) veya tekrar kullanılan TXT/Markdown/PDF/PNG/JPEG dosyalarını Yerel bilgi kaynakları bölümüne kaydedin. Kaynak paketi seçiliyken aynı kütüphane dosyasını ayrıca tam ek olarak göndermeyin.</p>
-          <label htmlFor="task-attachments">Görev ekleri (isteğe bağlı)</label>
-          <input
-            id="task-attachments"
-            ref={attachmentInputRef}
-            hidden
-            type="file"
-            accept="application/pdf,.pdf,image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            disabled={pending || preparingAttachments}
-            onChange={(event) => {
-              const files = Array.from(event.currentTarget.files ?? []);
-              event.currentTarget.value = "";
-              void selectAttachments(files);
-            }}
-          />
-          <button type="button" className="secondary-button attachment-select-button"
-            disabled={pending || preparingAttachments} onClick={() => attachmentInputRef.current?.click()}>
-            {preparingAttachments ? "Dosyalar hazırlanıyor…" : "＋ Dosya seç"}
-          </button>
-          <small>
-            En fazla 6 dosya; görsel başına 2 MiB, PDF başına 5 MiB, toplam 12 MiB. PDF’nin seçilebilir metni çıkarılır; taranmış PDF için OCR henüz yok. Ekler şifreli saklanır ve yalnızca “Bu üyeye gönder” seçili modellere iletilir.
-          </small>
-          {attachmentError ? <p className="inline-warning" role="alert">{attachmentError}</p> : null}
-          {attachments.length > 0 ? (
-            <div className="attachment-list">
-              {attachments.map((attachment, index) => (
-                <span key={`${attachment.sha256}-${index}`}>
-                  {attachment.mimeType === "application/pdf" ? "PDF · " : "Görsel · "}{attachment.name}
-                  <button type="button" className="icon-button" aria-label={`${attachment.name} ekini kaldır`} onClick={() => {
-                    setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index));
-                    setAttachmentDimensions((current) => current.filter((item) => item.sha256 !== attachment.sha256));
-                    setAttachmentError(undefined);
-                  }}>×</button>
-                </span>
-              ))}
-              <button type="button" className="secondary-button" onClick={() => { setAttachments([]); setAttachmentDimensions([]); setAttachmentError(undefined); }}>Ekleri kaldır</button>
-            </div>
-          ) : null}
-          {attachments.length > 0 && !members.some((member) => member.receiveAttachments === true) ? (
-            <p className="inline-warning">Ekler seçildi, fakat hiçbir üye için “Bu üyeye gönder” açık değil.</p>
-          ) : null}
-        </details>
-        <details className="token-preview composer-disclosure"><summary>Gönderilecek bağlam ve token tahmini{selectedMemoryEntryIds.length + selectedToolResultIds.length > 0 ? ` · ${selectedMemoryEntryIds.length + selectedToolResultIds.length} seçili bağlam` : ""}</summary>
-          {!question.trim() && attachments.length === 0 ? (
-            <><strong>Sorunuz ve ekleriniz: 0 token</strong><p className="hint">Soru alanı boş; henüz gönderilecek bir görev yok.</p></>
-          ) : !memberConfigurationValid ? (
-            <p className="hint">Token tahmini için önce geçerli sağlayıcı bağlantılarını ve modelleri seçin.</p>
-          ) : currentPreviewError ? null : tokenPreview?.key === previewRequestKey ? (
-            <>
-              <strong>Sorunuz ve ekleriniz: ≈{(tokenPreview.value.questionTokens + tokenPreview.value.documentTokens + tokenPreview.value.imageTokens).toLocaleString("tr-TR")} token</strong>
-              <p className="hint">Soru ≈{tokenPreview.value.questionTokens.toLocaleString("tr-TR")}{tokenPreview.value.documentTokens > 0 ? ` · PDF metni ≈${tokenPreview.value.documentTokens.toLocaleString("tr-TR")}` : ""}{tokenPreview.value.imageTokens > 0 ? ` · Seçili üyelere gönderilecek görseller ≈${tokenPreview.value.imageTokens.toLocaleString("tr-TR")}` : ""}</p>
-              {question.trim().length >= 10 ? <>
-                <p><strong>Konseyin ilk turu ≈{tokenPreview.value.totalTokens.toLocaleString("tr-TR")} giriş tokenı</strong> ({tokenPreview.value.members.length} üye, sistem yönergeleri ve seçili bağlam dahil).</p>
-                {tokenPreview.value.contextEntryCount > 0 ? <p className="hint">{tokenPreview.value.contextEntryCount} bağlam kaydı hesaba katıldı.</p> : null}
-                <details><summary>Üyelere göre tahmin</summary><ul>{tokenPreview.value.members.map((member) => <li key={member.id}>{member.label} ({member.model}): ≈{member.totalTokens.toLocaleString("tr-TR")}{member.documentTokens > 0 ? ` (PDF metni ≈${member.documentTokens.toLocaleString("tr-TR")})` : ""}{member.imageTokens > 0 ? ` (görsel ≈${member.imageTokens.toLocaleString("tr-TR")})` : ""}</li>)}</ul></details>
-                {tokenPreview.value.promptPlan ? <details className="prompt-plan-preview"><summary>Üyelere gönderilecek metni incele · {tokenPreview.value.promptPlan.version}</summary>
-                  <p className="hint">Bu, ilk turdaki sistem yönergesi ve kullanıcı metnidir. Görseller ayrı içerik olarak gönderilir; sonraki çapraz inceleme turu ve sağlayıcının kendi çerçevesi burada gösterilmez. Otomatik istem iyileştirmesi yapılmadı.</p>
-                  {tokenPreview.value.promptPlan.members.map((prompt) => <article key={prompt.id}>
-                    <strong>{prompt.label} · {prompt.model}</strong>
-                    <small>{prompt.documentCount} PDF · {prompt.imageCount} görsel</small>
-                    <label>Sistem yönergesi<pre>{prompt.instructions}</pre></label>
-                    <label>Gönderilecek kullanıcı metni<pre>{prompt.userInput}</pre></label>
-                  </article>)}
-                </details> : null}
-              </> : null}
-              <p className="hint">Yerel tahmindir; PDF metni her seçili üyeye ayrı gönderilir, bu nedenle konsey toplamında tekrar sayılır. Sağlayıcının gerçek sayımı farklı olabilir. Düşünme, yanıt ve {reviewRounds > 0 ? "seçilen çapraz inceleme" : "sonraki"} turlarının tokenları bu toplamda yoktur. Ek inceleme turları ek sağlayıcı çağrıları ve maliyet oluşturabilir. Tahmin için modele istek gönderilmez.</p>
-            </>
-          ) : <p className="hint">{compactionDraft && !continuationReviewed ? "Özeti yazıp atlanan bilgileri inceleyin; ardından gönderilecek metin ve token tahmini hazırlanır." : "Token tahmini hesaplanıyor…"}</p>}
-        </details>
-        {currentPreviewError ? <p className="inline-warning" role="alert">{currentPreviewError}</p> : null}
-        {!memberConfigurationValid && connections.length > 0 ? <p className="inline-warning">Konseydeki bağlantı veya model seçimlerini kontrol edin. “Konseyi düzenle” ile ayrıntıları açabilirsiniz.</p> : null}
-        {currentRisk ? <>
-          {effectiveRiskProfile === "high" ? <RiskAssessmentSummary assessment={currentRisk.assessment} /> : <details className="composer-disclosure"><summary>Risk denetimi · Standart profil</summary><RiskAssessmentSummary assessment={currentRisk.assessment} /></details>}
-          {!highRiskReady ? <>
-            <button type="button" className="secondary-button" onClick={() => { setReviewRounds((current) => current === 0 ? 1 : current); setRedTeamComparison(true); }}>Gerekli risk kontrollerini ekle</button>
-            <p className="hint">Red-team yoksa son üyenin bağlantısıyla eklenir; altı üyede son üyenin görevi değiştirilir. Göndermeden önce bağlantısını ve modelini düzenleyebilirsiniz.</p>
-          </> : null}
-        </> : null}
-        {tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0 ?
-          <div className="inline-warning">Bu soruda kritik bağlam eksik olabilir. Devam ettiğinizde açıklama soruları açılır; siz incelemeden model çağrısı başlamaz.</div> : null}
-        <details className="composer-disclosure"><summary>Çalışma sınırları{executionLimitsEnabled ? " · Etkin" : " · Kapalı"}</summary><ExecutionLimitsEditor enabled={executionLimitsEnabled} limits={configuredExecutionLimits} plannedProviderCalls={plannedProviderCalls} onEnabledChange={setExecutionLimitsEnabled} onChange={setConfiguredExecutionLimits} /></details>
-      </form>
 
       <details className="settings-card memory-card context-disclosure" role="region" aria-label="Ortak konuşma belleği"><summary>Konuşma belleği · {selectedMemoryEntryIds.length} seçili kayıt</summary>
         <div className="memory-heading">

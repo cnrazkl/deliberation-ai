@@ -109,7 +109,7 @@ export function AuthShell() {
   </main>;
   return <>
     <header className="account-bar" aria-label="Hesap">
-      <div><strong>{session.user.displayName}</strong><small>@{session.user.username} {session.user.role === "root" ? "· Root" : ""}</small>
+      <div><span className="account-bar-brand">Deliberation AI</span><strong>{session.user.displayName}</strong><small>@{session.user.username}</small><span className="account-role-badge">{session.user.role === "root" ? "Yönetici" : "Kişisel hesap"}</span>
         </div>
       <div className="account-actions">
         {session.user.role === "user" && <button type="button" className="secondary-button" disabled={busy} onClick={() => setDeletion(!deletion)}>Hesabımı sil</button>}

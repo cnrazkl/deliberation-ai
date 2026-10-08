@@ -98,9 +98,10 @@ source-tree/window plan and immutable successful/failed timestamped samples in i
 own observation volume. It sends no provider requests and restarts no service.
 `node --import tsx packages/persistence/scripts/operating-study.ts status <observation-name>`
 reports the due date, sample coverage, unhealthy samples and missing intervals.
-The current owner-selected LAN/frontend name is `month-authui-20261008`; its actual
-window runs from 8 October to 7 November 2026 at 22:13 Istanbul. Earlier
-`month-lan-20261008`, `month-v8` and setup observations remain separate and retained;
+The current owner-selected LAN/frontend name is `month-workspace-20261008`; its actual
+window runs from 8 October to 7 November 2026 at 23:47 Istanbul. Earlier
+`month-authui-20261008`, `month-lan-20261008`, `month-v8` and setup observations remain
+separate and retained;
 changed source/address never overwrites them.
 
 A short session cannot pass the month. A completed calendar window with gaps is

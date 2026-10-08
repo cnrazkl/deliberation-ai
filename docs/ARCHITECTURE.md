@@ -24,6 +24,11 @@ ownership comes from persisted targets; schedules scan every owner. Providers/do
 remain independent of authentication and SDK boundaries are unchanged.
 [Account boundaries](LOCAL_ACCOUNTS.md).
 
+WorkspaceShell owns presentation/navigation, while CouncilWorkbench retains composer
+drafts and existing provider actions across views. RootManagement filters only its
+already authorized loaded user list in browser state. Search, styling and field hints
+introduce no new route, ownership boundary, provider request or migration.
+
 Reviewed synthesis contracts bound paragraphs and per-paragraph fidelity checks.
 Domain code validates complete claim/quote coverage and renders the ledger fallback;
 application code coordinates proposer/reviewer and one repair through normalized

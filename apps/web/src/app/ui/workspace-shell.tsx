@@ -32,6 +32,11 @@ export function ThemeSelect() {
   </label>;
 }
 const labels: Record<WorkspaceView, string> = { chat: "Sohbet", schedules: "Zamanlayıcı", settings: "Ayarlar" };
+function WorkspaceIcon({ view }: { view: WorkspaceView }) {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {view === "chat" ? <path d="M20 11.5a8 8 0 0 1-8 8H5l-3 2v-10a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z" /> : view === "schedules" ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></> : <><path d="M4 7h16M4 17h16" /><circle cx="8" cy="7" r="3" fill="var(--sidebar)" /><circle cx="16" cy="17" r="3" fill="var(--sidebar)" /></>}
+  </svg>;
+}
 export function WorkspaceShell({ view, onViewChange, onNewChat, newChatDisabled, attentionCount, sidebar, children }: {
   view: WorkspaceView; onViewChange: (view: WorkspaceView) => void; onNewChat: () => void;
   newChatDisabled: boolean; attentionCount: number; sidebar: ReactNode; children: ReactNode;
@@ -46,25 +51,25 @@ export function WorkspaceShell({ view, onViewChange, onNewChat, newChatDisabled,
     {sidebarOpen && <button className="sidebar-backdrop" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar} />}
     <aside id="workspace-sidebar" className={`app-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Sohbet geçmişi ve gezinme"
       onKeyDown={(event) => { if (event.key === "Escape") closeSidebar(); }}>
-      <div className="sidebar-brand"><span className="brand-symbol" aria-hidden="true">D</span><strong>DeliberationAI</strong>
+      <div className="sidebar-brand"><span className="brand-symbol" aria-hidden="true">D·</span><strong>Deliberation AI</strong>
         <button type="button" className="sidebar-close secondary-button" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar}>×</button>
       </div>
       <button type="button" className="new-chat-button" disabled={newChatDisabled} onClick={() => { onNewChat(); setSidebarOpen(false); }}>＋ Yeni sohbet</button>
       <nav className="workspace-nav" aria-label="Ana menü">
         {(Object.keys(labels) as WorkspaceView[]).map((item) => <button type="button" key={item} aria-label={labels[item]}
           aria-current={view === item ? "page" : undefined} onClick={() => { onViewChange(item); setSidebarOpen(false); focusContent(); }}>
-          <span aria-hidden="true">{item === "chat" ? "◌" : item === "schedules" ? "◷" : "⚙"}</span>{labels[item]}
+          <WorkspaceIcon view={item} />{labels[item]}
           {item === "settings" && attentionCount > 0 && <small className="nav-attention" title={`${attentionCount} sağlayıcı işlemi karar bekliyor`}>{attentionCount}</small>}
         </button>)}
       </nav>
-      <div className="sidebar-history" onClick={(event) => { if ((event.target as HTMLElement).closest("[data-open-history]")) { setSidebarOpen(false); focusContent(); } }}>{sidebar}</div>
+      <div className="sidebar-history" onClick={(event) => { if ((event.target as HTMLElement).closest("[data-open-history]")) { setSidebarOpen(false); focusContent(); } }}><p className="sidebar-section-label">GEÇMİŞİNİZ</p>{sidebar}</div>
       <div className="sidebar-footer"><ThemeSelect /><small>Bağımsız görüşler · İzlenebilir sonuçlar</small></div>
     </aside>
     <main className="app-main" id="workspace-content">
       <header className="workspace-topbar">
         <button ref={toggle} type="button" className="sidebar-toggle secondary-button" aria-label="Sohbet geçmişini aç" aria-expanded={sidebarOpen} aria-controls="workspace-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
         <div><span className="eyebrow">ÇALIŞMA ALANI</span><h1 ref={heading} tabIndex={-1}>{view === "chat" ? "Birlikte düşünelim." : labels[view]}</h1></div>
-        <span className="local-badge">Yerel çalışma alanı</span>
+        <span className="local-badge"><span aria-hidden="true" />Size ait çalışma alanı</span>
       </header>
       {children}
       <footer className="workspace-footer">Uzlaşı doğruluk değildir · Ham yanıtlar ve farklı görüşler korunur.</footer>

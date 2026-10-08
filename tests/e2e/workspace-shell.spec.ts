@@ -122,6 +122,9 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   await sidebar.getByRole("button", { name: "＋ Yeni sohbet", exact: true }).click();
   await expect(draft).toHaveValue("");
   await expect(draft).toBeFocused();
+  const fieldBounds = await draft.boundingBox(), configBounds = await page.locator(".council-config").boundingBox();
+  expect(fieldBounds && configBounds && fieldBounds.y < configBounds.y).toBe(true);
+  await page.screenshot({ path: "test-results/workspace-refresh-chat.png", fullPage: true });
   expect(writes).toBe(0);
 }));
 

@@ -21,8 +21,10 @@ their own saved API keys. Runs, conversations, private branches, templates, memo
 sources, knowledge grants/packets, preflight drafts and schedules use the same user
 scope. Registration chooses a username and password; a separate display name is optional
 in the API and the browser uses the username initially. Root opens **Kullanıcı yönetimi**
-directly and has no council/chat workspace. It lists existing ordinary accounts, edits
-username/display name, resets passwords, reviews account deletion and manages saved
+directly and has no council/chat workspace. It lists existing ordinary accounts,
+locally filters the loaded list by username/display name and shows the selected
+connection-management account. Root edits username/display name, resets passwords,
+reviews account deletion and manages saved
 connections through **Bağlantıları yönet**. Password or username changes revoke that
 user's sessions. Root cannot read/create chats or run/test models, including through
 direct APIs with a selected user scope. Raw API keys and password hashes are never

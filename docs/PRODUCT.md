@@ -27,6 +27,15 @@ an accessible button reversibly reveals the entered password. Pending submission
 disables entry/actions, and failures or successful registration appear inside the form.
 Account-management/password-change fields use the same visible input treatment.
 
+The signed-in workspace highlights the question composer with writing guidance,
+placeholder, character count and its existing explicit submit action; detailed council
+configuration follows the composer and remains reachable through **Konseyi düzenle**. API setup has
+a separate first-step callout when no connection exists and leads the settings page;
+appearance and advanced tools follow it. Navigation, form fields and action buttons
+share clear styling across themes and screen sizes. Changing views preserves drafts
+and makes no provider request. Root can filter the already loaded user list by username
+or display name; user cards separate connection/edit actions from reviewed deletion.
+
 An opt-in local synthesis command generates a claim-linked draft and asks a separate
 model to check meaning against the complete supplied ledger. At most one repair is
 allowed; failure preserves the deterministic ledger. Drafts remain model judgments,

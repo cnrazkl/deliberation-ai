@@ -20,7 +20,7 @@ export function AccountDeletionPanel({ user, onClose }: { user?: LocalUserSummar
       announceSessionChange(); window.location.reload();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Hesap silinemedi."); setBusy(false); }
   }
-  return <section className="account-panel" aria-label="Hesap silme"><h2>Hesabı kalıcı olarak sil</h2>
+  return <section className="account-panel account-panel-danger" aria-label="Hesap silme"><span className="account-form-eyebrow">KALICI SİLME</span><h2>Hesabı kalıcı olarak sil</h2>
     <p>Hesap, tüm oturumları, sohbetleri, özel mesajları, kaynakları, zamanlamaları ve API bağlantıları bu kurulumdan kalıcı olarak silinir.</p>
     <p>Önceden alınan yedekler ve dışa aktarılan dosyalar ayrıca yönetilir. Silme, sağlayıcılardaki API anahtarlarını iptal etmez.</p>
     {error && <p role="alert" className="inline-error">{error}</p>}
@@ -31,7 +31,7 @@ export function AccountDeletionPanel({ user, onClose }: { user?: LocalUserSummar
         <label>Silinecek kullanıcı adı<input name="username" required autoComplete="off" /></label>
         <label>{user ? "Root parolanız" : "Mevcut parolanız"}<input name="currentPassword" type="password" autoComplete="current-password" required maxLength={128} /></label>
         <label className="account-check"><input type="checkbox" required />Tüm hesap verilerinin kalıcı silinmesini onaylıyorum.</label>
-        <button disabled={busy}>Hesabı silmeyi onayla</button>
+        <button type="submit" className="danger-submit" disabled={busy}>Hesabı silmeyi onayla</button>
       </form>}
     </>}
     <button type="button" className="secondary-button" disabled={busy} onClick={onClose}>Vazgeç</button>
@@ -44,10 +44,14 @@ export function RootManagement({ session }: { session: LocalSessionSummary }) {
   const [connections, setConnections] = useState<Connections | null>(null), [deletion, setDeletion] = useState<LocalUserSummary | null>(null);
   const [connectionEdit, setConnectionEdit] = useState<{ kind: keyof Connections; item: Connection } | null>(null);
   const [error, setError] = useState(""), [notice, setNotice] = useState(""), [busy, setBusy] = useState(false);
+  const [query, setQuery] = useState(""), [loaded, setLoaded] = useState(false);
+  const ordinaryUsers = users.filter(user => user.role === "user");
+  const search = query.trim().toLowerCase();
+  const visibleUsers = ordinaryUsers.filter(user => `${user.username} ${user.displayName}`.toLowerCase().includes(search));
   const scope = session.scope.role === "user" ? session.scope : null;
   useEffect(() => {
     let active = true;
-    void accountRequest<{ users: LocalUserSummary[] }>("users").then(result => { if (active) setUsers(result.users); }).catch(() => { if (active) setError("Kullanıcılar alınamadı."); });
+    void accountRequest<{ users: LocalUserSummary[] }>("users").then(result => { if (active) { setUsers(result.users); setLoaded(true); } }).catch(() => { if (active) { setError("Kullanıcılar alınamadı."); setLoaded(true); } });
     if (scope) void accountRequest<Connections>(`users/${scope.id}/connections`).then(result => { if (active) setConnections(result); }).catch(() => { if (active) setError("Bağlantılar alınamadı."); });
     return () => { active = false; };
   }, [scope]);
@@ -77,14 +81,18 @@ export function RootManagement({ session }: { session: LocalSessionSummary }) {
   }
   return <main className="account-admin">
     {error && <p className="account-message inline-error" role="alert">{error}</p>}{notice && <p className="account-message" role="status">{notice}</p>}
-    <section className="account-panel" aria-label="Kullanıcı yönetimi"><h1>Kullanıcı yönetimi</h1><p>Kayıtlı kullanıcıları ve bağlantılarını yönetin.</p>
-      {!users.some(user => user.role === "user") && <p>Henüz kayıtlı kullanıcı yok. Yeni kullanıcılar giriş ekranından hesap oluşturabilir.</p>}
-      <div className="account-user-list">{users.filter(user => user.role === "user").map(user => <article key={user.id}><div><strong>{user.displayName}</strong><small>@{user.username}</small></div>
+    <section className="account-panel" aria-label="Kullanıcı yönetimi">
+      <div className="account-admin-heading"><div><span className="account-form-eyebrow">YÖNETİM MERKEZİ</span><h1>Kullanıcı yönetimi</h1><p>Kayıtlı kullanıcıları, hesap bilgilerini ve bağlantılarını tek yerden yönetin.</p></div><span className="account-count">{loaded ? `${ordinaryUsers.length} kullanıcı` : "Yükleniyor…"}</span></div>
+      <div className="account-user-toolbar"><label htmlFor="account-user-search">Kullanıcı ara</label><input id="account-user-search" type="search" placeholder="Kullanıcı adı veya görünen ad" value={query} onChange={event => setQuery(event.target.value)} disabled={!loaded} />{search && <p role="status">{visibleUsers.length} kullanıcı bulundu.</p>}</div>
+      {!loaded && <p role="status">Kullanıcılar yükleniyor…</p>}
+      {loaded && !error && ordinaryUsers.length === 0 && <div className="account-empty-state"><strong>İlk kullanıcı henüz kaydolmadı</strong><p>Yeni kullanıcılar giriş ekranındaki “Yeni hesap oluştur” düğmesiyle kendi hesaplarını açabilir.</p></div>}
+      {loaded && ordinaryUsers.length > 0 && visibleUsers.length === 0 && <div className="account-empty-state"><strong>Eşleşen kullanıcı yok</strong><p>Farklı bir ad deneyin veya arama alanını temizleyin.</p></div>}
+      <div className="account-user-list">{visibleUsers.map(user => <article key={user.id} data-selected={scope?.id === user.id || undefined}><span className="account-user-avatar" aria-hidden="true">{user.displayName.slice(0, 1).toUpperCase()}</span><div className="account-user-identity"><strong>{user.displayName}</strong><small>@{user.username}{scope?.id === user.id ? " · Bağlantıları açık" : ""}</small></div><div className="account-user-actions">
         <button className="secondary-button" type="button" disabled={busy} onClick={() => void chooseScope(user)}>Bağlantıları yönet</button>
         <button className="secondary-button" type="button" disabled={busy} onClick={() => setEdited(user)}>Kullanıcıyı düzenle</button>
-        <button className="secondary-button" type="button" disabled={busy} onClick={() => setDeletion(user)}>Kullanıcıyı sil</button>
-      </article>)}</div>
-      {edited && <section aria-label="Kullanıcı düzenleme"><h2>{edited.username} — hesap bilgileri</h2><form key={edited.id} onSubmit={updateUser}>
+        <button className="secondary-button danger-button" type="button" disabled={busy} onClick={() => setDeletion(user)}>Kullanıcıyı sil</button>
+      </div></article>)}</div>
+      {edited && <section className="account-edit-section" aria-label="Kullanıcı düzenleme"><h2>{edited.username} — hesap bilgileri</h2><form key={edited.id} onSubmit={updateUser}>
         <label>Görünen ad<input name="displayName" required maxLength={80} defaultValue={edited.displayName} /></label>
         <label>Kullanıcı adı<input name="username" required minLength={3} maxLength={32} defaultValue={edited.username} /></label>
         <label>Yeni parola<input name="password" type="password" minLength={8} maxLength={128} autoComplete="new-password" /></label>
