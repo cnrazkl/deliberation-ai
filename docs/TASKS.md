@@ -9,6 +9,13 @@ spending protection on 8 October. Existing call/output controls and observations
 remain; the cancelled extension is not an active task or an accepted capability.
 [Execution inventory and live checks](NON_HUMAN_COMPLETION.md).
 
+- [x] Owner-requested homelab LAN access: private-IP web binding/matching application
+  origin, internal signed checks retaining exact private authority, six focused tests,
+  types/lint and eleven production smoke checks. Actual Windows HTTP 200/anonymous
+  API 401; no existing service/database/firewall/Cloudflare change or data migration.
+  New source/address-bound observation is due 7 November at 21:57 Istanbul; old samples
+  are retained. [Current deployment](CURRENT_STATE.md).
+
 - [x] Isolated separate-host Linux installation and verification: new directory/image,
   own PostgreSQL/two networks/volumes, real loopback HTTP 200, 275 Linux checks plus
   separately passed Windows-native archive test, eleven production account/worker
@@ -17,7 +24,7 @@ remain; the cancelled extension is not an active task or an accepted capability.
 - [x] Real thirty-day collection implementation/start: immutable readiness samples,
   missing/unhealthy interval reporting and no provider requests/service restart.
 - [ ] Actual thirty-day operating coverage and recorded maintenance acceptance: due
-  7 November 2026 at 20:34 Istanbul. Setup's thirty-minute exclusion-adjusted threshold
+  7 November 2026 at 21:57 Istanbul for the current LAN deployment. Setup's thirty-minute exclusion-adjusted threshold
   is unproven (54m42s total wall time); a clean Windows prerequisite install is not
   established by the Linux rehearsal. Human quality gates remain independently open.
 

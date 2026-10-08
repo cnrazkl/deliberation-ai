@@ -1,12 +1,16 @@
 import { request } from "node:http";
+import { isIP } from "node:net";
 
 /** Preserve the configured Host through internal Docker DNS; never follow redirects. */
 export function requestRehearsalHttp(address: string,path: string,options: {
   origin: string; method?: string; body?: unknown; headers?: Record<string,string>; timeoutMs?: number; maxBytes?: number;
 }): Promise<Response> {
   const base=new URL(address),target=new URL(path,base),authority=new URL(options.origin);
+  const [first,second]=authority.hostname.split(".").map(Number);
+  const privateAuthority=authority.hostname==="127.0.0.1" || isIP(authority.hostname)===4 &&
+    (first===10 || first===192 && second===168 || first===172 && second!>=16 && second!<=31);
   if (base.protocol!=="http:" || !["web","127.0.0.1"].includes(base.hostname) || base.username || base.password ||
-      target.origin!==base.origin || authority.protocol!=="http:" || authority.hostname!=="127.0.0.1" || authority.username || authority.password)
+      target.origin!==base.origin || authority.protocol!=="http:" || !privateAuthority || authority.username || authority.password)
     throw new Error("Private rehearsal HTTP endpoint required.");
   const body=options.body===undefined ? undefined : Buffer.from(JSON.stringify(options.body));
   if (body && body.length>256*1024) throw new Error("Rehearsal request limit.");

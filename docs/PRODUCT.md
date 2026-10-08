@@ -1,5 +1,10 @@
 # Product
 
+The owner-selected isolated homelab installation may be accessed from the private LAN
+at its explicitly configured IP/port. Registration/login and exact Host/Origin/session
+scope checks remain required; the Windows installation/data are not migrated.
+Public/Cloudflare hosting remains a separate step. [Deployment boundary](NON_HUMAN_VALIDATION.md).
+
 Opt-in non-human diagnostics can select the complete frozen comparison cohort in a
 separate generated account/database. Failed/unobserved arms remain visible and model
 accuracy remains unassessed. An isolated remote Docker rehearsal and sampled 30-day

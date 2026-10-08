@@ -17,9 +17,14 @@ test("rehearsal HTTP preserves the configured authority through internal routing
   const target=`http://127.0.0.1:${address.port}`,origin="http://127.0.0.1:33184";
   try {
     expect(await (await requestRehearsalHttp(target,"/",{origin})).json()).toEqual({host:"127.0.0.1:33184",origin});
+    const lanOrigin="http://192.168.1.112:33184";
+    expect(await (await requestRehearsalHttp(target,"/",{origin:lanOrigin})).json()).toEqual({host:"192.168.1.112:33184",origin:lanOrigin});
     await expect(requestRehearsalHttp(target,"/large",{origin,maxBytes:16})).rejects.toThrow();
     expect((await requestRehearsalHttp(target,"/redirect",{origin})).status).toBe(302);
-    expect(requests).toBe(3);
+    expect(requests).toBe(4);
+    for (const host of ["8.8.8.8","172.32.0.1","192.169.1.112","example.invalid"]) {
+      expect(()=>requestRehearsalHttp(target,"/",{origin:`http://${host}:33184`})).toThrow();
+    }
     expect(()=>requestRehearsalHttp(target,"//example.invalid/",{origin})).toThrow();
     expect(()=>requestRehearsalHttp("http://example.invalid/","/",{origin})).toThrow();
   } finally { server.close();await once(server,"close"); }

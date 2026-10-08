@@ -1,7 +1,11 @@
 # Security
 
 Shared-host verification must use only its new rehearsal directory/image/Compose
-project/network/volumes/database and unused loopback port. Existing containers and
+project/network/volumes/database and unused port, defaulting to loopback. An explicit
+owner request may bind web to the host's private LAN IP with matching `APP_ORIGIN`;
+exact Host/Origin checks and account authorization remain. Database has no published
+port; the rehearsal HTTP helper allows only loopback/RFC1918 IPv4 authorities while
+its actual destination stays internal Docker DNS/loopback. Existing containers and
 PostgreSQL databases are outside its mutation/query boundary. No SSH credential,
 personal environment, source database archive or provider secret enters the image or
 Git. Generated study credentials stay independently encrypted in a generated local

@@ -1,11 +1,11 @@
-# Isolated validation only. No host DB, existing volume, Docker socket or public port.
+# Isolated installation. Default loopback; an explicitly selected private LAN IP is optional.
 x-app: &app
   image: ${REHEARSAL_IMAGE:?Unique rehearsal image required}
   environment: &environment
     DATABASE_URL: postgresql://deliberation:${REHEARSAL_DB_PASSWORD:?New database password required}@db:5432/${REHEARSAL_DB_NAME:?Generated database required}
     DATA_ENCRYPTION_KEY: ${REHEARSAL_ENCRYPTION_KEY:?New encryption key required}
     KEY_VERSION: "1"
-    APP_ORIGIN: http://127.0.0.1:${REHEARSAL_HTTP_PORT:?Unused host port required}
+    APP_ORIGIN: http://${REHEARSAL_BIND_IP:-127.0.0.1}:${REHEARSAL_HTTP_PORT:?Unused host port required}
     ENABLE_DECISION_EVALUATOR: "false"
     NEXT_TELEMETRY_DISABLED: "1"
     REHEARSAL_SOURCE_TREE: ${REHEARSAL_SOURCE_TREE:?Reviewed source tree required}
@@ -43,7 +43,7 @@ services:
   web:
     <<: *app
     networks: [isolated, access]
-    ports: ["127.0.0.1:${REHEARSAL_HTTP_PORT:?Unused host port required}:3000"]
+    ports: ["${REHEARSAL_BIND_IP:-127.0.0.1}:${REHEARSAL_HTTP_PORT:?Unused host port required}:3000"]
     depends_on:
       migrate: {condition: service_completed_successfully}
   worker:

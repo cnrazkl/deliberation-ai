@@ -9,7 +9,17 @@ vi.mock("@deliberation-ai/persistence", async () => {
   return { ...owner, LOCAL_SESSION_COOKIE: "deliberation-session", LOCAL_SESSION_SECONDS: 28800,
     readLocalSession: readSession, withLiveOwner: owner.withOwner, LocalAuthError: class extends Error { constructor(message: string, readonly status = 400) { super(message); } } };
 });
-import { authJson, localSessionToken, withLocalSession } from "./local-auth";
+import { authJson, localSessionToken, withLocalSession, rejectAuthOrigin } from "./local-auth";
+
+test("an explicitly configured LAN origin keeps exact Host and Origin checks",()=>{
+  const origin="http://192.168.1.112:33184";
+  vi.stubEnv("APP_ORIGIN",origin);
+  try {
+    expect(rejectAuthOrigin(new Request(`${origin}/api/auth/login`,{headers:{host:"192.168.1.112:33184",origin}}))).toBeNull();
+    for (const headers of [{host:"127.0.0.1:33184",origin},{host:"192.168.1.112:33184",origin:"http://192.168.1.113:33184"}])
+      expect(rejectAuthOrigin(new Request(`${origin}/api/auth/login`,{headers}))?.status).toBe(403);
+  } finally { vi.unstubAllEnvs(); }
+});
 
 test("all application routes have the central session guard; public account routes have the account guard", () => {
   const root = resolve("apps/web/src/app/api");

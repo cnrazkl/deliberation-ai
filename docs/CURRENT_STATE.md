@@ -2,9 +2,28 @@
 
 Updated: 8 October 2026 (non-human technical follow-through)
 
+## Owner-selected homelab LAN access — deployed
+
+The isolated homelab copy is now reachable from the Windows computer at
+`http://192.168.1.112:33184/`. Web binds only that host LAN IP; `APP_ORIGIN` matches
+the same authority. Default installations remain loopback-bound. Anonymous run access
+returns 401, and actual home access returns 200 from Windows. Six focused Host/Origin
+and bounded private-authority tests pass locally and in Linux, strict persistence/web
+types and lint pass, and all eleven production smoke checks pass with no provider call.
+No authentication/origin check was relaxed. Existing foreign container lifecycle
+matches the fresh baseline, including other applications added since the initial run.
+No existing database, Cloudflare or firewall configuration was modified.
+
+Only owned web/observer containers changed to `deliberationai-rehearsal:60374dd507ec-lan1`,
+source tree `9a62d6a6d64d7ebc74c445c827994522832f8a95`; the existing owned worker/DB stay
+running. Windows data/accounts/provider connections were not migrated. The previous
+`month-v8` observations are retained; the new source/address-bound `month-lan-20261008`
+window started at 2026-10-08T18:57:51.627Z, is initially healthy and is due on
+7 November 2026 at 21:57 Istanbul. It remains pending, not a monthly acceptance pass.
+
 ## Full-cohort mechanical follow-through — observed
 
-The separate Linux host now runs only the newly created rehearsal project
+The initial separate Linux deployment ran only the newly created rehearsal project
 `da-rehearsal-60374dd507ec`, final image `deliberationai-rehearsal:60374dd507ec-v8`
 and source archive tree `ce63fe59d06c81af267bf8a1a570ecc05c39ea9c`. Its own database,
 two new networks and two volumes share no existing service/volume state. Only web is

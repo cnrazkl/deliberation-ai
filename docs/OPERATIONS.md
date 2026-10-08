@@ -3,7 +3,11 @@
 Shared-host work is restricted to a newly created directory/image and uniquely named
 Docker project with its own network, volumes and PostgreSQL container. Existing Docker
 services/databases are outside both queries and mutations; never reuse their state,
-restart them or perform global cleanup. Rehearsal web publication is host loopback only.
+restart them or perform global cleanup. Rehearsal web publication defaults to host
+loopback; owner-selected `REHEARSAL_BIND_IP=192.168.1.112` permits access at
+`http://192.168.1.112:33184/` from the private LAN and binds the matching application
+origin. Change only the owned web/observer services; no DB migration/port publication
+or existing-service restart is required.
 Cloudflare/public hosting needs a later explicitly selected deployment increment.
 [Isolated installation, checks and real calendar observation](NON_HUMAN_VALIDATION.md).
 

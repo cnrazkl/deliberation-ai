@@ -1,5 +1,10 @@
 # Architecture
 
+Rehearsal web binding defaults to loopback. `REHEARSAL_BIND_IP` explicitly selects
+the host's private LAN address and supplies the matching `APP_ORIGIN`. PostgreSQL
+remains unpublished on the private project network. Content-free smoke/observation
+requests reach internal Docker DNS while preserving that selected private authority.
+
 Non-human verification adds a generated-only study harness and owner/policy-bound v4
 dispatch, preserving source-account data and historical encrypted receipts. A separate
 Docker rehearsal composes a new PostgreSQL, production web/worker and content-free

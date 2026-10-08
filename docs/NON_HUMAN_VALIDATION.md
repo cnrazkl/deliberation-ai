@@ -53,10 +53,12 @@ a unique image, Compose project, generated database, generated credentials/encry
 key, reviewed source-tree hash and unused HTTP port. The PostgreSQL service has its
 own volume and no published port. Database/worker/observer use the project's internal
 network; web additionally uses a second new project-owned bridge for host-loopback
-publication. Docker cannot publish a reachable port through an internal-only network.
+publication, or explicitly selected private-LAN publication via `REHEARSAL_BIND_IP`.
+The same selected IP supplies `APP_ORIGIN`; exact Host/Origin checks are not bypassed.
+Docker cannot publish a reachable port through an internal-only network.
 Neither network is shared with existing services. No host bind mounts, Docker socket,
 external volumes, public endpoint or existing-service restart is configured.
-Compose project separation and explicit localhost publication follow
+Compose project separation and explicit host-IP publication follow
 [Docker project naming](https://docs.docker.com/compose/how-tos/project-name/) and
 [port publishing](https://docs.docker.com/engine/network/port-publishing/).
 
@@ -96,8 +98,9 @@ source-tree/window plan and immutable successful/failed timestamped samples in i
 own observation volume. It sends no provider requests and restarts no service.
 `node --import tsx packages/persistence/scripts/operating-study.ts status <observation-name>`
 reports the due date, sample coverage, unhealthy samples and missing intervals.
-The deployed final name is `month-v8`; its actual window runs from 8 October to
-7 November 2026 at 20:34 Istanbul. Earlier setup observations remain separate.
+The current owner-selected LAN name is `month-lan-20261008`; its actual window runs
+from 8 October to 7 November 2026 at 21:57 Istanbul. Earlier `month-v8` and setup
+observations remain separate and retained; changed source/address never overwrites them.
 
 A short session cannot pass the month. A completed calendar window with gaps is
 reported as incomplete. Sampled availability never implies continuous uptime, and
