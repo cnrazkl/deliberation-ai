@@ -94,7 +94,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   await expect(chat).toBeHidden();
   await expect(page.getByRole("region", { name: "Yerel MCP araçları", exact: true })).toBeVisible();
   await expect(page.locator(".diagnostics-card > summary")).toContainText("Worker");
-  await page.getByRole("region", { name: "Görünüm ayarları" }).getByLabel("Tema").selectOption("dark");
+  await sidebar.getByLabel("Tema").selectOption("dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await workspaceView(page, "Zamanlayıcı");
   const outputs = page.getByRole("region", { name: "Zamanlayıcı çıktıları" });

@@ -1,9 +1,11 @@
 # Tasks
 
-- [ ] Owner-requested multiple model choices per API connection: optional default,
+- [x] Owner-requested multiple model choices per API connection: optional default,
   searchable saved choices, ready council dropdowns, same/different connections and
-  legacy/draft preservation. Local unit/PostgreSQL/types/lint pass; full browser checks,
-  backed-up native/LAN migration and deployed verification are pending.
+  legacy/draft preservation. Unit/PostgreSQL/types/lint and Linux build pass; 86 broad
+  browser cases plus all 12 corrected workspace cases pass. Native/LAN backups and
+  additive migration verified; live selection/persistence/draft checks and six
+  theme-width cases pass. Temporary account erased; service baselines preserved.
 
 - [x] Owner's six help/settings comments: bundle Manrope, round help examples, capitalize
   button words, show connection-save success/failure in place, remove duplicate theme

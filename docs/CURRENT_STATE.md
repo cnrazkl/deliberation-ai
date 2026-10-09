@@ -1,8 +1,8 @@
 # Current state
 
-Updated: 9 October 2026 (saved connection model choices prepared)
+Updated: 9 October 2026 (saved connection model choices deployed)
 
-## Saved connection model choices — local checks passed, deployment pending
+## Saved connection model choices — deployed
 
 Connections can be saved without a default model. A searchable multiple-choice
 dropdown stores selected IDs, with one-time settings entry for unsupported/incomplete
@@ -17,9 +17,41 @@ revision, secret and catalog/history; expectedRevision rejects stale transport e
 486 offline unit cases, 277 isolated PostgreSQL cases, workspace types and web lint
 pass. Six targeted browser reruns plus the remaining initial passing cases verify
 catalog selection, settings-only fallback, draft preservation and generation guards.
-The first broad PostgreSQL run had one short terminal-wait timeout while browser
-checks ran concurrently; its separate complete rerun passes all 277. Full browser
-verification, backed-up native/LAN migration and deployment remain pending.
+The full browser suite passes 86 of 87 cases; the remaining case still referenced the
+appearance card removed by the earlier settings refinement. Its sidebar selector is
+corrected and all 12 workspace-shell cases pass on rerun. The first broad PostgreSQL
+run had one short terminal-wait timeout while browser checks ran concurrently; its
+separate complete rerun passes all 277. Linux persistence/worker/web types,
+zero-warning web lint and the production web build pass.
+
+Before native migration, the portable PostgreSQL backup was restored into a temporary
+database and verified: 440 runs, 7,601 encrypted rows and 12,273 decrypted values.
+Before LAN migration, a private custom-format dump, its archive inventory and SHA-256
+were verified. Migration 0056 succeeds in both databases; fingerprints of all existing
+provider connection rows, excluding the new column, remain unchanged. Native
+PostgreSQL was stopped again, matching its initial state.
+An existing LAN connection's catalog was refreshed after migration. Comparison with
+the backup restored into an isolated temporary database confirms only encrypted
+catalog data and its update timestamp changed; original rows, credentials, execution
+settings and revisions remain intact. The temporary restoration database was removed.
+
+Live checks cover model-less creation, multiple persisted choices, unchanged
+execution revision, same/different member connections, retained draft/current model,
+reload, search and both palettes at 320/960/1440px without overflow or page errors.
+Catalog fixtures were intercepted; no provider or generation request was sent.
+Final 960x975 chat/settings screenshots were inspected. The temporary account and
+both connection fixtures were erased through fingerprint-bound account deletion.
+Only owned web/observer containers were recreated; foreign containers and the owned
+database/worker lifecycle baselines match after deployment and live verification.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-models-ui1`,
+manifest `sha256:a7beefbaa35c3edd2dcb82ec800301cf9a038090534b7d2a4f5838603a0e2fdb`,
+exported source tree `3b93de1da71037d2a0bc2bec9ebc0070b5b6548e` (commit `31badc6`)
+before the verification-only test/documentation update. Deployment completed at
+2026-10-09T19:27:23Z; LAN binding remains `192.168.1.112:33184`. Source-bound window
+`month-models-ui-20261009` starts 2026-10-09T19:27:36.753Z and is due
+2026-11-08T19:27:36.753Z; its first sample is healthy. Earlier windows remain retained;
+monthly and independent human quality gates stay open.
 
 ## Help and connection settings refinement — deployed
 
@@ -49,7 +81,7 @@ fingerprint-bound account deletion. Only owned web/observer were recreated; fina
 foreign-container and owned database/worker lifecycle baselines match. The local
 portable PostgreSQL server was stopped again after isolated browser tests.
 
-Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-refine-ui1`,
+Previous owned web/observer image: `deliberationai-rehearsal:60374dd507ec-refine-ui1`,
 manifest `sha256:c0e4d8187645678984f3fa14ec1231fa6d72a5d480e73be97864d34c6f50f3c3`,
 exported source tree `e1016359e028ace69f3f947500b305f68dc9741a` (commit `7a08a4e`)
 before this evidence update. LAN binding remains `192.168.1.112:33184`; no schema,
