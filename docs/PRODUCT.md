@@ -32,6 +32,12 @@ and centered geometric disclosure icons. Original/candidate prompt choices occup
 separate cards; selection and submission semantics are unchanged. Private output
 defaults retain explicit browser-local save/reset actions with separate fields/actions.
 
+Council submission and other browser request identifiers work on the private LAN HTTP
+origin as well as HTTPS/localhost. When native randomUUID is absent, the shared helper
+formats UUID v4 from browser cryptographic random bytes. Lost-response retries retain
+the same intent key; successfully completed or changed intents get a new key. Existing
+review, source scope and explicit generation actions still govern dispatch.
+
 Connections need a name and provider credentials/settings, with no required default
 model. **Modelleri getir** explicitly lists the entered provider's catalog without
 persisting a connection or generating an answer. A searchable dropdown lets the owner

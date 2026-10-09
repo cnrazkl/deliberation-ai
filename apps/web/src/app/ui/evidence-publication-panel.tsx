@@ -1,5 +1,6 @@
 "use client";
 import { ownerFetch, sessionOwner } from "../../lib/session-fetch";
+import { createBrowserRequestId } from "../../lib/browser-request-id";
 import { useEffect, useState } from "react";
 import type { EvidencePublicationBody, EvidencePublicationPreviewRequest, KnowledgeScope } from "@deliberation-ai/contracts";
 
@@ -35,7 +36,7 @@ export function EvidencePublicationPanel({ runId, candidateId, eligible }: { run
       if (kind === "local" && !collection) throw new Error("İzin verilmiş bir koleksiyon seçin.");
       const scope: KnowledgeScope | undefined = collection ? { ownerId: sessionOwner(), accountId: "local", collectionId: collection.collectionId, grantId: collection.grantId, grantRevision: collection.grantRevision } : undefined;
       const request: EvidencePublicationPreviewRequest = { candidateId, destination: kind === "local" ? { kind: "local", scope: scope! } : { kind: "manual", name, account, url } };
-      setReview({ preview: await send({ action: "preview", ...request }), request, requestId: crypto.randomUUID() }); setConsent(false);
+      setReview({ preview: await send({ action: "preview", ...request }), request, requestId: createBrowserRequestId() }); setConsent(false);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "İnceleme açılamadı."); } finally { setBusy(false); }
   }
   async function commit() {

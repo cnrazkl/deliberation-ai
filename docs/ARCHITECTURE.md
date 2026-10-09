@@ -29,9 +29,13 @@ font service is contacted. CouncilWorkbench owns transient connection-save notic
 and error state; successful saves update its existing list in place. The create form
 opens in ConnectionDialog, and the sidebar remains the workspace theme-control location.
 ConnectionGenerationPanel groups disclosure, fields, actions and acknowledgement
-with presentation classes. Its request-id helper uses native randomUUID when available,
-otherwise formats a UUID v4 from getRandomValues for private-LAN HTTP browsers.
-Entropy failure throws; review/retry/dispatch identities and approval guards remain.
+with presentation classes. The shared browser-request-id helper uses native randomUUID
+when available, otherwise formats UUID v4 from getRandomValues for private-LAN HTTP.
+SubmissionAttempts, council templates, schedules, private branch/delivery, knowledge
+commands and evidence review/publication all use it. Key creation stays at existing
+intent boundaries; retries reuse their stored key. Entropy failure throws; review,
+retry/dispatch identities and approval guards remain. E2E can set
+DELIBERATION_E2E_NO_RANDOM_UUID=true to test these flows with native UUID disabled.
 No persistence, schema, provider or worker change is introduced.
 
 BrandMark is a decorative shared presentation component backed by the static

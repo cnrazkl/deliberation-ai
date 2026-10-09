@@ -1,6 +1,16 @@
 # Current state
 
-Updated: 9 October 2026 (readable composer disclosures deployed)
+Updated: 9 October 2026 (LAN HTTP request identifiers in verification)
+
+## LAN HTTP council submission identifiers — verification in progress
+
+The reported run error is in SubmissionAttempts: its direct randomUUID call fails on
+the private LAN HTTP browser before POST /api/runs. All remaining browser UUID callers
+now use the existing getRandomValues-backed helper, retaining their intent/retry timing.
+Six UUID/submission unit cases, web types/lint and both focused browser fallback tests
+pass, including four members/three reviews/high risk and lost-response key reuse.
+The broad browser run, production build and owned LAN rollout are pending. No schema, worker, API or
+provider change is planned; the separately observed attachment hash limitation remains.
 
 ## Readable composer disclosures — deployed
 

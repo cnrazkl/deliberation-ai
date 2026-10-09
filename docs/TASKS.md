@@ -1,5 +1,10 @@
 # Tasks
 
+- [ ] Owner-reported LAN HTTP council submission `crypto.randomUUID` failure: migrate
+  remaining browser request-ID callers to the shared secure fallback while preserving
+  intent/retry/approval semantics. Six unit cases, web types/lint and both focused browser
+  tests pass; broad browser/build/live checks pending.
+
 - [x] Owner-requested composer disclosure readability/design: full-row native headers,
   larger labels, short descriptions, separate status, chevrons and keyboard focus.
   Broad browser run passes 101/104; legacy council-header styling is corrected and

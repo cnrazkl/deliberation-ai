@@ -8,10 +8,12 @@ reject stale preference updates after credential/transport edits. Preferences ar
 neither a provider capability assertion nor a dispatch permission; existing reviewed
 fingerprints, frozen member targets and paid-call acknowledgement remain authoritative.
 
-Generation-review request identifiers use browser cryptographic randomness. On
+Browser request identifiers, including council submission, templates, schedules,
+private/evidence/knowledge commands and generation review, use cryptographic randomness. On
 private-LAN HTTP, where randomUUID may be unavailable, getRandomValues supplies all
 128 bits before UUID v4 version/variant masking. Entropy failure stops review; there
-is no Math.random fallback. This does not authorize generation or alter the reviewed
+is no Math.random fallback. Failed entropy acquisition does not replace an existing
+uncertain submission intent. This does not authorize generation or alter the reviewed
 fingerprint, idempotency or explicit paid-call acknowledgement boundaries. The bundled
 Manrope font is served locally with its OFL license and needs no external font request.
 

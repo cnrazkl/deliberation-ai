@@ -1,5 +1,6 @@
 "use client";
 import { ownerFetch } from "../../lib/session-fetch";
+import { createBrowserRequestId } from "../../lib/browser-request-id";
 import { useEffect, useRef, useState } from "react";
 import type { CreatePrivateBranch, AppendPrivateDraft, PrivateBranchSeed } from "@deliberation-ai/contracts";
 import type { PrivateBranchSummary, PrivateBranchView } from "@deliberation-ai/persistence";
@@ -79,8 +80,8 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
     working.current = true; setBusy(true); setError(null);
     const key = JSON.stringify([action, branch.id, action === "append" ? text : [branch.revision, branch.body.deliveryVersion ?? 0]]);
     if (intent.current?.key !== key) intent.current = { key, body: action === "append" ?
-      { requestId: crypto.randomUUID(), expectedRevision: branch.revision, text } :
-      { action: "fork", requestId: crypto.randomUUID(), parentBranchId: branch.id, expectedRevision: branch.revision, expectedDeliveryVersion: branch.body.deliveryVersion ?? 0 } };
+      { requestId: createBrowserRequestId(), expectedRevision: branch.revision, text } :
+      { action: "fork", requestId: createBrowserRequestId(), parentBranchId: branch.id, expectedRevision: branch.revision, expectedDeliveryVersion: branch.body.deliveryVersion ?? 0 } };
     try {
       const value = await jsonRequest<PrivateBranchView>(action === "append" ? `/api/private-branches/${branch.id}/messages` : "/api/private-branches", post(intent.current.body));
       if (!alive.current) return;
@@ -165,7 +166,7 @@ export function PrivateBranchSeedButton({ runId, memberId }: { runId: string; me
     working.current = true; setBusy(true); setError(null); setPreview(null);
     try {
       const value = await jsonRequest<NonNullable<typeof preview>>(`/api/runs/${runId}/private-branch-seed?member=${encodeURIComponent(memberId)}`);
-      if (alive.current) { setPreview(value); requestId.current = crypto.randomUUID(); }
+      if (alive.current) { setPreview(value); requestId.current = createBrowserRequestId(); }
     } catch (cause) { if (alive.current) setError(cause instanceof Error ? cause.message : "Kaynak yüklenemedi."); }
     finally { working.current = false; if (alive.current) setBusy(false); }
   }

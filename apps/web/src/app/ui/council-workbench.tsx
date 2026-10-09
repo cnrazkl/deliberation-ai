@@ -1,6 +1,7 @@
 "use client";
 
 import { ownerFetch, sessionOwner } from "../../lib/session-fetch";
+import { createBrowserRequestId } from "../../lib/browser-request-id";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { WorkspaceShell, type WorkspaceView } from "./workspace-shell";
 import { LocalDiagnosticsPanel } from "./local-diagnostics-panel";
@@ -679,7 +680,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     if (!templateName.trim() || savingTemplate || deletingTemplateBusy) return;
     const draft = { name: templateName.trim(), description: `${members.length} üyeli kayıtlı sağlayıcı konseyi`, members };
     const bodyKey = JSON.stringify(draft);
-    if (!templateIntent.current || templateIntent.current.body !== bodyKey) templateIntent.current = { body: bodyKey, requestId: crypto.randomUUID() };
+    if (!templateIntent.current || templateIntent.current.body !== bodyKey) templateIntent.current = { body: bodyKey, requestId: createBrowserRequestId() };
     setSavingTemplate(true);
     setError(undefined);
     try {

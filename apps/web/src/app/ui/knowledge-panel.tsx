@@ -1,5 +1,6 @@
 "use client";
 import { ownerFetch, sessionOwner } from "../../lib/session-fetch";
+import { createBrowserRequestId } from "../../lib/browser-request-id";
 import { useId, useRef, useState } from "react";
 import type { KnowledgePacket, KnowledgeScope, CreateRunRequest } from "@deliberation-ai/contracts";
 import { inspectKnowledgeQuery } from "@deliberation-ai/contracts";
@@ -84,7 +85,7 @@ export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
           const mediaType = extension === "pdf" ? "application/pdf" : extension === "png" ? "image/png" : ["jpg", "jpeg"].includes(extension ?? "") ? "image/jpeg" : extension === "txt" ? "text/plain" : ["md", "markdown"].includes(extension ?? "") ? "text/markdown" : null;
           if (!mediaType || file.size > (mediaType === "application/pdf" ? 5 : mediaType.startsWith("image/") ? 2 : 1) * 1_048_576) throw new Error("Dosya türü veya boyutu desteklenmiyor.");
           const bytes = new Uint8Array(await file.arrayBuffer()); let binary = ""; for (const byte of bytes) binary += String.fromCharCode(byte);
-          data.push({ sourceId: crypto.randomUUID(), expectedVersionId: null, name: file.name, mediaType, dataBase64: btoa(binary) });
+          data.push({ sourceId: createBrowserRequestId(), expectedVersionId: null, name: file.name, mediaType, dataBase64: btoa(binary) });
         }
         await command({ operation: "import", scope: scopeFor(destination), files: data });
         const page = await command<{ items: Source[]; nextCursor: string | null }>({ operation: "sources", scope: scopeFor(destination), cursor: null });
@@ -104,7 +105,7 @@ export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
         <p className="knowledge-query-feedback" id="knowledge-query-feedback" role="status">{queryInspection.termCount}/12 farklı arama sözcüğü{!queryInspection.valid ? " · " + queryInspection.message : ""}</p>
         <label className="knowledge-check knowledge-option"><input type="checkbox" disabled={busy} checked={allowEmpty} onChange={(event) => { invalidate(); setAllowEmpty(event.target.checked); }} /><span>Arama sonuçsuz kalırsa kanıtsız paketi ayrıca inceleyerek devam edebilirim</span></label>
         {!selection && <p className="hint">Paketi hazırlamak için 1. adımda sohbetin koleksiyon seçimini kaydedin.</p>}
-        <div className="knowledge-actions"><button type="button" disabled={busy || !selection || !queryInspection.valid} onClick={() => void work(async () => { invalidate(); const value = await command<KnowledgePacket>({ operation: "prepare", id: crypto.randomUUID(), conversationId, selectionRevision: selection!.revision, query: query.trim(), allowWithoutEvidence: allowEmpty }); setPacket(value); })}>Kanıt paketini hazırla</button></div>
+        <div className="knowledge-actions"><button type="button" disabled={busy || !selection || !queryInspection.valid} onClick={() => void work(async () => { invalidate(); const value = await command<KnowledgePacket>({ operation: "prepare", id: createBrowserRequestId(), conversationId, selectionRevision: selection!.revision, query: query.trim(), allowWithoutEvidence: allowEmpty }); setPacket(value); })}>Kanıt paketini hazırla</button></div>
         {packet && <section className="knowledge-packet" aria-label="Hazırlanan kaynak paketi"><h4>Gönderilecek kaynak paketi</h4><p>Arama: {packet.query} · Konu: {packet.topic || "Belirtilmedi"}</p><p className="hint">{packet.excerpts.length} alıntı · {packet.excerpts.reduce((sum, item) => sum + item.text.length, 0)} karakter · {packet.createdAt}. İçerik ve güncellik incelenmedi. Hazırlama sonrası sürüm değişirse yeniden hazırlayın.</p>
           <div className="knowledge-coverage">{packet.coverage.map((item) => <p key={item.collectionId}>{collections.find((collection) => collection.collectionId === item.collectionId)?.title ?? item.collectionId}: {item.inspected} dosya, {item.matches} eşleşme, {item.selected} alıntı, {item.omitted} dışarıda, {item.unavailable} kullanılamıyor.</p>)}</div>
           {packet.excerpts.map((item) => <article className="knowledge-excerpt" key={item.excerptId}><strong>{item.source.title} · sayfa {item.page ?? "metin"}</strong><p className="hint">Sürüm {item.source.versionId} · konum {item.start}–{item.end}</p><pre>{item.text}</pre></article>)}

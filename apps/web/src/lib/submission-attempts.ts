@@ -1,3 +1,5 @@
+import { createBrowserRequestId } from "./browser-request-id";
+
 /** Reuse an intent's key until its response is read; a lost response is not a new intent. */
 export class SubmissionAttempts {
   #attempts = new Map<string, { payload: string; idempotencyKey: string }>();
@@ -6,7 +8,7 @@ export class SubmissionAttempts {
     const serialized = JSON.stringify(payload);
     let attempt = this.#attempts.get(scope);
     if (!attempt || attempt.payload !== serialized) {
-      attempt = { payload: serialized, idempotencyKey: crypto.randomUUID() };
+      attempt = { payload: serialized, idempotencyKey: createBrowserRequestId() };
       this.#attempts.set(scope, attempt);
     }
     return { body: JSON.stringify({ ...payload, idempotencyKey: attempt.idempotencyKey }), idempotencyKey: attempt.idempotencyKey };

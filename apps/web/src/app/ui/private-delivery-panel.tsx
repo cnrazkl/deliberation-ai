@@ -1,5 +1,6 @@
 "use client";
 import { ownerFetch } from "../../lib/session-fetch";
+import { createBrowserRequestId } from "../../lib/browser-request-id";
 import { useEffect, useRef, useState } from "react";
 import type { PrivateDelivery } from "@deliberation-ai/contracts";
 import type { PrivateBranchView, PrivateDeliveryPreview } from "@deliberation-ai/persistence";
@@ -42,7 +43,7 @@ export function PrivateDeliveryPanel({ branch, disabled, onChanged, onBusy, maxO
         if (alive.current) { setPreview(value); setReviewed(false); intent.current = null; setRetryLocked(false); }
       } else if (action === "send") {
         if (!preview?.eligible || !reviewed) return;
-        intent.current ??= { requestId: crypto.randomUUID(), fingerprint: preview.fingerprint, maxOutputTokens: preview.maxOutputTokens };
+        intent.current ??= { requestId: createBrowserRequestId(), fingerprint: preview.fingerprint, maxOutputTokens: preview.maxOutputTokens };
         setRetryLocked(true);
         await request(branch.id, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(intent.current) });
         if (alive.current) { intent.current = null; setRetryLocked(false); setPreview(null); setReviewed(false); onChanged(); }

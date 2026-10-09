@@ -1,6 +1,7 @@
 "use client";
 
 import { ownerFetch } from "../../lib/session-fetch";
+import { createBrowserRequestId } from "../../lib/browser-request-id";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CouncilMemberConfig, ExecutionLimits, RiskProfile, ReviewRoundCount, ScheduleCadence } from "@deliberation-ai/contracts";
 import { LocalScheduleDeletionPanel } from "./local-schedule-deletion-panel";
@@ -84,7 +85,7 @@ export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevis
           members,
       };
       const serialized = JSON.stringify(payload);
-      if (creationIntent.current?.body !== serialized) creationIntent.current = { id: crypto.randomUUID(), body: serialized };
+      if (creationIntent.current?.body !== serialized) creationIntent.current = { id: createBrowserRequestId(), body: serialized };
       const response = await ownerFetch("/api/local-schedules", {
         method: "POST",
         headers: { "content-type": "application/json" },

@@ -1,6 +1,7 @@
 "use client";
 
 import { ownerFetch } from "../../lib/session-fetch";
+import { createBrowserRequestId } from "../../lib/browser-request-id";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { RunRecord } from "@deliberation-ai/application";
 import type { EvidenceCandidateProvenance, EvidenceFreshnessStatus, EvidenceRelation, EvidenceReviewStatus } from "@deliberation-ai/contracts";
@@ -60,7 +61,7 @@ export function EvidenceCandidatePanel({ run, onSourcesChanged }: { run: RunReco
   }
   async function capture(fields: object) {
     const value = { runId: run.runId, claimId, relation, ...(relatedSourceId ? { relatedSourceId } : {}), ...fields };
-    const body = JSON.stringify(value); const id = retry?.body === body ? retry.id : crypto.randomUUID();
+    const body = JSON.stringify(value); const id = retry?.body === body ? retry.id : createBrowserRequestId();
     setRetry({ body, id });
     if (await send("/api/evidence-candidates", { ...value, requestId: id })) setRetry(undefined);
   }
