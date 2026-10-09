@@ -1,8 +1,45 @@
 # Current state
 
-Updated: 9 October 2026 (blue/navy frontend modernization)
+Updated: 9 October 2026 (local source panel layout)
 
-## Complete frontend modernization — deployed
+## Local source panel layout — deployed
+
+The expanded local source panel now separates collection/setup, file intake and
+packet preparation/review into three numbered sections. Explicit gaps, stacked
+labels, responsive action rows and wrapping collection/source/excerpt cards replace
+the bare inline controls. A Turkish 44px chooser button opens the existing labeled
+file input. Coverage, exclusions, extraction limitations, explicit review and optional
+packet-free continuation remain visible. Scope/revision/invalidation/import/dispatch
+guards are preserved; no API/schema/migration/provider/worker behavior change.
+
+Twenty-two browser cases pass: six new empty/populated source layout cases in both
+palettes at 390/960/1440px (sibling gaps, label separation, 44px actions, long names,
+provenance and excerpt wrapping), the real-route selected-file/review/revocation flow,
+three interface/contrast cases and twelve workspace cases. Keyboard file selection
+and query-change review invalidation pass. The workspace suite retains 320/640/820/
+1024px, short landscape and 200% zoom coverage. Strict types, zero-warning lint,
+Linux production web types/build and eleven deployed production smoke checks pass
+with zero paid provider calls. An initial layout test used an exact text-label lookup
+including select options; the semantic combobox locator fixes the test. An interrupted
+initial run also lost its local PG connection; the complete rerun passes.
+
+Actual LAN light/dark verification at 960x918 confirms three separated cards, 16px
+internal gaps, 44px buttons, no horizontal overflow and no captured console errors.
+The temporary empty visual account was erased through its guarded preview/confirmation
+flow afterward; the verification tab was closed and viewport/appearance restored.
+The original user's draft/data was not modified or reloaded.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-knowledge-ui1`,
+manifest `sha256:d7c6b5ca1d64e79db2e00bca40b8a5862b49fb46995656d7e046c5fce1be3eb6`,
+exported source tree `f1a324e866b7cfafe9e2b84862e072ccfc591fa1` before this final
+evidence update. LAN binding remains `192.168.1.112:33184`. Fresh foreign-container
+and owned database/worker lifecycle baselines match after deployment. No foreign
+database, DDL, firewall, Cloudflare or personal-data migration occurred. Source-bound
+window `month-knowledge-ui-20261009` starts 2026-10-09T13:41:10.528Z and is due
+2026-11-08T13:41:10.528Z (8 November 16:41 Istanbul); its first sample is healthy.
+Earlier windows remain retained; monthly and independent human quality gates stay open.
+
+## Complete frontend modernization — prior deployment
 
 The browser now shares a light-blue/navy design system across entry/registration,
 chat/history, settings/connections/tools, scheduling, reports/evidence/private flows,

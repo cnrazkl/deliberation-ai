@@ -1,5 +1,18 @@
 # Workspace design principles — DA-111 / DA-112
 
+## Local source panel — 9 October 2026
+
+The expanded source disclosure separates collection/setup, file intake and packet
+review into three numbered sections. Field labels sit above full-width controls;
+actions and collection cards have explicit gaps and stack according to usable
+workspace width. Long collection names, filenames, provenance and excerpts wrap.
+Both palettes use the common surfaces, field borders and 44px button targets.
+The Turkish file button opens the existing labeled chooser; collection permission
+and destination guards, selected-file limits and the original import handler remain.
+Extracted/unavailable files, coverage, exclusions and the required review checkbox
+remain visible. Optional continuation without a packet stays a secondary action.
+The panel introduces no automatic fetch, selection, review or model request.
+
 ## Complete blue/navy refresh — 9 October 2026
 
 - Light: pale blue canvas/sidebar, white surfaces, dark blue text and a blue primary

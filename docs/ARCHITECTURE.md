@@ -1,5 +1,12 @@
 # Architecture
 
+KnowledgePanel presents its existing collection, selected-file intake and reviewed
+packet commands as three numbered sections. Presentation classes use workspace
+container queries, stacked labels and wrapping cards. A local input ref connects the
+Turkish chooser button to the existing labeled file input/import handler. Scope,
+revision, invalidation, review and dispatch boundaries remain unchanged; no new route,
+domain behavior, provider request, schema, worker or persistence operation is added.
+
 The browser design system uses semantic accent/ink/surface/field/shadow tokens with
 light-blue and navy palettes in globals.css. Existing workspace container queries
 and the AccountBar height observer remain the layout boundary. AccountMenu is a

@@ -1,5 +1,12 @@
 # Tasks
 
+- [x] Owner browser comment: separate local source setup/intake/review into numbered
+  cards, align fields/actions and add spacing/wrapping with a Turkish file chooser.
+  Twenty-two source/workspace/interface browser cases, types/lint/Linux build and
+  eleven production smoke checks pass. Deployed LAN layout verified at 960x918;
+  source review/permission guards and existing service/database-worker lifecycle
+  preserved. See CURRENT_STATE.md for evidence.
+
 - [x] Owner-requested complete frontend modernization: light-blue/navy design system,
   consistent entry/workspace/scheduler/settings/report/private/admin/help surfaces,
   compact pinned account disclosure and responsive/accessibility regression coverage.

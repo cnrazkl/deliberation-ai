@@ -387,3 +387,10 @@ Recurring schedule deletion now requires a paused-template preview and explicit 
 ## DA-122 reviewed local source packets
 
 DA-122 adds explicitly selected local collections, file intake and owner-reviewed bounded source packets. Exact quote/version/page/span and exclusions are visible before sharing with every independent first-round seat. Unsupported OCR/images remain unavailable; no source becomes verified automatically. [Packet contract](KNOWLEDGE_PACKETS.md).
+
+The source disclosure guides collection setup/selection, file intake and packet review
+in three numbered sections. Labels, actions and collection cards align and stack in
+narrow workspaces; long names/excerpts wrap. A Turkish file-selection button keeps
+the existing selected-file intake and destination/permission limits. File extraction
+status, coverage/exclusions, explicit review and optional packet-free continuation
+remain visible; opening the panel does not fetch sources or contact a model.
