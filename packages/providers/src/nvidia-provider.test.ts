@@ -17,9 +17,10 @@ const privateRequest = { version: "private-text-v1" as const, model: "vendor/man
     { role: "assistant" as const, content: "Selected answer" }, { role: "user" as const, content: "Private question" }] };
 const providerOptions = { ...settings, model: settings.defaultModel, id: "member-a", councilRole: "analyst" as const, reasoningLevel: "default" as const };
 
-test("NVIDIA save contract requires explicit hosted identity, key and model", () => {
+test("NVIDIA save contract requires explicit hosted identity and key; model selection is optional", () => {
   expect(saveProviderConnectionSchema.parse(settings).endpointPreset).toBe("nvidia");
-  for (const change of [{ apiKey: "" }, { defaultModel: " " }, { baseUrl: "https://example.test/v1" },
+  expect(saveProviderConnectionSchema.parse({ ...settings, defaultModel: undefined }).defaultModel).toBe("");
+  for (const change of [{ apiKey: "" }, { baseUrl: "https://example.test/v1" },
     { baseUrl: `${NVIDIA_HOSTED_BASE_URL}/` }, { provider: "openai" }, { reasoningProtocol: "reasoning-effort" },
     { structuredOutputMode: "json-object" }]) {
     expect(saveProviderConnectionSchema.safeParse({ ...settings, ...change }).success).toBe(false);

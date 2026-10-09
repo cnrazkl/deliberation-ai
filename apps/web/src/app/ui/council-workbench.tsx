@@ -36,6 +36,7 @@ import type {
 import { DecisionAssessmentPanel } from "./decision-assessment-panel";
 import { ConnectionGenerationPanel } from "./connection-generation-panel";
 import { ConnectionModelPreview } from "./connection-model-preview";
+import { ConnectionModelPicker, SavedConnectionModels } from "./connection-model-picker";
 import { ClaimContextPanel } from "./claim-context-panel";
 import { ResearchCapturePanel } from "./research-capture-panel";
 import { EvidenceCandidatePanel } from "./evidence-candidate-panel";
@@ -160,17 +161,20 @@ function assignConnectionToUnconfiguredMembers(
   current: CouncilMemberConfig[],
   available: ProviderConnection[],
 ): CouncilMemberConfig[] {
-  const fallback = available[0];
+  const fallback = available.find(connection => connectionModels(connection).length > 0);
   if (!fallback) return current;
-  return current.map((member) => available.some((connection) => connection.id === member.connectionId)
-    ? member
-    : {
+  return current.map((member, index) => {
+    const selected = available.find(connection => connection.id === member.connectionId);
+    if (selected && member.model.trim()) return member;
+    const target = selected && connectionModels(selected).length ? selected : fallback;
+    return {
         ...member,
-        provider: fallback.provider,
-        connectionId: fallback.id,
-        model: fallback.defaultModel,
+        provider: target.provider,
+        connectionId: target.id,
+        model: connectionModels(target)[index % connectionModels(target).length]!,
         receiveAttachments: member.receiveAttachments ?? true,
-      });
+      };
+  });
 }
 
 const providerLabels: Record<RemoteProvider, string> = {
@@ -240,6 +244,7 @@ type ProviderConnection = {
   provider: RemoteProvider;
   label: string;
   defaultModel: string;
+  selectedModels?: string[];
   configured: true;
   baseUrl?: string;
   endpointPreset: EndpointPreset;
@@ -248,6 +253,10 @@ type ProviderConnection = {
   catalogCheck?: ModelCatalogCheck;
   revision?: number;
 };
+
+function connectionModels(connection: ProviderConnection): string[] {
+  return connection.selectedModels ?? (connection.defaultModel ? [connection.defaultModel] : []);
+}
 
 function catalogMetadataText(detail: CatalogModelDetail): string {
   const items: string[] = [];
@@ -364,7 +373,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   const [checkingConnectionId, setCheckingConnectionId] = useState<string>();
   const [connectionLabel, setConnectionLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("");
+  const [connectionSelectedModels, setConnectionSelectedModels] = useState<string[]>([]);
   const [connectionProvider, setConnectionProvider] = useState<RemoteProvider>("openai");
   const [endpointPreset, setEndpointPreset] = useState<EndpointPreset>("custom");
   const [baseUrl, setBaseUrl] = useState("");
@@ -524,13 +533,13 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       for (let index = current.length; index < count; index += 1) {
         const fixture = memberCatalog[index];
         if (!fixture) continue;
-        const connection = connections[0];
+        const connection = connections.find(item => connectionModels(item).length > 0);
         next.push(
           connection
             ? {
                 ...fixture,
                 provider: connection.provider,
-                model: connection.defaultModel,
+                model: connectionModels(connection)[index % connectionModels(connection).length]!,
                 connectionId: connection.id,
               }
             : { ...fixture },
@@ -709,7 +718,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           provider: connectionProvider,
           label: connectionLabel,
           apiKey,
-          defaultModel: model,
+          selectedModels: connectionSelectedModels,
           ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}),
           endpointPreset,
           reasoningProtocol,
@@ -732,7 +741,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       setMembers((current) => assignConnectionToUnconfiguredMembers(current, [...connections, saved]));
       setConnectionLabel("");
       setApiKey("");
-      setModel("");
+      setConnectionSelectedModels([]);
       setEditingConnectionId(undefined);
       setConnectionNotice(editingConnectionId ? "Bağlantı başarıyla şifrelenerek güncellenmiştir." : "Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
     } catch (reason) {
@@ -751,7 +760,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     setConnectionProvider(connection.provider);
     setConnectionLabel(connection.label);
     setApiKey("");
-    setModel(connection.defaultModel);
+    setConnectionSelectedModels(connectionModels(connection));
     setEndpointPreset(connection.endpointPreset);
     setBaseUrl(connection.baseUrl ?? "");
     setReasoningProtocol(connection.reasoningProtocol);
@@ -764,7 +773,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     setEditingConnectionId(undefined);
     setConnectionLabel("");
     setApiKey("");
-    setModel("");
+    setConnectionSelectedModels([]);
   }
 
   async function removeConnection(connectionId: string): Promise<void> {
@@ -805,6 +814,15 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     } finally {
       setCheckingConnectionId(undefined);
     }
+  }
+
+  async function saveConnectionModels(connection: ProviderConnection, selectedModels: string[]): Promise<void> {
+    const response = await ownerFetch("/api/provider-connections", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...connection, apiKey: "", selectedModels, expectedRevision: connection.revision }) });
+    if (!response.ok) throw new Error("Model seçimleri kaydedilemedi.");
+    const saved = await response.json() as ProviderConnection;
+    setConnections(current => current.map(item => item.id === saved.id ? saved : item));
+    setMembers(current => assignConnectionToUnconfiguredMembers(current, connections.map(item => item.id === saved.id ? saved : item)));
   }
 
   async function pollRunFallback(runId: string): Promise<void> {
@@ -1447,6 +1465,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           onChange={(event) => {
             const provider = event.target.value as RemoteProvider;
             setConnectionProvider(provider);
+            setConnectionSelectedModels([]);
             setEndpointPreset("custom");
             setBaseUrl("");
             setReasoningProtocol(
@@ -1479,6 +1498,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
               const settings = endpointPresets[preset];
               if (preset !== endpointPreset && (preset === "nvidia" || endpointPreset === "nvidia")) setApiKey("");
               setEndpointPreset(preset);
+              setConnectionSelectedModels([]);
               setBaseUrl(settings.baseUrl);
               setReasoningProtocol(settings.reasoningProtocol);
               setStructuredOutputMode(settings.structuredOutputMode);
@@ -1544,14 +1564,9 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       ) : null}
       {!editingConnectionId ? <ConnectionModelPreview
         draft={{ provider: connectionProvider, endpointPreset, apiKey, ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}) }}
-        model={model} onModelChange={setModel} disabled={savingConnection}
-      /> : null}
-      <label className="connection-default-model">
-        Başlangıç modeli (görev sırasında değiştirilebilir)
-        <input type="text" value={model} maxLength={120} placeholder={connectionGuide.modelExample}
-          onChange={(event) => setModel(event.target.value)} required />
-        <small>Model kimliğini listeden seçin veya elle yazın. Aynı bağlantıyı konseyde farklı modellerle kullanabilirsiniz.</small>
-      </label>
+        selectedModels={connectionSelectedModels} onModelsChange={setConnectionSelectedModels} disabled={savingConnection}
+      /> : <ConnectionModelPicker models={catalogChecks[editingConnectionId]?.models ?? []} selectedModels={connectionSelectedModels}
+        onChange={setConnectionSelectedModels} disabled={savingConnection} />}
       <p className="connection-reasoning-hint hint">Düşünme seviyesini her konsey üyesinin modelinin yanında seçin veya kapatın. Bu seçim görev bazında yapılır.</p>
       <details className="connection-advanced">
         <summary>Gelişmiş uç nokta ayarları</summary>
@@ -1663,7 +1678,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                       </span>
                       <strong>{connection.label}</strong>
                       <small>
-                        {providerLabels[connection.provider]} · varsayılan {connection.defaultModel} · {endpointPresets[connection.endpointPreset].label}
+                        {providerLabels[connection.provider]} · {connectionModels(connection).length} model seçili · {endpointPresets[connection.endpointPreset].label}
                       </small>
                       <small>
                         {connection.baseUrl ? `${connection.baseUrl} · ` : ""}
@@ -1672,7 +1687,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                       {catalog ? (
                         <small role="status">
                           {catalog.status === "available"
-                            ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."} ${catalog.models.includes(connection.defaultModel) ? "Başlangıç modeli listede." : catalog.truncated ? "Başlangıç modeli görünen bölümde yok." : "Başlangıç modeli listede yok."}`
+                            ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."}`
                             : catalog.status === "auth_failed"
                               ? "Katalog isteği kimlik/yetki hatasıyla reddedildi."
                               : catalog.status === "unsupported"
@@ -1682,30 +1697,6 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                       ) : null}
                       {catalog?.checkedAt ? (
                         <small>Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small>
-                      ) : null}
-                      {catalog?.status === "available" && catalog.models.length > 0 ? (
-                        <>
-                          <datalist id={`connection-models-${connection.id}`}>
-                            {catalog.models.map((modelId) => <option key={modelId} value={modelId} />)}
-                          </datalist>
-                          <label className="connection-model-picker">
-                            Kontrol edilen modeller
-                            <select
-                              aria-label={`${connection.label} katalog modeli`}
-                              disabled={savingConnection || Boolean(checkingConnectionId)}
-                              value={catalog.models.includes(editingConnectionId === connection.id ? model : connection.defaultModel) ? (editingConnectionId === connection.id ? model : connection.defaultModel) : ""}
-                              onChange={(event) => {
-                                if (!event.target.value) return;
-                                if (editingConnectionId !== connection.id) editConnection(connection);
-                                setModel(event.target.value);
-                              }}
-                            >
-                              <option value="" disabled>Başlangıç modeli seçin</option>
-                              {catalog.models.map((modelId) => <option key={modelId} value={modelId}>{modelId}</option>)}
-                            </select>
-                          </label>
-                          <small>Seçimi “Bağlantıyı güncelle” ile kaydedin. Mevcut üyelerin modelleri değişmez; listedeki kimlikler üye model alanlarında da önerilir.</small>
-                        </>
                       ) : null}
                     </div>
                     <div className="connection-actions">
@@ -1725,6 +1716,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                       </button>
                     </div>
                   </div>
+                  {editingConnectionId !== connection.id ? <SavedConnectionModels models={catalog?.models ?? []}
+                    selectedModels={connectionModels(connection)} label={connection.label} onSave={models => saveConnectionModels(connection, models)} /> : null}
                   {editingConnectionId === connection.id ? (
                     <section className="connection-editor" id={`connection-editor-${connection.id}`} aria-label={`${connection.label} bağlantısını düzenle`}>
                       <h3>Bağlantıyı düzenle · {connection.label}</h3>
@@ -1997,6 +1990,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             );
             const selectedCatalog = selectedConnection ? catalogChecks[selectedConnection.id] : undefined;
             const selectedModelDetail = selectedCatalog?.details?.find((item) => item.id === member.model);
+            const savedModels = selectedConnection ? connectionModels(selectedConnection) : [];
             const managedWebSearchAvailable = supportsManagedWebSearch(selectedConnection);
             return (
               <article className="member-editor" key={member.id}>
@@ -2051,7 +2045,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                           updateMember(index, {
                             provider: connection.provider,
                             connectionId: connection.id,
-                            model: connection.defaultModel,
+                            model: connectionModels(connection).includes(member.model) ? member.model : connectionModels(connection)[0] ?? "",
                             reasoningLevel: "default",
                             webSearchMode: "off",
                           });
@@ -2066,12 +2060,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                     </select>
                   </label>
                   <label>
-                    Bu görevde model kimliği
-                    <input
+                    Bu görevde model
+                    <select
                       aria-label={`Üye ${index + 1} modeli`}
-                      list={selectedConnection && catalogChecks[selectedConnection.id]?.status === "available" ? `connection-models-${selectedConnection.id}` : undefined}
                       value={member.model}
-                      maxLength={120}
                       onChange={(event) => {
                         const nextModel = event.target.value;
                         updateMember(index, {
@@ -2082,14 +2074,18 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                         });
                       }}
                       required
-                    />
+                    >
+                      <option value="" disabled>Bağlantıdan bir model seçin</option>
+                      {member.model && !savedModels.includes(member.model) ? <option value={member.model}>{member.model} · Bu sohbetin mevcut modeli</option> : null}
+                      {savedModels.map(id => <option key={id} value={id}>{id}</option>)}
+                    </select>
                     <small>
-                      Bağlantının başlangıç modelini değiştirmez. Bu üyeye ve bu görev snapshot’ına uygulanır.
+                      {savedModels.length ? "Ayarlarda bu bağlantı için seçtiğiniz modeller. Aynı bağlantıyı birden fazla üyede kullanabilirsiniz." : "Ayarlar → API bağlantılarınız bölümünde bu bağlantının modellerini seçin."}
                     </small>
                     {selectedModelDetail ? (
                       <small>Katalog bildirimi · {catalogMetadataText(selectedModelDetail)}</small>
                     ) : selectedCatalog?.status === "available" && !selectedCatalog.models.includes(member.model) ? (
-                      <small>{selectedCatalog.truncated ? "Bu model görünen katalog bölümünde yok." : "Bu model katalog listesinde yok."} Model kimliğini yine elle girebilirsiniz.</small>
+                      <small>{selectedCatalog.truncated ? "Bu model görünen katalog bölümünde yok." : "Bu model katalog listesinde yok."} Kaydedilmiş seçim korunuyor; katalog üretim desteğini doğrulamaz.</small>
                     ) : null}
                   </label>
                   <label>

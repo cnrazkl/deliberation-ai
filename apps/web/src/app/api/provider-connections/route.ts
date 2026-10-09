@@ -5,6 +5,7 @@ import {
   listProviderConnections,
   ProviderConnectionSecretRequiredError,
   ProviderConnectionCheckPendingError,
+  ProviderConnectionRevisionConflictError,
   saveProviderConnection,
 } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../lib/request-security";
@@ -26,6 +27,7 @@ async function sessionPOST(request: Request): Promise<Response> {
   try {
     return Response.json(await saveProviderConnection(parsed.data));
   } catch (error) {
+    if (error instanceof ProviderConnectionRevisionConflictError) return Response.json({ error: error.message }, { status: 409 });
     if (error instanceof ProviderConnectionSecretRequiredError) {
       return Response.json({ error: error.message }, { status: 400 });
     }

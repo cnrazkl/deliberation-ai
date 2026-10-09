@@ -1,5 +1,13 @@
 # Security
 
+Selected connection model IDs are owner-scoped configuration, with the same non-secret
+classification as the legacy default model. Up to 100 unique bounded IDs can be saved;
+credentials and catalog/generation observations retain encryption. Selection saving
+uses existing session/origin checks and an owner row lock. Expected revision checks
+reject stale preference updates after credential/transport edits. Preferences are
+neither a provider capability assertion nor a dispatch permission; existing reviewed
+fingerprints, frozen member targets and paid-call acknowledgement remain authoritative.
+
 Generation-review request identifiers use browser cryptographic randomness. On
 private-LAN HTTP, where randomUUID may be unavailable, getRandomValues supplies all
 128 bits before UUID v4 version/variant masking. Entropy failure stops review; there

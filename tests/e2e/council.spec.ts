@@ -1,5 +1,6 @@
 import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
+import { addConnectionModels } from "./connection-model-selection";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import {
   closeDatabase,
@@ -193,14 +194,14 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   const secondConnection = `E2E bağlantı B ${connectionSuffix}`;
   const providerSettings = page.locator("details").filter({ hasText: "Yerel sağlayıcı bağlantıları" });
   await workspaceView(page, "Ayarlar");
-  await providerSettings.locator("summary").click();
+  await providerSettings.locator(":scope > summary").click();
   for (const [label, model] of [
     [firstConnection, "e2e-model-a"],
     [secondConnection, "e2e-model-b"],
   ]) {
     await providerSettings.getByLabel("Bağlantı adı").fill(label);
     await page.getByLabel("API anahtarı").fill(`sk-test-${label}-1234567890`);
-    await page.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)").fill(model);
+    await addConnectionModels(page.locator(".connection-form"), label === secondConnection ? [model, "gpt-5-pro", "gpt-5.6-sol"] : [model]);
     await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
     await expect(page.locator(".connection-list")).toContainText(label);
   }
@@ -208,7 +209,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page.getByLabel("Sağlayıcı ailesi").selectOption("openai-compatible");
   await page.getByLabel("Uç nokta türü").selectOption("ollama");
   await providerSettings.getByLabel("Bağlantı adı").fill(localConnection);
-  await page.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)").fill("qwen3");
+  await addConnectionModels(page.locator(".connection-form"), ["qwen3"]);
   await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
   await expect(page.locator(".connection-list")).toContainText(localConnection);
   const openRouterConnection = `E2E OpenRouter ${connectionSuffix}`;
@@ -216,9 +217,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page.getByLabel("Uç nokta türü").selectOption("openrouter");
   await providerSettings.getByLabel("Bağlantı adı").fill(openRouterConnection);
   await page.getByLabel("API anahtarı").fill("sk-or-test-only-never-sent-1234567890");
-  await page
-    .getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)")
-    .fill("openai/gpt-5.6-sol");
+  await addConnectionModels(page.locator(".connection-form"), ["openai/gpt-5.6-sol"]);
   await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
   const openRouterCard = page.locator(".connection-status").filter({ hasText: openRouterConnection });
   await expect(openRouterCard).toContainText("Hazırda · bu görevde kullanılmıyor");
@@ -248,21 +247,19 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.locator(".token-preview strong").first()).not.toHaveText(firstEstimate);
   await questionField.fill(originalQuestion);
 
-  const firstConnectionCard = page.locator(".connection-status").filter({ hasText: firstConnection });
+  const firstConnectionCard = page.locator(".connection-card").filter({ hasText: firstConnection });
   await workspaceView(page, "Ayarlar");
   await firstConnectionCard.getByRole("button", { name: "Düzenle" }).click();
-  await page
-    .getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)")
-    .fill("e2e-model-a-updated");
+  await addConnectionModels(page.locator(".connection-form"), ["e2e-model-a-updated"]);
   await page.getByRole("button", { name: "Bağlantıyı güncelle" }).click();
   await expect(firstConnectionCard).toContainText("e2e-model-a-updated");
 
   await workspaceView(page, "Sohbet");
   await page.getByLabel("Üye 1 bağlantısı").selectOption({ label: `${secondConnection} · OpenAI` });
   await expect(page.getByLabel("Üye 1 modeli")).toHaveValue("e2e-model-b");
-  await page.getByLabel("Üye 1 modeli").fill("gpt-5-pro");
+  await page.getByLabel("Üye 1 modeli").selectOption("gpt-5-pro");
   await expect(page.getByText(/GPT-5 Pro yalnızca yüksek düşünme seviyesini/)).toBeVisible();
-  await page.getByLabel("Üye 1 modeli").fill("gpt-5.6-sol");
+  await page.getByLabel("Üye 1 modeli").selectOption("gpt-5.6-sol");
   await page.getByLabel("Üye 1 düşünme seviyesi").selectOption("max");
   await page.getByLabel("Üye 1 web erişimi").selectOption("auto");
   await expect(

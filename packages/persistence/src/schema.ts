@@ -425,6 +425,7 @@ export const providerConnections = pgTable(
     provider: text("provider").notNull(),
     label: text("label").notNull(),
     defaultModel: text("default_model").notNull(),
+    selectedModels: jsonb("selected_models").$type<string[]>(),
     baseUrl: text("base_url"),
     endpointPreset: text("endpoint_preset").notNull().default("custom"),
     reasoningProtocol: text("reasoning_protocol").notNull().default("none"),

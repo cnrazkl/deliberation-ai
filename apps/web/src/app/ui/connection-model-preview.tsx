@@ -3,16 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { modelCatalogCheckSchema, previewProviderModelsSchema, type ModelCatalogCheck, type PreviewProviderModelsRequest } from "@deliberation-ai/contracts";
 import { ownerFetch } from "../../lib/session-fetch";
+import { ConnectionModelPicker } from "./connection-model-picker";
 
 const messages: Record<ModelCatalogCheck["status"], string> = {
-  available: "Model listesi alındı. Listeden seçin veya model kimliğini elle girin.",
+  available: "Model listesi alındı. Sohbette kullanmak istediğiniz modelleri seçin.",
   auth_failed: "Sağlayıcı anahtarı kabul etmedi. Anahtarı ve uç noktayı kontrol edin.",
   unsupported: "Bu uç nokta model listelemeyi desteklemiyor. Model kimliğini elle girebilirsiniz.",
   unavailable: "Model listesine ulaşılamadı. Tekrar deneyin veya model kimliğini elle girin.",
 };
 
-export function ConnectionModelPreview({ draft, model, onModelChange, disabled }: {
-  draft: PreviewProviderModelsRequest; model: string; onModelChange: (model: string) => void; disabled: boolean;
+export function ConnectionModelPreview({ draft, selectedModels, onModelsChange, disabled }: {
+  draft: PreviewProviderModelsRequest; selectedModels: string[]; onModelsChange: (models: string[]) => void; disabled: boolean;
 }) {
   const binding = JSON.stringify([draft.provider, draft.endpointPreset, draft.baseUrl, draft.apiKey]);
   const [state, setState] = useState<{ binding: string; result: ModelCatalogCheck | null; pending: boolean; failed: boolean }>({ binding, result: null, pending: false, failed: false });
@@ -54,15 +55,7 @@ export function ConnectionModelPreview({ draft, model, onModelChange, disabled }
     <div role="status" aria-live="polite">
       {failed ? <p>Model listesi alınamadı. Tekrar deneyin veya model kimliğini elle girin.</p> : result ? <p>{messages[result.status]} {result.status === "available" ? `${result.models.length} model listelendi.` : ""}</p> : null}
     </div>
-    {result?.status === "available" && result.models.length > 0 ? <label>Listeden başlangıç modeli seç
-      <select value={result.models.includes(model) ? model : ""} disabled={disabled || pending} onChange={(event) => { if (event.target.value) onModelChange(event.target.value); }}>
-        <option value="">Bir model seçin</option>
-        {result.models.map((id) => {
-          const displayName = result.details?.find((entry) => entry.id === id)?.displayName;
-          return <option key={id} value={id}>{displayName ? `${displayName} · ${id}` : id}</option>;
-        })}
-      </select>
-    </label> : null}
+    <ConnectionModelPicker models={result?.models ?? []} selectedModels={selectedModels} onChange={onModelsChange} disabled={disabled || pending} />
     {result?.truncated ? <p className="hint">Sağlayıcı listesinin yalnız ilk bölümü gösteriliyor; eksik model kimlikleri elle girilebilir.</p> : null}
     {result ? <p className="hint">{result.verification === "authenticated_catalog" ? "Anahtar, sağlayıcının kimlik doğrulamalı kataloğunda kabul edildi." : "Bu liste API anahtarının doğrulandığını göstermez."} Katalog kaydı; yanıt üretimi, ücret veya düşünme seviyesi desteğini doğrulamaz.</p> : null}
   </section>;

@@ -865,12 +865,17 @@ export const runStatusSchema = z.enum([
 
 export type RunStatus = z.infer<typeof runStatusSchema>;
 
+export const selectedConnectionModelsSchema = z.array(z.string().trim().min(1).max(120)).max(100)
+  .refine((models) => new Set(models).size === models.length, "Model seçimleri tekrarlanamaz.");
+
 export const saveProviderConnectionSchema = z.object({
   id: z.string().uuid().optional(),
   provider: remoteProviderSchema,
   label: z.string().trim().min(1).max(80),
   apiKey: z.string().trim().max(512).default(""),
-  defaultModel: z.string().trim().min(1).max(120),
+  defaultModel: z.string().trim().max(120).default(""),
+  selectedModels: selectedConnectionModelsSchema.optional(),
+  expectedRevision: z.number().int().positive().optional(),
   baseUrl: z.string().trim().url().max(2_048).optional(),
   endpointPreset: endpointPresetSchema.default("custom"),
   reasoningProtocol: reasoningProtocolSchema.default("none"),
@@ -898,6 +903,7 @@ export const saveProviderConnectionSchema = z.object({
 });
 
 export type SaveProviderConnectionRequest = z.infer<typeof saveProviderConnectionSchema>;
+export type SaveProviderConnectionInput = z.input<typeof saveProviderConnectionSchema>;
 
 // A transient catalog lookup needs credentials, but no connection identity or model.
 export const previewProviderModelsSchema = z.strictObject({

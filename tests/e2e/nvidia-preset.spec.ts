@@ -1,6 +1,7 @@
 import { withOwner } from "@deliberation-ai/persistence";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
+import { addConnectionModels } from "./connection-model-selection";
 
 test("NVIDIA hosted editor fixes conservative settings and permits explicit manual model without a catalog call", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   let connectionId: string | undefined;
@@ -24,7 +25,7 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
     await expect(form.getByLabel("Yapılandırılmış çıktı")).toBeDisabled();
     await form.getByLabel("Bağlantı adı", { exact: true }).fill("E2E NVIDIA fixture");
     await form.getByLabel("API anahtarı", { exact: true }).fill("offline-nvidia-fixture-key");
-    await form.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)").fill("vendor/manual-model");
+    await addConnectionModels(form, ["vendor/manual-model", "vendor/task-specific-model"]);
     const saved = page.waitForResponse((response) => response.url().endsWith("/api/provider-connections") && response.request().method() === "POST");
     await form.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
     const response = await saved; expect(response.ok()).toBe(true);
@@ -36,7 +37,7 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
     expect(catalogCalls).toBe(1);
     await workspaceView(page, "Sohbet");
     await page.getByLabel("Üye 1 bağlantısı").selectOption(connectionId);
-    await page.getByLabel("Üye 1 modeli").fill("vendor/task-specific-model");
+    await page.getByLabel("Üye 1 modeli").selectOption("vendor/task-specific-model");
     await expect(page.getByLabel("Üye 1 modeli")).toHaveValue("vendor/task-specific-model");
     await page.setViewportSize({ width: 390, height: 844 });
     await workspaceView(page, "Ayarlar");

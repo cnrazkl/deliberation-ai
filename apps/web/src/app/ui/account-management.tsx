@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { LocalAccountDeletionPreview, LocalSessionSummary, LocalUserSummary } from "@deliberation-ai/contracts";
 import { ownerFetch } from "../../lib/session-fetch";
 import { accountRequest, announceSessionChange } from "../../lib/account-client";
+import { ConnectionModelPicker } from "./connection-model-picker";
 
 export function AccountDeletionPanel({ user, onClose }: { user?: LocalUserSummary; onClose: () => void }) {
   const [preview, setPreview] = useState<LocalAccountDeletionPreview | null>(null);
@@ -37,12 +38,13 @@ export function AccountDeletionPanel({ user, onClose }: { user?: LocalUserSummar
     <button type="button" className="secondary-button" disabled={busy} onClick={onClose}>Vazgeç</button>
   </section>;
 }
-type Connection = { id: string; label: string; defaultModel?: string; endpoint?: string; [key: string]: unknown };
+type Connection = { id: string; label: string; defaultModel?: string; selectedModels?: string[]; endpoint?: string; [key: string]: unknown };
 type Connections = { provider: Connection[]; mcp: Connection[]; decision: Connection[] };
 export function RootManagement({ session }: { session: LocalSessionSummary }) {
   const [users, setUsers] = useState<LocalUserSummary[]>([]), [edited, setEdited] = useState<LocalUserSummary | null>(null);
   const [connections, setConnections] = useState<Connections | null>(null), [deletion, setDeletion] = useState<LocalUserSummary | null>(null);
   const [connectionEdit, setConnectionEdit] = useState<{ kind: keyof Connections; item: Connection } | null>(null);
+  const [connectionModels, setConnectionModels] = useState<string[]>([]);
   const [error, setError] = useState(""), [notice, setNotice] = useState(""), [busy, setBusy] = useState(false);
   const [query, setQuery] = useState(""), [loaded, setLoaded] = useState(false);
   const ordinaryUsers = users.filter(user => user.role === "user");
@@ -74,7 +76,9 @@ export function RootManagement({ session }: { session: LocalSessionSummary }) {
       const endpoint = `/api/${kind === "provider" ? "provider" : kind === "mcp" ? "mcp" : "decision"}-connections`;
       const response = await ownerFetch(form ? endpoint : `${endpoint}?id=${encodeURIComponent(item.id)}`, {
         method: form ? "POST" : "DELETE", ...(form ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...item,
-          label: String(form.get("label")), ...(kind === "mcp" ? { endpoint: String(form.get("endpoint")) } : { defaultModel: String(form.get("defaultModel")), apiKey: String(form.get("apiKey")) }) }) } : {}) });
+          label: String(form.get("label")), ...(kind === "mcp" ? { endpoint: String(form.get("endpoint")) }
+            : kind === "provider" ? { selectedModels: connectionModels, expectedRevision: item.revision, apiKey: String(form.get("apiKey")) }
+            : { defaultModel: String(form.get("defaultModel")), apiKey: String(form.get("apiKey")) }) }) } : {}) });
       const result = await response.json() as { error?: string }; if (!response.ok) throw new Error(result.error ?? "Bağlantı değiştirilemedi.");
       setConnectionEdit(null); setConnections(await accountRequest<Connections>(`users/${scope!.id}/connections`)); setNotice(form ? "Bağlantı güncellendi." : "Bağlantı silindi.");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Bağlantı değiştirilemedi."); } finally { setBusy(false); }
@@ -104,15 +108,16 @@ export function RootManagement({ session }: { session: LocalSessionSummary }) {
     {scope && connections && <section className="account-panel" aria-label={`${scope.username} bağlantıları`}><h2>{scope.displayName} — bağlantılar</h2>
       <button type="button" className="secondary-button" disabled={busy} onClick={() => void chooseScope(session.user)}>Bağlantıları kapat</button>
       {(["provider", "mcp", "decision"] as const).map(kind => connections[kind].map(item => <article className="account-connection" key={item.id}>
-        <p>{item.label} · {kind === "mcp" ? "MCP" : item.defaultModel}</p>
-        <button className="secondary-button" type="button" disabled={busy} onClick={() => setConnectionEdit({ kind, item })}>Bağlantıyı düzenle</button>
+        <p>{item.label} · {kind === "mcp" ? "MCP" : kind === "provider" ? `${(item.selectedModels ?? (item.defaultModel ? [item.defaultModel] : [])).length} model seçili` : item.defaultModel}</p>
+        <button className="secondary-button" type="button" disabled={busy} onClick={() => { setConnectionEdit({ kind, item }); setConnectionModels(item.selectedModels ?? (item.defaultModel ? [item.defaultModel] : [])); }}>Bağlantıyı düzenle</button>
         <details><summary>Bağlantıyı sil</summary><p>Bu bağlantı kaydı ve kayıtlı anahtarı silinir.</p><button type="button" disabled={busy} onClick={() => void changeConnection(kind, item)}>Bağlantıyı silmeyi onayla</button></details>
       </article>))}
       {!Object.values(connections).some(items => items.length) && <p>Kayıtlı bağlantı yok.</p>}
       {connectionEdit && <form key={connectionEdit.item.id} onSubmit={event => { event.preventDefault(); void changeConnection(connectionEdit.kind, connectionEdit.item, new FormData(event.currentTarget)); }}>
         <label>Bağlantı adı<input name="label" required maxLength={80} defaultValue={connectionEdit.item.label} /></label>
         {connectionEdit.kind === "mcp" ? <label>Adres<input name="endpoint" type="url" required defaultValue={connectionEdit.item.endpoint} /></label> : <>
-          <label>Varsayılan model<input name="defaultModel" required maxLength={120} defaultValue={connectionEdit.item.defaultModel} /></label>
+          {connectionEdit.kind === "provider" ? <ConnectionModelPicker models={connectionEdit.item.selectedModels ?? []} selectedModels={connectionModels} onChange={setConnectionModels} disabled={busy} />
+            : <label>Varsayılan model<input name="defaultModel" required maxLength={120} defaultValue={connectionEdit.item.defaultModel} /></label>}
           <label>Yeni API anahtarı<input name="apiKey" type="password" maxLength={512} autoComplete="new-password" /></label><p>Boş bırakılırsa mevcut anahtar korunur.</p>
         </>}
         <button disabled={busy}>Bağlantıyı kaydet</button><button className="secondary-button" type="button" onClick={() => setConnectionEdit(null)}>Vazgeç</button>

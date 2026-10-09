@@ -16,6 +16,8 @@ function capabilityText(detail?: CatalogModelDetail) {
 export function ConnectionGenerationPanel({ connection }: { connection: { id: string; defaultModel: string; label: string } }) {
   const panelId = useId();
   const [open, setOpen] = useState(false), [model, setModel] = useState(connection.defaultModel);
+  const [modelBinding, setModelBinding] = useState(connection.defaultModel);
+  if (modelBinding !== connection.defaultModel) { setModelBinding(connection.defaultModel); if (!model) setModel(connection.defaultModel); }
   const [review, setReview] = useState<Review | null>(null), [requestId, setRequestId] = useState<string | null>(null);
   const [acknowledge, setAcknowledge] = useState(false), [unknownAcknowledgement, setUnknownAcknowledgement] = useState(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function ConnectionGenerationPanel({ connection }: { connection: { id: st
   const pending = review?.observations.generationChecks.filter((check) => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt) ?? [];
   return <section className="connection-generation-panel" aria-label={`${connection.label} üretim kontrolü`}>
     <button type="button" className="secondary-button connection-generation-toggle" disabled={busy} aria-expanded={open} aria-controls={panelId} onClick={() => {
-      setOpen(!open); if (!open) void refresh(true);
+      setOpen(!open); if (!open && model.trim()) void refresh(true);
     }}><span>Üretim testi ve model geçmişi</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
     {open ? <div id={panelId} className="connection-editor connection-generation-content">
       <p className="connection-generation-note">Bu test bir API çağrısı yapar ve ücretlenebilir. Yalnız aşağıdaki sabit deneme gönderilir; sohbetleriniz ve dosyalarınız gönderilmez. Arama kapalı; adaptörün “none” düşünme ayarı kullanılır, bazı modeller varsayılan veya en düşük düşünmeyi kullanabilir. İstenen çıktı sınırı 512 token, bekleme sınırı 45 saniye. Sağlayıcının sınırı uyguladığı ve fatura tutarı ayrıca doğrulanmış değildir.</p>

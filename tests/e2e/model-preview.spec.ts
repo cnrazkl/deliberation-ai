@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { expect, test, testOrigin } from "./authenticated-test";
 import { workspaceView } from "./workspace-navigation";
+import { addConnectionModels } from "./connection-model-selection";
 
 test("new connection lists models on explicit click without persistence or generation", async ({ page, request, playwright }) => {
   const calls: { url: string; authorization?: string }[] = [];
@@ -31,11 +32,12 @@ test("new connection lists models on explicit click without persistence or gener
     expect(calls).toHaveLength(0);
     await form.getByRole("button", { name: "Modelleri getir", exact: true }).click();
     await expect(form.getByRole("status")).toContainText("2 model listelendi");
-    await expect(form.getByRole("combobox", { name: "Listeden başlangıç modeli seç" })).toBeVisible();
+    await expect(form.locator(".connection-model-dropdown")).toBeVisible();
     expect(await (await request.get("/api/provider-connections")).json()).toEqual(before);
     expect(calls).toEqual([{ url: "/v1/models", authorization: "Bearer synthetic-catalog-key" }]);
-    await form.getByRole("combobox", { name: "Listeden başlangıç modeli seç" }).selectOption("local-b");
-    await expect(form.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)")).toHaveValue("local-b");
+    await addConnectionModels(form, ["local-a", "local-b"]);
+    await expect(form.locator(".connection-selected-models")).toContainText("local-b");
+    await expect(form.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)")).toHaveCount(0);
     await expect(form.getByLabel("Bağlantı adı", { exact: true })).toHaveValue("E2E new model catalog");
 
     // The preview obeys the same authenticated owner/origin boundary as saved catalogs.
@@ -58,9 +60,9 @@ test("new connection lists models on explicit click without persistence or gener
     expect(calls).toHaveLength(1);
     await workspaceView(page, "Sohbet"); await page.getByRole("button", { name: "Konseyi düzenle", exact: true }).click();
     await page.getByLabel("Üye 1 bağlantısı").selectOption(savedId!);
-    await page.getByLabel("Üye 1 modeli").fill("local-a");
+    await page.getByLabel("Üye 1 modeli").selectOption("local-a");
     await page.getByLabel("Üye 2 bağlantısı").selectOption(savedId!);
-    await page.getByLabel("Üye 2 modeli").fill("local-b");
+    await page.getByLabel("Üye 2 modeli").selectOption("local-b");
     await page.getByLabel("Üye 1 düşünme seviyesi").selectOption("none");
     await expect(page.getByLabel("Üye 2 modeli")).toHaveValue("local-b");
     expect(calls).toHaveLength(1);
@@ -91,14 +93,14 @@ test("draft catalog rejects stale results after credentials change and retains m
     await form.getByLabel("API anahtarı", { exact: true }).fill("first-synthetic-key");
     await form.getByRole("button", { name: "Modelleri getir", exact: true }).click(); await firstStarted;
     await form.getByLabel("API anahtarı", { exact: true }).fill("second-synthetic-key");
-    await form.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)").fill("manual-model");
+    await addConnectionModels(form, ["manual-model"]);
     release!();
     await expect(form.getByRole("button", { name: "Modelleri getir", exact: true })).toBeEnabled();
     await form.getByRole("button", { name: "Modelleri getir", exact: true }).click();
     await expect(form.getByRole("status")).toContainText("model listelemeyi desteklemiyor");
-    await expect(form.getByRole("combobox", { name: "Listeden başlangıç modeli seç" })).toHaveCount(0);
+    await expect(form.getByRole("checkbox", { name: "stale-model", exact: true })).toHaveCount(0);
     await expect(form).not.toContainText("stale-model");
-    await expect(form.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)")).toHaveValue("manual-model");
+    await expect(form.locator(".connection-selected-models")).toContainText("manual-model");
     await form.getByLabel("Sağlayıcı ailesi").selectOption("google");
     await expect(form.getByRole("status", { includeHidden: true })).toBeEmpty();
     expect(requests).toEqual(["first-synthetic-key", "second-synthetic-key"]);

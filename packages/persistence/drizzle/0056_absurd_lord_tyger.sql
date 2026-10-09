@@ -1,0 +1,1 @@
+ALTER TABLE "provider_connections" ADD COLUMN "selected_models" jsonb;

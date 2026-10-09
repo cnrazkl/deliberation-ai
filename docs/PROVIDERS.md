@@ -1,5 +1,13 @@
 # Providers
 
+Connection creation no longer requires a default model. The owner saves multiple
+catalog IDs per connection and chooses those IDs in member dropdowns. Catalog fetching
+remains explicit and bounded; preferences do not certify access, capabilities or model
+independence. Unsupported/incomplete catalogs permit one-time ID entry in connection
+settings. Per-task model, reasoning, search, provider translation and opt-in generation
+tests retain their existing contracts. NVIDIA hosted still requires its exact model
+at generation, with an optional catalog/selection step during connection setup.
+
 Cross-review text explicitly lists allowed claim kinds independently from review
 stances, covering compatible JSON-object/prompt-only transports that do not enforce
 the wire schema. Invalid responses still fail closed; no output coercion, automatic

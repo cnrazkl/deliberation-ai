@@ -3,8 +3,9 @@ import type {
   ModelCatalogCheck,
   RemoteProvider,
   SaveProviderConnectionRequest,
+  SaveProviderConnectionInput,
 } from "@deliberation-ai/contracts";
-import { MAX_CATALOG_HISTORY, modelCatalogCheckSchema, saveProviderConnectionSchema } from "@deliberation-ai/contracts";
+import { MAX_CATALOG_HISTORY, modelCatalogCheckSchema, saveProviderConnectionSchema, selectedConnectionModelsSchema } from "@deliberation-ai/contracts";
 import { and, eq } from "drizzle-orm";
 import { encryptText, decryptText } from "./crypto";
 import { readProviderObservations, encryptProviderObservations } from "./provider-observations";
@@ -17,6 +18,7 @@ export type ProviderConnectionSummary = {
   provider: RemoteProvider;
   label: string;
   defaultModel: string;
+  selectedModels: string[];
   baseUrl?: string;
   endpointPreset: SaveProviderConnectionRequest["endpointPreset"];
   reasoningProtocol: SaveProviderConnectionRequest["reasoningProtocol"];
@@ -34,6 +36,10 @@ export class ProviderConnectionSecretRequiredError extends Error {
   }
 }
 
+export class ProviderConnectionRevisionConflictError extends Error {
+  constructor() { super("Bağlantı değişti; güncel bağlantıyı yükleyerek tekrar deneyin."); }
+}
+
 function summary(row: typeof providerConnections.$inferSelect): ProviderConnectionSummary {
   const catalogCheck = readProviderObservations(row).latestCatalog;
   return {
@@ -41,6 +47,7 @@ function summary(row: typeof providerConnections.$inferSelect): ProviderConnecti
     provider: row.provider as RemoteProvider,
     label: row.label,
     defaultModel: row.defaultModel,
+    selectedModels: selectedConnectionModelsSchema.parse(row.selectedModels ?? (row.defaultModel ? [row.defaultModel] : [])),
     ...(row.baseUrl ? { baseUrl: row.baseUrl } : {}),
     endpointPreset: row.endpointPreset as SaveProviderConnectionRequest["endpointPreset"],
     reasoningProtocol: row.reasoningProtocol as SaveProviderConnectionRequest["reasoningProtocol"],
@@ -54,9 +61,9 @@ function summary(row: typeof providerConnections.$inferSelect): ProviderConnecti
 }
 
 export async function saveProviderConnection(
-  request: SaveProviderConnectionRequest,
+  input: SaveProviderConnectionInput,
 ): Promise<ProviderConnectionSummary> {
-  request = saveProviderConnectionSchema.parse(request);
+  const request = saveProviderConnectionSchema.parse(input);
   const db = getDatabase();
   return db.transaction(async (tx) => {
     const [existing] = request.id
@@ -81,6 +88,9 @@ export async function saveProviderConnection(
           )
           .for("update").limit(1);
     if (request.id && !existing) throw new Error("Provider connection not found in this account.");
+    if (existing && request.expectedRevision !== undefined && existing.revision !== request.expectedRevision) {
+      throw new ProviderConnectionRevisionConflictError();
+    }
     const id = existing?.id ?? randomUUID();
     const localPreset = ["ollama", "vllm", "litellm"].includes(request.endpointPreset);
     if ((!existing && !localPreset && !request.apiKey) ||
@@ -88,11 +98,19 @@ export async function saveProviderConnection(
           && (existing.endpointPreset === "nvidia" || request.endpointPreset === "nvidia")) && !request.apiKey)) {
       throw new ProviderConnectionSecretRequiredError();
     }
+    const legacyModelChanged = input.defaultModel !== undefined && request.defaultModel !== existing?.defaultModel;
+    const selectedModels = request.selectedModels && legacyModelChanged && request.defaultModel
+      ? [request.defaultModel, ...request.selectedModels.filter(model => model !== request.defaultModel)] : request.selectedModels;
+    const preferencesOnly = existing && selectedModels !== undefined && !legacyModelChanged && !request.apiKey
+      && existing.provider === request.provider && existing.label === request.label
+      && existing.baseUrl === (request.baseUrl ?? null) && existing.endpointPreset === request.endpointPreset
+      && existing.reasoningProtocol === request.reasoningProtocol && existing.structuredOutputMode === request.structuredOutputMode;
     const values = {
       ownerId: getOwnerId(),
       provider: request.provider,
       label: request.label,
-      defaultModel: request.defaultModel,
+      defaultModel: selectedModels ? selectedModels[0] ?? "" : request.defaultModel || existing?.defaultModel || "",
+      selectedModels: selectedModels ?? existing?.selectedModels ?? null,
       baseUrl: request.baseUrl ?? null,
       endpointPreset: request.endpointPreset,
       reasoningProtocol: request.reasoningProtocol,
@@ -100,8 +118,9 @@ export async function saveProviderConnection(
       secretCiphertext: request.apiKey
         ? encryptText(request.apiKey, `provider-connection:${id}:secret`)
         : existing?.secretCiphertext ?? encryptText("", `provider-connection:${id}:secret`),
-      catalogSnapshotCiphertext: existing ? encryptProviderObservations(id, { ...readProviderObservations(existing), latestCatalog: null }) : null,
-      revision: (existing?.revision ?? 0) + 1,
+      catalogSnapshotCiphertext: preferencesOnly ? existing.catalogSnapshotCiphertext
+        : existing ? encryptProviderObservations(id, { ...readProviderObservations(existing), latestCatalog: null }) : null,
+      revision: preferencesOnly ? existing.revision : (existing?.revision ?? 0) + 1,
       keyVersion: Number(process.env.KEY_VERSION ?? "1"),
       updatedAt: new Date(),
     };
@@ -146,6 +165,7 @@ export async function loadProviderConnectionSecret(
     apiKey: decryptText(row.secretCiphertext, `provider-connection:${row.id}:secret`),
     revision: row.revision,
     defaultModel: row.defaultModel,
+    selectedModels: selectedConnectionModelsSchema.parse(row.selectedModels ?? (row.defaultModel ? [row.defaultModel] : [])),
     ...(row.baseUrl ? { baseUrl: row.baseUrl } : {}),
     endpointPreset: row.endpointPreset as SaveProviderConnectionRequest["endpointPreset"],
     reasoningProtocol: row.reasoningProtocol as SaveProviderConnectionRequest["reasoningProtocol"],

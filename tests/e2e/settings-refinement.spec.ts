@@ -13,7 +13,6 @@ test("connection creation reports encrypted success in place and failures never 
     await form.getByLabel("Sağlayıcı ailesi", { exact: true }).selectOption("openai-compatible");
     await form.getByLabel("Uç nokta türü", { exact: true }).selectOption("ollama");
     await form.getByLabel("Bağlantı adı", { exact: true }).fill("In-place save check");
-    await form.locator(".connection-default-model input").fill("local-check");
     await page.evaluate(() => { (window as Window & { saveMarker?: string }).saveMarker = "preserve-document"; });
     const formTop = await form.evaluate(el => el.getBoundingClientRect().top + window.scrollY);
     const response = page.waitForResponse(r => r.url().endsWith("/api/provider-connections") && r.request().method() === "POST");
@@ -24,7 +23,6 @@ test("connection creation reports encrypted success in place and failures never 
     expect(Math.abs((await form.evaluate(el => el.getBoundingClientRect().top + window.scrollY)) - formTop)).toBeLessThan(2);
     await expect(form.getByLabel("API anahtarı", { exact: true })).toHaveValue("");
     await form.getByLabel("Bağlantı adı", { exact: true }).fill("Failed save check");
-    await form.locator(".connection-default-model input").fill("local-check");
     await page.route("**/api/provider-connections", route => route.request().method() === "POST"
       ? route.fulfill({ status: 503, json: { error: "Controlled save failure" } }) : route.continue());
     await form.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();

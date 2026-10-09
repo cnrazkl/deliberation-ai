@@ -1,5 +1,15 @@
 # Data model
 
+Migration `0056_absurd_lord_tyger.sql` adds nullable JSONB
+`provider_connections.selected_models`. Values are configuration identifiers, bounded
+to 100 unique non-empty model IDs of at most 120 characters. Null preserves legacy
+default-model fallback; explicit [] means no chosen models. Newly created connections
+can use an empty legacy default_model. Explicit choices mirror their first ID there
+for compatibility. No existing row or ciphertext is rewritten; secret and observed
+catalog/generation history remain in their original encrypted columns. Preference-only
+updates preserve execution revision/history, and expectedRevision fences stale edits.
+Runs and templates continue freezing their own explicit member model IDs.
+
 Migration 0055 adds `local_users` (unique normalized username/owner, checked user/root
 role, one reserved root, salted scrypt password hash), `local_sessions` (SHA-256 token
 hash, actor and selected user FKs, eight-hour expiry) and `local_login_attempts` (hashed

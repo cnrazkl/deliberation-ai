@@ -3,7 +3,7 @@
 The connection editor offers **NVIDIA hosted** as a distinct service identity over
 the existing `openai-compatible` protocol. It fixes the base URL to
 `https://integrate.api.nvidia.com/v1`, requires an explicit NVIDIA credential and
-exact model identifier, and fixes reasoning protocol to `none` and structured
+an exact model identifier when generating, and fixes reasoning protocol to `none` and structured
 output mode to `prompt-only`. Switching to or from this preset requires a new key;
 the previous service's encrypted credential cannot be silently reused. Self-hosted
 NIM belongs to the custom preset and is outside this hosted identity.
@@ -11,8 +11,9 @@ NIM belongs to the custom preset and is outside this hosted identity.
 The optional, explicit catalog action probes `/models`. A successful list is
 `catalog_only`, does not establish key/model access, and supplies no inferred
 context window, reasoning, image or schema capability. Unsupported catalogs and
-authentication failures do not remove manual model entry. The model chosen for a
-council task remains explicit and independent of the connection's default model.
+authentication failures permit one-time model entry in connection settings. Connections
+can be saved without a default model; chosen IDs then populate council model dropdowns.
+The model chosen for a council task remains explicit in its frozen snapshot.
 Catalog results are encrypted and accepted only for the checked connection revision.
 
 Council generation sends system/user text and `max_tokens` to

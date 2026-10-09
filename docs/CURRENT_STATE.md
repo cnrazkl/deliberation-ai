@@ -1,6 +1,25 @@
 # Current state
 
-Updated: 9 October 2026 (help/settings refinement deployed)
+Updated: 9 October 2026 (saved connection model choices prepared)
+
+## Saved connection model choices — local checks passed, deployment pending
+
+Connections can be saved without a default model. A searchable multiple-choice
+dropdown stores selected IDs, with one-time settings entry for unsupported/incomplete
+catalogs. Saved connection cards edit those preferences directly; council model
+dropdowns use the same connection's choices. Multiple members may use different models
+from one connection, or choose different connections. Existing draft/template models
+remain visible when preferences change. Root provider editing shares this picker;
+separate decision connections retain their pinned model.
+Migration 0056 adds nullable selected_models JSONB. Legacy rows project their existing
+default without data rewrite; [] stays empty. Preference-only saves retain execution
+revision, secret and catalog/history; expectedRevision rejects stale transport edits.
+486 offline unit cases, 277 isolated PostgreSQL cases, workspace types and web lint
+pass. Six targeted browser reruns plus the remaining initial passing cases verify
+catalog selection, settings-only fallback, draft preservation and generation guards.
+The first broad PostgreSQL run had one short terminal-wait timeout while browser
+checks ran concurrently; its separate complete rerun passes all 277. Full browser
+verification, backed-up native/LAN migration and deployment remain pending.
 
 ## Help and connection settings refinement — deployed
 

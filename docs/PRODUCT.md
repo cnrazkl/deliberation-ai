@@ -27,14 +27,19 @@ and centered geometric disclosure icons. Original/candidate prompt choices occup
 separate cards; selection and submission semantics are unchanged. Private output
 defaults retain explicit browser-local save/reset actions with separate fields/actions.
 
-Before saving a new connection, **Modelleri getir** explicitly queries that provider's
-catalog using the entered key/endpoint. It does not persist a connection or generate
-an answer. The returned model selector updates only the starting-model field; manual
-entry remains available. Changing provider/key/endpoint invalidates the transient list
-and pending lookup. Saved connection catalogs still use their existing revision-bound
-checks. Reasoning level stays per council member/model; transport protocol and output
-format are progressively disclosed under advanced endpoint settings. Catalog presence
-does not establish generation, payment or reasoning support.
+Connections need a name and provider credentials/settings, with no required default
+model. **Modelleri getir** explicitly lists the entered provider's catalog without
+persisting a connection or generating an answer. A searchable dropdown lets the owner
+save up to 100 models to use in chat. A connection may be saved before choosing models.
+Saved cards can refresh their catalog and save revised model choices without changing
+existing council drafts or provider execution settings. When a catalog is unsupported
+or incomplete, a model identifier can be added once in connection settings.
+Council members use dropdowns of that connection's saved models; the same connection
+may supply different models to multiple members, or each member may use a different
+connection. Existing draft/template models remain selectable if preferences change.
+Legacy connections expose their prior default model as an initial choice. Changing
+provider/key/endpoint invalidates transient catalog results and pending lookup.
+Reasoning stays per member; catalog presence does not prove generation or capabilities.
 
 All browser surfaces share a light blue light theme and a navy dark theme: account
 entry/registration, workspace/history, connections/tools, scheduler, reports/evidence,

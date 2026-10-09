@@ -1,5 +1,18 @@
 # Architecture
 
+Provider connection model choices are bounded configuration, separate from execution
+snapshots and observed capabilities. Migration 0056 adds nullable selected_models JSONB;
+null rows project their legacy default model, while an explicit empty list remains empty.
+Save accepts missing defaultModel for new clients. Preference-only updates lock the
+owned row, preserve catalog/history and execution revision, and can require an expected
+revision to reject concurrent credential/transport edits. The legacy default_model
+column remains as a compatibility fallback and mirrors the first explicit choice.
+ConnectionModelPicker owns search/disclosure and optional one-time manual additions;
+SavedConnectionModels owns unsaved choices. CouncilWorkbench persists selections and
+renders member model selects without changing already configured drafts. Root's provider
+editor uses the same picker; separate decision connections retain their pinned model.
+No worker, model adapter, orchestration or frozen-input semantics change.
+
 RootLayout bundles the OFL-licensed Manrope variable font with next/font/local;
 globals.css applies it to shared surfaces and rounded help examples. No external
 font service is contacted. CouncilWorkbench owns transient connection-save notice

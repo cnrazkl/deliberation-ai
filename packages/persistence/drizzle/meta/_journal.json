@@ -393,6 +393,13 @@
       "when": 1791462462377,
       "tag": "0055_aspiring_multiple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1791572217964,
+      "tag": "0056_absurd_lord_tyger",
+      "breakpoints": true
     }
   ]
 }
