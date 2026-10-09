@@ -1,5 +1,15 @@
 # Architecture
 
+ConnectionModelPreview owns transient form-catalog state, credential/endpoint binding,
+request sequencing and abort cleanup. POST `/api/provider-connections/model-preview`
+uses the existing authenticated owner/origin wrapper, a strict catalog-only contract
+and an 8-KiB streamed JSON bound. It invokes the existing normalized provider catalog
+adapter, without reading saved secrets, writing persistence or entering generation.
+Response errors contain no request/provider content. Saved catalog routes keep their
+revision-bound encrypted observations. Draft lookup never infers reasoning protocols;
+council member levels remain separate from advanced connection transport settings.
+No database migration, domain orchestration or worker change is introduced.
+
 KnowledgePanel presents its existing collection, selected-file intake and reviewed
 packet commands as three numbered sections. Presentation classes use workspace
 container queries, stacked labels and wrapping cards. A local input ref connects the

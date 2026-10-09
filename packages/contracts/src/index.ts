@@ -899,6 +899,31 @@ export const saveProviderConnectionSchema = z.object({
 
 export type SaveProviderConnectionRequest = z.infer<typeof saveProviderConnectionSchema>;
 
+// A transient catalog lookup needs credentials, but no connection identity or model.
+export const previewProviderModelsSchema = z.strictObject({
+  provider: remoteProviderSchema,
+  apiKey: z.string().trim().max(512).default(""),
+  baseUrl: z.string().trim().url().max(2_048).optional(),
+  endpointPreset: endpointPresetSchema.default("custom"),
+}).superRefine((draft, context) => {
+  const checked = saveProviderConnectionSchema.safeParse({ ...draft, label: "Catalog preview", defaultModel: "catalog-preview",
+    reasoningProtocol: "none", structuredOutputMode: draft.endpointPreset === "nvidia" ? "prompt-only" : "json-object" });
+  if (!checked.success || (draft.provider !== "openai-compatible" && draft.endpointPreset !== "custom")) {
+    context.addIssue({ code: "custom", message: "Model listesi bağlantı bilgileri geçersiz." });
+  }
+  if (draft.baseUrl) {
+    let validUrl = false;
+    try {
+      const url = new URL(draft.baseUrl);
+      validUrl = ["http:", "https:"].includes(url.protocol) && !url.username && !url.password;
+    } catch { /* The field validator also rejects malformed URLs. */ }
+    if (!validUrl) {
+      context.addIssue({ code: "custom", message: "Temel URL kimlik bilgisi içermeyen bir HTTP(S) adresi olmalı.", path: ["baseUrl"] });
+    }
+  }
+});
+export type PreviewProviderModelsRequest = z.infer<typeof previewProviderModelsSchema>;
+
 export const catalogModelDetailSchema = z.strictObject({
   id: z.string().min(1).max(120),
   displayName: z.string().max(128).optional(),

@@ -102,6 +102,15 @@ The worker persists input/output token counts when an adapter receives them in a
 
 ## Connection, model, and task selection
 
+The new-connection form can query the same bounded catalog adapter before any default
+model or persisted connection exists. **Modelleri getir** is an explicit catalog-only
+request using the entered credentials/base URL, not a generation check. Its transient
+model selector only changes the starting model; manual entry remains possible for
+unsupported, rejected, empty or truncated catalogs. Provider/key/endpoint changes
+invalidate results and pending requests. Save does not automatically query a catalog.
+Connection protocol/output settings now live in the advanced endpoint disclosure;
+the per-member reasoning level remains beside each task model, including **Kapalı**.
+
 A saved connection is only a reusable credential and endpoint record. Saving it makes no provider request. It may remain idle indefinitely. The connection's model is a starting value, not a permanent binding:
 
 1. Save a native provider or compatible endpoint once.

@@ -1,6 +1,43 @@
 # Current state
 
-Updated: 9 October 2026 (local source panel layout)
+Updated: 9 October 2026 (form controls and draft model catalog)
+
+## Form controls and draft model catalog — deployed
+
+Private output fields/actions have explicit spacing; original/candidate prompt
+choices occupy separate radio cards. Council checkboxes align with their first text
+line, the review-round field has a stacked label, and disclosure icons use centered
+geometric strokes. Advanced endpoint protocol/output settings are collapsed; model
+reasoning remains per member. The new connection form can explicitly fetch a bounded
+catalog before saving, choose a starting model or retain manual input. Credential/
+endpoint changes invalidate pending/results. No automatic lookup or generation occurs.
+
+Thirty-three browser cases and twenty request-boundary/provider unit cases pass,
+including both palettes at 320/960/1440px, spacing/44px targets, keyboard radio choice,
+real local catalog lookup without persistence, model selection/manual fallback, stale
+request rejection, anonymous/root/foreign-owner/origin/body rejection, saved-catalog
+editing, prompt revision, account lifecycle, generation review and workspace navigation.
+Existing workspace checks also retain short landscape and 200% zoom coverage. Strict
+types, zero-warning lint and Linux production web types/build pass. Initial new-test failures were selector/fixture
+mistakes (an unrelated checkbox, inherited anonymous cookies and a hidden empty
+status); the corrected complete rerun passes. No paid provider calls were made.
+Eleven deployed production smoke checks pass with zero provider calls. Actual LAN
+verification at 960x975 confirms both palettes, 16px field/action and 12px button gaps,
+24px disclosure squares with centered geometric strokes, separated prompt cards and
+18px council checkboxes with 12px text gaps. No horizontal overflow or captured console
+errors. The separate verification tab was closed and theme/viewport restored; the
+original user's draft, connections and sessions were not changed or reloaded. An
+unused generated visual fixture was also erased through its guarded account preview.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-form-ui1`,
+manifest `sha256:43c9da2c08651bb6c065b12165f6473356b34dbee94d1b6c5bb8e00e8ab370be`,
+exported source tree `66deebd3d1a17df7d2e35872fb47a718f2b14c2c` before this final
+evidence update. LAN binding remains `192.168.1.112:33184`. Fresh foreign-container
+and owned database/worker lifecycle baselines match after deployment. No foreign
+database, DDL, firewall, Cloudflare or personal-data migration occurred. Source-bound
+window `month-form-ui-20261009` starts 2026-10-09T14:24:25.454Z and is due
+2026-11-08T14:24:25.454Z (8 November 17:24 Istanbul); its first sample is healthy.
+Earlier windows remain retained; monthly and independent human quality gates stay open.
 
 ## Local source panel layout — deployed
 
@@ -29,7 +66,7 @@ The temporary empty visual account was erased through its guarded preview/confir
 flow afterward; the verification tab was closed and viewport/appearance restored.
 The original user's draft/data was not modified or reloaded.
 
-Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-knowledge-ui1`,
+Previous owned web/observer image: `deliberationai-rehearsal:60374dd507ec-knowledge-ui1`,
 manifest `sha256:d7c6b5ca1d64e79db2e00bca40b8a5862b49fb46995656d7e046c5fce1be3eb6`,
 exported source tree `f1a324e866b7cfafe9e2b84862e072ccfc591fa1` before this final
 evidence update. LAN binding remains `192.168.1.112:33184`. Fresh foreign-container

@@ -9,7 +9,7 @@ export function PrivateOutputDefaultPanel() {
     if (savePrivateOutputDefault(value)) { setDraft(null); setMessage("Varsayılan bu tarayıcıya kaydedildi."); }
     else setMessage("Tarayıcı ayarı kaydedilemedi. Mevcut seçim ve gönderim kayıtları korunuyor.");
   }
-  return <section className="settings-card" aria-label="Özel yanıt varsayılanı">
+  return <section className="settings-card private-output-default" aria-label="Özel yanıt varsayılanı">
     <strong>Özel yanıt varsayılanı</strong>
     <p className="section-hint">Yeni açılan özel dallar ve yeni çatallar bu sınırla başlar. Açık dallardaki seçimler, konsey ayarları ve onaylanan gönderimler değişmez. Her gönderim ayrıca incelenip onaylanır.</p>
     <p>Kaydedilen varsayılan: {saved} token</p>
@@ -18,7 +18,7 @@ export function PrivateOutputDefaultPanel() {
         {privateOutputCaps.map((value) => <option key={value} value={value}>{value} token</option>)}
       </select>
     </label>
-    <div className="config-heading">
+    <div className="private-output-actions">
       <button type="button" onClick={() => save(draft ?? saved)}>Varsayılanı bu tarayıcıya kaydet</button>
       <button type="button" className="secondary-button" onClick={() => save(1024)}>{"Varsayılanı 1024'e sıfırla"}</button>
     </div>

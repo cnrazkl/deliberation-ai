@@ -2,6 +2,20 @@
 
 ## Blue/navy interface
 
+Settings and council controls use spaced action groups, aligned checkbox/radio labels
+and centered geometric disclosure icons. Original/candidate prompt choices occupy
+separate cards; selection and submission semantics are unchanged. Private output
+defaults retain explicit browser-local save/reset actions with separate fields/actions.
+
+Before saving a new connection, **Modelleri getir** explicitly queries that provider's
+catalog using the entered key/endpoint. It does not persist a connection or generate
+an answer. The returned model selector updates only the starting-model field; manual
+entry remains available. Changing provider/key/endpoint invalidates the transient list
+and pending lookup. Saved connection catalogs still use their existing revision-bound
+checks. Reasoning level stays per council member/model; transport protocol and output
+format are progressively disclosed under advanced endpoint settings. Catalog presence
+does not establish generation, payment or reasoning support.
+
 All browser surfaces share a light blue light theme and a navy dark theme: account
 entry/registration, workspace/history, connections/tools, scheduler, reports/evidence,
 private branches, account administration and the public guide. Clear input boundaries,

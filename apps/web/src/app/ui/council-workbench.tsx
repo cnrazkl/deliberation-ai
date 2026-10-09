@@ -35,6 +35,7 @@ import type {
 } from "@deliberation-ai/contracts";
 import { DecisionAssessmentPanel } from "./decision-assessment-panel";
 import { ConnectionGenerationPanel } from "./connection-generation-panel";
+import { ConnectionModelPreview } from "./connection-model-preview";
 import { ClaimContextPanel } from "./claim-context-panel";
 import { ResearchCapturePanel } from "./research-capture-panel";
 import { EvidenceCandidatePanel } from "./evidence-candidate-panel";
@@ -1514,16 +1515,6 @@ export function CouncilWorkbench() {
           }
         />
       </label>
-      <label>
-        Başlangıç modeli (görev sırasında değiştirilebilir)
-        <input
-          type="text"
-          value={model}
-          placeholder={connectionGuide.modelExample}
-          onChange={(event) => setModel(event.target.value)}
-          required
-        />
-      </label>
       {(connectionProvider === "openai-compatible" || baseUrl) ? (
         <label>
           Temel URL
@@ -1538,6 +1529,21 @@ export function CouncilWorkbench() {
           />
         </label>
       ) : null}
+      {!editingConnectionId ? <ConnectionModelPreview
+        draft={{ provider: connectionProvider, endpointPreset, apiKey, ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}) }}
+        model={model} onModelChange={setModel} disabled={savingConnection}
+      /> : null}
+      <label className="connection-default-model">
+        Başlangıç modeli (görev sırasında değiştirilebilir)
+        <input type="text" value={model} maxLength={120} placeholder={connectionGuide.modelExample}
+          onChange={(event) => setModel(event.target.value)} required />
+        <small>Model kimliğini listeden seçin veya elle yazın. Aynı bağlantıyı konseyde farklı modellerle kullanabilirsiniz.</small>
+      </label>
+      <p className="connection-reasoning-hint hint">Düşünme seviyesini her konsey üyesinin modelinin yanında seçin veya kapatın. Bu seçim görev bazında yapılır.</p>
+      <details className="connection-advanced">
+        <summary>Gelişmiş uç nokta ayarları</summary>
+        <p className="hint">Bunlar uç noktanın API sözleşmesidir; modelin düşünme seviyesi değildir. Sağlayıcı önayarını yalnız sunucunuz farklı bir sözleşme kullanıyorsa değiştirin.</p>
+        <div className="connection-advanced-fields">
       <label>
         Düşünme parametresi
         <select
@@ -1574,6 +1580,8 @@ export function CouncilWorkbench() {
           <option value="prompt-only">Yalnız istem sözleşmesi</option>
         </select>
       </label>
+        </div>
+      </details>
       <div className="connection-form-actions">
         <button disabled={savingConnection || Boolean(checkingConnectionId)} type="submit">
           {savingConnection
@@ -2130,7 +2138,7 @@ export function CouncilWorkbench() {
                         checked={member.receiveAttachments === true}
                         onChange={(event) => updateMember(index, { receiveAttachments: event.target.checked })}
                       />
-                      Bu üyeye gönder
+                      <span>Bu üyeye gönder</span>
                     </span>
                     <small>PDF metni tüm metin modellerine gider; görseller için modelin görsel girdi desteği gerekir. Seçimi bu görevde değiştirebilirsiniz.</small>
                   </label>
@@ -2148,7 +2156,7 @@ export function CouncilWorkbench() {
         ) : null}
           <div className="form-options">
             <strong className="run-mode">{members.length} üye · Kayıtlı sağlayıcı bağlantıları</strong>
-            <label>Çapraz inceleme turu
+            <label className="review-round-field">Çapraz inceleme turu
               <select value={reviewRounds} onChange={(event) => setReviewRounds(Number(event.target.value) as ReviewRoundCount)}>
                 <option value={0} disabled={effectiveRiskProfile === "high"}>0 · İnceleme yok</option>
                 <option value={1}>1 · Varsayılan</option>
@@ -2158,7 +2166,7 @@ export function CouncilWorkbench() {
             </label>
             <label className="checkbox-label">
               <input type="checkbox" checked={selfRevisionEnabled && reviewRounds > 0} disabled={reviewRounds === 0} onChange={(event) => setSelfRevisionEnabled(event.target.checked)} />
-              Üyelerin kendi ilk iddiaları için düzeltme önerisi üretmesine izin ver
+              <span>Üyelerin kendi ilk iddiaları için düzeltme önerisi üretmesine izin ver</span>
             </label>
             {selfRevisionEnabled && reviewRounds > 0 ? <small>İlk yanıtlar korunur; öneriler otomatik olarak doğru kabul edilmez. Ek bağlam ve çıktı tokenları oluşabilir.</small> : null}
           </div>

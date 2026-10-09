@@ -14,11 +14,15 @@ export function PromptRevisionEditor({ originalQuestion, candidateQuestion, choi
   return <section className="prompt-revision-editor" aria-label="İstem sürümleri">
     <h3>İstem sürümleri</h3>
     <p className="hint">Yapılandırılmış aday yerel bir metin ekidir; model tarafından iyileştirildiği veya daha doğru sonuç vereceği iddia edilmez. Özgün soru adayın içinde aynen kalmalıdır. Baş ve sondaki boşluklar gönderimden önce temizlenir; gösterilen fark gönderilecek metne göredir.</p>
-    <label className="check-row"><input type="radio" checked={choice === "original"} disabled={disabled} onChange={() => onChoiceChange("original")} /> Özgün soruyu kullan</label>
-    <pre>{originalQuestion}</pre>
-    <label className="check-row"><input type="radio" checked={choice === "candidate"} disabled={disabled} onChange={() => onChoiceChange("candidate")} /> Düzenlenebilir adayı kullan</label>
-    <textarea aria-label="Yapılandırılmış aday istem" value={candidateQuestion} maxLength={4000} disabled={disabled}
-      onChange={(event) => onCandidateChange(event.target.value)} />
+    <div className="prompt-choice" data-selected={choice === "original"}>
+      <label className="check-row"><input type="radio" name="prompt-revision-choice" checked={choice === "original"} disabled={disabled} onChange={() => onChoiceChange("original")} /><span>Özgün soruyu kullan</span></label>
+      <pre>{originalQuestion}</pre>
+    </div>
+    <div className="prompt-choice" data-selected={choice === "candidate"}>
+      <label className="check-row"><input type="radio" name="prompt-revision-choice" checked={choice === "candidate"} disabled={disabled} onChange={() => onChoiceChange("candidate")} /><span>Düzenlenebilir adayı kullan</span></label>
+      <textarea aria-label="Yapılandırılmış aday istem" value={candidateQuestion} maxLength={4000} disabled={disabled}
+        onChange={(event) => onCandidateChange(event.target.value)} />
+    </div>
     <details><summary>Özgün metne göre fark ve denetim</summary>
       {audit.originalPreserved ? <>
         <p>Eklenen ön metin:</p><pre>{audit.prefix || "(yok)"}</pre>

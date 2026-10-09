@@ -19,6 +19,7 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
     await expect(form.getByLabel("API anahtarı", { exact: true })).toHaveValue("");
     await expect(form.getByLabel("Temel URL")).toHaveValue("https://integrate.api.nvidia.com/v1");
     await expect(form.getByLabel("Temel URL")).toHaveAttribute("readonly", "");
+    await form.getByText("Gelişmiş uç nokta ayarları", { exact: true }).click();
     await expect(form.getByLabel("Düşünme parametresi")).toBeDisabled();
     await expect(form.getByLabel("Yapılandırılmış çıktı")).toBeDisabled();
     await form.getByLabel("Bağlantı adı", { exact: true }).fill("E2E NVIDIA fixture");

@@ -1,5 +1,17 @@
 # Workspace design principles — DA-111 / DA-112
 
+## Form alignment and connection setup — 9 October 2026
+
+Private-default fields and action groups have explicit 16/12px gaps. Prompt choices
+use separate bordered cards and 44px labeled radio targets. Council checkboxes align
+with the first text line while long labels wrap; review-round labels stack above the
+select. Disclosure icons use centered 10px geometric strokes, independent of font
+baseline. All groups respond to usable workspace container width in both palettes.
+New-connection setup offers an explicit catalog-only model lookup before save, a
+visible model selector and manual fallback. Transport/output settings are collapsed
+under advanced endpoint settings; model reasoning remains per council member. No
+catalog request runs automatically on typing, navigation or connection save.
+
 ## Local source panel — 9 October 2026
 
 The expanded source disclosure separates collection/setup, file intake and packet

@@ -1,5 +1,16 @@
 # Security
 
+The transient new-connection model preview is ordinary-user/session/owner/origin
+bound; root remains restricted to administration. Its strict JSON contract accepts
+only provider/preset/key/base URL and bounds the streamed request to 8 KiB. Keys are
+bounded to 512 characters; URLs to 2048, HTTP(S) only without embedded credentials.
+NVIDIA retains its fixed hosted address; local/compatible URLs retain the existing
+user-selected endpoint trust boundary. The lookup reuses the 10-second, redirect-denying,
+4-MiB/300-model catalog adapter. It writes neither draft credentials nor catalog data
+to persistence, produces no model answer and returns generic errors without sensitive
+input/raw provider bodies. Pending UI results are invalidated on credential/endpoint
+changes and abort on unmount; no automatic catalog call runs on typing or saving.
+
 Shared-host verification must use only its new rehearsal directory/image/Compose
 project/network/volumes/database and unused port, defaulting to loopback. An explicit
 owner request may bind web to the host's private LAN IP with matching `APP_ORIGIN`;

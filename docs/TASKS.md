@@ -1,5 +1,12 @@
 # Tasks
 
+- [x] Owner browser comments: align private-default actions, disclosure icons, prompt
+  radios and council checkboxes/review field; offer transient explicit model lookup
+  before connection save and disclose transport settings separately from member
+  reasoning. Thirty-three browser and twenty unit checks, types/lint/Linux build and
+  eleven production smoke checks pass. Deployed LAN layout verified in both palettes
+  at 960x975; existing service/database-worker lifecycle preserved. See CURRENT_STATE.md.
+
 - [x] Owner browser comment: separate local source setup/intake/review into numbered
   cards, align fields/actions and add spacing/wrapping with a Turkish file chooser.
   Twenty-two source/workspace/interface browser cases, types/lint/Linux build and
