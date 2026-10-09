@@ -1,7 +1,7 @@
 import { withOwner } from "@deliberation-ai/persistence";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
-import { addConnectionModels } from "./connection-model-selection";
+import { addConnectionModels, openConnectionPanel } from "./connection-model-selection";
 
 test("NVIDIA hosted editor fixes conservative settings and permits explicit manual model without a catalog call", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   let connectionId: string | undefined;
@@ -12,7 +12,7 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
   });
   try {
     await page.goto("/"); await revealCouncilControls(page); await workspaceView(page, "Ayarlar");
-    await page.getByText(/Yerel sağlayıcı bağlantıları/).click();
+    await page.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
     const form = page.locator(".connection-form");
     await form.getByLabel("Sağlayıcı ailesi").selectOption("openai-compatible");
     await form.getByLabel("API anahtarı", { exact: true }).fill("offline-other-service-key");
@@ -33,7 +33,8 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
     const card = page.locator(".connection-card").filter({ hasText: "E2E NVIDIA fixture" });
     await expect(card).toContainText("NVIDIA hosted");
     expect(catalogCalls).toBe(0);
-    await card.getByRole("button", { name: "Model listesini kontrol et" }).click();
+    const dialog = await openConnectionPanel(page, card, "Modeller");
+    await dialog.getByRole("button", { name: "Model listesini kontrol et" }).click();
     expect(catalogCalls).toBe(1);
     await workspaceView(page, "Sohbet");
     await page.getByLabel("Üye 1 bağlantısı").selectOption(connectionId);
@@ -41,8 +42,8 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
     await expect(page.getByLabel("Üye 1 modeli")).toHaveValue("vendor/task-specific-model");
     await page.setViewportSize({ width: 390, height: 844 });
     await workspaceView(page, "Ayarlar");
-    await card.getByRole("button", { name: "Düzenle", exact: true }).click();
-    await expect(card.getByLabel("API anahtarı", { exact: true })).toHaveValue("");
+    await openConnectionPanel(page, card);
+    await expect(dialog.getByLabel("API anahtarı", { exact: true })).toHaveValue("");
     expect((await card.boundingBox())!.width).toBeLessThanOrEqual(390);
   } finally {
     if (connectionId) await request.delete(`/api/provider-connections?id=${encodeURIComponent(connectionId)}`);

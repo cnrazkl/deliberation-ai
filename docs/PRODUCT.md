@@ -15,9 +15,14 @@ it does not start a new conversation or generation. Help links return to `/`.
 The interface uses bundled Manrope with Turkish character support; help examples
 share its readable typography inside fully rounded callouts. Button words display
 initial capitals. Settings retain one theme control in the persistent sidebar.
-**Yeni Bağlantı Ekle** reports encrypted-save success inside the form without a page
-reload. The saved list follows the new-connection form so adding a card does not
-move it; failed saves retain entered fields and show their error there.
+**API Bağlantıları** lists existing connections as compact cards, using one to four
+columns according to available workspace width. Cards show provider, selected-model
+count, current-member use and edit/delete actions. **Yeni Bağlantı Ekle** opens a
+separate modal; **Düzenle** opens the saved connection's Bağlantı, Modeller and
+Test ve Geçmiş tabs. Successful encrypted save closes the modal, updates cards and
+reports success beside the list without reloading. Failed saves retain fields and
+show their error inside the panel. Tab changes retain unsaved connection fields;
+Escape/close returns focus to the triggering card/button and clears entered secrets.
 Generation review/history opens inside a padded, rounded connection panel with
 separate model, action and acknowledgement groups. Review and explicit paid-submit
 requirements remain unchanged.
@@ -31,7 +36,7 @@ Connections need a name and provider credentials/settings, with no required defa
 model. **Modelleri getir** explicitly lists the entered provider's catalog without
 persisting a connection or generating an answer. A searchable dropdown lets the owner
 save up to 100 models to use in chat. A connection may be saved before choosing models.
-Saved cards can refresh their catalog and save revised model choices without changing
+The Modeller tab can refresh the catalog and save revised model choices without changing
 existing council drafts or provider execution settings. When a catalog is unsupported
 or incomplete, a model identifier can be added once in connection settings.
 Council members use dropdowns of that connection's saved models; the same connection

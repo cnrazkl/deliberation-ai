@@ -1,5 +1,15 @@
 # Architecture
 
+CouncilWorkbench presents compact API connection cards in workspace container queries
+(one/two/three/four columns). ConnectionDialog owns a native modal, focus cycling and
+restoration, Escape/backdrop dismissal and body-scroll restoration. Workbench retains
+form fields while switching tabs and clears entered secrets on close. Pending save or
+catalog lookup blocks dismissal. Saved model choices and per-connection generation
+panels remain mounted across tab/dialog changes, preserving draft selections and
+review/request identities. Catalog and generation requests still require their
+existing explicit actions; opening a card/tab never calls a provider. No API, schema,
+worker, ownership or execution boundary changes are introduced.
+
 Provider connection model choices are bounded configuration, separate from execution
 snapshots and observed capabilities. Migration 0056 adds nullable selected_models JSONB;
 null rows project their legacy default model, while an explicit empty list remains empty.
@@ -17,7 +27,7 @@ RootLayout bundles the OFL-licensed Manrope variable font with next/font/local;
 globals.css applies it to shared surfaces and rounded help examples. No external
 font service is contacted. CouncilWorkbench owns transient connection-save notice
 and error state; successful saves update its existing list in place. The create form
-precedes the list, and the sidebar remains the workspace theme-control location.
+opens in ConnectionDialog, and the sidebar remains the workspace theme-control location.
 ConnectionGenerationPanel groups disclosure, fields, actions and acknowledgement
 with presentation classes. Its request-id helper uses native randomUUID when available,
 otherwise formats a UUID v4 from getRandomValues for private-LAN HTTP browsers.

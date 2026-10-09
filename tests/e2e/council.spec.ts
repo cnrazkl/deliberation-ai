@@ -1,6 +1,6 @@
 import { withOwner } from "@deliberation-ai/persistence";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
-import { addConnectionModels } from "./connection-model-selection";
+import { addConnectionModels, openConnectionPanel } from "./connection-model-selection";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import {
   closeDatabase,
@@ -192,35 +192,38 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   const connectionSuffix = Date.now();
   const firstConnection = `E2E bağlantı A ${connectionSuffix}`;
   const secondConnection = `E2E bağlantı B ${connectionSuffix}`;
-  const providerSettings = page.locator("details").filter({ hasText: "Yerel sağlayıcı bağlantıları" });
+  const providerSettings = page.locator(".connection-dialog");
   await workspaceView(page, "Ayarlar");
-  await providerSettings.locator(":scope > summary").click();
   for (const [label, model] of [
     [firstConnection, "e2e-model-a"],
     [secondConnection, "e2e-model-b"],
   ]) {
+    await page.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
     await providerSettings.getByLabel("Bağlantı adı").fill(label);
     await page.getByLabel("API anahtarı").fill(`sk-test-${label}-1234567890`);
     await addConnectionModels(page.locator(".connection-form"), label === secondConnection ? [model, "gpt-5-pro", "gpt-5.6-sol"] : [model]);
-    await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
+    await providerSettings.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
     await expect(page.locator(".connection-list")).toContainText(label);
   }
   const localConnection = `E2E Ollama ${connectionSuffix}`;
+  await page.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
   await page.getByLabel("Sağlayıcı ailesi").selectOption("openai-compatible");
   await page.getByLabel("Uç nokta türü").selectOption("ollama");
   await providerSettings.getByLabel("Bağlantı adı").fill(localConnection);
   await addConnectionModels(page.locator(".connection-form"), ["qwen3"]);
-  await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
+  await providerSettings.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
   await expect(page.locator(".connection-list")).toContainText(localConnection);
   const openRouterConnection = `E2E OpenRouter ${connectionSuffix}`;
   createdConnectionLabels = [firstConnection, secondConnection, localConnection, openRouterConnection];
+  await page.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
+  await page.getByLabel("Sağlayıcı ailesi").selectOption("openai-compatible");
   await page.getByLabel("Uç nokta türü").selectOption("openrouter");
   await providerSettings.getByLabel("Bağlantı adı").fill(openRouterConnection);
   await page.getByLabel("API anahtarı").fill("sk-or-test-only-never-sent-1234567890");
   await addConnectionModels(page.locator(".connection-form"), ["openai/gpt-5.6-sol"]);
-  await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
-  const openRouterCard = page.locator(".connection-status").filter({ hasText: openRouterConnection });
-  await expect(openRouterCard).toContainText("Hazırda · bu görevde kullanılmıyor");
+  await providerSettings.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
+  const openRouterCard = page.locator(".connection-card").filter({ hasText: openRouterConnection });
+  await expect(openRouterCard).toContainText("Hazırda");
 
   await workspaceView(page, "Sohbet");
   const tinyPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "base64");
@@ -249,10 +252,10 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
 
   const firstConnectionCard = page.locator(".connection-card").filter({ hasText: firstConnection });
   await workspaceView(page, "Ayarlar");
-  await firstConnectionCard.getByRole("button", { name: "Düzenle" }).click();
-  await addConnectionModels(page.locator(".connection-form"), ["e2e-model-a-updated"]);
-  await page.getByRole("button", { name: "Bağlantıyı güncelle" }).click();
-  await expect(firstConnectionCard).toContainText("e2e-model-a-updated");
+  const connectionPanel = await openConnectionPanel(page, firstConnectionCard, "Modeller");
+  await addConnectionModels(connectionPanel.locator(".saved-connection-models").filter({ visible: true }), ["e2e-model-a-updated"]);
+  await connectionPanel.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click();
+  await expect(connectionPanel.locator(".connection-selected-models").filter({ visible: true })).toContainText("e2e-model-a-updated");
 
   await workspaceView(page, "Sohbet");
   await page.getByLabel("Üye 1 bağlantısı").selectOption({ label: `${secondConnection} · OpenAI` });
@@ -263,7 +266,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page.getByLabel("Üye 1 düşünme seviyesi").selectOption("max");
   await page.getByLabel("Üye 1 web erişimi").selectOption("auto");
   await expect(
-    page.locator(".connection-status").filter({ hasText: secondConnection }),
+    page.locator(".connection-card").filter({ hasText: secondConnection }),
   ).toContainText("Bu görevde 1 üye");
   await page.getByLabel("Üye sayısı").selectOption("3");
   await page.getByLabel("Üye 3 adı").fill("Kanıt Uzmanı");
@@ -533,8 +536,8 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
 
   await workspaceView(page, "Ayarlar");
   for (const label of [firstConnection, secondConnection, localConnection, openRouterConnection]) {
-    await page.locator(".connection-status").filter({ hasText: label }).getByRole("button", { name: "Bağlantıyı kaldır" }).click();
-    await expect(page.locator(".connection-status").filter({ hasText: label })).toHaveCount(0);
+    await page.locator(".connection-card").filter({ hasText: label }).getByRole("button", { name: "Sil", exact: true }).click();
+    await expect(page.locator(".connection-card").filter({ hasText: label })).toHaveCount(0);
   }
   await workspaceView(page, "Sohbet");
   await savedMemory.getByRole("button", { name: "Bellekten kaldır" }).click();

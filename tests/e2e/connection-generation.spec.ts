@@ -2,6 +2,7 @@ import { withOwner } from "@deliberation-ai/persistence";
 import { createServer } from "node:http";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import { workspaceView } from "./workspace-navigation";
+import { openConnectionPanel } from "./connection-model-selection";
 
 test("reviews one bounded generation, preserves the draft and replays its receipt without another call", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   let calls = 0;
@@ -27,13 +28,16 @@ test("reviews one bounded generation, preserves the draft and replays its receip
     await page.goto("/");
     const draft = page.getByLabel("Sorunuz", { exact: true });
     await draft.fill("KEEP MY DRAFT");
-    await workspaceView(page, "Ayarlar"); await page.getByText(/Yerel sağlayıcı bağlantıları/).click();
-    const card = page.locator(".connection-card").filter({ hasText: "E2E generation" });
+    await workspaceView(page, "Ayarlar");
+    const tile = page.locator(".connection-card").filter({ hasText: "E2E generation" });
+    const card = await openConnectionPanel(page, tile, "Test ve Geçmiş");
     await card.getByRole("button", { name: "Üretim testi ve model geçmişi" }).click();
     await expect(card.getByRole("button", { name: /Onaylanan denemeyi/ })).toBeDisabled();
     expect(calls).toBe(0);
+    await card.getByRole("tab", { name: "Modeller", exact: true }).click();
     await card.getByRole("button", { name: "Model listesini kontrol et" }).click();
     await expect(card.getByRole("status")).toContainText("1 model kimliği listelendi");
+    await card.getByRole("tab", { name: "Test ve Geçmiş", exact: true }).click();
     await card.getByRole("button", { name: "Kayıtları yenile" }).click();
     await expect(card).toContainText("Model listede"); expect(calls).toBe(0);
     await card.getByLabel("Tam denemeyi inceledim; tek ücretlenebilir çağrıyı onaylıyorum.").check();
@@ -44,7 +48,7 @@ test("reviews one bounded generation, preserves the draft and replays its receip
     await card.getByRole("button", { name: /Onaylanan denemeyi/ }).click();
     await expect(card).toContainText("Yapılandırılmış üretim başarılı"); expect(calls).toBe(1);
     await workspaceView(page, "Sohbet"); await expect(draft).toHaveValue("KEEP MY DRAFT");
-    await page.reload(); await workspaceView(page, "Ayarlar"); await page.getByText(/Yerel sağlayıcı bağlantıları/).click();
+    await page.reload(); await workspaceView(page, "Ayarlar"); await openConnectionPanel(page, tile, "Test ve Geçmiş");
     await card.getByRole("button", { name: "Üretim testi ve model geçmişi" }).click();
     await expect(card).toContainText("Yapılandırılmış üretim başarılı"); expect(calls).toBe(1);
     await page.setViewportSize({ width: 390, height: 844 });

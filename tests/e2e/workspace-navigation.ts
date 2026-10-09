@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
 
 export async function workspaceView(page: Page, name: "Sohbet" | "Ayarlar" | "Zamanlayıcı") {
+  const connectionDialog = page.getByRole("dialog");
+  if (await connectionDialog.isVisible()) await connectionDialog.getByRole("button", { name: "Bağlantı panelini kapat", exact: true }).click();
   const toggle = page.getByRole("button", { name: "Sohbet geçmişini aç", exact: true });
   const nav = page.getByRole("navigation", { name: "Ana menü", includeHidden: true });
   await nav.waitFor({ state: "attached" });

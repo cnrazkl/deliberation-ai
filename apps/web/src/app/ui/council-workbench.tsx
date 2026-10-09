@@ -35,8 +35,9 @@ import type {
 } from "@deliberation-ai/contracts";
 import { DecisionAssessmentPanel } from "./decision-assessment-panel";
 import { ConnectionGenerationPanel } from "./connection-generation-panel";
+import { ConnectionDialog } from "./connection-dialog";
 import { ConnectionModelPreview } from "./connection-model-preview";
-import { ConnectionModelPicker, SavedConnectionModels } from "./connection-model-picker";
+import { SavedConnectionModels } from "./connection-model-picker";
 import { ClaimContextPanel } from "./claim-context-panel";
 import { ResearchCapturePanel } from "./research-capture-panel";
 import { EvidenceCandidatePanel } from "./evidence-candidate-panel";
@@ -221,15 +222,15 @@ const endpointPresets: Record<
 
 const nativeProviderGuides: Record<Exclude<RemoteProvider, "openai-compatible">, { guide: string; modelExample: string }> = {
   openai: {
-    guide: "OpenAI API anahtarınızı girin. Modeli bu bağlantının varsayılanı olarak kaydedersiniz; her görevde başka bir OpenAI model kimliği seçebilirsiniz.",
+    guide: "OpenAI API anahtarınızı girin. Modelleri listeleyip sohbette kullanmak istediklerinizi seçebilirsiniz; varsayılan model gerekmez.",
     modelExample: "gpt-5.6-sol",
   },
   anthropic: {
-    guide: "Anthropic API anahtarınızı girin. Claude model kimliğini Anthropic hesabınızda etkin olan adla yazın.",
+    guide: "Anthropic API anahtarınızı girin. Hesabınızda erişebildiğiniz Claude modellerini listeleyip seçebilirsiniz.",
     modelExample: "claude-opus-4-1",
   },
   google: {
-    guide: "Google AI Studio / Gemini API anahtarınızı girin. Model kimliğini Gemini API’de görünen adla yazın.",
+    guide: "Google AI Studio / Gemini API anahtarınızı girin. API’de görünen Gemini modellerini listeleyip seçebilirsiniz.",
     modelExample: "gemini-2.5-pro",
   },
 };
@@ -381,6 +382,9 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   const [structuredOutputMode, setStructuredOutputMode] =
     useState<StructuredOutputMode>("json-schema");
   const [editingConnectionId, setEditingConnectionId] = useState<string>();
+  const [connectionDialog, setConnectionDialog] = useState<string>();
+  const [connectionTab, setConnectionTab] = useState<"details" | "models" | "test">("details");
+  const [removingConnectionId, setRemovingConnectionId] = useState<string>();
   const [savingConnection, setSavingConnection] = useState(false);
   const [connectionNotice, setConnectionNotice] = useState<string>();
   const [connectionError, setConnectionError] = useState<string>();
@@ -730,7 +734,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       const saved = body as ProviderConnection;
       setCatalogChecks((current) => {
         const next = { ...current };
-        delete next[saved.id];
+        if (saved.catalogCheck) next[saved.id] = saved.catalogCheck;
+        else delete next[saved.id];
         return next;
       });
       setConnections((current) =>
@@ -743,10 +748,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       setApiKey("");
       setConnectionSelectedModels([]);
       setEditingConnectionId(undefined);
+      setConnectionDialog(undefined);
       setConnectionNotice(editingConnectionId ? "Bağlantı başarıyla şifrelenerek güncellenmiştir." : "Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : "Bağlantı kaydedilemedi.";
-      setError(message);
       setConnectionError(message);
     } finally {
       setSavingConnection(false);
@@ -765,6 +770,15 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     setBaseUrl(connection.baseUrl ?? "");
     setReasoningProtocol(connection.reasoningProtocol);
     setStructuredOutputMode(connection.structuredOutputMode);
+    setConnectionTab("details");
+    setConnectionDialog(connection.id);
+  }
+
+  function newConnection(): void {
+    cancelConnectionEdit();
+    setConnectionProvider("openai"); setEndpointPreset("custom"); setBaseUrl("");
+    setReasoningProtocol("openai"); setStructuredOutputMode("json-schema");
+    setConnectionTab("details"); setConnectionDialog("create");
   }
 
   function cancelConnectionEdit(): void {
@@ -774,14 +788,14 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     setConnectionLabel("");
     setApiKey("");
     setConnectionSelectedModels([]);
+    setConnectionDialog(undefined);
   }
 
   async function removeConnection(connectionId: string): Promise<void> {
+    setRemovingConnectionId(connectionId); setConnectionError(undefined); setConnectionNotice(undefined);
+    try {
     const response = await ownerFetch(`/api/provider-connections?id=${encodeURIComponent(connectionId)}`, { method: "DELETE" });
-    if (!response.ok) {
-      setError("Bağlantı kaldırılamadı.");
-      return;
-    }
+    if (!response.ok) throw new Error("Bağlantı silinemedi. Tekrar deneyin.");
     const remaining = connections.filter((item) => item.id !== connectionId);
     if (editingConnectionId === connectionId) cancelConnectionEdit();
     setConnections(remaining);
@@ -791,6 +805,9 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       return next;
     });
     setMembers((current) => assignConnectionToUnconfiguredMembers(current, remaining));
+    setConnectionNotice("Bağlantı silindi.");
+    } catch { setConnectionError("Bağlantı silinemedi. Tekrar deneyin."); }
+    finally { setRemovingConnectionId(undefined); }
   }
 
   async function checkConnectionModels(connectionId: string): Promise<void> {
@@ -803,26 +820,30 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           delete next[connectionId];
           return next;
         });
-        setError("Bağlantı kontrol sırasında değişti; güncel bağlantıyı yeniden kontrol edin.");
+        setConnectionError("Bağlantı kontrol sırasında değişti; güncel bağlantıyı yeniden kontrol edin.");
         return;
       }
       if (!response.ok) throw new Error("Model kataloğu sorgulanamadı.");
       const result = (await response.json()) as ModelCatalogCheck;
       setCatalogChecks((current) => ({ ...current, [connectionId]: result }));
     } catch {
-      setError("Model katalog sorgusu uygulama düzeyinde tamamlanamadı. Son kayıt korunuyor.");
+      setConnectionError("Model katalog sorgusu uygulama düzeyinde tamamlanamadı. Son kayıt korunuyor.");
     } finally {
       setCheckingConnectionId(undefined);
     }
   }
 
   async function saveConnectionModels(connection: ProviderConnection, selectedModels: string[]): Promise<void> {
+    setSavingConnection(true);
+    try {
     const response = await ownerFetch("/api/provider-connections", { method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ ...connection, apiKey: "", selectedModels, expectedRevision: connection.revision }) });
     if (!response.ok) throw new Error("Model seçimleri kaydedilemedi.");
     const saved = await response.json() as ProviderConnection;
     setConnections(current => current.map(item => item.id === saved.id ? saved : item));
+    if (editingConnectionId === saved.id) setConnectionSelectedModels(connectionModels(saved));
     setMembers(current => assignConnectionToUnconfiguredMembers(current, connections.map(item => item.id === saved.id ? saved : item)));
+    } finally { setSavingConnection(false); }
   }
 
   async function pollRunFallback(runId: string): Promise<void> {
@@ -1454,6 +1475,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     },
   );
 
+  const dialogConnection = connections.find(connection => connection.id === connectionDialog);
+  const connectionTabs = [{ id: "details", label: "Bağlantı" }, { id: "models", label: "Modeller" }, { id: "test", label: "Test ve Geçmiş" }] as const;
   const connectionForm = (
     <form className="connection-form" onSubmit={saveConnection} onChange={() => { setConnectionNotice(undefined); setConnectionError(undefined); }}>
       <label>
@@ -1565,8 +1588,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       {!editingConnectionId ? <ConnectionModelPreview
         draft={{ provider: connectionProvider, endpointPreset, apiKey, ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}) }}
         selectedModels={connectionSelectedModels} onModelsChange={setConnectionSelectedModels} disabled={savingConnection}
-      /> : <ConnectionModelPicker models={catalogChecks[editingConnectionId]?.models ?? []} selectedModels={connectionSelectedModels}
-        onChange={setConnectionSelectedModels} disabled={savingConnection} />}
+      /> : <p className="hint connection-model-edit-hint">Sohbette kullanacağınız modelleri <button type="button" className="text-button" onClick={() => setConnectionTab("models")}>Modeller sekmesinden</button> seçebilirsiniz.</p>}
       <p className="connection-reasoning-hint hint">Düşünme seviyesini her konsey üyesinin modelinin yanında seçin veya kapatın. Bu seçim görev bazında yapılır.</p>
       <details className="connection-advanced">
         <summary>Gelişmiş uç nokta ayarları</summary>
@@ -1618,13 +1640,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
               ? "Bağlantıyı güncelle"
               : "Yeni Bağlantı Ekle"}
         </button>
-        {editingConnectionId ? (
-          <button className="secondary-button" type="button" disabled={savingConnection} onClick={cancelConnectionEdit}>
-            Düzenlemeyi iptal et
-          </button>
-        ) : null}
+        <button className="secondary-button" type="button" disabled={savingConnection} onClick={cancelConnectionEdit}>Vazgeç</button>
       </div>
-      <div className="connection-save-notice" aria-live="polite">{connectionNotice ? <p role="status">{connectionNotice}</p> : null}</div>
       {connectionError ? <p className="alert error" role="alert">{connectionError}</p> : null}
     </form>
   );
@@ -1653,85 +1670,69 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     </>}>
       <section className="workspace workspace-view" hidden={view !== "settings"} aria-label="Ayarlar alanı">
         <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
-        <div className="settings-section-heading"><span className="eyebrow">MODELLERİNİZ</span><h2>API bağlantılarınız</h2><p>Bir bağlantı ekleyin, ardından sohbetinizde kullanacak modelleri seçin.</p></div>
-      <details className="settings-card primary-connections">
-        <summary>Yerel sağlayıcı bağlantıları ({connections.length})</summary>
+      <section className="primary-connections api-connections" aria-labelledby="api-connections-title">
+        <div className="api-connections-heading">
+          <div className="settings-section-heading"><span className="eyebrow">MODELLERİNİZ</span><h2 id="api-connections-title">API Bağlantıları <span className="connection-count">{connections.length}</span></h2><p>Bağlantılarınızı yönetin, sohbetinizde kullanacağınız modelleri seçin.</p></div>
+          <button className="primary-button" type="button" aria-haspopup="dialog" onClick={newConnection} disabled={savingConnection || Boolean(removingConnectionId)}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni Bağlantı Ekle
+          </button>
+        </div>
+        {connectionNotice ? <p className="connection-save-notice" role="status">{connectionNotice}</p> : null}
+        {connectionError && !connectionDialog ? <p className="alert error" role="alert">{connectionError}</p> : null}
+        {connections.length ? <div className="connection-list connection-grid" aria-label="Kayıtlı sağlayıcı bağlantıları">
+          {connections.map(connection => {
+            const chosen = connectionModels(connection), useCount = members.filter(member => member.connectionId === connection.id).length;
+            const providerName = connection.endpointPreset === "custom" ? providerLabels[connection.provider] : endpointPresets[connection.endpointPreset].label;
+            return <article className="connection-card connection-tile" key={connection.id} aria-label={`${connection.label} sağlayıcı bağlantısı`}>
+              <header><span className="connection-provider-icon" aria-hidden="true">{providerName.slice(0, 2).toLocaleUpperCase("tr")}</span><div><h3 title={connection.label}>{connection.label}</h3><p>{providerName}</p></div></header>
+              <div className="connection-tile-meta"><span>{chosen.length} model seçili</span><span className={`connection-usage ${useCount ? "active" : "idle"}`}>{useCount ? `Bu görevde ${useCount} üye` : "Hazırda"}</span></div>
+              <div className="connection-model-snippets">{chosen.length ? <>{chosen.slice(0, 2).map(model => <span key={model} title={model}>{model}</span>)}{chosen.length > 2 ? <small>+{chosen.length - 2} model</small> : null}</> : <p>Sohbette kullanmak için model seçin.</p>}</div>
+              <button type="button" className="secondary-button connection-models-action" aria-haspopup="dialog" disabled={savingConnection || Boolean(removingConnectionId)} onClick={() => { editConnection(connection); setConnectionTab("models"); }}>Modelleri Seç <span aria-hidden="true">→</span></button>
+              <div className="connection-tile-actions">
+                <button type="button" className="secondary-button" aria-haspopup="dialog" disabled={savingConnection || Boolean(removingConnectionId)} onClick={() => editConnection(connection)}>Düzenle</button>
+                <button type="button" className="secondary-button danger-button" disabled={savingConnection || Boolean(checkingConnectionId) || Boolean(removingConnectionId)} onClick={() => void removeConnection(connection.id)}>{removingConnectionId === connection.id ? "Siliniyor…" : "Sil"}</button>
+              </div>
+            </article>;
+          })}
+        </div> : <div className="connection-empty"><span className="connection-provider-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 3v4m6-4v4M7 7h10v3a5 5 0 0 1-10 0V7Zm5 8v6" /></svg></span><h3>İlk bağlantınızı ekleyin</h3><p>API anahtarınızı bir kez kaydedin, kullanacağınız modelleri seçin.</p></div>}
+        <details className="connection-help"><summary>Bağlantılar Nasıl Kullanılır?</summary>
         <div className="connection-guide" aria-label="Bağlantı kullanım adımları">
           <div><strong>1</strong><span>Sağlayıcıyı veya OpenRouter, LiteLLM, Ollama gibi uç noktayı bir kez kaydedin.</span></div>
           <div><strong>2</strong><span>Konsey üyesinde bu bağlantıyı seçin; görev modelini ve düşünme seviyesini istediğiniz zaman değiştirin.</span></div>
           <div><strong>3</strong><span>Kullanmadığınız bağlantılar hazırda bekler ve siz bir üyeye seçmedikçe istek göndermez.</span></div>
         </div>
-        {!editingConnectionId ? connectionForm : null}
-        {connections.length > 0 ? (
-          <div className="connection-list" aria-label="Kayıtlı sağlayıcı bağlantıları">
-            {connections.map((connection) => {
-              const useCount = members.filter(
-                (member) => member.connectionId === connection.id,
-              ).length;
-              const catalog = catalogChecks[connection.id];
-              return (
-                <article className="connection-card" key={connection.id} aria-label={`${connection.label} sağlayıcı bağlantısı`}>
-                  <div className="connection-status">
-                    <div>
-                      <span className={`connection-usage ${useCount > 0 ? "active" : "idle"}`}>
-                        {useCount > 0 ? `Bu görevde ${useCount} üye` : "Hazırda · bu görevde kullanılmıyor"}
-                      </span>
-                      <strong>{connection.label}</strong>
-                      <small>
-                        {providerLabels[connection.provider]} · {connectionModels(connection).length} model seçili · {endpointPresets[connection.endpointPreset].label}
-                      </small>
-                      <small>
-                        {connection.baseUrl ? `${connection.baseUrl} · ` : ""}
-                        düşünme protokolü: {connection.reasoningProtocol === "none" ? "kapalı" : connection.reasoningProtocol}
-                      </small>
-                      {catalog ? (
-                        <small role="status">
-                          {catalog.status === "available"
-                            ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."}`
-                            : catalog.status === "auth_failed"
-                              ? "Katalog isteği kimlik/yetki hatasıyla reddedildi."
-                              : catalog.status === "unsupported"
-                                ? "Bu uç noktada model listeleme desteklenmiyor veya yanıt biçimi bilinmiyor."
-                                : "Model listesine erişilemedi. Uç nokta, ağ ve sunucu durumunu kontrol edin."}
-                        </small>
-                      ) : null}
-                      {catalog?.checkedAt ? (
-                        <small>Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small>
-                      ) : null}
-                    </div>
-                    <div className="connection-actions">
-                      <button className="secondary-button" type="button" disabled={savingConnection || Boolean(checkingConnectionId)} onClick={() => void checkConnectionModels(connection.id)}>
-                        {checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}
-                      </button>
-                      <button className="secondary-button" type="button" disabled={savingConnection} aria-expanded={editingConnectionId === connection.id} aria-controls={`connection-editor-${connection.id}`} onClick={() => { if (editingConnectionId !== connection.id) editConnection(connection); }}>
-                        Düzenle
-                      </button>
-                      <button
-                        className="secondary-button danger-button"
-                        type="button"
-                        disabled={savingConnection || Boolean(checkingConnectionId)}
-                        onClick={() => void removeConnection(connection.id)}
-                      >
-                        Bağlantıyı kaldır
-                      </button>
-                    </div>
-                  </div>
-                  {editingConnectionId !== connection.id ? <SavedConnectionModels models={catalog?.models ?? []}
-                    selectedModels={connectionModels(connection)} label={connection.label} onSave={models => saveConnectionModels(connection, models)} /> : null}
-                  {editingConnectionId === connection.id ? (
-                    <section className="connection-editor" id={`connection-editor-${connection.id}`} aria-label={`${connection.label} bağlantısını düzenle`}>
-                      <h3>Bağlantıyı düzenle · {connection.label}</h3>
-                      {connectionForm}
-                    </section>
-                  ) : null}
-                  <ConnectionGenerationPanel key={`${connection.id}:${connection.revision ?? 0}`} connection={connection} />
-                </article>
-              );
-            })}
-          </div>
-        ) : <p className="hint">Görev çalıştırmak için önce bir sağlayıcı bağlantısı ekleyin.</p>}
         <p className="hint">OpenAI, Claude ve Gemini yerel adaptörleri; Kimi, Qwen, vLLM, Ollama, LiteLLM, OpenRouter ve özel uç noktalar OpenAI uyumlu adaptörü kullanır. Model listesi yalnızca düğmeye basınca sorgulanır; üretim, ücretlendirme ve düşünme seviyesi desteğini doğrulamaz.</p>
-      </details>
+        </details>
+      </section>
+      <ConnectionDialog open={Boolean(connectionDialog) && view === "settings"} title={dialogConnection?.label ?? "Yeni Bağlantı Ekle"}
+        description={dialogConnection ? "Bağlantı bilgilerinizi, sohbet modellerinizi ve deneme geçmişini buradan yönetin." : "Sağlayıcınızı seçin, API anahtarınızı ekleyin ve kullanacağınız modelleri belirleyin."}
+        busy={savingConnection || Boolean(checkingConnectionId)} onClose={cancelConnectionEdit}>
+        {dialogConnection ? <div className="connection-tabs" role="tablist" aria-label="Bağlantı ayarları" onKeyDown={event => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          event.preventDefault(); const index = connectionTabs.findIndex(tab => tab.id === connectionTab);
+          const next = event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : 2)) % 3;
+          setConnectionTab(connectionTabs[next]!.id); event.currentTarget.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
+        }}>{connectionTabs.map(tab => <button type="button" role="tab" key={tab.id} id={`connection-tab-${tab.id}`} aria-selected={connectionTab === tab.id}
+          aria-controls={`connection-pane-${tab.id}`} tabIndex={connectionTab === tab.id ? 0 : -1} onClick={() => setConnectionTab(tab.id)}>{tab.label}</button>)}</div> : null}
+        <div id="connection-pane-details" role={dialogConnection ? "tabpanel" : undefined} aria-labelledby={dialogConnection ? "connection-tab-details" : undefined} hidden={Boolean(dialogConnection) && connectionTab !== "details"}>
+          {connectionDialog && (!dialogConnection || connectionTab === "details") ? connectionForm : null}
+        </div>
+        <div id="connection-pane-models" role="tabpanel" aria-labelledby="connection-tab-models" hidden={!dialogConnection || connectionTab !== "models"}>
+          {connections.map(connection => {
+            const catalog = catalogChecks[connection.id];
+            return <div className="connection-model-workspace" key={connection.id} hidden={connectionDialog !== connection.id}>
+              <div className="connection-catalog-heading"><div><h3>Sohbet Modelleri</h3><p>Bu bağlantıda kullanmak istediğiniz modelleri seçip kaydedin.</p></div><button className="secondary-button" type="button" disabled={savingConnection || Boolean(checkingConnectionId)} onClick={() => void checkConnectionModels(connection.id)}>{checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}</button></div>
+              {catalog ? <p role="status" className="hint">{catalog.status === "available" ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."}` : catalog.status === "auth_failed" ? "Katalog isteği kimlik/yetki hatasıyla reddedildi." : catalog.status === "unsupported" ? "Bu uç noktada model listeleme desteklenmiyor veya yanıt biçimi bilinmiyor." : "Model listesine erişilemedi. Uç nokta, ağ ve sunucu durumunu kontrol edin."}</p> : null}
+              {catalog?.checkedAt ? <small className="hint">Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small> : null}
+              <SavedConnectionModels models={catalog?.models ?? []} selectedModels={connectionModels(connection)} label={connection.label} onSave={models => saveConnectionModels(connection, models)} />
+              {connectionError ? <p className="alert error" role="alert">{connectionError}</p> : null}
+            </div>;
+          })}
+        </div>
+        <div id="connection-pane-test" role="tabpanel" aria-labelledby="connection-tab-test" hidden={!dialogConnection || connectionTab !== "test"}>
+          {connections.map(connection => <div key={connection.id} hidden={connectionDialog !== connection.id}><ConnectionGenerationPanel key={`${connection.id}:${connection.revision ?? 0}`} connection={connection} /></div>)}
+        </div>
+      </ConnectionDialog>
 
       <div className="settings-section-heading"><span className="eyebrow">TERCİHLER VE ARAÇLAR</span><h2>Çalışma ortamınız</h2></div>
       <PrivateOutputDefaultPanel />

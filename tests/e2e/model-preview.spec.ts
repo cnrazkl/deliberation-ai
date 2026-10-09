@@ -21,7 +21,7 @@ test("new connection lists models on explicit click without persistence or gener
   const root = await playwright.request.newContext({ baseURL: testOrigin, storageState: ".local/e2e/root-session.json" });
   try {
     await page.goto("/"); await workspaceView(page, "Ayarlar");
-    await page.getByText(/Yerel sağlayıcı bağlantıları/).click();
+    await page.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
     const form = page.locator(".connection-form");
     await expect(form.getByLabel("Düşünme parametresi")).not.toBeVisible();
     await form.getByLabel("Sağlayıcı ailesi").selectOption("openai-compatible");
@@ -56,7 +56,7 @@ test("new connection lists models on explicit click without persistence or gener
     await form.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
     const saved = await savedResponse;
     expect(saved.ok()).toBe(true); savedId = (await saved.json() as { id: string }).id;
-    await expect(form.locator(".connection-save-notice")).toHaveText("Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
+    await expect(page.locator(".primary-connections .connection-save-notice")).toHaveText("Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
     expect(calls).toHaveLength(1);
     await workspaceView(page, "Sohbet"); await page.getByRole("button", { name: "Konseyi düzenle", exact: true }).click();
     await page.getByLabel("Üye 1 bağlantısı").selectOption(savedId!);
@@ -88,7 +88,7 @@ test("draft catalog rejects stale results after credentials change and retains m
       : { status: "unsupported", verification: "none", models: [], truncated: false } }); } catch { /* The invalidated fetch is aborted. */ }
   });
   try {
-    await page.goto("/"); await workspaceView(page, "Ayarlar"); await page.getByText(/Yerel sağlayıcı bağlantıları/).click();
+    await page.goto("/"); await workspaceView(page, "Ayarlar"); await page.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
     const form = page.locator(".connection-form");
     await form.getByLabel("API anahtarı", { exact: true }).fill("first-synthetic-key");
     await form.getByRole("button", { name: "Modelleri getir", exact: true }).click(); await firstStarted;

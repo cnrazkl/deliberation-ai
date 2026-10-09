@@ -1,5 +1,10 @@
 # Tasks
 
+- [ ] Owner-requested compact API connection cards and separate creation/editing panel:
+  responsive one-to-four-column grid, edit/delete, model and test/history tabs, keyboard
+  focus and draft preservation. Nine focused browser cases pass; broader checks and
+  deployed verification are pending.
+
 - [x] Owner-requested multiple model choices per API connection: optional default,
   searchable saved choices, ready council dropdowns, same/different connections and
   legacy/draft preservation. Unit/PostgreSQL/types/lint and Linux build pass; 86 broad

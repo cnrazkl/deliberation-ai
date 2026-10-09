@@ -18,7 +18,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1
     });
     expect(gaps.field).toBeGreaterThanOrEqual(15); expect(gaps.actions).toBeGreaterThanOrEqual(11);
     expect(gaps.heights.every(height => height >= 44)).toBe(true);
-    await page.getByText(/Yerel sağlayıcı bağlantıları/).click();
+    await page.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
     const form = page.locator(".connection-form");
     await expect(form.getByRole("button", { name: "Modelleri getir", exact: true })).toBeDisabled();
     await expect(form.getByLabel("Düşünme parametresi")).not.toBeVisible();

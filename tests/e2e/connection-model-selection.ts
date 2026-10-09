@@ -1,4 +1,11 @@
-import type { Locator } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+
+export async function openConnectionPanel(page: Page, card: Locator, tab: "Bağlantı" | "Modeller" | "Test ve Geçmiş" = "Bağlantı") {
+  await card.getByRole("button", { name: tab === "Modeller" ? "Modelleri Seç" : "Düzenle", exact: true }).click();
+  const dialog = page.getByRole("dialog"); await dialog.waitFor({ state: "visible" });
+  if (tab !== "Bağlantı") await dialog.getByRole("tab", { name: tab, exact: true }).click();
+  return dialog;
+}
 
 export async function addConnectionModels(scope: Locator, models: string[]) {
   const dropdown = scope.locator(".connection-model-dropdown").first();

@@ -1,6 +1,20 @@
 # Current state
 
-Updated: 9 October 2026 (saved connection model choices deployed)
+Updated: 9 October 2026 (compact API connection management prepared)
+
+## Compact API connection cards and tabbed panel — deployment pending
+
+API Bağlantıları shows saved connections as compact cards with edit/delete actions.
+Workspace width selects one/two/three/four columns. A separate modal handles creation
+and saved Bağlantı, Modeller and Test ve Geçmiş tabs. Save success closes it and appears
+beside the card list; failures retain entered fields. Tab changes retain form drafts,
+and Escape returns focus to the opener. Model preferences and reviewed test identities
+remain mounted across tabs/closure. Pending saves/catalog lookup block dismissal.
+Nine focused browser cases pass across both palettes at 320/960/1280/1540px, plus
+creation/editing/deletion failures, model persistence, focus and reviewed-test guards.
+Initial cases exposed unnecessarily tall model previews and a native focus-cycle gap;
+compact inline previews and explicit Tab wrapping fix them. Broader regressions,
+production build and deployment verification remain pending.
 
 ## Saved connection model choices — deployed
 
