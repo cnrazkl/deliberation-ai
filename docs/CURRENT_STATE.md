@@ -1,8 +1,8 @@
 # Current state
 
-Updated: 9 October 2026 (help/settings refinement verified locally)
+Updated: 9 October 2026 (help/settings refinement deployed)
 
-## Help and connection settings refinement — locally verified
+## Help and connection settings refinement — deployed
 
 The bundled Manrope variable font covers shared browser surfaces and Turkish text.
 Help examples use the same font and fully rounded callouts. Button words display
@@ -19,8 +19,25 @@ catalog/generation/interface regressions and ten focused unit cases pass. Local 
 and lint pass. Screenshot review confirms help and expanded connection panels at
 960x975. Initial new-test failures exposed an over-exact nested-label selector and
 the existing save error hidden in chat; the corrected complete rerun passes.
-No paid provider call was made. Linux production build and LAN deployment verification
-remain pending for this increment; the current deployed image below is unchanged.
+Linux production web types, zero-warning lint and build pass. Live save success/failure
+checks preserve the document, form position and draft. Six deployed help/settings cases
+cover both palettes at 320/960/1440px, with local font responses, rounded examples,
+one sidebar theme selector, inset review controls and no overflow/page errors. Review
+loads on the actual HTTP origin without randomUUID support. No generation request or
+external font request was sent. Final deployed 960x975 screenshots were inspected.
+Temporary verification accounts and their connection fixtures were erased through
+fingerprint-bound account deletion. Only owned web/observer were recreated; final
+foreign-container and owned database/worker lifecycle baselines match. The local
+portable PostgreSQL server was stopped again after isolated browser tests.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-refine-ui1`,
+manifest `sha256:c0e4d8187645678984f3fa14ec1231fa6d72a5d480e73be97864d34c6f50f3c3`,
+exported source tree `e1016359e028ace69f3f947500b305f68dc9741a` (commit `7a08a4e`)
+before this evidence update. LAN binding remains `192.168.1.112:33184`; no schema,
+provider, migration, worker or public-hosting change occurred. Source-bound window
+`month-refine-ui-20261009` starts 2026-10-09T18:45:24.086Z and is due
+2026-11-08T18:45:24.086Z; its first sample is healthy. Earlier windows remain retained;
+monthly and independent human quality gates stay open.
 
 ## Brand home navigation — deployed
 
@@ -37,7 +54,7 @@ deletion. No page errors or horizontal overflow were captured; no generation req
 was sent. Only web/observer were recreated; foreign containers and the owned
 database/worker retain their original lifecycle baselines.
 
-Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-home-ui2`,
+Prior owned web/observer image: `deliberationai-rehearsal:60374dd507ec-home-ui2`,
 manifest `sha256:9fc382b44b3f742cdfad5ca96a13be0f342bf075bfcbc494a40745cae8bfbf24`,
 exported source tree `e0073f9ced3c022d423c14e4b4fb28444a341637` (commit `17bd905`)
 before this evidence update. LAN binding remains `192.168.1.112:33184`; no schema,

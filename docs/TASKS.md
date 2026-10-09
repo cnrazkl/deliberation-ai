@@ -3,8 +3,11 @@
 - [x] Owner's six help/settings comments: bundle Manrope, round help examples, capitalize
   button words, show connection-save success/failure in place, remove duplicate theme
   settings and space generation review/history. Seven new browser cases, seven existing
-  regressions and ten unit cases pass; deployment verification remains below.
-- [ ] Deploy and verify the refined help/connection settings on the existing LAN app.
+  regressions and ten unit cases pass.
+- [x] Deploy refined help/connection settings to the existing LAN app. Linux types/lint/
+  build and live save success/failure/draft checks plus six theme-width cases pass.
+  Temporary accounts erased; no generation or external font requests. Service and
+  database/worker lifecycle baselines preserved. See CURRENT_STATE.md.
 
 - [x] Shared logo/name home links deployed. Types/lint/Linux build and local/live
   navigation checks pass: help returns, settings/schedule logo/name returns, keyboard
