@@ -1,8 +1,14 @@
 # Tasks
 
-- [ ] Owner-requested composer disclosure readability/design: full-row headers,
-  short descriptions, clear state indicators and keyboard focus. Implementation is
-  in verification; browser/production/live checks and publication remain pending.
+- [x] Owner-requested composer disclosure readability/design: full-row native headers,
+  larger labels, short descriptions, separate status, chevrons and keyboard focus.
+  Broad browser run passes 101/104; legacy council-header styling is corrected and
+  all 26 affected disclosure/workspace/form cases pass. Production build and live
+  keyboard/retention/high-risk/contrast checks plus six palette-width cases pass.
+  Temporary accounts erased; service baselines preserved. See CURRENT_STATE.md.
+- [ ] Observed existing LAN HTTP attachment preparation limitation: `crypto.subtle`
+  is unavailable on the plain LAN origin. Populated-file layout is verified locally;
+  this presentation change does not resolve the file preparation dependency.
 
 - [x] Owner-requested compact API connection cards and separate creation/editing panel:
   responsive one-to-four-column grid, edit/delete, model and test/history tabs, keyboard

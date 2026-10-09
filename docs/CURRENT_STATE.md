@@ -1,8 +1,8 @@
 # Current state
 
-Updated: 9 October 2026 (composer disclosure presentation in verification)
+Updated: 9 October 2026 (readable composer disclosures deployed)
 
-## Readable composer disclosures — verification in progress
+## Readable composer disclosures — deployed
 
 Composer and council headers now have larger labels, brief descriptions, separate
 status badges and rotating chevrons in full-row native summary targets. Keyboard
@@ -10,9 +10,33 @@ semantics and independent expansion remain native; opening sections does not cha
 drafts, source approval, quotas or provider dispatch. WAI/GOV.UK primary guidance was
 reviewed. Eight new browser cases pass; an initial broad run passes 101/104, exposing
 legacy settings-summary CSS overriding the council grid at narrow widths/200% zoom.
-That selector now excludes the new headers; corrected layout/keyboard cases and the
-final production build/LAN rollout remain pending. Web types/lint pass. No schema or
-worker change is planned.
+That selector now excludes the new headers. All 26 corrected disclosure, expanded
+workspace and form-layout cases pass, including long attachment names and 200% zoom.
+Web types/lint and the final Linux production types, zero-warning lint and build pass.
+
+Live Enter/Space/Tab, visible focus, whole-row activation, independent expansion,
+question/candidate/quota retention and visible high-risk guidance pass. Six palette/
+width cases verify open/closed headers at 320/960/1540px, text contrast of at least
+4.5:1 and no clipping/overflow. Production screenshots were inspected. No generation
+request or page error occurred in these checks; both temporary accounts/connections
+were erased through fingerprint-bound deletion.
+
+An additional populated-file live fixture was blocked before rendering: the plain
+LAN HTTP browser has no `crypto.subtle`, which the existing attachment SHA-256 step
+requires. This pre-existing file preparation limitation remains open; populated-file
+and zoom acceptance above is from localhost browser tests, not a live upload claim.
+
+Only owned web/observer were recreated. Foreign inventory/lifecycle and owned database/
+worker baselines match. Packages/worker/deployment definitions are unchanged, no
+migration ran, and native PostgreSQL was stopped again after the isolated tests.
+Current owned image: `deliberationai-rehearsal:60374dd507ec-disclosures-ui2`, manifest
+`sha256:5673199ef675df93f32ae589e4db2810e5c36f568796b54eec4e8a99e5471413`,
+exported tree `c9ce236db165a66d91bd45a61c3fd3947fdf816a` (commit `0c451ca`) before
+this documentation-only verification update. Deployment completed at
+2026-10-09T20:24:30Z; LAN binding remains `192.168.1.112:33184`.
+Source-bound window `month-disclosures2-ui-20261009` starts
+2026-10-09T20:24:44.421Z and is due 2026-11-08T20:24:44.421Z; first sample healthy.
+Earlier windows remain retained; monthly and independent human quality gates stay open.
 
 ## Compact API connection cards and tabbed panel — deployed
 
@@ -42,7 +66,7 @@ Only owned web/observer were recreated. Final foreign-container and owned databa
 worker lifecycle baselines match; packages/worker/deployment definitions are unchanged,
 and no migration ran. Native PostgreSQL was stopped again after isolated tests.
 
-Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-cards-ui1`,
+Previous owned web/observer image: `deliberationai-rehearsal:60374dd507ec-cards-ui1`,
 manifest `sha256:833f1928af4ef51ee65d7fac34e4e5d40745681ce69f09f956f9e9a5eed19011`,
 exported source tree `b55038e296aa697e4888d10bc6129d6c39cf6c2a` (commit `3f5398a`)
 before this documentation-only verification update. Deployment completed at
