@@ -1,5 +1,32 @@
 # Workspace design principles — DA-111 / DA-112
 
+## Complete blue/navy refresh — 9 October 2026
+
+- Light: pale blue canvas/sidebar, white surfaces, dark blue text and a blue primary
+  action. Dark: navy canvas/sidebar/cards, light text and pale blue primary actions.
+  Semantic `accent` replaces the former brand-specific green token. Amber warnings,
+  red errors/destructive controls and purple private/decision areas stay distinct.
+- Shared spacing, rounded surfaces, subtle elevation, 44px actions, restrained
+  secondary buttons and visible field borders cover every browser module. Text and
+  placeholder colors remain readable in both palettes. State is conveyed by text
+  and existing labels as well as color; source/raw/minority details remain available.
+- Keep one prominent composer submit action. Context/member/risk/usage controls
+  retain progressive disclosure. Scheduling, API setup, admin and documentation
+  use the same component language, with no new automatic provider action.
+- A compact pinned account bar retains help while a native avatar disclosure groups
+  account actions. The popup fits the viewport and scrolls on short screens; Escape
+  closes it and restores summary focus, outside click dismisses it, choosing an
+  action closes it. Ordinary Tab navigation is used, without an artificial menu role.
+- Entry and root users can choose appearance using the same non-sensitive existing
+  browser preference. Sidebar and mobile drawer remain below the measured header;
+  narrow content responds to usable workspace width, and history remains scrollable.
+- Verification covers both palettes, account keyboard/dismissal/action access,
+  responsive expanded views, actual sticky scrolling, draft preservation, report and
+  review flows, account lifecycle and help/print. Contrast checks sample labels,
+  guidance and enabled actions at a 4.5:1 minimum and enabled field boundaries at
+  3:1 against their surface; this is bounded automated coverage,
+  not an independent accessibility certification or physical-device usability study.
+
 ## Pinned account and navigation
 
 The account bar is sticky above desktop navigation and the mobile drawer. Its measured

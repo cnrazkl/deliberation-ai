@@ -1,5 +1,20 @@
 # Product
 
+## Blue/navy interface
+
+All browser surfaces share a light blue light theme and a navy dark theme: account
+entry/registration, workspace/history, connections/tools, scheduler, reports/evidence,
+private branches, account administration and the public guide. Clear input boundaries,
+readable secondary text, consistent primary/secondary/danger actions and progressively
+disclosed advanced controls support first use. Existing risk, source and private colors
+remain distinct; visual agreement never represents accuracy.
+
+The pinned account bar provides help and an avatar disclosure for password change,
+reviewed deletion and logout. Escape returns focus to the disclosure; outside click
+closes it. Entry and root administration now expose the existing browser theme choice.
+Theme changes, menu actions and workspace navigation do not send model requests or
+reset active drafts. Existing explicit submit/review/deletion boundaries remain intact.
+
 The signed-in account bar remains at the top during page scrolling. Desktop navigation
 stays directly below it; the mobile drawer uses the same measured offset. History can
 scroll within the available height. Conversation/run list refresh controls use a single

@@ -8,6 +8,8 @@ import { AccountDeletionPanel, RootManagement } from "./account-management";
 import { accountRequest, announceSessionChange } from "../../lib/account-client";
 import { HelpLink } from "./help-link";
 import { AccountBar } from "./account-bar";
+import { AccountMenu } from "./account-menu";
+import { ThemeSelect } from "./workspace-shell";
 
 export function AuthShell() {
   const [session, setSession] = useState<LocalSessionSummary | null>(null);
@@ -65,6 +67,7 @@ export function AuthShell() {
   }
   if (!ready) return <main className="account-login"><p role="status">Oturum kontrol ediliyor…</p></main>;
   if (!session) return <main className="account-login">
+    <div className="account-entry-appearance"><ThemeSelect /></div>
     <div className="account-login-layout">
       <section className="account-welcome" aria-label="Deliberation AI hakkında">
         <div className="account-brand"><span className="account-brand-mark" aria-hidden="true">D<span>·</span></span>Deliberation AI</div>
@@ -112,13 +115,15 @@ export function AuthShell() {
   </main>;
   return <>
     <AccountBar>
-      <div><span className="account-bar-brand">Deliberation AI</span><strong>{session.user.displayName}</strong><small>@{session.user.username}</small><span className="account-role-badge">{session.user.role === "root" ? "Yönetici" : "Kişisel hesap"}</span>
-        </div>
+      <div><span className="account-bar-brand"><span className="brand-symbol" aria-hidden="true">D·</span>Deliberation AI</span><span className="account-role-badge">{session.user.role === "root" ? "Yönetim merkezi" : "Kişisel çalışma alanı"}</span></div>
       <div className="account-actions">
         <HelpLink />
-        {session.user.role === "user" && <button type="button" className="secondary-button" disabled={busy} onClick={() => setDeletion(!deletion)}>Hesabımı sil</button>}
+        <AccountMenu name={session.user.displayName} username={session.user.username} role={session.user.role === "root" ? "Yönetici" : "Kişisel hesap"}>
+        {session.user.role === "root" && <ThemeSelect />}
         <button type="button" className="secondary-button" disabled={busy} onClick={() => setPasswordPanel(!passwordPanel)}>Parolayı değiştir</button>
+        {session.user.role === "user" && <button type="button" className="secondary-button danger-button" disabled={busy} onClick={() => setDeletion(!deletion)}>Hesabımı sil</button>}
         <button type="button" className="secondary-button" disabled={busy} onClick={() => void logout()}>Çıkış yap</button>
+        </AccountMenu>
       </div>
     </AccountBar>
     {error && <p className="account-message inline-error" role="alert">{error}</p>}{notice && <p className="account-message" role="status">{notice}</p>}

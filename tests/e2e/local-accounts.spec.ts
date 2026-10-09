@@ -62,10 +62,12 @@ test("registration only needs a chosen username/password; self deletion removes 
     const saved = await context.request.post("/api/provider-connections", { headers: { "X-Deliberation-Owner": session.scope.ownerId }, data: {
       provider: "openai", label: "Generated personal connection", defaultModel: "offline", apiKey: "offline-generated-key", endpointPreset: "custom", reasoningProtocol: "openai", structuredOutputMode: "json-schema" } });
     expect(saved.ok()).toBe(true);
+    await page.locator(".account-menu > summary").click();
     await page.getByRole("button", { name: "Hesabımı sil", exact: true }).click();
     const panel = page.getByRole("region", { name: "Hesap silme" }); await expect(panel).toContainText("1 bağlantı");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await panel.getByRole("button", { name: "Vazgeç" }).click(); expect((await context.request.get("/api/provider-connections")).ok()).toBe(true);
+    await page.locator(".account-menu > summary").click();
     await page.getByRole("button", { name: "Hesabımı sil", exact: true }).click();
     await panel.getByLabel("Silinecek kullanıcı adı").fill(username); await panel.getByLabel("Mevcut parolanız").fill("wrong");
     await panel.getByRole("checkbox").check(); await panel.getByRole("button", { name: "Hesabı silmeyi onayla" }).click();

@@ -1,5 +1,13 @@
 # Architecture
 
+The browser design system uses semantic accent/ink/surface/field/shadow tokens with
+light-blue and navy palettes in globals.css. Existing workspace container queries
+and the AccountBar height observer remain the layout boundary. AccountMenu is a
+native details disclosure with document pointer/Escape listeners, bounded popup
+scrolling and focus restoration; it delegates existing actions to AuthShell and
+imports no account client or provider. ThemeSelect is reused on entry/root surfaces.
+No domain, provider, API, persistence, ownership, worker or schema changes.
+
 AccountBar observes its rendered height, including wrapped mobile actions, and owns
 the transient `--account-bar-height` presentation variable. Sticky desktop navigation
 and the fixed mobile drawer/backdrop use this offset; unmount clears it. RefreshIcon

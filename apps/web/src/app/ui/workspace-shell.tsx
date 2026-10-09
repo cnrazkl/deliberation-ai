@@ -45,7 +45,7 @@ export function WorkspaceShell({ view, onViewChange, onNewChat, newChatDisabled,
   const heading = useRef<HTMLHeadingElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   function closeSidebar() { setSidebarOpen(false); toggle.current?.focus(); }
-  function focusContent() { window.requestAnimationFrame(() => { heading.current?.focus({ preventScroll: true }); heading.current?.scrollIntoView({ block: "start" }); }); }
+  function focusContent() { window.requestAnimationFrame(() => { heading.current?.focus({ preventScroll: true }); heading.current?.closest("main")?.scrollIntoView({ block: "start" }); }); }
   return <div className="app-shell">
     <a className="skip-link" href="#workspace-content">İçeriğe geç</a>
     {sidebarOpen && <button className="sidebar-backdrop" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar} />}
@@ -54,7 +54,7 @@ export function WorkspaceShell({ view, onViewChange, onNewChat, newChatDisabled,
       <div className="sidebar-brand"><span className="brand-symbol" aria-hidden="true">D·</span><strong>Deliberation AI</strong>
         <button type="button" className="sidebar-close secondary-button" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar}>×</button>
       </div>
-      <button type="button" className="new-chat-button" disabled={newChatDisabled} onClick={() => { onNewChat(); setSidebarOpen(false); }}>＋ Yeni sohbet</button>
+      <button type="button" className="new-chat-button" aria-label="＋ Yeni sohbet" disabled={newChatDisabled} onClick={() => { onNewChat(); setSidebarOpen(false); }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni sohbet</button>
       <nav className="workspace-nav" aria-label="Ana menü">
         {(Object.keys(labels) as WorkspaceView[]).map((item) => <button type="button" key={item} aria-label={labels[item]}
           aria-current={view === item ? "page" : undefined} onClick={() => { onViewChange(item); setSidebarOpen(false); focusContent(); }}>
@@ -62,14 +62,14 @@ export function WorkspaceShell({ view, onViewChange, onNewChat, newChatDisabled,
           {item === "settings" && attentionCount > 0 && <small className="nav-attention" title={`${attentionCount} sağlayıcı işlemi karar bekliyor`}>{attentionCount}</small>}
         </button>)}
       </nav>
-      <div className="sidebar-history" onClick={(event) => { if ((event.target as HTMLElement).closest("[data-open-history]")) { setSidebarOpen(false); focusContent(); } }}><p className="sidebar-section-label">GEÇMİŞİNİZ</p>{sidebar}</div>
+      <div className="sidebar-history" onClick={(event) => { if ((event.target as HTMLElement).closest("[data-open-history]")) { setSidebarOpen(false); focusContent(); } }}><p className="sidebar-section-label">SOHBET GEÇMİŞİ</p>{sidebar}</div>
       <div className="sidebar-footer"><ThemeSelect /><small>Bağımsız görüşler · İzlenebilir sonuçlar</small></div>
     </aside>
     <main className="app-main" id="workspace-content">
       <header className="workspace-topbar">
-        <button ref={toggle} type="button" className="sidebar-toggle secondary-button" aria-label="Sohbet geçmişini aç" aria-expanded={sidebarOpen} aria-controls="workspace-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}>☰</button>
+        <button ref={toggle} type="button" className="sidebar-toggle secondary-button" aria-label="Sohbet geçmişini aç" aria-expanded={sidebarOpen} aria-controls="workspace-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
         <div><span className="eyebrow">ÇALIŞMA ALANI</span><h1 ref={heading} tabIndex={-1}>{view === "chat" ? "Birlikte düşünelim." : labels[view]}</h1></div>
-        <span className="local-badge"><span aria-hidden="true" />Size ait çalışma alanı</span>
+        <span className="local-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>Size ait çalışma alanı</span>
       </header>
       {children}
       <footer className="workspace-footer">Uzlaşı doğruluk değildir · Ham yanıtlar ve farklı görüşler korunur.</footer>

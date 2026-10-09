@@ -1,8 +1,55 @@
 # Current state
 
-Updated: 9 October 2026 (pinned navigation)
+Updated: 9 October 2026 (blue/navy frontend modernization)
 
-## Pinned navigation and refresh icons — deployed
+## Complete frontend modernization — deployed
+
+The browser now shares a light-blue/navy design system across entry/registration,
+chat/history, settings/connections/tools, scheduling, reports/evidence/private flows,
+administration and help. Semantic accent/surface/field/shadow tokens replace the old
+green brand palette. Readable typography, clearer field boundaries, calmer secondary
+actions and consistent spacing/elevation retain the question-first hierarchy and
+existing advanced disclosures. Risk/error/source/private meanings remain distinct.
+
+A compact account disclosure groups existing password/deletion/logout actions. It
+supports normal keyboard navigation, Escape/outside dismissal and focus restoration;
+its destructive action is red and all three account actions retain 44px targets.
+Entry/root reuse browser appearance selection. Pinned account/sidebar geometry and
+mobile drawer offsets are preserved. Navigation scrolls the complete main header into
+view rather than hiding its eyebrow beneath the sticky account bar. Drafts, review
+identities, provider consent, ownership and explicit dispatch/deletion guards remain
+intact. No API/schema/migration/provider/worker behavior change.
+
+The complete 66-case browser suite passes. Final boundary refinements pass eighteen
+focused account/workspace/interface cases, followed by three final interface cases
+including both palettes, 320/820/1440px, readable labels/actions (4.5:1), enabled field
+boundaries (3:1), bounded account popups, destructive-action color and 44px account
+targets. The refresh also retains coverage at 390/640/1024px, short landscape screens
+and 200% CSS zoom, populated reports, history, source/review/private/scheduler flows
+and help/print. Contrast refinement initially exposed legacy select borders; a common
+field rule fixes those. Actual LAN checks caught inherited account-action styles;
+the final scoped styles and tests cover their color/target size. Strict types,
+zero-warning lint, final Linux production web types/build and eleven final production
+smoke checks pass with zero paid provider calls. This is bounded automated coverage,
+not an independent accessibility or human usability certification.
+
+Actual LAN light/dark views, the account disclosure, visible 44px API fields and
+scheduler were inspected. All three final account actions measure 44px; destructive
+text is rgb(255,173,185) in dark mode. The final page has no captured console errors.
+Verification used a fresh tab and restores the previous appearance choice; no existing
+user draft, account, connection or scheduled work was edited by visual inspection.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-modern-ui5`,
+manifest `sha256:2cebb1b1e4579ebbd9a9cfffaa5bf56f12cfdb8193e6a7c4863ed31739f0f4b1`,
+exported source tree `bd6abe4dbdde5b5db8fb96214ad4e708984c1de6` before this final
+evidence update. Binding remains `192.168.1.112:33184`. Fresh foreign-container and
+owned database/worker lifecycle baselines match after deployment. No foreign database,
+DDL, firewall, Cloudflare or personal-data migration occurred. Source-bound window
+`month-modern-ui-20261009` starts 2026-10-09T00:26:08.838Z and is due
+2026-11-08T00:26:08.838Z (8 November 03:26 Istanbul); its first sample is healthy.
+Earlier windows remain retained. Thirty-day operating/human quality gates stay open.
+
+## Pinned navigation and refresh icons — prior deployment
 
 AccountBar measures its height to position the sticky sidebar/mobile drawer below
 wrapped account actions. Both history refresh controls now use decorative icons with

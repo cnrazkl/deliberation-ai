@@ -1,5 +1,13 @@
 # Tasks
 
+- [x] Owner-requested complete frontend modernization: light-blue/navy design system,
+  consistent entry/workspace/scheduler/settings/report/private/admin/help surfaces,
+  compact pinned account disclosure and responsive/accessibility regression coverage.
+  Full 66-case browser suite, eighteen focused refinements and three final interface
+  cases, types/lint/production build and eleven final production smoke checks pass.
+  Actual LAN appearance/forms/scheduler/account controls verified; existing services
+  and owned database/worker lifecycle preserved. See CURRENT_STATE.md for evidence.
+
 - [x] Owner browser comments: pin account bar and sidebar below its measured height;
   replace both history refresh texts with accessible icons. Twelve final workspace
   checks plus six account/history cases, types/lint/build and eleven production smoke
@@ -48,8 +56,9 @@ remain; the cancelled extension is not an active task or an accepted capability.
   unchanged; no existing PostgreSQL query/mutation or public hosting.
 - [x] Real thirty-day collection implementation/start: immutable readiness samples,
   missing/unhealthy interval reporting and no provider requests/service restart.
-- [ ] Actual thirty-day operating coverage and recorded maintenance acceptance: due
-  7 November 2026 at 23:47 Istanbul for the current workspace deployment. Setup's thirty-minute exclusion-adjusted threshold
+- [ ] Actual thirty-day operating coverage and recorded maintenance acceptance:
+  the current source-bound window and due time are recorded in CURRENT_STATE.md;
+  earlier windows are retained. Setup's thirty-minute exclusion-adjusted threshold
   is unproven (54m42s total wall time); a clean Windows prerequisite install is not
   established by the Linux rehearsal. Human quality gates remain independently open.
 
