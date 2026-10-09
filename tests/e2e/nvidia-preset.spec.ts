@@ -26,7 +26,7 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
     await form.getByLabel("API anahtarı", { exact: true }).fill("offline-nvidia-fixture-key");
     await form.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)").fill("vendor/manual-model");
     const saved = page.waitForResponse((response) => response.url().endsWith("/api/provider-connections") && response.request().method() === "POST");
-    await form.getByRole("button", { name: "Yeni bağlantıyı şifrele" }).click();
+    await form.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
     const response = await saved; expect(response.ok()).toBe(true);
     connectionId = (await response.json() as { id: string }).id;
     const card = page.locator(".connection-card").filter({ hasText: "E2E NVIDIA fixture" });

@@ -1,5 +1,12 @@
 # Security
 
+Generation-review request identifiers use browser cryptographic randomness. On
+private-LAN HTTP, where randomUUID may be unavailable, getRandomValues supplies all
+128 bits before UUID v4 version/variant masking. Entropy failure stops review; there
+is no Math.random fallback. This does not authorize generation or alter the reviewed
+fingerprint, idempotency or explicit paid-call acknowledgement boundaries. The bundled
+Manrope font is served locally with its OFL license and needs no external font request.
+
 The transient new-connection model preview is ordinary-user/session/owner/origin
 bound; root remains restricted to administration. Its strict JSON contract accepts
 only provider/preset/key/base URL and bounds the streamed request to 8 KiB. Keys are

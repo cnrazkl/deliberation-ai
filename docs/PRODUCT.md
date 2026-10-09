@@ -12,6 +12,16 @@ it does not start a new conversation or generation. Help links return to `/`.
 
 ## Blue/navy interface
 
+The interface uses bundled Manrope with Turkish character support; help examples
+share its readable typography inside fully rounded callouts. Button words display
+initial capitals. Settings retain one theme control in the persistent sidebar.
+**Yeni Bağlantı Ekle** reports encrypted-save success inside the form without a page
+reload. The saved list follows the new-connection form so adding a card does not
+move it; failed saves retain entered fields and show their error there.
+Generation review/history opens inside a padded, rounded connection panel with
+separate model, action and acknowledgement groups. Review and explicit paid-submit
+requirements remain unchanged.
+
 Settings and council controls use spaced action groups, aligned checkbox/radio labels
 and centered geometric disclosure icons. Original/candidate prompt choices occupy
 separate cards; selection and submission semantics are unchanged. Private output
@@ -88,7 +98,7 @@ The signed-in workspace highlights the question composer with writing guidance,
 placeholder, character count and its existing explicit submit action; detailed council
 configuration follows the composer and remains reachable through **Konseyi düzenle**. API setup has
 a separate first-step callout when no connection exists and leads the settings page;
-appearance and advanced tools follow it. Navigation, form fields and action buttons
+private defaults and advanced tools follow it. Navigation, form fields and action buttons
 share clear styling across themes and screen sizes. Changing views preserves drafts
 and makes no provider request. Root can filter the already loaded user list by username
 or display name; user cards separate connection/edit actions from reviewed deletion.

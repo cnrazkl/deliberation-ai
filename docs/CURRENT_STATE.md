@@ -1,6 +1,26 @@
 # Current state
 
-Updated: 9 October 2026 (brand home navigation deployed)
+Updated: 9 October 2026 (help/settings refinement verified locally)
+
+## Help and connection settings refinement — locally verified
+
+The bundled Manrope variable font covers shared browser surfaces and Turkish text.
+Help examples use the same font and fully rounded callouts. Button words display
+initial capitals; the create action reads Yeni Bağlantı Ekle. Connection-save success
+appears in place, with the saved list below the form; failed saves retain fields and
+show a local error. Settings no longer duplicate the sidebar theme selector.
+Generation review/history has inset borders, separate fields/actions and spaced
+acknowledgements. LAN HTTP review identifiers use cryptographic getRandomValues when
+randomUUID is unavailable; fingerprint, retry and paid-submit guards are retained.
+Seven focused browser cases pass: successful/failed save, retained document/form
+position/draft, plus both palettes at 320/960/1440px with UUID fallback, readable local
+font, rounded examples, inset panel spacing and no horizontal overflow. Seven existing
+catalog/generation/interface regressions and ten focused unit cases pass. Local types
+and lint pass. Screenshot review confirms help and expanded connection panels at
+960x975. Initial new-test failures exposed an over-exact nested-label selector and
+the existing save error hidden in chat; the corrected complete rerun passes.
+No paid provider call was made. Linux production build and LAN deployment verification
+remain pending for this increment; the current deployed image below is unchanged.
 
 ## Brand home navigation — deployed
 

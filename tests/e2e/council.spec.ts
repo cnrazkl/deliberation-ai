@@ -201,7 +201,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
     await providerSettings.getByLabel("Bağlantı adı").fill(label);
     await page.getByLabel("API anahtarı").fill(`sk-test-${label}-1234567890`);
     await page.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)").fill(model);
-    await page.getByRole("button", { name: "Yeni bağlantıyı şifrele" }).click();
+    await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
     await expect(page.locator(".connection-list")).toContainText(label);
   }
   const localConnection = `E2E Ollama ${connectionSuffix}`;
@@ -209,7 +209,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page.getByLabel("Uç nokta türü").selectOption("ollama");
   await providerSettings.getByLabel("Bağlantı adı").fill(localConnection);
   await page.getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)").fill("qwen3");
-  await page.getByRole("button", { name: "Yeni bağlantıyı şifrele" }).click();
+  await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
   await expect(page.locator(".connection-list")).toContainText(localConnection);
   const openRouterConnection = `E2E OpenRouter ${connectionSuffix}`;
   createdConnectionLabels = [firstConnection, secondConnection, localConnection, openRouterConnection];
@@ -219,7 +219,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page
     .getByLabel("Başlangıç modeli (görev sırasında değiştirilebilir)")
     .fill("openai/gpt-5.6-sol");
-  await page.getByRole("button", { name: "Yeni bağlantıyı şifrele" }).click();
+  await page.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
   const openRouterCard = page.locator(".connection-status").filter({ hasText: openRouterConnection });
   await expect(openRouterCard).toContainText("Hazırda · bu görevde kullanılmıyor");
 

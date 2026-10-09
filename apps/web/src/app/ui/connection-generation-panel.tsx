@@ -1,6 +1,7 @@
 "use client";
 import { ownerFetch } from "../../lib/session-fetch";
-import { useState } from "react";
+import { createBrowserRequestId } from "../../lib/browser-request-id";
+import { useId, useState } from "react";
 import type { CatalogModelDetail, GenerationObservation, ProviderObservations } from "@deliberation-ai/contracts";
 type Review = { revision: number; model: string; fingerprint: string; version: string; system: string; user: string;
   maxOutputTokens: number; timeoutMs: number; observations: ProviderObservations };
@@ -13,6 +14,7 @@ function capabilityText(detail?: CatalogModelDetail) {
   return fields.filter(Boolean).join(" · ") || "Yetenek alanları bildirilmemiş.";
 }
 export function ConnectionGenerationPanel({ connection }: { connection: { id: string; defaultModel: string; label: string } }) {
+  const panelId = useId();
   const [open, setOpen] = useState(false), [model, setModel] = useState(connection.defaultModel);
   const [review, setReview] = useState<Review | null>(null), [requestId, setRequestId] = useState<string | null>(null);
   const [acknowledge, setAcknowledge] = useState(false), [unknownAcknowledgement, setUnknownAcknowledgement] = useState(false);
@@ -24,7 +26,7 @@ export function ConnectionGenerationPanel({ connection }: { connection: { id: st
     try {
       const response = await ownerFetch(`${endpoint}?model=${encodeURIComponent(model)}`, { cache: "no-store" });
       const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "İnceleme alınamadı.");
-      setReview(body); if (fresh || !requestId) setRequestId(crypto.randomUUID());
+      setReview(body); if (fresh || !requestId) setRequestId(createBrowserRequestId());
     } catch (caught) { setReview(null); setError(caught instanceof Error ? caught.message : "İnceleme alınamadı."); }
     finally { setBusy(false); }
   }
@@ -57,17 +59,19 @@ export function ConnectionGenerationPanel({ connection }: { connection: { id: st
   const reviewedModel = review?.model ?? model.trim();
   const checks = review?.observations.generationChecks.filter((check) => check.model === reviewedModel) ?? [];
   const pending = review?.observations.generationChecks.filter((check) => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt) ?? [];
-  return <section aria-label={`${connection.label} üretim kontrolü`}>
-    <button type="button" className="secondary-button" disabled={busy} aria-expanded={open} onClick={() => {
+  return <section className="connection-generation-panel" aria-label={`${connection.label} üretim kontrolü`}>
+    <button type="button" className="secondary-button connection-generation-toggle" disabled={busy} aria-expanded={open} aria-controls={panelId} onClick={() => {
       setOpen(!open); if (!open) void refresh(true);
-    }}>Üretim testi ve model geçmişi</button>
-    {open ? <div className="connection-editor">
-      <p>Bu test bir API çağrısı yapar ve ücretlenebilir. Yalnız aşağıdaki sabit deneme gönderilir; sohbetleriniz ve dosyalarınız gönderilmez. Arama kapalı; adaptörün “none” düşünme ayarı kullanılır, bazı modeller varsayılan veya en düşük düşünmeyi kullanabilir. İstenen çıktı sınırı 512 token, bekleme sınırı 45 saniye. Sağlayıcının sınırı uyguladığı ve fatura tutarı ayrıca doğrulanmış değildir.</p>
+    }}><span>Üretim testi ve model geçmişi</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button>
+    {open ? <div id={panelId} className="connection-editor connection-generation-content">
+      <p className="connection-generation-note">Bu test bir API çağrısı yapar ve ücretlenebilir. Yalnız aşağıdaki sabit deneme gönderilir; sohbetleriniz ve dosyalarınız gönderilmez. Arama kapalı; adaptörün “none” düşünme ayarı kullanılır, bazı modeller varsayılan veya en düşük düşünmeyi kullanabilir. İstenen çıktı sınırı 512 token, bekleme sınırı 45 saniye. Sağlayıcının sınırı uyguladığı ve fatura tutarı ayrıca doğrulanmış değildir.</p>
+      <div className="connection-generation-controls">
       <label>Denenecek model<input value={model} maxLength={120} disabled={busy} onChange={(event) => {
         setModel(event.target.value); setReview(null); setRequestId(null); setAcknowledge(false); setUnknownAcknowledgement(false);
       }} /></label>
-      <button type="button" className="secondary-button" disabled={busy || !model.trim()} onClick={() => void refresh(true)}>Yeni denemeyi incele</button>
-      <button type="button" className="secondary-button" disabled={busy} onClick={() => void refresh(false)}>Kayıtları yenile</button>
+      <div className="connection-generation-actions"><button type="button" className="secondary-button" disabled={busy || !model.trim()} onClick={() => void refresh(true)}>Yeni denemeyi incele</button>
+      <button type="button" className="secondary-button" disabled={busy} onClick={() => void refresh(false)}>Kayıtları yenile</button></div>
+      </div>
       {error ? <p role="alert">{error}</p> : null}
       {review ? <>
         <p>Model {review.model} · bağlantı sürümü {review.revision} · istenen çıktı sınırı {review.maxOutputTokens} token</p>

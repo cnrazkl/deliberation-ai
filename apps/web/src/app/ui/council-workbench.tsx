@@ -2,7 +2,7 @@
 
 import { ownerFetch, sessionOwner } from "../../lib/session-fetch";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { WorkspaceShell, ThemeSelect, type WorkspaceView } from "./workspace-shell";
+import { WorkspaceShell, type WorkspaceView } from "./workspace-shell";
 import { LocalDiagnosticsPanel } from "./local-diagnostics-panel";
 import { PrivateOutputDefaultPanel } from "./private-output-default-panel";
 import { CouncilTemplateDeletionPanel } from "./council-template-deletion-panel";
@@ -373,6 +373,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     useState<StructuredOutputMode>("json-schema");
   const [editingConnectionId, setEditingConnectionId] = useState<string>();
   const [savingConnection, setSavingConnection] = useState(false);
+  const [connectionNotice, setConnectionNotice] = useState<string>();
+  const [connectionError, setConnectionError] = useState<string>();
   const [operatorOperations, setOperatorOperations] = useState<OperatorProviderOperation[]>([]);
   const [memoryEntries, setMemoryEntries] = useState<SharedMemoryEntry[]>([]);
   const [selectedMemoryEntryIds, setSelectedMemoryEntryIds] = useState<string[]>([]);
@@ -695,6 +697,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   async function saveConnection(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setSavingConnection(true);
+    setConnectionNotice(undefined);
+    setConnectionError(undefined);
     setError(undefined);
     try {
       const response = await ownerFetch("/api/provider-connections", {
@@ -730,14 +734,19 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       setApiKey("");
       setModel("");
       setEditingConnectionId(undefined);
+      setConnectionNotice(editingConnectionId ? "Bağlantı başarıyla şifrelenerek güncellenmiştir." : "Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Bağlantı kaydedilemedi.");
+      const message = reason instanceof Error ? reason.message : "Bağlantı kaydedilemedi.";
+      setError(message);
+      setConnectionError(message);
     } finally {
       setSavingConnection(false);
     }
   }
 
   function editConnection(connection: ProviderConnection): void {
+    setConnectionNotice(undefined);
+    setConnectionError(undefined);
     setEditingConnectionId(connection.id);
     setConnectionProvider(connection.provider);
     setConnectionLabel(connection.label);
@@ -750,6 +759,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   }
 
   function cancelConnectionEdit(): void {
+    setConnectionNotice(undefined);
+    setConnectionError(undefined);
     setEditingConnectionId(undefined);
     setConnectionLabel("");
     setApiKey("");
@@ -1426,7 +1437,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   );
 
   const connectionForm = (
-    <form className="connection-form" onSubmit={saveConnection}>
+    <form className="connection-form" onSubmit={saveConnection} onChange={() => { setConnectionNotice(undefined); setConnectionError(undefined); }}>
       <label>
         Sağlayıcı ailesi
         <select
@@ -1590,7 +1601,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             ? "Kaydediliyor…"
             : editingConnectionId
               ? "Bağlantıyı güncelle"
-              : "Yeni bağlantıyı şifrele"}
+              : "Yeni Bağlantı Ekle"}
         </button>
         {editingConnectionId ? (
           <button className="secondary-button" type="button" disabled={savingConnection} onClick={cancelConnectionEdit}>
@@ -1598,6 +1609,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           </button>
         ) : null}
       </div>
+      <div className="connection-save-notice" aria-live="polite">{connectionNotice ? <p role="status">{connectionNotice}</p> : null}</div>
+      {connectionError ? <p className="alert error" role="alert">{connectionError}</p> : null}
     </form>
   );
 
@@ -1633,6 +1646,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           <div><strong>2</strong><span>Konsey üyesinde bu bağlantıyı seçin; görev modelini ve düşünme seviyesini istediğiniz zaman değiştirin.</span></div>
           <div><strong>3</strong><span>Kullanmadığınız bağlantılar hazırda bekler ve siz bir üyeye seçmedikçe istek göndermez.</span></div>
         </div>
+        {!editingConnectionId ? connectionForm : null}
         {connections.length > 0 ? (
           <div className="connection-list" aria-label="Kayıtlı sağlayıcı bağlantıları">
             {connections.map((connection) => {
@@ -1723,12 +1737,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             })}
           </div>
         ) : <p className="hint">Görev çalıştırmak için önce bir sağlayıcı bağlantısı ekleyin.</p>}
-        {!editingConnectionId ? connectionForm : null}
         <p className="hint">OpenAI, Claude ve Gemini yerel adaptörleri; Kimi, Qwen, vLLM, Ollama, LiteLLM, OpenRouter ve özel uç noktalar OpenAI uyumlu adaptörü kullanır. Model listesi yalnızca düğmeye basınca sorgulanır; üretim, ücretlendirme ve düşünme seviyesi desteğini doğrulamaz.</p>
       </details>
 
       <div className="settings-section-heading"><span className="eyebrow">TERCİHLER VE ARAÇLAR</span><h2>Çalışma ortamınız</h2></div>
-      <section className="settings-card appearance-card" aria-label="Görünüm ayarları"><h2>Görünüm</h2><ThemeSelect /></section>
       <PrivateOutputDefaultPanel />
       <LocalToolsPanel
         selectedResultIds={selectedToolResultIds}

@@ -51,9 +51,10 @@ test("new connection lists models on explicit click without persistence or gener
     await form.getByText("Gelişmiş uç nokta ayarları", { exact: true }).click();
     await form.getByLabel("Düşünme parametresi").selectOption("openai");
     const savedResponse = page.waitForResponse(response => response.url().endsWith("/api/provider-connections") && response.request().method() === "POST");
-    await form.getByRole("button", { name: "Yeni bağlantıyı şifrele" }).click();
+    await form.getByRole("button", { name: "Yeni Bağlantı Ekle" }).click();
     const saved = await savedResponse;
     expect(saved.ok()).toBe(true); savedId = (await saved.json() as { id: string }).id;
+    await expect(form.locator(".connection-save-notice")).toHaveText("Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
     expect(calls).toHaveLength(1);
     await workspaceView(page, "Sohbet"); await page.getByRole("button", { name: "Konseyi düzenle", exact: true }).click();
     await page.getByLabel("Üye 1 bağlantısı").selectOption(savedId!);

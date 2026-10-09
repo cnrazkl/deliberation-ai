@@ -1,5 +1,16 @@
 # Architecture
 
+RootLayout bundles the OFL-licensed Manrope variable font with next/font/local;
+globals.css applies it to shared surfaces and rounded help examples. No external
+font service is contacted. CouncilWorkbench owns transient connection-save notice
+and error state; successful saves update its existing list in place. The create form
+precedes the list, and the sidebar remains the workspace theme-control location.
+ConnectionGenerationPanel groups disclosure, fields, actions and acknowledgement
+with presentation classes. Its request-id helper uses native randomUUID when available,
+otherwise formats a UUID v4 from getRandomValues for private-LAN HTTP browsers.
+Entropy failure throws; review/retry/dispatch identities and approval guards remain.
+No persistence, schema, provider or worker change is introduced.
+
 BrandMark is a decorative shared presentation component backed by the static
 `public/brand/deliberation-mark.svg` asset. Adjacent product text supplies accessible
 names. Metadata selects the SVG tab icon; favicon.ico is a matching raster fallback.
