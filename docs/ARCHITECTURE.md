@@ -113,6 +113,15 @@ drafts and existing provider actions across views. RootManagement filters only i
 already authorized loaded user list in browser state. Search, styling and field hints
 introduce no new route, ownership boundary, provider request or migration.
 
+DisclosureSummary is a presentation-only native summary shared by the composer,
+KnowledgePanel and council configuration. The enclosing details element owns expanded
+state and keyboard semantics; decorative SVGs are hidden from assistive technology.
+CSS uses the workspace container for wrapping labels/status and reduced-motion media
+for the chevron. Expansion leaves mounted drafts, source review and quota state intact.
+Design references: [WAI disclosure](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/),
+[GOV.UK accordion headers](https://design-system.service.gov.uk/components/accordion/),
+[WCAG text contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html).
+
 Reviewed synthesis contracts bound paragraphs and per-paragraph fidelity checks.
 Domain code validates complete claim/quote coverage and renders the ledger fallback;
 application code coordinates proposer/reviewer and one repair through normalized

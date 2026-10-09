@@ -1,6 +1,18 @@
 # Current state
 
-Updated: 9 October 2026 (compact API connection management deployed)
+Updated: 9 October 2026 (composer disclosure presentation in verification)
+
+## Readable composer disclosures — verification in progress
+
+Composer and council headers now have larger labels, brief descriptions, separate
+status badges and rotating chevrons in full-row native summary targets. Keyboard
+semantics and independent expansion remain native; opening sections does not change
+drafts, source approval, quotas or provider dispatch. WAI/GOV.UK primary guidance was
+reviewed. Eight new browser cases pass; an initial broad run passes 101/104, exposing
+legacy settings-summary CSS overriding the council grid at narrow widths/200% zoom.
+That selector now excludes the new headers; corrected layout/keyboard cases and the
+final production build/LAN rollout remain pending. Web types/lint pass. No schema or
+worker change is planned.
 
 ## Compact API connection cards and tabbed panel — deployed
 

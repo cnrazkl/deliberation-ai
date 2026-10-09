@@ -43,6 +43,7 @@ import { ResearchCapturePanel } from "./research-capture-panel";
 import { EvidenceCandidatePanel } from "./evidence-candidate-panel";
 import { LocalToolsPanel } from "./local-tools-panel";
 import { KnowledgePanel } from "./knowledge-panel";
+import { DisclosureSummary } from "./disclosure-summary";
 import { LocalSchedulesPanel } from "./local-schedules-panel";
 import { PromptRevisionEditor } from "./prompt-revision-editor";
 import { PreflightDraftsPanel } from "./preflight-drafts-panel";
@@ -1849,12 +1850,12 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         </div>
         {!highRiskReady ? <p className="inline-warning">Yüksek risk profili için en az bir red-team üyesi ve bir çapraz inceleme turu seçin.</p> : null}
         <p className="hint" id="question-hint">En az 10 karakter yazın. Ctrl/⌘ + Enter ile gönderin. Seçili modellere gerçek API isteği yapılır.</p>
-        {originalQuestion.length >= 10 ? <details className="composer-disclosure"><summary>İstemi düzenle ve karşılaştır</summary><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
+        {originalQuestion.length >= 10 ? <details className="composer-disclosure"><DisclosureSummary title="İstemi düzenle ve karşılaştır" description="Özgün soru ve düzenlenmiş aday" icon="prompt" /><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
           choice={promptChoice} disabled={needsContext} onCandidateChange={setPromptCandidate} onChoiceChange={setPromptChoice} /></details> : null}
         {needsContext ? <p className="hint">Önce eksik bilgi sorularını yanıtlayın; istem sürümü seçimi bu yanıttan sonra açılır.</p> : null}
         <KnowledgePanel key={knowledgePanelGeneration} runId={run?.runId} onChange={(reference, blocked) => { setKnowledgePacket(reference); setKnowledgeBlocked(blocked); }} />
         {knowledgeBlocked && <p role="status">Kaynak paketini inceleyin veya açıkça paketsiz devam etmeyi seçin.</p>}
-        <details className="attachment-picker composer-disclosure"><summary>Dosya ekle{attachments.length > 0 ? ` · ${attachments.length} ek` : ""}</summary>
+        <details className="attachment-picker composer-disclosure"><DisclosureSummary title="Dosya ekle" description="Bu soruya PDF veya görsel ekleyin" icon="attachment" status={attachments.length > 0 ? `${attachments.length} ek` : undefined} />
         <p>Büyük (1 MiB üzeri PDF) veya tekrar kullanılan TXT/Markdown/PDF/PNG/JPEG dosyalarını Yerel bilgi kaynakları bölümüne kaydedin. Kaynak paketi seçiliyken aynı kütüphane dosyasını ayrıca tam ek olarak göndermeyin.</p>
           <label htmlFor="task-attachments">Görev ekleri (isteğe bağlı)</label>
           <input
@@ -1898,7 +1899,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             <p className="inline-warning">Ekler seçildi, fakat hiçbir üye için “Bu üyeye gönder” açık değil.</p>
           ) : null}
         </details>
-        <details className="token-preview composer-disclosure"><summary>Gönderilecek bağlam ve token tahmini{selectedMemoryEntryIds.length + selectedToolResultIds.length > 0 ? ` · ${selectedMemoryEntryIds.length + selectedToolResultIds.length} seçili bağlam` : ""}</summary>
+        <details className="token-preview composer-disclosure"><DisclosureSummary title="Gönderilecek bağlam ve token tahmini" description="Gönderim içeriği ve tahmini giriş tokenları" icon="context" status={selectedMemoryEntryIds.length + selectedToolResultIds.length > 0 ? `${selectedMemoryEntryIds.length + selectedToolResultIds.length} seçili bağlam` : undefined} />
           {!question.trim() && attachments.length === 0 ? (
             <><strong>Sorunuz ve ekleriniz: 0 token</strong><p className="hint">Soru alanı boş; henüz gönderilecek bir görev yok.</p></>
           ) : !memberConfigurationValid ? (
@@ -1928,7 +1929,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         {currentPreviewError ? <p className="inline-warning" role="alert">{currentPreviewError}</p> : null}
         {!memberConfigurationValid && connections.length > 0 ? <p className="inline-warning">Konseydeki bağlantı veya model seçimlerini kontrol edin. “Konseyi düzenle” ile ayrıntıları açabilirsiniz.</p> : null}
         {currentRisk ? <>
-          {effectiveRiskProfile === "high" ? <RiskAssessmentSummary assessment={currentRisk.assessment} /> : <details className="composer-disclosure"><summary>Risk denetimi · Standart profil</summary><RiskAssessmentSummary assessment={currentRisk.assessment} /></details>}
+          {effectiveRiskProfile === "high" ? <RiskAssessmentSummary assessment={currentRisk.assessment} /> : <details className="composer-disclosure"><DisclosureSummary title="Risk denetimi" description="Sorudaki riskler ve kontrol önerileri" icon="risk" status="Standart profil" /><RiskAssessmentSummary assessment={currentRisk.assessment} /></details>}
           {!highRiskReady ? <>
             <button type="button" className="secondary-button" onClick={() => { setReviewRounds((current) => current === 0 ? 1 : current); setRedTeamComparison(true); }}>Gerekli risk kontrollerini ekle</button>
             <p className="hint">Red-team yoksa son üyenin bağlantısıyla eklenir; altı üyede son üyenin görevi değiştirilir. Göndermeden önce bağlantısını ve modelini düzenleyebilirsiniz.</p>
@@ -1936,10 +1937,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         </> : null}
         {tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0 ?
           <div className="inline-warning">Bu soruda kritik bağlam eksik olabilir. Devam ettiğinizde açıklama soruları açılır; siz incelemeden model çağrısı başlamaz.</div> : null}
-        <details className="composer-disclosure"><summary>Çalışma sınırları{executionLimitsEnabled ? " · Etkin" : " · Kapalı"}</summary><ExecutionLimitsEditor enabled={executionLimitsEnabled} limits={configuredExecutionLimits} plannedProviderCalls={plannedProviderCalls} onEnabledChange={setExecutionLimitsEnabled} onChange={setConfiguredExecutionLimits} /></details>
+        <details className="composer-disclosure"><DisclosureSummary title="Çalışma sınırları" description="API çağrısı ve yanıt tokenı kotaları" icon="limits" status={executionLimitsEnabled ? "Etkin" : "Kapalı"} /><ExecutionLimitsEditor enabled={executionLimitsEnabled} limits={configuredExecutionLimits} plannedProviderCalls={plannedProviderCalls} onEnabledChange={setExecutionLimitsEnabled} onChange={setConfiguredExecutionLimits} /></details>
       </form>
 
-      <details ref={configRef} className="settings-card council-config" role="region" aria-label="Konsey yapılandırması"><summary>Konsey yapılandırması <span>{members.length} üye · {reviewRounds} inceleme turu</span></summary>
+      <details ref={configRef} className="settings-card council-config" role="region" aria-label="Konsey yapılandırması"><DisclosureSummary title="Konsey yapılandırması" description="Modeller, görevler ve inceleme turları" icon="council" status={`${members.length} üye · ${reviewRounds} inceleme turu`} />
         <div className="config-heading">
           <div>
             <strong>Konsey yapılandırması</strong>

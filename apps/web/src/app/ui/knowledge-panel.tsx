@@ -3,6 +3,7 @@ import { ownerFetch, sessionOwner } from "../../lib/session-fetch";
 import { useId, useRef, useState } from "react";
 import type { KnowledgePacket, KnowledgeScope, CreateRunRequest } from "@deliberation-ai/contracts";
 import { inspectKnowledgeQuery } from "@deliberation-ai/contracts";
+import { DisclosureSummary } from "./disclosure-summary";
 
 type Collection = { collectionId: string; title: string; grantId: string; grantRevision: number; grantStatus: string; accountId: string };
 type Selection = { revision: string; topic: string; grants: { scope: KnowledgeScope; available: boolean }[] };
@@ -34,7 +35,7 @@ export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
     const item = collections.find((collection) => collection.collectionId === id)!;
     return { ownerId: sessionOwner(), accountId: "local", collectionId: id, grantId: item.grantId, grantRevision: item.grantRevision };
   }
-  return <details className="composer-disclosure knowledge-panel"><summary>Yerel bilgi kaynakları</summary>
+  return <details className="composer-disclosure knowledge-panel"><DisclosureSummary title="Yerel bilgi kaynakları" description="Kütüphanenizden kaynak ve alıntı seçin" icon="knowledge" />
     <div className="knowledge-body">
       <div className="knowledge-intro">
         <p>Dosyalarınızı koleksiyonlara kaydedin, bu sohbet için kaynak seçin ve gönderilecek alıntıları inceleyin.</p>

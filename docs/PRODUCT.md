@@ -113,6 +113,13 @@ share clear styling across themes and screen sizes. Changing views preserves dra
 and makes no provider request. Root can filter the already loaded user list by username
 or display name; user cards separate connection/edit actions from reviewed deletion.
 
+Optional composer sections and council configuration use readable full-row disclosure
+headers with short descriptions, decorative icons and a rotating chevron. Counts and
+quota status have separate text badges; opening a section does not enable its setting.
+Native details/summary preserves Enter/Space activation, visible keyboard focus and
+independent expansion. The question and submit action, blocking warnings and high-risk
+assessment remain visible. Headers wrap with the workspace width in both themes.
+
 An opt-in local synthesis command generates a claim-linked draft and asks a separate
 model to check meaning against the complete supplied ledger. At most one repair is
 allowed; failure preserves the deterministic ledger. Drafts remain model judgments,

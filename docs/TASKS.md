@@ -1,5 +1,9 @@
 # Tasks
 
+- [ ] Owner-requested composer disclosure readability/design: full-row headers,
+  short descriptions, clear state indicators and keyboard focus. Implementation is
+  in verification; browser/production/live checks and publication remain pending.
+
 - [x] Owner-requested compact API connection cards and separate creation/editing panel:
   responsive one-to-four-column grid, edit/delete, model and test/history tabs, keyboard
   focus and draft preservation. Nine focused cases and the complete 96-case browser
