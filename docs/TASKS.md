@@ -1,7 +1,9 @@
 # Tasks
 
-- [ ] Deploy and verify the shared logo/name home links; local types/lint/navigation
-  checks pass. Settings/schedule returns preserve the council draft without generation.
+- [x] Shared logo/name home links deployed. Types/lint/Linux build and local/live
+  navigation checks pass: help returns, settings/schedule logo/name returns, keyboard
+  activation, mobile drawer closure and draft preservation in both themes at
+  320/1440px. No generation requests; temporary account erased. See CURRENT_STATE.md.
 
 - [x] Revised shared geometric dialogue-facet logo and matching browser icons; local web
   types/lint and eight entry/help theme/viewport checks pass.

@@ -1,17 +1,30 @@
 # Current state
 
-Updated: 9 October 2026 (new brand mark deployed)
+Updated: 9 October 2026 (brand home navigation deployed)
 
-## Brand home navigation — local verification, deployment pending
+## Brand home navigation — deployed
 
 Logo and product name share a home link on entry, account bar, sidebar and help.
 Settings/schedules return to chat while preserving the draft and avoiding generation.
 The sidebar closes its mobile drawer; both workspace links support keyboard use.
-Web types/lint pass. Local browser checks cover four help logo/name returns,
+Local and Linux production web types/lint pass; production build passes. Local and
+live browser checks cover four help logo/name returns,
 32 account/sidebar logo/name returns from settings/schedules, eight keyboard returns
 and two account-bar returns with the mobile drawer open, in both themes at
 320/1440px, with draft preservation and no generation.
-LAN deployment and production browser verification are pending.
+The temporary live verification account was erased through reviewed account
+deletion. No page errors or horizontal overflow were captured; no generation request
+was sent. Only web/observer were recreated; foreign containers and the owned
+database/worker retain their original lifecycle baselines.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-home-ui2`,
+manifest `sha256:9fc382b44b3f742cdfad5ca96a13be0f342bf075bfcbc494a40745cae8bfbf24`,
+exported source tree `e0073f9ced3c022d423c14e4b4fb28444a341637` (commit `17bd905`)
+before this evidence update. LAN binding remains `192.168.1.112:33184`; no schema,
+migration, provider, firewall or public-hosting change occurred. Source-bound window
+`month-home-ui2-20261009` starts 2026-10-09T17:17:30.405Z and is due
+2026-11-08T17:17:30.405Z; the first sample is healthy. Prior windows remain retained;
+monthly and human quality gates stay open.
 
 ## New brand mark — deployed
 
@@ -25,7 +38,7 @@ Live SVG content matches after newline normalization; ICO bytes match exactly.
 Desktop workspace screenshots were inspected. The temporary verification account
 was erased through its fingerprint-bound account deletion. No model calls were made.
 
-Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-logo-ui1`,
+Prior owned web/observer image: `deliberationai-rehearsal:60374dd507ec-logo-ui1`,
 manifest `sha256:30384c153ce3bf8a30f676ca28b1ccfd053b0be28bec18f986f3c4023bda76bc`,
 exported source tree `2806873f6db6429c670179aa05f7fc5b51266836` (commit `6ba524d`)
 before this evidence update. LAN binding remains `192.168.1.112:33184`. Only web and
