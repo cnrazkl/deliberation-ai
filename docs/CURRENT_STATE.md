@@ -1,16 +1,38 @@
 # Current state
 
-Updated: 9 October 2026 (LAN HTTP request identifiers in verification)
+Updated: 9 October 2026 (LAN HTTP request identifiers deployed and verified)
 
-## LAN HTTP council submission identifiers — verification in progress
+## LAN HTTP council submission identifiers — deployed and verified
 
 The reported run error is in SubmissionAttempts: its direct randomUUID call fails on
 the private LAN HTTP browser before POST /api/runs. All remaining browser UUID callers
 now use the existing getRandomValues-backed helper, retaining their intent/retry timing.
 Six UUID/submission unit cases, web types/lint and both focused browser fallback tests
 pass, including four members/three reviews/high risk and lost-response key reuse.
-The broad browser run, production build and owned LAN rollout are pending. No schema, worker, API or
-provider change is planned; the separately observed attachment hash limitation remains.
+Linux production types, zero-warning lint and build pass. All 106 isolated browser
+cases pass with DELIBERATION_E2E_NO_RANDOM_UUID=true, including durable council runs,
+lost-response schedule creation, templates, private drafts/forks/reviewed delivery,
+knowledge and evidence workflows. No network model tests were enabled.
+Actual LAN HTTP reports isSecureContext=false, native randomUUID absent and
+getRandomValues present. Standard 2-member/1-review and high-risk 4-member/3-review
+submissions produce valid UUIDs, retain lost-response IDs and question drafts, and
+replace IDs after success. Six run POSTs used intercepted offline responses, not live
+provider generation; no page exceptions occurred. The temporary account/connection
+was erased through fingerprint-bound deletion. The owner's active browser was untouched.
+
+Only owned web/observer were recreated. Final foreign inventory/lifecycle and owned
+database/worker baselines match; packages, worker and deployment definitions are
+unchanged, and no migration ran. Native PostgreSQL was stopped again after the isolated
+tests, matching its initial state. No API/provider/schema change was made. The separately
+observed attachment hash limitation remains open.
+Current owned image: `deliberationai-rehearsal:60374dd507ec-lan-uuid-ui1`, manifest
+`sha256:757c89301ea53cedb789427052e7348e059f0fecb51ffb1743744e02a3c8790a`,
+exported tree `4bc75f4159f61eedaa0cee0b87fcede0c7b87d2c` (commit `4bcfddf`) before
+this documentation-only verification update. Deployment completed at
+2026-10-09T20:48:29Z; LAN binding remains `192.168.1.112:33184`.
+Source-bound window `month-lan-uuid-ui-20261009` starts
+2026-10-09T20:48:43.645Z and is due 2026-11-08T20:48:43.645Z; first sample healthy.
+Earlier windows remain retained; monthly and independent human quality gates stay open.
 
 ## Readable composer disclosures — deployed
 
@@ -39,7 +61,7 @@ and zoom acceptance above is from localhost browser tests, not a live upload cla
 Only owned web/observer were recreated. Foreign inventory/lifecycle and owned database/
 worker baselines match. Packages/worker/deployment definitions are unchanged, no
 migration ran, and native PostgreSQL was stopped again after the isolated tests.
-Current owned image: `deliberationai-rehearsal:60374dd507ec-disclosures-ui2`, manifest
+Previous owned image: `deliberationai-rehearsal:60374dd507ec-disclosures-ui2`, manifest
 `sha256:5673199ef675df93f32ae589e4db2810e5c36f568796b54eec4e8a99e5471413`,
 exported tree `c9ce236db165a66d91bd45a61c3fd3947fdf816a` (commit `0c451ca`) before
 this documentation-only verification update. Deployment completed at

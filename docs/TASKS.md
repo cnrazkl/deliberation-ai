@@ -1,9 +1,12 @@
 # Tasks
 
-- [ ] Owner-reported LAN HTTP council submission `crypto.randomUUID` failure: migrate
-  remaining browser request-ID callers to the shared secure fallback while preserving
-  intent/retry/approval semantics. Six unit cases, web types/lint and both focused browser
-  tests pass; broad browser/build/live checks pending.
+- [x] Owner-reported LAN HTTP council submission `crypto.randomUUID` failure: all
+  remaining browser request-ID callers use the shared secure fallback with existing
+  intent/retry/approval semantics. Six unit cases, web types/lint, production build and
+  all 106 browser cases pass with native UUID disabled. Actual LAN HTTP standard 2/1
+  and high-risk 4/3 submission/retry checks pass with intercepted run responses and no
+  provider generation. Owned web/observer deployed; foreign and database/worker
+  lifecycle baselines match. Temporary account removed; native PostgreSQL stopped.
 
 - [x] Owner-requested composer disclosure readability/design: full-row native headers,
   larger labels, short descriptions, separate status, chevrons and keyboard focus.
