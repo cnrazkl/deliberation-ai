@@ -1,5 +1,10 @@
 # Product
 
+The blue/navy brand mark uses three equally sized interlocking conversation loops.
+Entry, account bar, workspace navigation and public help share the same scalable
+asset; the browser tab uses the matching favicon. The emblem conveys multiple
+perspectives without assigning an authoritative member.
+
 ## Blue/navy interface
 
 Settings and council controls use spaced action groups, aligned checkbox/radio labels

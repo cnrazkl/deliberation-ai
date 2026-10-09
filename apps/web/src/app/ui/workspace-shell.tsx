@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { BrandMark } from "./brand-mark";
 
 export type WorkspaceView = "chat" | "schedules" | "settings";
 type Theme = "system" | "light" | "dark";
@@ -51,7 +52,7 @@ export function WorkspaceShell({ view, onViewChange, onNewChat, newChatDisabled,
     {sidebarOpen && <button className="sidebar-backdrop" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar} />}
     <aside id="workspace-sidebar" className={`app-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Sohbet geçmişi ve gezinme"
       onKeyDown={(event) => { if (event.key === "Escape") closeSidebar(); }}>
-      <div className="sidebar-brand"><span className="brand-symbol" aria-hidden="true">D·</span><strong>Deliberation AI</strong>
+      <div className="sidebar-brand"><BrandMark /><strong>Deliberation AI</strong>
         <button type="button" className="sidebar-close secondary-button" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar}>×</button>
       </div>
       <button type="button" className="new-chat-button" aria-label="＋ Yeni sohbet" disabled={newChatDisabled} onClick={() => { onNewChat(); setSidebarOpen(false); }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni sohbet</button>

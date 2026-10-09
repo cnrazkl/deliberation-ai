@@ -1,5 +1,10 @@
 # Architecture
 
+BrandMark is a decorative shared presentation component backed by the static
+`public/brand/deliberation-mark.svg` asset. Adjacent product text supplies accessible
+names. Metadata selects the SVG tab icon; favicon.ico is a matching raster fallback.
+It introduces no client state, provider requests or application/domain dependencies.
+
 ConnectionModelPreview owns transient form-catalog state, credential/endpoint binding,
 request sequencing and abort cleanup. POST `/api/provider-connections/model-preview`
 uses the existing authenticated owner/origin wrapper, a strict catalog-only contract

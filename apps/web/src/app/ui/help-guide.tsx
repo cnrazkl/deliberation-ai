@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { guideSections } from "./help-content";
 import { ThemeSelect } from "./workspace-shell";
+import { BrandMark } from "./brand-mark";
 
 function normalize(value: string) { return value.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/ı/g, "i"); }
 export function HelpGuide() {
@@ -22,7 +23,7 @@ export function HelpGuide() {
   });
   return <div className="help-page" id="help-top">
     <a className="skip-link" href="#help-content">Kılavuza geç</a>
-    <header className="help-header"><Link prefetch={false} className="help-brand" href="/">D<span>·</span> <strong>Deliberation AI</strong></Link><div><ThemeSelect /><Link prefetch={false} className="help-return" href="/">Uygulamayı aç →</Link></div></header>
+    <header className="help-header"><Link prefetch={false} className="help-brand" href="/"><BrandMark /> <strong>Deliberation AI</strong></Link><div><ThemeSelect /><Link prefetch={false} className="help-return" href="/">Uygulamayı aç →</Link></div></header>
     <div className="help-hero"><span className="eyebrow">YARDIM VE KULLANIM KILAVUZU</span><h1>İlk sorudan<br /><span>izlenebilir karara.</span></h1><p>Kurulum adımları, gerçek kullanım örnekleri ve teknik ayrıntılar. Yeni başlıyorsanız ilk sohbet rehberiyle başlayın; bir özelliği arıyorsanız içerik dizinini kullanın.</p>
       <div className="help-hero-actions"><a href="#baslangic">İlk sohbetimi başlatmak istiyorum →</a><a href="#zamanlayici">Zamanlayıcıyı öğren</a></div>
       <p className="help-version">9 Ekim 2026 · {guideSections.length} bölüm · Bu sayfa hesap veya model çağrısı gerektirmez.</p>

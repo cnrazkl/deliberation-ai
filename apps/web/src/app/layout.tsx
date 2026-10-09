@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "DeliberationAI",
   description: "İzlenebilir çoklu model değerlendirme çalışma alanı",
+  icons: { icon: { url: "/brand/deliberation-mark.svg", type: "image/svg+xml" } },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

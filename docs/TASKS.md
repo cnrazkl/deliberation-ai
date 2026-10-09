@@ -1,5 +1,10 @@
 # Tasks
 
+- [x] New shared blue conversation-loop logo and matching browser icons; local web
+  types/lint and eight entry/help theme/viewport checks pass.
+- [ ] Deploy the new logo to the existing LAN installation and verify authenticated
+  account/workspace branding there. Current deployed image remains unchanged.
+
 - [x] Owner browser comments: align private-default actions, disclosure icons, prompt
   radios and council checkboxes/review field; offer transient explicit model lookup
   before connection save and disclose transport settings separately from member

@@ -10,6 +10,7 @@ import { HelpLink } from "./help-link";
 import { AccountBar } from "./account-bar";
 import { AccountMenu } from "./account-menu";
 import { ThemeSelect } from "./workspace-shell";
+import { BrandMark } from "./brand-mark";
 
 export function AuthShell() {
   const [session, setSession] = useState<LocalSessionSummary | null>(null);
@@ -70,7 +71,7 @@ export function AuthShell() {
     <div className="account-entry-appearance"><ThemeSelect /></div>
     <div className="account-login-layout">
       <section className="account-welcome" aria-label="Deliberation AI hakkında">
-        <div className="account-brand"><span className="account-brand-mark" aria-hidden="true">D<span>·</span></span>Deliberation AI</div>
+        <div className="account-brand"><BrandMark className="account-brand-mark" />Deliberation AI</div>
         <div className="account-welcome-copy">
           <span className="account-kicker">BİRLİKTE DÜŞÜN, DAHA İYİ KARAR VER</span>
           <h2>Bir soruya,{" "}<br /><span>farklı bakış açıları.</span></h2>
@@ -115,7 +116,7 @@ export function AuthShell() {
   </main>;
   return <>
     <AccountBar>
-      <div><span className="account-bar-brand"><span className="brand-symbol" aria-hidden="true">D·</span>Deliberation AI</span><span className="account-role-badge">{session.user.role === "root" ? "Yönetim merkezi" : "Kişisel çalışma alanı"}</span></div>
+      <div><span className="account-bar-brand"><BrandMark />Deliberation AI</span><span className="account-role-badge">{session.user.role === "root" ? "Yönetim merkezi" : "Kişisel çalışma alanı"}</span></div>
       <div className="account-actions">
         <HelpLink />
         <AccountMenu name={session.user.displayName} username={session.user.username} role={session.user.role === "root" ? "Yönetici" : "Kişisel hesap"}>
