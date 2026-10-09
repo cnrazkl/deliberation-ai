@@ -4,11 +4,13 @@ Updated: 9 October 2026 (form controls and draft model catalog)
 
 ## New brand mark — locally verified, LAN deployment pending
 
-The former D-dot mark is replaced by three blue interlocking conversation loops in
+The brand mark now uses three separate blue geometric dialogue facets around an
+open center. It is shared by
 entry, account bar, workspace sidebar and help; SVG metadata and the ICO fallback
 match. Web strict types and zero-warning lint pass. Eight browser checks cover entry
 and help in both palettes at 320/1440px: images load, square dimensions are retained
-and pages have no horizontal overflow. Desktop entry screenshots were inspected.
+and pages have no horizontal overflow. The revised emblem and desktop entry/help
+screenshots were inspected; its three parts remain separate at small sizes.
 The local account backend was unavailable during this visual check; authenticated
 workspace behavior and the existing LAN installation were not verified or redeployed.
 

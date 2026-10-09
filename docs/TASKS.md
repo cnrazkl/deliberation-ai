@@ -1,6 +1,6 @@
 # Tasks
 
-- [x] New shared blue conversation-loop logo and matching browser icons; local web
+- [x] Revised shared geometric dialogue-facet logo and matching browser icons; local web
   types/lint and eight entry/help theme/viewport checks pass.
 - [ ] Deploy the new logo to the existing LAN installation and verify authenticated
   account/workspace branding there. Current deployed image remains unchanged.
