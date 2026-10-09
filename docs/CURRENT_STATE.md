@@ -1,18 +1,29 @@
 # Current state
 
-Updated: 9 October 2026 (form controls and draft model catalog)
+Updated: 9 October 2026 (new brand mark deployed)
 
-## New brand mark — locally verified, LAN deployment pending
+## New brand mark — deployed
 
 The brand mark now uses three separate blue geometric dialogue facets around an
-open center. It is shared by
-entry, account bar, workspace sidebar and help; SVG metadata and the ICO fallback
-match. Web strict types and zero-warning lint pass. Eight browser checks cover entry
-and help in both palettes at 320/1440px: images load, square dimensions are retained
-and pages have no horizontal overflow. The revised emblem and desktop entry/help
-screenshots were inspected; its three parts remain separate at small sizes.
-The local account backend was unavailable during this visual check; authenticated
-workspace behavior and the existing LAN installation were not verified or redeployed.
+open center. Entry, account bar, workspace sidebar and help share it; SVG metadata
+and the ICO fallback match. Linux production web types, zero-warning lint and build
+pass. Twelve live browser cases cover entry, help and authenticated account/workspace
+branding in both palettes at 320/1440px, including the mobile drawer. Images load,
+square dimensions remain, and there is no horizontal overflow or captured page error.
+Live SVG content matches after newline normalization; ICO bytes match exactly.
+Desktop workspace screenshots were inspected. The temporary verification account
+was erased through its fingerprint-bound account deletion. No model calls were made.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-logo-ui1`,
+manifest `sha256:30384c153ce3bf8a30f676ca28b1ccfd053b0be28bec18f986f3c4023bda76bc`,
+exported source tree `2806873f6db6429c670179aa05f7fc5b51266836` (commit `6ba524d`)
+before this evidence update. LAN binding remains `192.168.1.112:33184`. Only web and
+its observer were recreated; fresh foreign-container and owned database/worker
+lifecycle baselines match after deployment and live verification. No DDL, migration,
+foreign service, firewall or public-hosting change occurred. Source-bound window
+`month-logo-ui-20261009` starts 2026-10-09T17:02:28.144Z and is due
+2026-11-08T17:02:28.144Z; its first sample is healthy. Earlier windows remain retained;
+monthly and independent human quality gates stay open.
 
 ## Form controls and draft model catalog — deployed
 
@@ -41,7 +52,7 @@ errors. The separate verification tab was closed and theme/viewport restored; th
 original user's draft, connections and sessions were not changed or reloaded. An
 unused generated visual fixture was also erased through its guarded account preview.
 
-Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-form-ui1`,
+Prior owned web/observer image: `deliberationai-rehearsal:60374dd507ec-form-ui1`,
 manifest `sha256:43c9da2c08651bb6c065b12165f6473356b34dbee94d1b6c5bb8e00e8ab370be`,
 exported source tree `66deebd3d1a17df7d2e35872fb47a718f2b14c2c` before this final
 evidence update. LAN binding remains `192.168.1.112:33184`. Fresh foreign-container

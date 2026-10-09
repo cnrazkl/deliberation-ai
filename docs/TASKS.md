@@ -2,8 +2,10 @@
 
 - [x] Revised shared geometric dialogue-facet logo and matching browser icons; local web
   types/lint and eight entry/help theme/viewport checks pass.
-- [ ] Deploy the new logo to the existing LAN installation and verify authenticated
-  account/workspace branding there. Current deployed image remains unchanged.
+- [x] Deploy the new logo to the existing LAN installation; Linux web types/lint/build
+  and twelve live entry/help/account/workspace theme/viewport checks pass. Matching
+  SVG/ICO assets and unchanged foreign/database/worker lifecycle baselines verified.
+  Temporary verification account erased; no model calls. See CURRENT_STATE.md.
 
 - [x] Owner browser comments: align private-default actions, disclosure icons, prompt
   radios and council checkboxes/review field; offer transient explicit model lookup
