@@ -1,8 +1,8 @@
 # Current state
 
-Updated: 9 October 2026 (compact API connection management prepared)
+Updated: 9 October 2026 (compact API connection management deployed)
 
-## Compact API connection cards and tabbed panel — deployment pending
+## Compact API connection cards and tabbed panel — deployed
 
 API Bağlantıları shows saved connections as compact cards with edit/delete actions.
 Workspace width selects one/two/three/four columns. A separate modal handles creation
@@ -13,8 +13,31 @@ remain mounted across tabs/closure. Pending saves/catalog lookup block dismissal
 Nine focused browser cases pass across both palettes at 320/960/1280/1540px, plus
 creation/editing/deletion failures, model persistence, focus and reviewed-test guards.
 Initial cases exposed unnecessarily tall model previews and a native focus-cycle gap;
-compact inline previews and explicit Tab wrapping fix them. Broader regressions,
-production build and deployment verification remain pending.
+compact inline previews and explicit Tab wrapping fix them. The complete 96-case
+isolated browser suite passes, including catalog selection, creation, NVIDIA presets,
+reviewed generation, council/templates, root administration, help and navigation.
+Web type/lint checks and Linux production types, zero-warning lint and build pass.
+
+Live checks pass for model-less creation, retained failed-save fields, pending-save
+Escape/close guards, keyboard tab/focus restoration, rename/delete, persisted model
+choices, retained question and reviewed-test request identity across dialog closure.
+Eight palette/width cases verify one/two/three/four columns at 320/960/1280/1540px,
+model search, scroll restoration and no horizontal overflow. Local and production
+card/panel screenshots were inspected. Catalog responses were intercepted; no
+generation request or page error occurred. The temporary account and all connection
+fixtures were erased through fingerprint-bound account deletion.
+Only owned web/observer were recreated. Final foreign-container and owned database/
+worker lifecycle baselines match; packages/worker/deployment definitions are unchanged,
+and no migration ran. Native PostgreSQL was stopped again after isolated tests.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-cards-ui1`,
+manifest `sha256:833f1928af4ef51ee65d7fac34e4e5d40745681ce69f09f956f9e9a5eed19011`,
+exported source tree `b55038e296aa697e4888d10bc6129d6c39cf6c2a` (commit `3f5398a`)
+before this documentation-only verification update. Deployment completed at
+2026-10-09T19:56:27Z; LAN binding remains `192.168.1.112:33184`. Source-bound window
+`month-cards-ui-20261009` starts 2026-10-09T19:56:41.267Z and is due
+2026-11-08T19:56:41.267Z; its first sample is healthy. Earlier windows remain retained;
+monthly and independent human quality gates stay open.
 
 ## Saved connection model choices — deployed
 
@@ -58,7 +81,7 @@ both connection fixtures were erased through fingerprint-bound account deletion.
 Only owned web/observer containers were recreated; foreign containers and the owned
 database/worker lifecycle baselines match after deployment and live verification.
 
-Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-models-ui1`,
+Previous owned web/observer image: `deliberationai-rehearsal:60374dd507ec-models-ui1`,
 manifest `sha256:a7beefbaa35c3edd2dcb82ec800301cf9a038090534b7d2a4f5838603a0e2fdb`,
 exported source tree `3b93de1da71037d2a0bc2bec9ebc0070b5b6548e` (commit `31badc6`)
 before the verification-only test/documentation update. Deployment completed at

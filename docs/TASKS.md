@@ -1,9 +1,11 @@
 # Tasks
 
-- [ ] Owner-requested compact API connection cards and separate creation/editing panel:
+- [x] Owner-requested compact API connection cards and separate creation/editing panel:
   responsive one-to-four-column grid, edit/delete, model and test/history tabs, keyboard
-  focus and draft preservation. Nine focused browser cases pass; broader checks and
-  deployed verification are pending.
+  focus and draft preservation. Nine focused cases and the complete 96-case browser
+  suite pass; types/lint/Linux build and deployed CRUD/model/review/focus checks plus
+  eight palette-width cases pass. Temporary account erased, no generation requests;
+  service/database-worker lifecycle baselines preserved. See CURRENT_STATE.md.
 
 - [x] Owner-requested multiple model choices per API connection: optional default,
   searchable saved choices, ready council dropdowns, same/different connections and
