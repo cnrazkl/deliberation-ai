@@ -331,12 +331,14 @@ async function readReplay(response: Response): Promise<RunEventReplay> {
   return body as RunEventReplay;
 }
 
-export function CouncilWorkbench() {
+export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onSidebarOpenChange }: {
+  view: WorkspaceView; onViewChange: (view: WorkspaceView) => void;
+  sidebarOpen: boolean; onSidebarOpenChange: (open: boolean) => void;
+}) {
   const configRef = useRef<HTMLDetailsElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [libraryDeletionId, setLibraryDeletionId] = useState<string>();
   const [privateConversationId, setPrivateConversationId] = useState<string>();
-  const [view, setView] = useState<WorkspaceView>("chat");
   const [question, setQuestion] = useState(starterQuestion);
   const [continuationContext, setContinuationContext] = useState<FrozenContinuation>();
   const [compactionDraft, setCompactionDraft] = useState<{ packet: ContinuationCompactionPacket; summary: string }>();
@@ -1611,7 +1613,7 @@ export function CouncilWorkbench() {
   }
 
   return (
-    <WorkspaceShell view={view} onViewChange={setView} onNewChat={newChat} newChatDisabled={pending || loadingContinuation} attentionCount={operatorOperations.length} sidebar={<>
+    <WorkspaceShell view={view} onViewChange={setView} sidebarOpen={sidebarOpen} onSidebarOpenChange={onSidebarOpenChange} onNewChat={newChat} newChatDisabled={pending || loadingContinuation} attentionCount={operatorOperations.length} sidebar={<>
       <ConversationLibraryPanel refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
         onReviewDeletion={(id) => { setLibraryDeletionId(id); setView("chat"); }}
         onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); }} />

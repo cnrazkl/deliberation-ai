@@ -2,6 +2,17 @@
 
 Updated: 9 October 2026 (new brand mark deployed)
 
+## Brand home navigation — local verification, deployment pending
+
+Logo and product name share a home link on entry, account bar, sidebar and help.
+Settings/schedules return to chat while preserving the draft and avoiding generation.
+The sidebar closes its mobile drawer; both workspace links support keyboard use.
+Web types/lint pass. Local browser checks cover four help logo/name returns,
+32 account/sidebar logo/name returns from settings/schedules, eight keyboard returns
+and two account-bar returns with the mobile drawer open, in both themes at
+320/1440px, with draft preservation and no generation.
+LAN deployment and production browser verification are pending.
+
 ## New brand mark — deployed
 
 The brand mark now uses three separate blue geometric dialogue facets around an

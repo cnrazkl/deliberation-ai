@@ -5,6 +5,14 @@ BrandMark is a decorative shared presentation component backed by the static
 names. Metadata selects the SVG tab icon; favicon.ico is a matching raster fallback.
 It introduces no client state, provider requests or application/domain dependencies.
 
+BrandHomeLink supplies a single keyboard-accessible `/` link for logo and name.
+Unmodified in-workspace clicks delegate to the existing view navigation; modified
+clicks retain native link behavior. AuthShell owns WorkspaceView and drawer visibility
+so the account-bar link can restore chat and close the drawer without remounting
+CouncilWorkbench or resetting its draft.
+The sidebar link uses the existing drawer-close/content-focus path. Help uses route
+navigation. No provider, persistence or orchestration boundary changes.
+
 ConnectionModelPreview owns transient form-catalog state, credential/endpoint binding,
 request sequencing and abort cleanup. POST `/api/provider-connections/model-preview`
 uses the existing authenticated owner/origin wrapper, a strict catalog-only contract

@@ -1,5 +1,8 @@
 # Tasks
 
+- [ ] Deploy and verify the shared logo/name home links; local types/lint/navigation
+  checks pass. Settings/schedule returns preserve the council draft without generation.
+
 - [x] Revised shared geometric dialogue-facet logo and matching browser icons; local web
   types/lint and eight entry/help theme/viewport checks pass.
 - [x] Deploy the new logo to the existing LAN installation; Linux web types/lint/build

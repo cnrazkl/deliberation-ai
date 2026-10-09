@@ -6,6 +6,10 @@ Entry, account bar, workspace navigation and public help share the same scalable
 asset; the browser tab uses the matching favicon. The emblem conveys multiple
 perspectives without assigning an authoritative member.
 
+Clicking either the logo or product name returns to the home screen. From settings
+or schedules it restores the chat view while preserving the current council draft;
+it does not start a new conversation or generation. Help links return to `/`.
+
 ## Blue/navy interface
 
 Settings and council controls use spaced action groups, aligned checkbox/radio labels

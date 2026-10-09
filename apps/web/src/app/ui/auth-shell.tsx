@@ -9,8 +9,8 @@ import { accountRequest, announceSessionChange } from "../../lib/account-client"
 import { HelpLink } from "./help-link";
 import { AccountBar } from "./account-bar";
 import { AccountMenu } from "./account-menu";
-import { ThemeSelect } from "./workspace-shell";
-import { BrandMark } from "./brand-mark";
+import { ThemeSelect, type WorkspaceView } from "./workspace-shell";
+import { BrandHomeLink } from "./brand-home-link";
 
 export function AuthShell() {
   const [session, setSession] = useState<LocalSessionSummary | null>(null);
@@ -20,6 +20,17 @@ export function AuthShell() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [deletion, setDeletion] = useState(false);
   const [passwordPanel, setPasswordPanel] = useState(false), [notice, setNotice] = useState("");
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("chat");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  function home() {
+    setWorkspaceView("chat"); setSidebarOpen(false); setPasswordPanel(false); setDeletion(false); setRegister(false);
+    window.requestAnimationFrame(() => {
+      const content = document.getElementById("workspace-content");
+      content?.querySelector("h1")?.focus({ preventScroll: true });
+      if (content) content.scrollIntoView({ block: "start" });
+      else window.scrollTo({ top: 0 });
+    });
+  }
   useEffect(() => {
     let active = true;
     const refresh = async () => {
@@ -30,6 +41,8 @@ export function AuthShell() {
         const previous = previousSession.current;
         if (previous && (previous.user.id !== result.session?.user.id || previous.scope.id !== result.session?.scope.id)) {
           setDeletion(false);
+          setWorkspaceView("chat");
+          setSidebarOpen(false);
         }
         previousSession.current = result.session; setSession(result.session);
         setReady(true);
@@ -71,7 +84,7 @@ export function AuthShell() {
     <div className="account-entry-appearance"><ThemeSelect /></div>
     <div className="account-login-layout">
       <section className="account-welcome" aria-label="Deliberation AI hakkında">
-        <div className="account-brand"><BrandMark className="account-brand-mark" />Deliberation AI</div>
+        <BrandHomeLink className="account-brand" markClassName="account-brand-mark" onHome={home} />
         <div className="account-welcome-copy">
           <span className="account-kicker">BİRLİKTE DÜŞÜN, DAHA İYİ KARAR VER</span>
           <h2>Bir soruya,{" "}<br /><span>farklı bakış açıları.</span></h2>
@@ -116,7 +129,7 @@ export function AuthShell() {
   </main>;
   return <>
     <AccountBar>
-      <div><span className="account-bar-brand"><BrandMark />Deliberation AI</span><span className="account-role-badge">{session.user.role === "root" ? "Yönetim merkezi" : "Kişisel çalışma alanı"}</span></div>
+      <div><BrandHomeLink className="account-bar-brand" onHome={home} /><span className="account-role-badge">{session.user.role === "root" ? "Yönetim merkezi" : "Kişisel çalışma alanı"}</span></div>
       <div className="account-actions">
         <HelpLink />
         <AccountMenu name={session.user.displayName} username={session.user.username} role={session.user.role === "root" ? "Yönetici" : "Kişisel hesap"}>
@@ -133,6 +146,6 @@ export function AuthShell() {
         <label>Yeni parola<input name="password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} /></label><button disabled={busy}>Parolayı kaydet</button></form>
       <p>Diğer oturumlarınız kapatılır.</p></section>}
     {deletion && <AccountDeletionPanel onClose={() => setDeletion(false)} />}
-    {session.user.role === "root" ? <RootManagement session={session} /> : <CouncilWorkbench key={`${session.user.id}:${session.scope.id}`} />}
+    {session.user.role === "root" ? <RootManagement session={session} /> : <CouncilWorkbench key={`${session.user.id}:${session.scope.id}`} view={workspaceView} onViewChange={setWorkspaceView} sidebarOpen={sidebarOpen} onSidebarOpenChange={setSidebarOpen} />}
   </>;
 }

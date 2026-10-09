@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { BrandMark } from "./brand-mark";
+import { useRef, useSyncExternalStore, type ReactNode } from "react";
+import { BrandHomeLink } from "./brand-home-link";
 
 export type WorkspaceView = "chat" | "schedules" | "settings";
 type Theme = "system" | "light" | "dark";
@@ -38,11 +38,11 @@ function WorkspaceIcon({ view }: { view: WorkspaceView }) {
     {view === "chat" ? <path d="M20 11.5a8 8 0 0 1-8 8H5l-3 2v-10a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z" /> : view === "schedules" ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></> : <><path d="M4 7h16M4 17h16" /><circle cx="8" cy="7" r="3" fill="var(--sidebar)" /><circle cx="16" cy="17" r="3" fill="var(--sidebar)" /></>}
   </svg>;
 }
-export function WorkspaceShell({ view, onViewChange, onNewChat, newChatDisabled, attentionCount, sidebar, children }: {
+export function WorkspaceShell({ view, onViewChange, sidebarOpen, onSidebarOpenChange: setSidebarOpen, onNewChat, newChatDisabled, attentionCount, sidebar, children }: {
   view: WorkspaceView; onViewChange: (view: WorkspaceView) => void; onNewChat: () => void;
   newChatDisabled: boolean; attentionCount: number; sidebar: ReactNode; children: ReactNode;
+  sidebarOpen: boolean; onSidebarOpenChange: (open: boolean) => void;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   function closeSidebar() { setSidebarOpen(false); toggle.current?.focus(); }
@@ -52,7 +52,7 @@ export function WorkspaceShell({ view, onViewChange, onNewChat, newChatDisabled,
     {sidebarOpen && <button className="sidebar-backdrop" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar} />}
     <aside id="workspace-sidebar" className={`app-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Sohbet geçmişi ve gezinme"
       onKeyDown={(event) => { if (event.key === "Escape") closeSidebar(); }}>
-      <div className="sidebar-brand"><BrandMark /><strong>Deliberation AI</strong>
+      <div className="sidebar-brand"><BrandHomeLink strong onHome={() => { onViewChange("chat"); setSidebarOpen(false); focusContent(); }} />
         <button type="button" className="sidebar-close secondary-button" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar}>×</button>
       </div>
       <button type="button" className="new-chat-button" aria-label="＋ Yeni sohbet" disabled={newChatDisabled} onClick={() => { onNewChat(); setSidebarOpen(false); }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni sohbet</button>
