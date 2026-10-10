@@ -3,13 +3,34 @@ import { expect, test, vi } from "vitest";
 import { type ConnectionCheckExecution } from "@deliberation-ai/application";
 import { MAX_GENERATION_CHECKS } from "@deliberation-ai/contracts";
 import { getPool, closeDatabase } from "./database";
-import { acknowledgeConnectionGenerationCheck, ConnectionCheckConflictError, reviewConnectionGenerationCheck, runConnectionGenerationCheck } from "./connection-generation-check";
+import { acknowledgeConnectionGenerationCheck, ConnectionCheckConflictError, reviewConnectionGenerationCheck, runConnectionGenerationCheck, runConnectionChatCheck } from "./connection-generation-check";
 import { deleteProviderConnection, saveProviderConnection, saveProviderConnectionCatalogCheck, loadProviderConnectionSecret } from "./provider-connections";
 const settings = { provider: "openai-compatible" as const, apiKey: "", defaultModel: "local-check", baseUrl: "http://127.0.0.1:11434/v1",
   endpointPreset: "ollama" as const, reasoningProtocol: "none" as const, structuredOutputMode: "json-object" as const };
 const success: ConnectionCheckExecution = { status: "succeeded", failure: null, returnedModel: "local-check", remoteResponseId: "fixture",
   inputTokens: 10, outputTokens: 20, httpStatus: null };
 const failed: ConnectionCheckExecution = { ...success, status: "failed", failure: "rejected" };
+
+test("chat review binds message and revision, encrypts replies and durably replays without resending", async () => {
+  const initial = await saveProviderConnection({ ...settings, label: `Chat fixture ${randomUUID()}` });
+  const message = "PRIVATE CHAT QUESTION", reply = "PRIVATE CHAT REPLY";
+  try {
+    const preview = (await reviewConnectionGenerationCheck(initial.id, "local-check", message))!;
+    const request = { action: "send", requestId: randomUUID(), model: preview.model, message, fingerprint: preview.fingerprint, acknowledge: true };
+    const execute = vi.fn(async () => ({ ...success, reply, replyTruncated: false }));
+    const check = (await runConnectionChatCheck(initial.id, request, execute))!;
+    expect(check).toMatchObject({ kind: "chat", message, reply, status: "succeeded" });
+    expect(await runConnectionChatCheck(initial.id, request, execute)).toEqual(check); expect(execute).toHaveBeenCalledTimes(1);
+    await expect(runConnectionChatCheck(initial.id, { ...request, message: "Changed" }, execute)).rejects.toBeInstanceOf(ConnectionCheckConflictError);
+    await expect(runConnectionGenerationCheck(initial.id, { requestId: request.requestId, model: request.model, fingerprint: request.fingerprint, acknowledge: true }, execute)).rejects.toBeInstanceOf(ConnectionCheckConflictError);
+    const row = (await getPool().query<{ catalog_snapshot_ciphertext: string }>("SELECT catalog_snapshot_ciphertext FROM provider_connections WHERE id=$1", [initial.id])).rows[0]!;
+    expect(row.catalog_snapshot_ciphertext).not.toContain(message); expect(row.catalog_snapshot_ciphertext).not.toContain(reply);
+    expect((await reviewConnectionGenerationCheck(initial.id))!.observations.generationChecks[0]?.reply).toBe(reply);
+    await saveProviderConnection({ ...settings, id: initial.id, label: initial.label, apiKey: "replacement" });
+    await expect(runConnectionChatCheck(initial.id, { ...request, requestId: randomUUID() }, execute)).rejects.toBeInstanceOf(ConnectionCheckConflictError);
+    expect(execute).toHaveBeenCalledTimes(1);
+  } finally { await deleteProviderConnection(initial.id); await closeDatabase(); }
+});
 
 test("fences concurrent/lost-response submissions and preserves historical results across edits/catalog writes", async () => {
   const initial = await saveProviderConnection({ ...settings, label: `Generation fixture ${randomUUID()}` });

@@ -106,7 +106,7 @@ export * from "./anthropic-messages-provider";
 export * from "./gemini-generate-content-provider";
 export * from "./model-catalog";
 export * from "./generation-check";
-export { generatePrivateText } from "./private-text";
+export { generatePrivateText, generateConnectionChatText } from "./private-text";
 export * from "./synthesis";
 export { inputFor, instructionsFor, outputJsonSchemaFor } from "./provider-utils";
 

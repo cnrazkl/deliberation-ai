@@ -36,6 +36,7 @@ import type {
 } from "@deliberation-ai/contracts";
 import { DecisionAssessmentPanel } from "./decision-assessment-panel";
 import { ConnectionGenerationPanel } from "./connection-generation-panel";
+import { ConnectionChatTester } from "./connection-chat-tester";
 import { ConnectionDialog } from "./connection-dialog";
 import { ConnectionModelPreview } from "./connection-model-preview";
 import { SavedConnectionModels } from "./connection-model-picker";
@@ -386,6 +387,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   const [editingConnectionId, setEditingConnectionId] = useState<string>();
   const [connectionDialog, setConnectionDialog] = useState<string>();
   const [connectionTab, setConnectionTab] = useState<"details" | "models" | "test">("details");
+  const [connectionChatBusy, setConnectionChatBusy] = useState(false);
   const [removingConnectionId, setRemovingConnectionId] = useState<string>();
   const [savingConnection, setSavingConnection] = useState(false);
   const [connectionNotice, setConnectionNotice] = useState<string>();
@@ -709,8 +711,9 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     setDeletingTemplateId(undefined);
   }, [deletingTemplateId]);
 
-  async function saveConnection(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
+  async function saveConnection(event?: FormEvent<HTMLFormElement>, keepOpen = false): Promise<ProviderConnection | undefined> {
+    event?.preventDefault();
+    if (keepOpen && !document.querySelector<HTMLFormElement>(".connection-form")?.reportValidity()) return;
     setSavingConnection(true);
     setConnectionNotice(undefined);
     setConnectionError(undefined);
@@ -746,12 +749,11 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         ),
       );
       setMembers((current) => assignConnectionToUnconfiguredMembers(current, [...connections, saved]));
-      setConnectionLabel("");
       setApiKey("");
-      setConnectionSelectedModels([]);
-      setEditingConnectionId(undefined);
-      setConnectionDialog(undefined);
+      if (keepOpen) { setEditingConnectionId(saved.id); setConnectionDialog(saved.id); }
+      else { setConnectionLabel(""); setConnectionSelectedModels([]); setEditingConnectionId(undefined); setConnectionDialog(undefined); }
       setConnectionNotice(editingConnectionId ? "Bağlantı başarıyla şifrelenerek güncellenmiştir." : "Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
+      return saved;
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : "Bağlantı kaydedilemedi.";
       setConnectionError(message);
@@ -1478,9 +1480,14 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   );
 
   const dialogConnection = connections.find(connection => connection.id === connectionDialog);
+  const connectionDirty = !dialogConnection || apiKey.trim() !== "" || connectionLabel !== dialogConnection.label
+    || baseUrl !== (dialogConnection.baseUrl ?? "") || endpointPreset !== dialogConnection.endpointPreset
+    || reasoningProtocol !== dialogConnection.reasoningProtocol || structuredOutputMode !== dialogConnection.structuredOutputMode
+    || JSON.stringify(connectionSelectedModels) !== JSON.stringify(connectionModels(dialogConnection));
   const connectionTabs = [{ id: "details", label: "Bağlantı" }, { id: "models", label: "Modeller" }, { id: "test", label: "Test ve Geçmiş" }] as const;
   const connectionForm = (
-    <form className="connection-form" onSubmit={saveConnection} onChange={() => { setConnectionNotice(undefined); setConnectionError(undefined); }}>
+    <form className="connection-form" onSubmit={event => { void saveConnection(event); }} onChange={() => { setConnectionNotice(undefined); setConnectionError(undefined); }}>
+      <fieldset className="connection-form-fields" disabled={connectionChatBusy}>
       <label>
         Sağlayıcı ailesi
         <select
@@ -1645,6 +1652,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         <button className="secondary-button" type="button" disabled={savingConnection} onClick={cancelConnectionEdit}>Vazgeç</button>
       </div>
       {connectionError ? <p className="alert error" role="alert">{connectionError}</p> : null}
+      </fieldset>
     </form>
   );
 
@@ -1708,7 +1716,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       </section>
       <ConnectionDialog open={Boolean(connectionDialog) && view === "settings"} title={dialogConnection?.label ?? "Yeni Bağlantı Ekle"}
         description={dialogConnection ? "Bağlantı bilgilerinizi, sohbet modellerinizi ve deneme geçmişini buradan yönetin." : "Sağlayıcınızı seçin, API anahtarınızı ekleyin ve kullanacağınız modelleri belirleyin."}
-        busy={savingConnection || Boolean(checkingConnectionId)} onClose={cancelConnectionEdit}>
+        busy={savingConnection || connectionChatBusy || Boolean(checkingConnectionId)} onClose={cancelConnectionEdit}>
         {dialogConnection ? <div className="connection-tabs" role="tablist" aria-label="Bağlantı ayarları" onKeyDown={event => {
           if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
           event.preventDefault(); const index = connectionTabs.findIndex(tab => tab.id === connectionTab);
@@ -1718,6 +1726,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           aria-controls={`connection-pane-${tab.id}`} tabIndex={connectionTab === tab.id ? 0 : -1} onClick={() => setConnectionTab(tab.id)}>{tab.label}</button>)}</div> : null}
         <div id="connection-pane-details" role={dialogConnection ? "tabpanel" : undefined} aria-labelledby={dialogConnection ? "connection-tab-details" : undefined} hidden={Boolean(dialogConnection) && connectionTab !== "details"}>
           {connectionDialog && (!dialogConnection || connectionTab === "details") ? connectionForm : null}
+          {connectionDialog ? <ConnectionChatTester key="dialog-chat"
+            connection={dialogConnection} models={connectionSelectedModels} needsSave={connectionDirty}
+            draftBinding={JSON.stringify([dialogConnection?.id, dialogConnection?.revision, connectionProvider, connectionLabel, apiKey, baseUrl, endpointPreset, reasoningProtocol, structuredOutputMode, connectionSelectedModels])}
+            disabled={savingConnection || Boolean(checkingConnectionId)} onSave={() => saveConnection(undefined, true)} onBusy={setConnectionChatBusy} /> : null}
         </div>
         <div id="connection-pane-models" role="tabpanel" aria-labelledby="connection-tab-models" hidden={!dialogConnection || connectionTab !== "models"}>
           {connections.map(connection => {
@@ -1767,6 +1779,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                   <strong>{operation.memberId}</strong>
                   <small>{operation.provider} · {operation.model} · tur {operation.round} · deneme {operation.attempt}</small>
                   <small>Çalışma {operation.runId.slice(0, 8)} · {operation.errorCode ?? "sonuç bilinmiyor"}</small>
+                  {operation.errorCode === "provider_dns_failure" ? <p className="hint">Sunucu sağlayıcının adresini çözemedi. DNS ve internet erişimini kontrol edin.</p> : operation.errorCode === "provider_timeout" ? <p className="hint">Sağlayıcıdan süre içinde tam yanıt alınamadı; uzak sonuç ve ücret bilinmiyor.</p> : operation.errorCode === "remote_outcome_unknown" ? <p className="hint">Sunucu kesin sonuç alamadı. Bu kod tek başına kredi veya API limiti hatası anlamına gelmez.</p> : null}
                 </div>
                 <div className="operator-actions">
                   <button

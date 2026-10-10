@@ -88,7 +88,8 @@ export function ConnectionGenerationPanel({ connection }: { connection: { id: st
           {entry.check.checkedAt ? new Date(entry.check.checkedAt).toLocaleString("tr-TR") : "Eski kaydın zamanı bilinmiyor"} · sürüm {entry.revision} · {entry.provider}/{entry.endpointPreset} · {entry.check.status} · {entry.check.verification} · {entry.check.models.includes(reviewedModel) ? "Model listede" : "Görünen listede yok; destek yokluğu kanıtlanmadı"}. {capabilityText(entry.check.details?.find((detail) => detail.id === reviewedModel))}
         </li>)}</ul>
         <ul>{checks.slice().reverse().map((check) => <li key={check.id}>
-          {new Date(check.startedAt).toLocaleString("tr-TR")} · sürüm {check.revision} · {check.provider}/{check.endpointPreset} · {statusText[check.status]}{check.failure ? ` (${check.failure})` : ""}.
+          {new Date(check.startedAt).toLocaleString("tr-TR")} · sürüm {check.revision} · {check.provider}/{check.endpointPreset} · {check.kind === "chat" && check.status === "succeeded" ? "Kısa sohbet yanıtı başarılı" : statusText[check.status]}{check.failure ? ` (${check.failure})` : ""}.
+          {check.errorCode ? ` Hata kodu: ${check.errorCode}.` : ""}
           {check.httpStatus ? ` HTTP ${check.httpStatus}.` : ""}
           Dönen model: {check.returnedModel ?? "bilinmiyor"}. Bildirilen giriş/çıkış: {check.inputTokens ?? "bilinmiyor"}/{check.outputTokens ?? "bilinmiyor"} token. {check.acknowledgedAt ? "Belirsizlik kullanıcı tarafından kapatıldı; uzak sonuç doğrulanmadı." : ""}
           {check.outputCapExceeded === true || check.outputTokens !== null && check.outputTokens > review.maxOutputTokens ? <strong role="alert"> Sağlayıcının bildirdiği çıktı istenen sınırı aştı; sınır uygulanmış kabul edilmez.</strong> : null}

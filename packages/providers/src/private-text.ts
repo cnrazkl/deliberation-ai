@@ -66,6 +66,12 @@ export async function generateSynthesisText(request: { model: string; instructio
   return generateBoundedText({ model: input.model, maxOutputTokens: SYNTHESIS_OUTPUT_TOKENS,
     messages: [{ role: "system", content: input.instructions }, { role: "user", content: input.data }] }, options, true);
 }
+/** A connection probe has exactly one owner message and no private/council history. */
+export async function generateConnectionChatText(request: { model: string; instructions: string; message: string }, options: PlainTextTransportOptions): Promise<PrivateDeliveryResult> {
+  const input = z.object({ model: z.string().trim().min(1).max(120), instructions: z.string().min(1).max(8_000), message: z.string().trim().min(1).max(1200) }).strict().parse(request);
+  return generateBoundedText({ model: input.model, maxOutputTokens: 512,
+    messages: [{ role: "system", content: input.instructions }, { role: "user", content: input.message }] }, options, true);
+}
 
 async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" | "messages" | "maxOutputTokens">, options: PlainTextTransportOptions, synthesis = false): Promise<PrivateDeliveryResult> {
   assertRecoveryGenerationAllowed();
@@ -128,7 +134,7 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
     }, options.timeoutMs ?? 90_000);
   } catch (error) {
     if (error instanceof NormalizedProviderError) throw error;
-    throw providerNetworkError(label);
+    throw providerNetworkError(label, error);
   }
   try {
     if (anthropic) return normalizeAnthropicReply(value, input.model);

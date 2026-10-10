@@ -1,6 +1,24 @@
 # Current state
 
-Updated: 9 October 2026 (LAN HTTP request identifiers deployed and verified)
+Updated: 10 October 2026 (worker egress repaired; connection chat verification underway)
+
+## Provider connectivity and compact connection chat — verification underway
+
+Read-only diagnostics of reported run 24c312a2 show unknown outcomes without response
+IDs or usage; historical receipt codes do not establish their precise transport cause.
+The current worker cannot resolve openrouter.ai (EAI_AGAIN), while web can. Inspection
+confirms worker has only the internal Docker network and no gateway. Attaching the
+existing owned access network repairs public catalog GET (HTTP 200) without container
+restart, generation, historical receipt edits or foreign/database/worker lifecycle
+changes. The compose definition now preserves this outbound access on recreation.
+
+ConnectionChatTester and its owned review/send/history route are implemented: save-and-
+test creation/edits, selected-model dropdown, independent bounded message, durable
+encrypted reply/error receipts and lost-response inspection. 493 unit and 278 isolated
+PostgreSQL cases pass. Seven focused browser cases, workspace types and web lint pass;
+an initial two-message/private-history mismatch is corrected by a separate connection-
+chat transport. Model-less saved connections use a dedicated owned history read.
+Broad browser, Linux production build and owned deployment checks remain pending.
 
 ## LAN HTTP council submission identifiers — deployed and verified
 

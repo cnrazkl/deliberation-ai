@@ -27,6 +27,19 @@ Generation review/history opens inside a padded, rounded connection panel with
 separate model, action and acknowledgement groups. Review and explicit paid-submit
 requirements remain unchanged.
 
+Connection creation/editing also offers **Bağlantıyı Deneyin**, a compact single-model
+chat test. The model dropdown uses the connection's selected models. **Kaydet Ve Test
+Et** explicitly saves a new connection or changed settings before sending; an unchanged
+saved connection uses **Mesajı Gönder**. The visible message/model and one potentially
+charged call require explicit acknowledgement. Each test sends only its own message,
+without council, conversation, file or tool context. The requested limit is 512 output
+tokens and 45 seconds, with provider-default reasoning and no tools or council schema.
+Replies, truncation, nullable usage and safe HTTP/transport error codes appear in place.
+**Sonucu Kontrol Et** reads the existing receipt without generation. Lost responses
+block another send until inspected; unresolved history retains the existing explicit
+uncertainty acknowledgement and no automatic retry. Tests do not change configured
+council members or drafts; saving retains the usual assignment of unconfigured members.
+
 Settings and council controls use spaced action groups, aligned checkbox/radio labels
 and centered geometric disclosure icons. Original/candidate prompt choices occupy
 separate cards; selection and submission semantics are unchanged. Private output

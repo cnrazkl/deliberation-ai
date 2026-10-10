@@ -37,6 +37,10 @@ catalog, ten revisioned entries/dropped count and at most 32 permanent generatio
 receipts. Edits clear only latestCatalog; row locks merge independent updates.
 Restore auditing validates both formats. No DDL; old binaries cannot read new
 envelopes. [Fields and compatibility](CONNECTION_GENERATION_CHECK.md).
+Chat receipts add optional kind=chat, bounded message/reply, replyTruncated and safe
+errorCode fields inside that ciphertext. Fingerprints bind the versioned message/profile
+and connection revision. Existing fixed receipts remain readable without rewriting;
+both modes share the 32 permanent identities and uncertainty/deletion guards.
 
 DA-125 adds optional positive `nvidiaConnectionRevision` to the encrypted council
 member snapshot. It freezes hosted identity at enqueue and fences worker loading;

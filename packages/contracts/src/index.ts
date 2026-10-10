@@ -961,6 +961,13 @@ export const generationCheckRequestSchema = z.strictObject({
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/u), acknowledge: z.literal(true),
   acknowledgeUnknown: z.boolean().default(false),
 });
+export const connectionChatMessageSchema = z.string().trim().min(1).max(1200);
+export const connectionChatReviewSchema = z.strictObject({
+  action: z.literal("review"), model: generationCheckRequestSchema.shape.model, message: connectionChatMessageSchema,
+});
+export const connectionChatSendSchema = generationCheckRequestSchema.extend({
+  action: z.literal("send"), message: connectionChatMessageSchema,
+});
 export const generationObservationSchema = z.strictObject({
   version: z.literal("connection-generation-v1"),
   id: z.uuid().transform((value) => value.toLowerCase()), revision: z.number().int().positive(), model: z.string().min(1).max(120),
@@ -975,6 +982,15 @@ export const generationObservationSchema = z.strictObject({
   inputTokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
   outputTokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
   elapsedMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
+  kind: z.literal("chat").optional(),
+  message: connectionChatMessageSchema.optional(),
+  reply: z.string().max(16_384).optional(),
+  replyTruncated: z.boolean().optional(),
+  errorCode: z.string().regex(/^[a-z0-9_]{1,80}$/u).nullable().optional(),
+}).superRefine((value, context) => {
+  if (Boolean(value.kind) !== Boolean(value.message) || value.reply !== undefined && (value.kind !== "chat" || value.status !== "succeeded")) {
+    context.addIssue({ code: "custom", message: "Invalid connection chat receipt." });
+  }
 });
 export type GenerationObservation = z.infer<typeof generationObservationSchema>;
 export const acknowledgeGenerationCheckSchema = z.strictObject({

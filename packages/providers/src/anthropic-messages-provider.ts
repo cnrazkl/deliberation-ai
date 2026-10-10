@@ -113,7 +113,7 @@ export class AnthropicMessagesProvider implements TextProvider {
       }, this.#options.timeoutMs);
     } catch (error) {
       if (error instanceof NormalizedProviderError) throw error;
-      throw providerNetworkError("Anthropic");
+      throw providerNetworkError("Anthropic", error);
     }
     const rawText = json.content?.filter((part) => part.type === "text").map((part) => part.text).join("");
     const citations = extractProviderCitations(json);

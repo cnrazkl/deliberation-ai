@@ -48,6 +48,8 @@ services:
       migrate: {condition: service_completed_successfully}
   worker:
     <<: *app
+    # Remote provider calls need outbound access; the database stays internal.
+    networks: [isolated, access]
     command: [pnpm, --filter, "@deliberation-ai/worker", start]
     depends_on:
       migrate: {condition: service_completed_successfully}

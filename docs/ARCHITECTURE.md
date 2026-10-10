@@ -1,5 +1,20 @@
 # Architecture
 
+ConnectionChatTester uses the owned no-store `/api/provider-connections/:id/chat-check`
+route for read-only history, POST review and explicitly approved POST dispatch. Creation
+and unsaved edits invoke the existing save path first and retain the open dialog. The
+application facade uses a separate two-message connection-chat transport over the
+existing bounded text adapter, preserving private history's minimum-message contract.
+Durable row-locked generation receipts share the existing 32-identity capacity and
+pending/uncertain/replay rules; chat fingerprints additionally bind the exact message
+and versioned text profile. No DDL or worker queue is added. Browser state controls
+pending dismissal, field locking and result inspection. Credentials stay in encrypted
+connection storage; test text/replies stay in its encrypted observation envelope.
+Transport diagnostics allowlist DNS/connect/TLS/reset/deadline codes while retaining
+unknown-outcome semantics and refusing retries. Raw network/provider errors never leave
+the adapters. The isolated rehearsal worker now joins the owned access network for
+outbound provider traffic, like web; the database remains exclusively internal.
+
 CouncilWorkbench presents compact API connection cards in workspace container queries
 (one/two/three/four columns). ConnectionDialog owns a native modal, focus cycling and
 restoration, Escape/backdrop dismissal and body-scroll restoration. Workbench retains

@@ -11,6 +11,7 @@ import {
 import { NormalizedProviderError, type ProviderRequest, type ProviderResult } from "./index";
 
 export const PROVIDER_NETWORK_TIMEOUT_MS = 600_000;
+class ProviderDeadlineError extends Error {}
 
 export function assertRecoveryGenerationAllowed(): void {
   if (process.env.DELIBERATION_RECOVERY_FORBID_GENERATION === "true") {
@@ -43,7 +44,7 @@ export async function withProviderNetworkDeadline<T>(
   const deadline = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => {
       controller.abort();
-      reject(new Error("Provider network deadline exceeded."));
+      reject(new ProviderDeadlineError("Provider network deadline exceeded."));
     }, timeoutMs);
   });
   try {
@@ -314,10 +315,18 @@ export function providerHttpError(provider: string, status: number): NormalizedP
   );
 }
 
-export function providerNetworkError(provider: string): NormalizedProviderError {
+export function providerNetworkError(provider: string, error?: unknown): NormalizedProviderError {
+  const record = error && typeof error === "object" ? error as { name?: unknown; code?: unknown; cause?: { code?: unknown } } : undefined;
+  const transport = record?.cause?.code ?? record?.code;
+  const code = error instanceof ProviderDeadlineError || record?.name === "AbortError" || ["UND_ERR_HEADERS_TIMEOUT", "UND_ERR_BODY_TIMEOUT", "ETIMEDOUT", "UND_ERR_CONNECT_TIMEOUT"].includes(String(transport))
+    ? "provider_timeout" : ["EAI_AGAIN", "ENOTFOUND"].includes(String(transport)) ? "provider_dns_failure"
+    : transport === "ECONNREFUSED" ? "provider_connection_refused"
+    : ["ECONNRESET", "EPIPE", "UND_ERR_SOCKET"].includes(String(transport)) ? "provider_connection_reset"
+    : ["CERT_HAS_EXPIRED", "DEPTH_ZERO_SELF_SIGNED_CERT", "UNABLE_TO_VERIFY_LEAF_SIGNATURE", "ERR_TLS_CERT_ALTNAME_INVALID"].includes(String(transport)) ? "provider_tls_failure"
+    : error instanceof SyntaxError ? "provider_response_unreadable" : "remote_outcome_unknown";
   return new NormalizedProviderError(
     `${provider} çağrısının uzaktaki sonucu doğrulanamadı.`,
-    "remote_outcome_unknown",
+    code,
     "unknown",
     false,
   );

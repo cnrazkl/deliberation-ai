@@ -131,7 +131,7 @@ describe("multi-provider adapters", () => {
         const provider = adapter.create(fetchMock, 15);
 
         await expect(provider.generate(request)).rejects.toMatchObject({
-          code: "remote_outcome_unknown",
+          code: "provider_timeout",
           outcome: "unknown",
           retryable: false,
         });

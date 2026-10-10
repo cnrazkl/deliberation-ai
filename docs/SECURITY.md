@@ -1,5 +1,16 @@
 # Security
 
+Connection chat tests require an authenticated non-root owner, exact mutation origin,
+strict streamed JSON up to 8 KiB, a 1,200-character message, revision/message/profile
+fingerprint and explicit paid-call approval. A row-locked encrypted submitted receipt
+precedes dispatch; replay only returns that receipt. Uncertain work uses the existing
+deadline/margin and acknowledgement guards. Message/reply fields are bounded and
+encrypted in the connection observation envelope; no test input, output, credentials
+or raw error body is logged. UI renders plain escaped text. Transport codes come from
+an allowlist, preserving uncertainty. The worker's outbound Docker network belongs
+only to the isolated project; database publishing and foreign service changes remain
+excluded. New text fields require the current source for strict archive restoration.
+
 Selected connection model IDs are owner-scoped configuration, with the same non-secret
 classification as the legacy default model. Up to 100 unique bounded IDs can be saved;
 credentials and catalog/generation observations retain encryption. Selection saving

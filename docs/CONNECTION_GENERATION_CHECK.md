@@ -1,5 +1,35 @@
 # Reviewed connection generation and model history
 
+## Compact connection chat (10 October 2026)
+
+Creation and the saved connection's Bağlantı tab expose a short chat panel. Explicit
+**Kaydet Ve Test Et** saves new/edited credentials first; **Mesajı Gönder** uses unchanged
+saved settings. Models come from saved/draft selections. Message/model/connection edits
+invalidate approval; pending requests lock fields and dismissal. This probe sends exactly
+one bounded owner message and a fixed connection-test instruction, with no previous test,
+council, conversation, file or tool content. The separate connection-chat text entrypoint
+preserves private-history contracts and requests 512 output tokens/45 seconds. Default
+provider reasoning may consume output tokens. A plain-text success does not establish
+structured council output, factual accuracy, cost or future capabilities.
+
+Owned no-store GET `/api/provider-connections/:id/chat-check` reads observations only;
+strict POST review/send bodies are bounded to 8 KiB and messages to 1,200 characters.
+Review fingerprints include exact message, connection revision and connection-chat-v1
+profile. Approved sends reuse the existing durable encrypted submission, capacity,
+replay, uncertainty and deletion rules. Chat receipts retain kind/message/reply,
+truncation, normalized HTTP/transport code and nullable usage inside existing ciphertext;
+raw provider error bodies and credentials never enter these fields or logs. History
+clearly distinguishes plain-text from structured success. Lost browser responses retain
+their intent and offer read-only inspection; no automatic retry/polling occurs. Unknown
+receipts can be explicitly acknowledged through the existing generation/history panel.
+
+An observed LAN failure was internal-only worker networking (EAI_AGAIN); joining the
+owned access network restored read-only OpenRouter catalog access without resubmitting
+old unknown operations. Compose now supplies worker egress while the database remains
+internal. Existing historical unknown codes are not rewritten or attributed to account
+credit limits. New transport codes allowlist DNS, refused/reset connection, TLS and
+deadline diagnostics while preserving unknown-outcome handling.
+
 Implemented 7 October 2026. This completes the existing Group 5 capability-history
 and bounded generation-check item in [TASKS](TASKS.md), not the whole operational
 evaluation group or DA-119/DA-126 empirical acceptance.

@@ -1,5 +1,11 @@
 # Tasks
 
+- [ ] Owner-reported OpenRouter failures and compact connection chat: owned worker
+  internal-only network caused observed EAI_AGAIN. Outbound access repaired without
+  restart or generation; persist compose fix. Implement save-and-test creation/editing,
+  selected model, bounded message/reply and safe error codes with durable intent replay.
+  Unit/PostgreSQL checks pass; final browser/build/deployment acceptance pending.
+
 - [x] Owner-reported LAN HTTP council submission `crypto.randomUUID` failure: all
   remaining browser request-ID callers use the shared secure fallback with existing
   intent/retry/approval semantics. Six unit cases, web types/lint, production build and

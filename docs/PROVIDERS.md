@@ -1,5 +1,14 @@
 # Providers
 
+The connection mini-chat uses a separate two-message plain-text probe (512 requested
+output tokens, 45 seconds, no tools/schema or history). All four families reuse bounded
+redirect-refusing text transport. Provider-default reasoning may consume the requested
+budget; truncated or over-cap replies are marked. It proves only this text request,
+not structured council output support. Safe HTTP codes and allowlisted DNS/connect/
+TLS/reset/deadline diagnostics are returned without raw error bodies. Network failures
+retain unknown outcomes and never retry automatically. Worker provider access requires
+the owned outbound access network; an internal-only Docker network cannot reach APIs.
+
 Connection creation no longer requires a default model. The owner saves multiple
 catalog IDs per connection and chooses those IDs in member dropdowns. Catalog fetching
 remains explicit and bounded; preferences do not certify access, capabilities or model

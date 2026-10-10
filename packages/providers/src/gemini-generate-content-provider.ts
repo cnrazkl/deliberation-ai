@@ -126,7 +126,7 @@ export class GeminiGenerateContentProvider implements TextProvider {
       }, this.#options.timeoutMs);
     } catch (error) {
       if (error instanceof NormalizedProviderError) throw error;
-      throw providerNetworkError("Gemini");
+      throw providerNetworkError("Gemini", error);
     }
     const rawText = json.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("");
     const citations = extractProviderCitations(json);

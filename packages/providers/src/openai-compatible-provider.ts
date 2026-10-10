@@ -171,7 +171,7 @@ export class OpenAICompatibleProvider implements TextProvider {
       }, this.#options.timeoutMs);
     } catch (error) {
       if (error instanceof NormalizedProviderError) throw error;
-      throw providerNetworkError("OpenAI uyumlu sağlayıcı");
+      throw providerNetworkError("OpenAI uyumlu sağlayıcı", error);
     }
     const rawText = json.choices?.[0]?.message?.content;
     const citations = extractProviderCitations(json);
