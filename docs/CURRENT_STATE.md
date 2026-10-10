@@ -1,24 +1,56 @@
 # Current state
 
-Updated: 10 October 2026 (worker egress repaired; connection chat verification underway)
+Updated: 10 October 2026 (worker egress and compact connection chat deployed and verified)
 
-## Provider connectivity and compact connection chat — verification underway
+## Provider connectivity and compact connection chat — deployed and verified
 
 Read-only diagnostics of reported run 24c312a2 show unknown outcomes without response
 IDs or usage; historical receipt codes do not establish their precise transport cause.
-The current worker cannot resolve openrouter.ai (EAI_AGAIN), while web can. Inspection
-confirms worker has only the internal Docker network and no gateway. Attaching the
-existing owned access network repairs public catalog GET (HTTP 200) without container
+Before repair, the worker could not resolve openrouter.ai (EAI_AGAIN), while web could.
+Inspection confirmed worker had only the internal Docker network and no gateway.
+Attaching the existing owned access network repaired public catalog GET (HTTP 200) without container
 restart, generation, historical receipt edits or foreign/database/worker lifecycle
-changes. The compose definition now preserves this outbound access on recreation.
+changes. The compose definition preserves outbound access on recreation. Both reported
+Kimi/GLM IDs remain in the public catalog; no account credit/limit cause is inferred.
 
 ConnectionChatTester and its owned review/send/history route are implemented: save-and-
 test creation/edits, selected-model dropdown, independent bounded message, durable
 encrypted reply/error receipts and lost-response inspection. 493 unit and 278 isolated
-PostgreSQL cases pass. Seven focused browser cases, workspace types and web lint pass;
-an initial two-message/private-history mismatch is corrected by a separate connection-
-chat transport. Model-less saved connections use a dedicated owned history read.
-Broad browser, Linux production build and owned deployment checks remain pending.
+PostgreSQL cases pass. All 113 broad browser cases pass. The seven connection-chat
+cases also pass with native browser UUID disabled, including final auto-scroll of the
+latest result. Initial checks exposed a two-message/private-history mismatch, corrected
+by a separate text entrypoint; model-less connections use a dedicated owned history
+read. Workspace types, web lint and Linux persistence/worker/web types, zero-warning
+web lint and production builds pass. Network model tests were not enabled.
+
+Actual LAN HTTP verifies save-and-test creation, plain-text reply, immediate HTTP 429
+code, saved connection dispatch, history reopening/read-only inspection without another
+call, question retention and both palettes at 320/1110px. Production screenshots were
+inspected; no page exception occurred. Each of two live checks made exactly two local
+loopback fixture calls, not paid external generation. Temporary accounts, connections
+and encrypted histories were erased by fingerprint-bound deletion; fixtures were
+stopped. The owner's browser and historical unknown-operation receipts were untouched.
+
+A private pre-deployment PostgreSQL dump and archive inventory were verified; its
+encryption key stays separate. Initial deployment recreated owned web/worker/observer
+only after no active owned queue/run work remained. Recreated worker again reaches the
+public catalog (HTTP 200) on both owned networks. Final scroll-only UI rollout preserved
+that worker; its source packages/deployment definition match the final export. Final
+foreign inventory/lifecycle and owned database baselines match. No migration ran;
+native PostgreSQL was stopped again after isolated checks, matching its initial state.
+
+Current owned web/observer image: `deliberationai-rehearsal:60374dd507ec-connection-chat-ui2`,
+manifest `sha256:36085efcaecd89aca46891cbe40ddf798ea88daa9484c4c277e2f4200f4baec2`,
+exported tree `f00c04a4256df11b653a92c986635715f4c26bc1` (commit `a88e711`) before
+this documentation-only verification update. Final deployment completed at
+2026-10-10T12:37:19Z; LAN binding remains `192.168.1.112:33184`.
+Worker uses `deliberationai-rehearsal:60374dd507ec-connection-chat-ui1`, manifest
+`sha256:5eaaa784dc911abe8a847f9923db1077fc95790863f481ab1ec3a144a7265871`,
+tree `680564a6ad09a76182766e57f4d0a218821ed060` with identical application/provider/
+persistence packages and permanent worker egress configuration.
+Source-bound window `month-connection-chat2-ui-20261010` starts
+2026-10-10T12:37:32.093Z and is due 2026-11-09T12:37:32.093Z; first sample healthy.
+Earlier windows remain retained; monthly and independent human quality gates stay open.
 
 ## LAN HTTP council submission identifiers — deployed and verified
 
@@ -43,7 +75,7 @@ database/worker baselines match; packages, worker and deployment definitions are
 unchanged, and no migration ran. Native PostgreSQL was stopped again after the isolated
 tests, matching its initial state. No API/provider/schema change was made. The separately
 observed attachment hash limitation remains open.
-Current owned image: `deliberationai-rehearsal:60374dd507ec-lan-uuid-ui1`, manifest
+Previous owned image: `deliberationai-rehearsal:60374dd507ec-lan-uuid-ui1`, manifest
 `sha256:757c89301ea53cedb789427052e7348e059f0fecb51ffb1743744e02a3c8790a`,
 exported tree `4bc75f4159f61eedaa0cee0b87fcede0c7b87d2c` (commit `4bcfddf`) before
 this documentation-only verification update. Deployment completed at

@@ -1,5 +1,14 @@
 # Prompt contracts
 
+`connection-chat-v1` sends a fixed short connection-test system instruction and one
+trimmed owner message (up to 1,200 characters). It asks for a short plain-text reply,
+with no previous test, council, conversation, memory, file or tool context. Review
+fingerprints bind both strings, selected model, connection revision and the requested
+512 output tokens/45-second profile. Provider-default reasoning remains provider
+behavior. This entrypoint is separate from private history's message contract;
+success is a text connection observation, not council-schema or quality acceptance.
+[Contract](CONNECTION_GENERATION_CHECK.md).
+
 8 October full-cohort diagnostics observed compatible review JSON with invalid `kind`
 values. Cross-review text now explicitly supplies the unchanged claim-kind enum and
 distinguishes it from `reviewStance`, including later/self-revision rounds. Round 0,
