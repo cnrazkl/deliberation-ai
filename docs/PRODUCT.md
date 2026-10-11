@@ -191,9 +191,12 @@ missing records and recorded council/decision job links. Private branch existenc
 is separate from unchecked delivery receipts; counts permit no automatic recovery.
 [Scope](RECOVERY_QUEUE_TARGETS.md).
 
-Conversation cards now expose deletion review for populated history as well as
-empty records. The same review guides separately confirmed private/run deletion,
-then metadata removal, showing existing blockers and preserving the draft.
+Conversation cards expose **Konuşmayı Sil** for populated and empty history. One
+centered **Emin misiniz?** dialog confirms all owned run/private content and local
+bindings atomically. Independent linked copies are listed and retained; active or
+uncertain work and ownership/schema guards block removal. The question/member draft
+and page position remain. Template deletion opens the same style of modal outside
+its card, preserving its existing review contract.
 [Workflow and limits](CONVERSATION_CLEANUP.md).
 
 Saved-backup rehearsal also shows queue job states and future start times for

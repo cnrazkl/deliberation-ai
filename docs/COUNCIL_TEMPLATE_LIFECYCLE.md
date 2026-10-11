@@ -1,5 +1,9 @@
 # Saved council-template lifecycle — DA-108
 
+Workspace deletion review now opens in a centered modal outside the template card,
+preserving page position/focus. The acknowledgement, exact fingerprint, retained
+copy warning and durable retry/deletion contract below are unchanged.
+
 Verified 3 October 2026. Reviewed deletion and durable creation retries are complete.
 
 ## Saving and retrying

@@ -22,10 +22,16 @@ test("reviews template deletion, rejects stale confirmation and recovers a lost 
     await page.getByRole("button", { name: "Konseyi Kaydet", exact: true }).click();
     const reviewButton = page.getByRole("button", { name: `${name} şablonunu silmeyi incele`, exact: true });
     await expect(reviewButton).toBeVisible(); const id = ids[0]!;
+    await reviewButton.scrollIntoViewIfNeeded();
+    const scrollBefore = await page.evaluate(() => window.scrollY);
     await reviewButton.click(); const panel = page.getByRole("region", { name: "Şablon silme önizlemesi" });
+    await expect(page.getByRole("dialog", { name: "Konsey Şablonunu Sil", exact: true })).toHaveCount(1);
+    expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(scrollBefore, 0);
     const confirm = panel.getByRole("button", { name: "Şablon içeriğini kalıcı olarak sil" });
     await expect(confirm).toBeDisabled(); await expect(panel).toContainText("Önceki çalışmalar ve zamanlamalar kendi kopyalarını saklar");
     await panel.getByRole("button", { name: "Silme incelemesini kapat" }).click();
+    expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(scrollBefore, 0);
+    await expect(reviewButton).toBeFocused();
     await expect(question).toHaveValue("Generated template deletion keeps this draft question");
     await reviewButton.click(); await expect(confirm).toBeDisabled();
     const old = await (await request.get(`/api/council-templates/${id}/deletion`)).json();

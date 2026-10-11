@@ -1,6 +1,47 @@
 # Current state
 
-Updated: 11 October 2026 (saved council pool deployed and inexpensive live checks complete)
+Updated: 11 October 2026 (single-confirmation conversation deletion deployed and verified)
+
+## Single-confirmation conversation deletion — deployed and verified
+
+**Konuşmayı Sil** opens one centered confirmation dialog. One explicit button removes
+the conversation's owned run/private bodies, memberships, local knowledge bindings/
+packets and metadata in one transaction. Independent linked copies are listed and
+retained. Active/unresolved work, execution leases, ownership/schema drift and bounded
+inspection/audit limits still block. Existing encrypted body tombstones fence creation
+replay. A lost response is inspected without another mutation; no migration or model
+request is introduced. Template deletion uses the same modal wrapper, keeping its
+existing acknowledgement/retry contract. Both dialogs preserve position/focus and
+mount once outside hidden views and template pills. [Closure and limits](CONVERSATION_CLEANUP.md).
+
+494 unit tests, all 288 isolated PostgreSQL cases, workspace types and zero-warning
+web lint pass. All 12 affected browser cases pass with native UUID disabled, including
+one-button populated deletion, retained external copy, stale confirmation, lost response,
+scope guards, template review, run/private compatibility and council-pool retention.
+Database cases cover atomic rollback after a late invalid receipt, live lease refusal,
+internal continuations/private branches, schema/ownership and bounded knowledge/target
+scopes. Native PostgreSQL is stopped again, matching its initial state.
+
+Linux persistence/worker/web types, lint and production web build pass. Actual LAN HTTP
+verifies one confirmation removes two generated bodies and one private branch while
+retaining the copied neighbor and question draft. Cancel semantics and restored
+focus/position are covered locally; production verifies cancel/position/focus and
+both palettes at 320/1110px, with screenshots inspected and zero page errors or model
+calls. Temporary accounts/fixtures were erased by reviewed account deletion. The owner's
+reported populated conversation is eligible in a read-only aggregate preview; no owner
+conversation or historical provider receipt was deleted for testing.
+
+Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-conversation-delete`,
+manifest `sha256:0050474093ebf1a744045cacb77440b5d4a0f0f9d1313831487fee954a449477`,
+exported tree `333b6c525f28409f3aa40879dc8b1d8f280a892a`. Final source differs only in
+post-verification documentation. Deployment completed 2026-10-11T14:21:58Z at unchanged
+`192.168.1.112:33184`. Private pre-deployment dump inventory verified; no migration or
+restore. Foreign container inventory/lifecycle and owned database baseline match.
+Recreated worker public catalog GET is 200; all application services run with zero
+restarts. Observation `month-conversation-delete-20261011` starts
+2026-10-11T14:22:12.248Z, due 2026-11-10T14:22:12.248Z; first sample healthy. Monthly
+observation and human quality gates remain open. Older rollout artifacts below are
+historical acceptance evidence; the active deployment is the one recorded here.
 
 ## Saved council pool — deployed and verified
 
@@ -29,7 +70,7 @@ failed/earlier unknown receipts remain. **Hızlı Ekonomik Konsey** and **Ekonom
 are saved in the owner's pool. Transport/format mechanics are verified; answer quality,
 universal capability and invoice cost are not inferred.
 
-Current web/worker/observer image is `deliberationai-rehearsal:60374dd507ec-council-pool-ui3`,
+The council-pool rollout image was `deliberationai-rehearsal:60374dd507ec-council-pool-ui3`,
 manifest `sha256:9924e2ce68b27223b8dec25c92d8488cff603c32c523aa01d30984261f97cca6`,
 exported tree `fdc29425b41511fca0e5fd26a8e0242c57c814a2`. Executable source matches
 commit `1672a00`; final test-selector/docs updates follow that export. Deployment

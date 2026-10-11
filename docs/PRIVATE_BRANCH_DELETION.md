@@ -1,5 +1,9 @@
 # Reviewed private branch content deletion — DA-101
 
+Complete-conversation deletion now includes owned branches in a single atomic
+confirmation and warns about retained independent copies. Standalone private deletion
+keeps the copy/acknowledgement workflow below. [Aggregate contract](CONVERSATION_CLEANUP.md).
+
 Accepted locally on 2 October 2026. This removes the stored content of one owned
 private branch, after explicit review. It is not a cascade, partial-message editor,
 provider cancellation/refund, secure storage wipe or complete conversation/account erasure.

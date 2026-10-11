@@ -7,6 +7,11 @@ It does not erase a complete conversation/account, independent inputs or every c
 
 ## Owner workflow
 
+The separate **Konuşmayı Sil** action now composes these inspectors/audit writers for
+all owned bodies in one conversation, with one atomic confirmation and explicitly
+retained independent copies. The standalone workflow below retains its existing
+copy blockers and acknowledgement. [Aggregate contract](CONVERSATION_CLEANUP.md).
+
 In **Son çalışmalar**, choose **Çalışma silmeyi incele**. The read-only preview identifies
 the exact run, affected record counts, retained records and blockers. Review the checkbox,
 then separately choose **Çalışma içeriğini kalıcı olarak sil**. Opening/cancelling or

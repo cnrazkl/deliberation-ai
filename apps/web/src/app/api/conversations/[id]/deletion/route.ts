@@ -1,22 +1,25 @@
 import { withLocalSession } from "../../../../../lib/local-auth";
 import { z } from "zod";
 import { ConversationDeletionBlockedError, ConversationDeletionStaleError,
-  deleteEmptyConversation, previewConversationDeletion } from "@deliberation-ai/persistence";
+  deleteEmptyConversation, previewConversationDeletion, deleteConversationContent, previewConversationContentDeletion,
+  RunDeletionBlockedError, PrivateBranchDeletionBlockedError } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../../../lib/request-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const confirmation = z.object({ conversationId: z.string().regex(uuid),
-  fingerprint: z.string().regex(/^[a-f0-9]{64}$/), confirmMetadataDeletion: z.literal(true) }).strict();
+const identity = { conversationId: z.string().regex(uuid), fingerprint: z.string().regex(/^[a-f0-9]{64}$/) };
+const confirmation = z.union([z.object({ ...identity, confirmMetadataDeletion: z.literal(true) }).strict(),
+  z.object({ ...identity, confirmContentDeletion: z.literal(true) }).strict()]);
 type Context = { params: Promise<{ id: string }> };
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 
-async function sessionGET(_request: Request, context: Context) {
+async function sessionGET(request: Request, context: Context) {
   const { id } = await context.params;
   if (!uuid.test(id)) return json({ error: "Konuşma bulunamadı." }, 404);
   try {
-    const preview = await previewConversationDeletion(id.toLowerCase());
+    const preview = await (new URL(request.url).searchParams.get("scope") === "content"
+      ? previewConversationContentDeletion(id.toLowerCase()) : previewConversationDeletion(id.toLowerCase()));
     return preview ? json(preview) : json({ error: "Konuşma bulunamadı." }, 404);
   } catch { return json({ error: "Silme önizlemesi hazırlanamadı." }, 500); }
 }
@@ -45,11 +48,12 @@ async function sessionPOST(request: Request, context: Context) {
   const parsed = confirmation.safeParse(await Promise.resolve().then(() => JSON.parse(Buffer.concat(chunks).toString("utf8"))).catch(() => null));
   if (!parsed.success || parsed.data.conversationId.toLowerCase() !== id.toLowerCase()) return json({ error: "Silme onayı geçersiz." }, 422);
   try {
-    const result = await deleteEmptyConversation(id.toLowerCase(), parsed.data.fingerprint);
+    const result = await ("confirmContentDeletion" in parsed.data
+      ? deleteConversationContent(id.toLowerCase(), parsed.data.fingerprint) : deleteEmptyConversation(id.toLowerCase(), parsed.data.fingerprint));
     return result ? json(result) : json({ error: "Konuşma bulunamadı veya zaten silindi." }, 404);
   } catch (error) {
     if (error instanceof ConversationDeletionStaleError) return json({ error: "Konuşma kaydı değişti. Yeni silme önizlemesini inceleyin." }, 409);
-    if (error instanceof ConversationDeletionBlockedError) return json({ error: "Bu konuşma şu anda silinemez. Önizlemeyi yenileyin." }, 409);
+    if (error instanceof ConversationDeletionBlockedError || error instanceof RunDeletionBlockedError || error instanceof PrivateBranchDeletionBlockedError) return json({ error: "Bu konuşma şu anda silinemez. Durumu yenileyin." }, 409);
     return json({ error: "Konuşma kaydı silinemedi." }, 500);
   }
 }

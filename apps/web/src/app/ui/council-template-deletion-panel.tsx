@@ -2,6 +2,7 @@
 import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
 import type { CouncilTemplateDeletionPreview } from "@deliberation-ai/persistence";
+import { DeletionDialog } from "./deletion-dialog";
 
 export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, onBusy }: {
   templateId: string; onCancel: () => void; onDeleted: () => void; onBusy: (value: boolean) => void;
@@ -33,7 +34,7 @@ export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, 
     } catch (cause) { if (alive.current) setError(cause instanceof Error ? cause.message : "Silme tamamlanamadı."); }
     finally { submitting.current = false; onBusy(false); if (alive.current) setBusy(false); }
   }
-  return <section aria-label="Şablon silme önizlemesi">
+  return <DeletionDialog title="Konsey Şablonunu Sil" busy={busy} onCancel={onCancel}><section aria-label="Şablon silme önizlemesi">
     <h3>Şablon silme önizlemesi</h3><p>Şablon kimliği: {templateId}</p>
     <p>Yalnız bu kayıtlı şablonun adı, açıklaması ve üye ayarları kaldırılır. Seçili konseyiniz ve taslak sorunuz korunur.</p>
     <p>Önceki çalışmalar ve zamanlamalar kendi kopyalarını saklar; kuyruktaki işler durmaz. Yedekler ve dışa aktarılan dosyalar silinmez. Oluşturma isteğinin kimliği/özeti ve şifreli silme kaydı saklanır.</p>
@@ -48,5 +49,5 @@ export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, 
     {error && <p role="alert">{error}</p>}
     <button type="button" disabled={busy} onClick={() => { setPreview(undefined); setReviewed(false); setError(undefined); setRefresh((value) => value + 1); }}>Silme önizlemesini yenile</button>
     <button type="button" disabled={busy} onClick={onCancel}>Silme incelemesini kapat</button>
-  </section>;
+  </section></DeletionDialog>;
 }

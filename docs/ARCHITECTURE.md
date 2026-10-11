@@ -1,5 +1,19 @@
 # Architecture
 
+ConversationContentDeletion composes the existing run/private inspection and audit
+writers inside one owner-locked transaction. Its exact retained-copy scope is derived
+from owned conversation memberships, never client-supplied target lists. Local
+knowledge bindings/packets are included with registered schema/FK/trigger checks and
+bounded SHA-256 row digests; library bodies and independent copies are retained.
+The legacy empty-metadata endpoint contract remains available. New content confirmation
+uses `?scope=content`, strict/no-store/same-origin BFF handling and nonblocking live
+execution leases. Existing body tombstones fence creation replay; no DDL or worker
+dispatch change is introduced. DeletionDialog mounts once outside hidden views/pills,
+retains viewport/focus and prevents pending report navigation from scrolling a modal.
+Conversation deletion needs one explicit button confirmation; template review keeps
+its existing checkbox/fingerprint and retry semantics inside the same dialog wrapper.
+See [the complete closure and limits](CONVERSATION_CLEANUP.md).
+
 CouncilPool is a client presentation component inside the question composer.
 CouncilWorkbench retains owned template loading, durable save intent, active identity
 and exact draft comparison. Selection copies members and stored round/self-revision

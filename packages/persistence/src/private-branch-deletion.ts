@@ -66,7 +66,7 @@ async function schemaSupported(tx: ConversationTransaction) {
     tgrelid in ('public.conversation_private_branches'::regclass, 'public.private_branch_deletions'::regclass) limit 1`);
   return triggers.rows.length === 0;
 }
-async function inspect(tx: ConversationTransaction, id: string) {
+export async function inspectPrivateBranchDeletion(tx: ConversationTransaction, id: string, scope?: { deletingBranchIds: ReadonlySet<string>; retainCopies: boolean }) {
   const current = await readPrivateBranch(tx, id); if (!current) return undefined;
   const blockedReasons: PrivateBranchDeletionBlock[] = [];
   if (!await schemaSupported(tx)) blockedReasons.push("schema_changed");
@@ -75,8 +75,9 @@ async function inspect(tx: ConversationTransaction, id: string) {
   if (foreign) blockedReasons.push("owner_mismatch");
   // Direct references include foreign rows; never delete someone's copy or expose its ID.
   const direct = await tx.select({ id: branches.id, ownerId: branches.ownerId }).from(branches).where(eq(branches.parentBranchId, id)).limit(MAX_ROWS + 1);
-  const copied = new Set(direct.filter((row) => row.ownerId === getOwnerId()).map((row) => row.id));
-  if (direct.length) blockedReasons.push("copied_branches");
+  const external = direct.filter((row) => row.ownerId !== getOwnerId() || !scope?.deletingBranchIds.has(row.id));
+  const copied = new Set(external.filter((row) => row.ownerId === getOwnerId()).map((row) => row.id));
+  if (external.some(row => row.ownerId !== getOwnerId()) || external.length && !scope?.retainCopies) blockedReasons.push("copied_branches");
   const [size] = await tx.select({ count: sql<string>`count(*)::text`, bytes: sql<string>`coalesce(sum(octet_length(${branches.bodyCiphertext})), 0)::text` })
     .from(branches).where(eq(branches.ownerId, getOwnerId()));
   if (Number(size!.count) > MAX_ROWS || Number(size!.bytes) > MAX_SCAN_BYTES || direct.length > MAX_ROWS) blockedReasons.push("inspection_limit");
@@ -85,11 +86,11 @@ async function inspect(tx: ConversationTransaction, id: string) {
     // provenance references. Unreadable bodies close the boundary.
     const rows = await tx.select().from(branches).where(eq(branches.ownerId, getOwnerId())).orderBy(asc(branches.id));
     for (const row of rows) {
-      if (row.id === id) continue;
+      if (row.id === id || scope?.deletingBranchIds.has(row.id)) continue;
       const body = decodePrivateBranchBody(row);
       if (body.messages.some((item) => item.originBranchId === id) || body.deliveries?.some((item) => item.originBranchId === id)) copied.add(row.id);
     }
-    if (copied.size && !blockedReasons.includes("copied_branches")) blockedReasons.push("copied_branches");
+    if (copied.size && !scope?.retainCopies && !blockedReasons.includes("copied_branches")) blockedReasons.push("copied_branches");
   }
   const [count] = await tx.select({ value: sql<string>`count(*)::text` }).from(deletions)
     .where(and(eq(deletions.ownerId, getOwnerId()), eq(deletions.conversationId, current.row.conversationId)));
@@ -100,29 +101,24 @@ async function inspect(tx: ConversationTransaction, id: string) {
     messageCount: current.row.messageCount, receiptCount: receipts.length, ownReceiptCount: receipts.filter((item) => item.originBranchId === id).length,
     copiedBranchIds: [...copied].sort(), eligible, blockedReasons, fingerprint: eligible ? createHash("sha256").update(JSON.stringify({
       version: "private-branch-deletion-v1", owner: getOwnerId(), row: current.row,
+      ...(scope?.retainCopies ? { retainedCopies: [...copied].sort() } : {}),
     })).digest("hex") : null };
   return { preview, current };
 }
 export function previewPrivateBranchDeletion(id: string) {
   return getDatabase().transaction(async (tx) => {
     await tx.execute(sql`set local statement_timeout = '10s'`);
-    return (await inspect(tx, id))?.preview;
+    return (await inspectPrivateBranchDeletion(tx, id))?.preview;
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
-export function deletePrivateBranch(id: string, fingerprint: string) {
-  return getDatabase().transaction(async (tx) => {
-    await tx.execute(sql`set local lock_timeout = '5s'`); await tx.execute(sql`set local statement_timeout = '10s'`);
-    await lockConversationMembership(tx);
+export async function lockPrivateBranchDeletion(tx: ConversationTransaction, id: string) {
     // Never wait on the worker lease after taking its owner lock: fail closed.
     const lease = await tx.execute<{ acquired: boolean }>(sql`select pg_try_advisory_xact_lock(hashtext('private-delivery-v1'), hashtext(${id})) as acquired`);
     if (!lease.rows[0]?.acquired) throw new PrivateBranchDeletionBlockedError();
     await tx.execute(sql`lock table public.conversation_private_branches, public.private_branch_deletions in share row exclusive mode`);
-    const previous = await auditInSnapshot(tx, id);
-    if (previous) {
-      if (previous.fingerprint !== fingerprint) throw new PrivateBranchDeletionStaleError();
-      return previous;
-    }
-    const value = await inspect(tx, id); if (!value) return undefined;
+}
+export async function applyPrivateBranchDeletion(tx: ConversationTransaction, value: NonNullable<Awaited<ReturnType<typeof inspectPrivateBranchDeletion>>>, fingerprint: string) {
+    const id = value.current.row.id;
     if (!value.preview.eligible) throw new PrivateBranchDeletionBlockedError();
     if (value.preview.fingerprint !== fingerprint) throw new PrivateBranchDeletionStaleError();
     const { row, value: branch } = value.current;
@@ -139,5 +135,18 @@ export function deletePrivateBranch(id: string, fingerprint: string) {
     const removed = await tx.delete(branches).where(and(eq(branches.id, id), eq(branches.ownerId, getOwnerId()))).returning({ id: branches.id });
     if (removed.length !== 1) throw new PrivateBranchDeletionStaleError();
     return audit;
+}
+export function deletePrivateBranch(id: string, fingerprint: string) {
+  return getDatabase().transaction(async (tx) => {
+    await tx.execute(sql`set local lock_timeout = '5s'`); await tx.execute(sql`set local statement_timeout = '10s'`);
+    await lockConversationMembership(tx);
+    await lockPrivateBranchDeletion(tx, id);
+    const previous = await auditInSnapshot(tx, id);
+    if (previous) {
+      if (previous.fingerprint !== fingerprint) throw new PrivateBranchDeletionStaleError();
+      return previous;
+    }
+    const value = await inspectPrivateBranchDeletion(tx, id); if (!value) return undefined;
+    return applyPrivateBranchDeletion(tx, value, fingerprint);
   });
 }

@@ -133,7 +133,7 @@ function references(value: unknown, id: string): boolean {
   }
   return false;
 }
-async function inspect(tx: ConversationTransaction, id: string) {
+export async function inspectRunDeletion(tx: ConversationTransaction, id: string, scope?: { runIds: ReadonlySet<string>; privateBranchIds: ReadonlySet<string>; retainCopies: boolean }) {
   const [targetSize] = await tx.select({ bytes: sql<number>`octet_length(row_to_json(${s.runs})::text)` }).from(s.runs)
     .where(and(eq(s.runs.id, id), eq(s.runs.ownerId, getOwnerId()))).limit(1);
   if (targetSize && targetSize.bytes > MAX_BYTES) throw new ConversationSizeError();
@@ -160,7 +160,7 @@ async function inspect(tx: ConversationTransaction, id: string) {
   else {
     const peers = await tx.select().from(s.runs).where(eq(s.runs.ownerId, getOwnerId())).orderBy(asc(s.runs.id));
     for (const peer of peers) {
-      if (peer.id === id) continue;
+      if (peer.id === id || scope?.runIds.has(peer.id)) continue;
       if (peer.branchIndexVersion !== 1) { reasons.push("pending_index"); continue; }
       projectRunBranch(peer);
       const value = mapStoredRun(peer);
@@ -170,13 +170,13 @@ async function inspect(tx: ConversationTransaction, id: string) {
       if (peer.branchSourceRunId === id || references(value, id) || references(extra, id)) copies.add(peer.id);
     }
     const privateRows = await tx.select().from(s.conversationPrivateBranches).where(eq(s.conversationPrivateBranches.ownerId, getOwnerId()));
-    for (const peer of privateRows) if (peer.sourceRunId === id || references(decodePrivateBranchBody(peer), id)) privateCopies.add(peer.id);
+    for (const peer of privateRows) if (!scope?.privateBranchIds.has(peer.id) && (peer.sourceRunId === id || references(decodePrivateBranchBody(peer), id))) privateCopies.add(peer.id);
   }
-  if (copies.size || privateCopies.size) reasons.push("copied_content");
+  if ((copies.size || privateCopies.size) && !scope?.retainCopies) reasons.push("copied_content");
   const [publication] = await tx.select({ id: s.evidencePublications.id }).from(s.evidencePublications)
     .where(eq(s.evidencePublications.runId, id)).limit(1);
   // Independent approved copies/handoff packets need their own copy-aware erasure.
-  if (publication) reasons.push("copied_content");
+  if (publication && !scope?.retainCopies) reasons.push("copied_content");
   // Catalog guard covers unknown cascading dependencies. Cross-run references in
   // known tables and foreign-owned rows must not be swept up by a valid FK graph.
   const foreign = await tx.execute(sql`select 1 where
@@ -221,28 +221,29 @@ async function inspect(tx: ConversationTransaction, id: string) {
   const [auditCount] = await tx.select({ count: sql<string>`count(*)::text` }).from(s.runDeletions).where(eq(s.runDeletions.ownerId, getOwnerId()));
   if (Number(auditCount!.count) >= MAX_ROWS) reasons.push("audit_capacity");
   const blockedReasons = [...new Set(reasons)]; const eligible = !blockedReasons.length;
-  const fingerprint = eligible ? hash(JSON.stringify({ version: "run-body-deletion-v1", owner: getOwnerId(), snapshot, membership, preflight, schedules, billing })) : null;
+  const fingerprint = eligible ? hash(JSON.stringify({ version: "run-body-deletion-v1", owner: getOwnerId(), snapshot, membership, preflight, schedules, billing,
+    ...(scope?.retainCopies ? { retainedCopies: { runs: [...copies].sort(), branches: [...privateCopies].sort(), publication: publication?.id ?? null } } : {}) })) : null;
   const preview: RunDeletionPreview = { version: "run-body-deletion-v1", runId: id, conversationId: membership?.conversations.id ?? null,
     eligible, fingerprint, blockedReasons, copiedRunIds: [...copies].sort(), privateBranchIds: [...privateCopies].sort(),
     contentCounts: Object.fromEntries(Object.entries(snapshot).map(([name, values]) => [name, values.length])), receiptCount: operations.length,
     retainedPreflightCount: preflight.length, retainedScheduleCount: schedules.length, retainedBillingCount: billing.length };
-  return { preview, row, operations };
+  return { preview, row, operations, inspectedBytes: totalBytes };
 }
 export function previewRunDeletion(id: string) {
-  return getDatabase().transaction(async (tx) => { await tx.execute(sql`set local statement_timeout='10s'`); return (await inspect(tx, id))?.preview;
+  return getDatabase().transaction(async (tx) => { await tx.execute(sql`set local statement_timeout='10s'`); return (await inspectRunDeletion(tx, id))?.preview;
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
-export function deleteRunBody(id: string, fingerprint: string) {
-  return getDatabase().transaction(async (tx) => {
-    await tx.execute(sql`set local lock_timeout='5s'`); await tx.execute(sql`set local statement_timeout='10s'`);
-    await lockConversationMembership(tx);
+export async function lockRunDeletion(tx: ConversationTransaction, id: string) {
     const key = createHash("sha256").update(`deliberation-ai-run:${id}`).digest().readBigInt64BE(0).toString();
     const lease = await tx.execute<{ acquired: boolean }>(sql`select pg_try_advisory_xact_lock(${key}::bigint) as acquired`);
     if (!lease.rows[0]?.acquired) throw new RunDeletionBlockedError();
-    await tx.execute(sql`lock table ${sql.join(protectedTables.map((table) => sql`${table}`), sql`,`)} in share row exclusive mode`);
-    const previous = await readAudit(tx, id);
-    if (previous) { if (previous.fingerprint !== fingerprint) throw new RunDeletionStaleError(); return previous; }
-    const value = await inspect(tx, id); if (!value) return undefined;
+    await lockRunDeletionTables(tx);
+}
+export async function lockRunDeletionTables(tx: ConversationTransaction) {
+  await tx.execute(sql`lock table ${sql.join(protectedTables.map(table => sql`${table}`), sql`,`)} in share row exclusive mode`);
+}
+export async function applyRunDeletion(tx: ConversationTransaction, value: NonNullable<Awaited<ReturnType<typeof inspectRunDeletion>>>, fingerprint: string) {
+    const id = value.row.id;
     if (!value.preview.eligible) throw new RunDeletionBlockedError();
     if (value.preview.fingerprint !== fingerprint) throw new RunDeletionStaleError();
     const audit: RunDeletionAudit = runDeletionAuditSchema.parse({ version: "run-deletion-audit-v1", runId: id, conversationId: value.preview.conversationId,
@@ -258,5 +259,15 @@ export function deleteRunBody(id: string, fingerprint: string) {
     const removed = await tx.delete(s.runs).where(and(eq(s.runs.id, id), eq(s.runs.ownerId, getOwnerId()))).returning({ id: s.runs.id });
     if (removed.length !== 1) throw new RunDeletionStaleError();
     return audit;
+}
+export function deleteRunBody(id: string, fingerprint: string) {
+  return getDatabase().transaction(async (tx) => {
+    await tx.execute(sql`set local lock_timeout='5s'`); await tx.execute(sql`set local statement_timeout='10s'`);
+    await lockConversationMembership(tx);
+    await lockRunDeletion(tx, id);
+    const previous = await readAudit(tx, id);
+    if (previous) { if (previous.fingerprint !== fingerprint) throw new RunDeletionStaleError(); return previous; }
+    const value = await inspectRunDeletion(tx, id); if (!value) return undefined;
+    return applyRunDeletion(tx, value, fingerprint);
   });
 }

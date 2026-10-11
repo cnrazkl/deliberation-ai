@@ -39,6 +39,7 @@ export * from "./local-diagnostics";
 export * from "./preflight-drafts";
 export * from "./schema";
 export * from "./conversation-deletion";
+export * from "./conversation-content-deletion";
 export * from "./private-branches";
 export * from "./private-branch-deletion";
 export * from "./private-deliveries";

@@ -1062,7 +1062,9 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     }
     if (activeRunIdRef.current !== runId) return;
     setRun(loaded);
-    window.requestAnimationFrame(() => document.getElementById("council-result")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }));
+    window.requestAnimationFrame(() => {
+      if (!document.querySelector("dialog[open]")) document.getElementById("council-result")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    });
     if (!terminalStatuses.has(loaded.status)) {
       void watchRun(runId).catch((reason: unknown) => {
         if (activeRunIdRef.current === runId) {
@@ -1697,7 +1699,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   return (
     <WorkspaceShell view={view} onViewChange={setView} sidebarOpen={sidebarOpen} onSidebarOpenChange={onSidebarOpenChange} onNewChat={newChat} newChatDisabled={pending || loadingContinuation} attentionCount={operatorOperations.length} sidebar={<>
       <ConversationLibraryPanel refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
-        onReviewDeletion={(id) => { setLibraryDeletionId(id); setView("chat"); }}
+        onReviewDeletion={setLibraryDeletionId}
         onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); }} />
       <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onDeletedRun={(id) => {
         if (activeRunIdRef.current === id) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
@@ -1705,6 +1707,14 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       }} />
 
     </>}>
+      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)}
+        onDeleted={(ids) => {
+          if (activeRunIdRef.current && ids.includes(activeRunIdRef.current)) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
+          if (privateConversationId === libraryDeletionId) setPrivateConversationId(undefined);
+          setLibraryDeletionId(undefined); setHistoryRefreshKey(value => value + 1);
+        }} />}
+      {deletingTemplateId && <CouncilTemplateDeletionPanel key={deletingTemplateId} templateId={deletingTemplateId}
+        onCancel={() => setDeletingTemplateId(undefined)} onDeleted={onTemplateDeleted} onBusy={setDeletingTemplateBusy} />}
       <section className="workspace workspace-view" hidden={view !== "settings"} aria-label="Ayarlar alanı">
         <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
       <section className="primary-connections api-connections" aria-labelledby="api-connections-title">
@@ -2242,8 +2252,6 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                   {template.name} <small>{template.memberCount} üye</small>
                 </button>
                 <button className="secondary-button" type="button" disabled={savingTemplate || deletingTemplateBusy} aria-label={`${template.name} şablonunu silmeyi incele`} onClick={() => setDeletingTemplateId(template.id)}>Silmeyi incele</button>
-                {deletingTemplateId === template.id && <CouncilTemplateDeletionPanel key={template.id} templateId={template.id}
-                  onCancel={() => setDeletingTemplateId(undefined)} onDeleted={onTemplateDeleted} onBusy={setDeletingTemplateBusy} />}
               </div>
             ))}
           </div>
@@ -2295,11 +2303,6 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         )}
       </details>
 
-      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)}
-        onDeletedRun={(id) => {
-          if (activeRunIdRef.current === id) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
-          setHistoryRefreshKey((value) => value + 1);
-        }} onDeleted={() => { setLibraryDeletionId(undefined); setHistoryRefreshKey((value) => value + 1); }} />}
       {privateConversationId && <PrivateBranchesPanel key={privateConversationId} conversationId={privateConversationId} onClose={() => setPrivateConversationId(undefined)} />}
       <PreflightDraftsPanel refreshKey={draftRefreshKey} focusDraftId={focusDraftId} onStarted={(created) => {
         cancelActiveWatchRef.current?.();

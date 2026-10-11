@@ -26,7 +26,7 @@ export class ConversationDeletionStaleError extends Error {}
 
 // DA-096 registers private branches as retained content, never deletion targets.
 // Undeclared columns, dependencies or triggers still block metadata deletion.
-async function supportsMetadataDeletion(tx: ConversationTransaction): Promise<boolean> {
+export async function supportsMetadataDeletion(tx: ConversationTransaction): Promise<boolean> {
   const columns = await tx.execute<{ table: string; column: string; type: string }>(sql`
     select c.relname as "table", a.attname as "column", format_type(a.atttypid, a.atttypmod) as "type"
     from pg_attribute a join pg_class c on c.oid = a.attrelid

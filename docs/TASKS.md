@@ -1,5 +1,14 @@
 # Tasks
 
+- [x] Owner-requested simple conversation deletion and viewport retention: one explicit
+  dialog confirmation for atomic run/private/local-binding/metadata deletion, visible
+  retained-copy warnings, stale/lease/unknown/schema/owner guards and unchanged body
+  tombstones. Template review opens outside its card in a modal. 494 units, all 288
+  PostgreSQL cases, 12 affected browser checks, types/lint/Linux production build and
+  generated-only actual LAN deletion/draft/focus/layout checks pass. Owned application
+  deployed, fixtures erased and service/database baselines preserved. No owner history
+  deletion or paid generation during verification. [Contract](CONVERSATION_CLEANUP.md).
+
 - [x] Owner-requested saved council pool deployed: complete member/round settings,
   legacy-compatible encrypted content, explicit dispatch and Enter-save fencing,
   visible status and responsive controls. 494 units, 280 PostgreSQL cases, generated

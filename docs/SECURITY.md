@@ -1,5 +1,15 @@
 # Security
 
+Complete-conversation deletion uses one explicit confirmation bound to an owned,
+repeatable snapshot. All run/private audits and body, membership, local knowledge
+binding/packet and metadata removals commit together, under table/owner locks and
+nonblocking worker leases. Active/unresolved work and unknown schema/foreign ownership
+fail closed. Independent copies in other owned records are declared and retained;
+standalone body deletion keeps its stricter copy policy. Precise timestamps, child
+fingerprints and bounded SHA-256 digests prevent stale confirmation. Lost aggregate
+responses are inspected by GET; absent content closes review without another mutation.
+See [conversation deletion](CONVERSATION_CLEANUP.md) for exact limits and retained data.
+
 Council-pool selection loads only the signed-in owner's reusable configurations and
 makes no provider request. Complete template settings share the existing authenticated
 member ciphertext and are bound by durable creation hashes. Legacy hashes remain valid
@@ -122,7 +132,7 @@ no job/target/owner identifiers, payloads, outputs or private ciphertext are exp
 Errors hide database details; inspection authorizes no dispatch or owner mutation.
 [Scope](RECOVERY_QUEUE_TARGETS.md).
 
-Conversation cleanup discovery returns only bounded owned body/branch identities.
+Legacy conversation cleanup discovery returns only bounded owned body/branch identities.
 It reads no additional ciphertext and authorizes no deletion by itself; each reused
 content/metadata mutation retains its existing snapshot, owner, worker and copy
 guards. Separate confirmations never automatically cascade to dependent copies.

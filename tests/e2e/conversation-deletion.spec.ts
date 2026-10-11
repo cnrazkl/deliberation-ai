@@ -25,6 +25,11 @@ test("reviews deletion of generated empty metadata, rejects invalid confirmation
     const preview = await previewResponse.json() as { fingerprint: string; eligible: boolean };
     expect(preview.eligible).toBe(true);
     const body = { conversationId: target, fingerprint: preview.fingerprint, confirmMetadataDeletion: true };
+    const contentPreview = await (await request.get(endpoint + "?scope=content")).json();
+    const contentBody = { conversationId: target, fingerprint: contentPreview.fingerprint, confirmContentDeletion: true };
+    expect((await request.post(endpoint, { data: contentBody, headers: { origin: "https://external.example" } })).status()).toBe(403);
+    expect((await request.post(endpoint, { data: { ...contentBody, confirmContentDeletion: false } })).status()).toBe(422);
+    expect((await request.post(endpoint, { data: { ...contentBody, extra: true } })).status()).toBe(422);
     expect((await request.post(endpoint, { data: body, headers: { origin: "https://external.example" } })).status()).toBe(403);
     expect((await request.post(endpoint, { data: { ...body, conversationId: neighbor } })).status()).toBe(422);
     expect((await request.post(endpoint, { data: { ...body, confirmMetadataDeletion: false } })).status()).toBe(422);
@@ -39,28 +44,37 @@ test("reviews deletion of generated empty metadata, rejects invalid confirmation
     // The API-loaded fixture card establishes client readiness before editing
     // the server-rendered controlled textarea during a cold development load.
     await revealConversationOptions(page);
-    await expect(card.getByRole("button", { name: "Kayıt silmeyi incele" })).toBeVisible();
+    await expect(card.getByRole("button", { name: "Konuşmayı Sil", exact: true })).toBeVisible();
     await page.getByLabel("Sorunuz", { exact: true }).fill("Silme önizlemesinde korunacak soru taslağı");
     await revealConversationOptions(page);
-    await card.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
-    const panel = page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi", exact: true });
-    await expect(panel).toContainText("1 konuşma kaydı ve 1 üyelik bağlantısı");
-    await expect(panel).toContainText("Yedeklerde ve indirdiğiniz dosyalarda");
-    await expect(panel.getByRole("button", { name: "Konuşma kaydını kalıcı olarak sil" })).toBeDisabled();
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+    await card.getByRole("button", { name: "Konuşmayı Sil", exact: true }).click();
+    const panel = page.getByRole("dialog", { name: "Konuşmayı Sil", exact: true });
+    await expect(panel).toHaveCount(1);
+    await expect(panel).toContainText("emin misiniz");
+    await expect(panel).toContainText("yedeklerdeki kopyalar korunur");
+    await expect(panel.getByRole("button", { name: "Evet, Konuşmayı Sil" })).toBeEnabled();
+    await expect(panel.getByRole("checkbox")).toHaveCount(0);
+    expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(scrollBefore, 0);
     await panel.getByRole("button", { name: "Vazgeç", exact: true }).click();
     expect((await request.get(endpoint)).status()).toBe(200);
     await revealConversationOptions(page);
-    await card.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
-    const checkbox = panel.getByRole("checkbox");
-    await checkbox.check();
+    await card.getByRole("button", { name: "Konuşmayı Sil", exact: true }).click();
+    await expect(panel.getByRole("button", { name: "Evet, Konuşmayı Sil" })).toBeEnabled();
     // Server state changes after review, while remaining eligible.
     await getDatabase().update(conversationRuns).set({ createdAt: sql`created_at + interval '1 microsecond'` }).where(eq(conversationRuns.conversationId, target));
-    await panel.getByRole("button", { name: "Konuşma kaydını kalıcı olarak sil" }).click();
+    await panel.getByRole("button", { name: "Evet, Konuşmayı Sil" }).click();
     await expect(panel.getByRole("alert")).toContainText("Konuşma kaydı değişti");
     expect((await request.get(endpoint)).status()).toBe(200);
-    await panel.getByRole("button", { name: "Silme önizlemesini yenile" }).click();
-    await checkbox.check();
-    await panel.getByRole("button", { name: "Konuşma kaydını kalıcı olarak sil" }).click();
+    await panel.getByRole("button", { name: "Durumu Yenile" }).click();
+    await expect(panel.getByRole("button", { name: "Evet, Konuşmayı Sil" })).toBeEnabled();
+    await page.route(`**${endpoint}`, async route => {
+      if (route.request().method() !== "POST") return route.continue();
+      const response = await route.fetch(); expect(response.ok()).toBe(true); await route.abort();
+    });
+    await panel.getByRole("button", { name: "Evet, Konuşmayı Sil" }).click();
+    await expect(panel.getByRole("alert")).toBeVisible();
+    await panel.getByRole("button", { name: "Durumu Yenile" }).click();
     await expect(panel).toHaveCount(0);
     await expect(card).toHaveCount(0);
     expect((await request.get(endpoint)).status()).toBe(404);
@@ -81,20 +95,20 @@ test("failed previews allow retry and a blocked preview cannot delete", async ({
   await page.route("**/api/conversations", (route) => route.fulfill({ json: { conversations: [{ conversationId,
     createdAt: new Date().toISOString(), origin: "native", recordedRunCount: 1, availableRunCount: 0,
     unavailableRunCount: 1, latestAvailableRun: null }], nextCursor: null } }));
-  await page.route("**/api/conversations/*/deletion", (route) => {
+  await page.route("**/api/conversations/*/deletion**", (route) => {
     if (route.request().method() === "POST") { deleteCalls += 1; return route.fulfill({ status: 409, json: { error: "Silme engellendi." } }); }
     return fail ? route.fulfill({ status: 500, json: { error: "Önizleme geçici olarak erişilemiyor." } }) :
-      route.fulfill({ json: { version: "empty-conversation-deletion-v1", conversationId, createdAt: new Date().toISOString(), origin: "native",
-        recordedRunCount: 1, memberRunIds: [randomUUID()], eligible: false, blockedReasons: ["retained_references"], fingerprint: null } });
+      route.fulfill({ json: { version: "conversation-content-deletion-v1", conversationId, runIds: [], privateBranchIds: [], membershipCount: 1,
+        dependencies: [], knowledgeRecordCount: 0, eligible: false, blockedReasons: ["pending_operations"], fingerprint: null } });
   });
   await page.goto("/");
   await revealConversationOptions(page);
-    await page.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
-  const panel = page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi", exact: true });
+    await page.getByRole("button", { name: "Konuşmayı Sil", exact: true }).click();
+  const panel = page.getByRole("dialog", { name: "Konuşmayı Sil", exact: true });
   await expect(panel.getByRole("alert")).toContainText("Önizleme geçici olarak erişilemiyor.");
-  fail = false; await panel.getByRole("button", { name: "Silme önizlemesini yenile" }).click();
-  await expect(panel).toContainText("Başka kayıtlar hâlâ");
-  await expect(panel.getByRole("button", { name: "Konuşma kaydını kalıcı olarak sil" })).toHaveCount(0);
+  fail = false; await panel.getByRole("button", { name: "Durumu Yenile" }).click();
+  await expect(panel).toContainText("belirsiz bir işlem var");
+  await expect(panel.getByRole("button", { name: "Evet, Konuşmayı Sil" })).toBeDisabled();
   await panel.getByRole("button", { name: "Vazgeç", exact: true }).click();
   await expect(panel).toHaveCount(0);
   expect(deleteCalls).toBe(0);

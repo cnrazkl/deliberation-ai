@@ -2,106 +2,86 @@
 
 import { ownerFetch } from "../../lib/session-fetch";
 import { useEffect, useRef, useState } from "react";
-import type { ConversationDeletionBlock, ConversationDeletionPreview } from "@deliberation-ai/persistence";
-import { RunDeletionPanel } from "./run-deletion-panel";
-import { PrivateBranchDeletionPanel } from "./private-branch-deletion-panel";
+import type { ConversationContentDeletionBlock, ConversationContentDeletionPreview } from "@deliberation-ai/persistence";
+import { DeletionDialog } from "./deletion-dialog";
 
-const reasons: Record<ConversationDeletionBlock, string> = {
-  available_runs: "Önce aşağıdaki çalışma içeriklerini ayrı ayrı inceleyip silin; ardından konuşma kaydını kaldırabilirsiniz.",
-  private_branches: "Önce aşağıdaki özel dalları ayrı ayrı inceleyip silin. Kaynaklarını kullanan kopyalar varsa en son dallardan başlayın.",
-  pending_index: "Eski konuşma kayıtlarının aktarımı tamamlanmayı bekliyor.",
-  owner_mismatch: "Konuşma sahipliği doğrulanamadı.",
-  retained_references: "Başka kayıtlar hâlâ bu konuşmanın bağlantılarına ihtiyaç duyuyor.",
-  too_many_members: "Bu önizleme en fazla 1.000 çalışma veya 1.000 özel dal için kullanılabilir.",
-  schema_changed: "Kayıt yapısı değişmiş. Silme politikasının güncellenmesi gerekiyor.",
+const reasons: Record<ConversationContentDeletionBlock, string> = {
+  active_run: "Bu konuşmada hâlâ çalışan bir işlem var. İşlem bittikten sonra silebilirsiniz.",
+  pending_operations: "Sağlayıcı sonucu bekleyen veya belirsiz bir işlem var. Önce Ayarlar bölümündeki işlemi sonuçlandırın.",
+  pending_delivery: "Özel sohbette sonucu beklenen bir mesaj var. Önce bu işlemi sonuçlandırın.",
+  copied_content: "Bu konuşmadan alınmış içerikler başka kayıtlarda kullanılıyor.",
+  copied_branches: "Bu özel sohbetten alınmış içerikler başka bir özel sohbette kullanılıyor.",
+  retained_references: "Bu konuşmanın bağlantıları başka bir konuşmada kullanılıyor.",
+  decision_boundary: "Bu konuşmaya bağlı kaynak değerlendirmesi var; bu işlemle birlikte silinemiyor.",
+  pending_index: "Konuşma kayıtlarının aktarımı tamamlanmayı bekliyor.",
+  owner_mismatch: "Kayıtların sahipliği doğrulanamadığı için silme durduruldu.",
+  schema_changed: "Veri yapısı değiştiği için silme durduruldu.",
+  too_many_members: "Bu konuşma tek işlem için desteklenen 100 çalışma ve özel sohbet sınırını aşıyor.",
+  inspection_limit: "Bu konuşma güvenli silme incelemesinin boyut sınırını aşıyor.",
+  audit_capacity: "Silme kayıtlarının kapasitesi dolduğu için silme durduruldu.",
+  invalid_queue_job: "İşlem kaydı doğrulanamadığı için silme durduruldu.",
 };
+const dependencyNames = { conversation: "Bağlı konuşma", run: "İçeriği kullanan çalışma", private: "İçeriği kullanan özel sohbet", publication: "Kütüphaneye kaydedilmiş kanıt" };
 
-export function ConversationDeletionPanel({ conversationId, onDeleted, onDeletedRun, onCancel }: {
-  conversationId: string; onDeleted: () => void; onDeletedRun: (id: string) => void; onCancel: () => void;
+export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel }: {
+  conversationId: string; onDeleted: (runIds: string[]) => void; onCancel: () => void;
 }) {
-  const [preview, setPreview] = useState<ConversationDeletionPreview | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<ConversationContentDeletionPreview>();
+  const [error, setError] = useState<string>();
   const [refresh, setRefresh] = useState(0);
-  const [reviewed, setReviewed] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [contentReview, setContentReview] = useState<{ kind: "run" | "private"; id: string } | null>(null);
-  const [contentBusy, setContentBusy] = useState(false);
-  const submitting = useRef(false);
-  const alive = useRef(false);
-  const panel = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    panel.current?.focus({ preventScroll: true });
-    panel.current?.scrollIntoView({ block: "start" });
-  }, []);
+  const [busy, setBusy] = useState(false);
+  const alive = useRef(false), submitting = useRef(false), reviewedIds = useRef<string[]>([]);
+  const deleted = useRef(onDeleted);
+  useEffect(() => { deleted.current = onDeleted; }, [onDeleted]);
   useEffect(() => {
     alive.current = true;
     const controller = new AbortController();
-    void ownerFetch(`/api/conversations/${conversationId}/deletion`, { cache: "no-store", signal: controller.signal }).then(async (response) => {
-      const value = await response.json() as ConversationDeletionPreview & { error?: string };
-      if (!response.ok) throw new Error(value.error ?? "Silme önizlemesi yüklenemedi.");
-      if (!controller.signal.aborted) { setPreview(value); setError(null); }
-    }).catch((cause: unknown) => {
-      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Silme önizlemesi yüklenemedi.");
-    });
+    void ownerFetch(`/api/conversations/${conversationId}/deletion?scope=content`, { cache: "no-store", signal: controller.signal }).then(async response => {
+      if (response.status === 404) { if (!controller.signal.aborted) deleted.current(reviewedIds.current); return; }
+      const value = await response.json() as ConversationContentDeletionPreview & { error?: string };
+      if (!response.ok) throw new Error(value.error ?? "Konuşma incelenemedi.");
+      if (!controller.signal.aborted) { setPreview(value); reviewedIds.current = value.runIds; setError(undefined); }
+    }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Konuşma incelenemedi."); });
     return () => { alive.current = false; controller.abort(); };
   }, [conversationId, refresh]);
-
-  function reload() {
-    setReviewed(false); setPreview(null); setError(null); setRefresh((value) => value + 1);
-  }
-
-  function contentDeleted() {
-    if (contentReview?.kind === "run") onDeletedRun(contentReview.id);
-    setContentReview(null); reload();
-  }
-
+  function reload() { setPreview(undefined); setError(undefined); setRefresh(value => value + 1); }
   async function remove() {
-    if (!preview?.eligible || !preview.fingerprint || !reviewed || contentReview || submitting.current) return;
-    submitting.current = true; setDeleting(true); setError(null);
+    if (!preview?.eligible || !preview.fingerprint || submitting.current) return;
+    submitting.current = true; setBusy(true); setError(undefined);
     try {
       const response = await ownerFetch(`/api/conversations/${conversationId}/deletion`, { method: "POST", cache: "no-store",
-        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId, fingerprint: preview.fingerprint, confirmMetadataDeletion: true }) });
-      const value = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(value.error ?? "Konuşma kaydı silinemedi.");
-      if (alive.current) onDeleted();
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId, fingerprint: preview.fingerprint, confirmContentDeletion: true }) });
+      const value = await response.json() as { error?: string; deletedRunIds?: string[] };
+      if (!response.ok) throw new Error(value.error ?? "Konuşma silinemedi.");
+      if (alive.current) deleted.current(value.deletedRunIds ?? preview.runIds);
     } catch (cause) {
-      if (alive.current) { setError(cause instanceof Error ? cause.message : "Konuşma kaydı silinemedi."); setReviewed(false); setPreview(null); }
-    } finally { submitting.current = false; if (alive.current) setDeleting(false); }
+      if (alive.current) { setError(cause instanceof Error ? cause.message : "Sonuç alınamadı. Durumu yenileyerek kontrol edin."); setPreview(undefined); }
+    } finally { submitting.current = false; if (alive.current) setBusy(false); }
   }
-
-  return <section ref={panel} tabIndex={-1} className="settings-card" aria-label="Konuşma kaydını silme önizlemesi">
-    <div className="config-heading"><strong>Konuşma kaydını silme önizlemesi</strong>
-      <button className="secondary-button" type="button" disabled={deleting || contentBusy} onClick={onCancel}>Vazgeç</button>
-    </div>
-    <small>Konuşma kimliği: {conversationId}</small>
-    <p className="section-hint">İçeriği olan konuşmalarda önce özel dalları ve çalışma içeriklerini ayrı onaylarla silin, ardından konuşma kaydını kaldırın. Her adımda silinecek içerik ve engeller gösterilir. Yedeklerde ve indirdiğiniz dosyalarda bulunan kopyalar korunur; geri yükleme bu kayıtları yeniden getirebilir. Bu işlem yeni model isteği göndermez.</p>
-    {preview && <>
-      <p>{preview.eligible ? `Silinecek: 1 konuşma kaydı ve ${preview.recordedRunCount} üyelik bağlantısı.` : `Konuşmada ${preview.recordedRunCount} üyelik bağlantısı var; silme engellendi.`}</p>
-      {preview.blockedReasons.map((reason) => <p className="section-hint" key={reason}>{reasons[reason]}</p>)}
-      {!!preview.privateBranchIds?.length && <div className="run-history-list" aria-label="Silinebilecek özel dalları incele">
-        {preview.privateBranchIds.map((id) => <article key={id} data-private-branch-id={id}><small>Özel dal: {id}</small>
-          <button className="secondary-button" type="button" disabled={Boolean(contentReview) || deleting}
-            onClick={() => { setReviewed(false); setContentReview({ kind: "private", id }); }}>Özel dal silmeyi incele</button>
-        </article>)}
-      </div>}
-      {!!preview.availableRunIds?.length && <div className="run-history-list" aria-label="Silinebilecek çalışmaları incele">
-        {preview.availableRunIds.map((id) => <article key={id} data-run-id={id}><small>Çalışma: {id}</small>
-          <button className="secondary-button" type="button" disabled={Boolean(contentReview) || deleting}
-            onClick={() => { setReviewed(false); setContentReview({ kind: "run", id }); }}>Çalışma silmeyi incele</button>
-        </article>)}
-      </div>}
-      {preview.eligible && <>
-        {preview.memberRunIds.length > 0 && <details><summary>Silinecek üyelik bağlantıları</summary><ul>{preview.memberRunIds.map((id) => <li key={id}>{id}</li>)}</ul></details>}
-        <label><input type="checkbox" checked={reviewed} disabled={deleting} onChange={(event) => setReviewed(event.target.checked)} /> Bu konuşmanın kaydını ve üyelik bağlantılarını silmek istiyorum.</label>
-        <button className="secondary-button danger-button" type="button" disabled={!reviewed || deleting} onClick={() => void remove()}>{deleting ? "Siliniyor…" : "Konuşma kaydını kalıcı olarak sil"}</button>
+  return <DeletionDialog title="Konuşmayı Sil" busy={busy} onCancel={onCancel}>
+    <section aria-label="Konuşma silme onayı">
+      <p className="deletion-question">Bu konuşmayı silmek istediğinize emin misiniz?</p>
+      {preview && <>
+        <p>{preview.eligible ? `Konuşma, ${preview.runIds.length} çalışma ve ${preview.privateBranchIds.length} özel sohbet ile birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz.` : "Silme koşulları kontrol edildi. Aşağıdaki durum çözülmeden konuşma silinemez."}</p>
+        {preview.knowledgeRecordCount > 0 && <p>Bu konuşmanın kaynak seçimleri ve hazırlanmış bağlamları da silinir. Kütüphanedeki dosyalar korunur.</p>}
+        {preview.blockedReasons.length > 0 && <div className="deletion-blockers" role="status"><strong>Şu Anda Silinemiyor</strong>
+          <ul>{preview.blockedReasons.map(reason => <li key={reason}>{reasons[reason]}</li>)}</ul>
+        </div>}
+        {preview.dependencies.length > 0 && <div className="deletion-blockers"><strong>Bağlı Kayıtlar Korunacak</strong>
+          <p>Bu konuşmadan kopyalanmış içerikler aşağıdaki kayıtlarda bulunuyor. Yalnız bu konuşma silinir; diğer kayıtlardaki bağımsız kopyalar kalır.</p>
+          <details><summary>Bağlı Kayıtları Göster ({preview.dependencies.length})</summary>
+            <ul>{preview.dependencies.map(item => <li key={`${item.kind}:${item.id}`}>{dependencyNames[item.kind]}: <code>{item.id}</code></li>)}</ul>
+          </details>
+        </div>}
+        <p className="section-hint">Kullanım kayıtları, bağımsız kaynaklar, zamanlamalar ve yedeklerdeki kopyalar korunur. Yeni API isteği gönderilmez.</p>
       </>}
-    </>}
-    {!preview && !error && <p className="hint">Silme önizlemesi yükleniyor…</p>}
-    {error && <p className="error" role="alert">{error}</p>}
-    {contentReview?.kind === "run" && <RunDeletionPanel key={contentReview.id} runId={contentReview.id} onBusy={setContentBusy}
-      onCancel={() => setContentReview(null)} onDeleted={contentDeleted} />}
-    {contentReview?.kind === "private" && <PrivateBranchDeletionPanel key={contentReview.id} branchId={contentReview.id} onBusy={setContentBusy}
-      onCancel={() => setContentReview(null)} onDeleted={contentDeleted} />}
-    <button className="secondary-button" type="button" disabled={deleting || Boolean(contentReview)} onClick={reload}>Silme önizlemesini yenile</button>
-  </section>;
+      {!preview && !error && <p className="hint" role="status">Konuşma ve bağlantıları kontrol ediliyor…</p>}
+      {error && <p className="error" role="alert">{error}</p>}
+      <div className="deletion-dialog-actions">
+        <button type="button" className="secondary-button" disabled={busy} onClick={onCancel}>Vazgeç</button>
+        <button type="button" className="danger-button secondary-button" disabled={busy || !preview?.eligible} onClick={() => void remove()}>{busy ? "Siliniyor…" : "Evet, Konuşmayı Sil"}</button>
+      </div>
+      {(error || preview && !preview.eligible) && <button type="button" className="secondary-button" disabled={busy} onClick={reload}>Durumu Yenile</button>}
+    </section>
+  </DeletionDialog>;
 }

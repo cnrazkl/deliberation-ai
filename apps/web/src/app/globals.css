@@ -434,6 +434,20 @@ button:disabled { cursor: not-allowed; }
 .connection-dialog { width: min(760px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 1px solid var(--line); border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow-float); overflow: hidden; }
 .connection-dialog[open] { display: flex; flex-direction: column; }
 .connection-dialog::backdrop { background: rgba(5, 15, 32, .68); backdrop-filter: blur(5px); }
+.deletion-dialog { width: min(560px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow-float); overflow: auto; overscroll-behavior: contain; }
+.deletion-dialog::backdrop { background: rgba(5, 15, 32, .6); backdrop-filter: blur(4px); }
+.deletion-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px; border-bottom: 1px solid var(--line); }
+.deletion-dialog-header h2 { margin: 0; font-size: 21px; }
+.deletion-dialog-header button { width: 40px; min-height: 40px; flex-shrink: 0; padding: 0; font-size: 24px; }
+.deletion-dialog-content { padding: 24px; }
+.deletion-dialog-content section { display: grid; gap: 16px; }
+.deletion-dialog-content p { margin: 0; line-height: 1.7; overflow-wrap: anywhere; }
+.deletion-dialog-content code { overflow-wrap: anywhere; }
+.deletion-question { font-weight: 700; font-size: 16px; }
+.deletion-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.deletion-dialog-actions button { min-height: 44px; }
+.deletion-blockers { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 16px; }
+.deletion-blockers ul { padding-left: 20px; line-height: 1.7; }
 .connection-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-shrink: 0; padding: 26px 28px 22px; border-bottom: 1px solid var(--line); }
 .connection-dialog-header > div { min-width: 0; }
 .connection-dialog-header h2 { margin: 8px 0; font-size: 23px; line-height: 1.4; letter-spacing: -.025em; overflow-wrap: anywhere; }

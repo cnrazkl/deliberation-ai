@@ -130,8 +130,10 @@ test("private drafts preserve the council draft, retry one committed message, fo
     const conversationExport = await request.post(`/api/conversations/${conversationId}/export`);
     expect(conversationExport.status()).toBe(200); expect((await conversationExport.json() as { privateBranches: unknown[] }).privateBranches).toHaveLength(2);
     await revealConversationOptions(page);
-    await card.getByRole("button", { name: "Kayıt silmeyi incele" }).click();
-    await expect(page.getByRole("region", { name: "Konuşma kaydını silme önizlemesi" }).getByRole("button", { name: "Özel dal silmeyi incele", exact: true })).toHaveCount(2);
+    await card.getByRole("button", { name: "Konuşmayı Sil", exact: true }).click();
+    const deletion = page.getByRole("dialog", { name: "Konuşmayı Sil", exact: true });
+    await expect(deletion).toContainText("2 özel sohbet");
+    await deletion.getByRole("button", { name: "Vazgeç", exact: true }).click();
     expect((await request.post(`/api/private-branches/${child.id}/export`, { headers: { origin: "https://external.example" } })).status()).toBe(403);
     expect(generationCalls).toBe(0);
   } finally {

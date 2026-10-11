@@ -1,69 +1,65 @@
-# Conversation deletion entry point — owner-requested insertion
+# Single-confirmation conversation deletion
 
-Previously the conversation library exposed deletion only for entries whose run
-bodies were already absent, inside Other operations. Populated conversations had
-no deletion entry even though separate reviewed run/private deletion existed.
+Every saved conversation exposes **Konuşmayı Sil**. It opens one centered native
+dialog with **Bu konuşmayı silmek istediğinize emin misiniz?**, affected run/private
+counts, retained-copy warnings and **Vazgeç / Evet, Konuşmayı Sil**. No checkbox or
+separate private/run/metadata approval is needed. Cancelling removes nothing.
+Conversation and council-template deletion dialogs preserve page position and return
+focus to their trigger. They are mounted once outside hidden workspace views and
+template pills. Pending report-navigation scrolling cannot move an open dialog.
 
-## Owner workflow
+Only this conversation's owned terminal run bodies, owned private branches,
+memberships, local knowledge selections/bindings/preparation packets and metadata
+are deletion targets. Internal continuations/forks are included in the same scope.
+An independent copy in another owned conversation/private branch or
+published evidence stays intact: the dialog warns and lists its identifier. Those
+logical source pointers may now identify unavailable content, while the copy retains
+its frozen input, raw output/provenance and existing source identities. This explicit
+retained-copy policy applies only to complete-conversation deletion; standalone
+[run](RUN_DELETION.md) and [private](PRIVATE_BRANCH_DELETION.md) reviews keep their
+existing copy blockers.
 
-Every conversation card now exposes a visible deletion review. Populated entries
-use **Konuşmayı silmeyi incele**; empty entries retain **Kayıt silmeyi incele**.
-Opening focuses and scrolls to the review without changing the question draft,
-model selection or generating a request.
+Active runs, prepared/submitted/unknown/retry-authorized provider work, private
+deliveries, live execution leases, decision-assessment boundaries, foreign ownership,
+index problems, unreadable provenance, inspection/audit capacity and unregistered
+schema/FKs/triggers still block the whole operation. The dialog explains the blocker;
+there are no nested deletion actions. The command never cancels, retries, refunds or
+generates provider work and never removes another conversation or reusable library
+source. Independent preflight/schedule inputs, billing, MCP results, downloads and
+backups remain; old backups can restore deleted content.
 
-The review lists the exact owned, still-present run bodies and private branches.
-Choose a private branch or run to use its existing content-deletion preview and
-separate acknowledgement. Remove copied leaf branches/descendant runs first when
-their source preview explains a copy dependency. Active, pending/unknown, copy,
-schema, ownership and size guards remain in force; a listed identity is an
-inspection action, not a promise that it is eligible.
+## Atomic persistence and compatibility
 
-Each successful body deletion refreshes the conversation preview and clears the
-old acknowledgement. Deleting the currently open run clears its result/watch but
-preserves the new-question draft. Once the existing metadata policy permits it,
-review and separately confirm **Konuşma kaydını kalıcı olarak sil**. The history
-lists refresh after deletion. Preview failure offers manual refresh; a changed
-server snapshot still requires new review.
+GET `/api/conversations/:id/deletion?scope=content` reads an owner-scoped repeatable
+snapshot and returns `conversation-content-deletion-v1`. POST with the exact
+fingerprint and `confirmContentDeletion: true` rechecks the complete scope under the
+owner membership lock, stable table locks and nonblocking council/private worker
+leases. Every run/private body is inspected using its existing bounded schema,
+ownership, provenance, pending-operation and content-free audit contracts. The
+aggregate binds precise PostgreSQL timestamps, child fingerprints, local knowledge
+row SHA-256 digests and sorted retained dependencies. New/changed content or copy
+links invalidate confirmation. Leases are held throughout commit. An error anywhere
+rolls back all bodies, audit inserts, bindings and metadata together.
 
-These are separately committed actions. Cancelling later does not undo content
-already deleted in an earlier confirmed step. No automatic batch/cascade, retry,
-provider call or removal of another conversation is introduced.
+Existing encrypted run/private deletion audits are created before body removal,
+retaining usage/identity/provenance and fencing original creation intents. No new
+table, migration or conversation tombstone is added. A completed aggregate is absent;
+repeat POST returns 404, and after a lost response **Durumu Yenile** performs a GET,
+recognizes absence and refreshes history without another mutation. Changed/failed
+confirmation requires a fresh preview and another explicit confirmation. The legacy
+unqualified GET and `confirmMetadataDeletion` POST retain their stricter empty-only
+contract for existing callers; they cannot authorize populated deletion.
 
-## Persistence boundary
+The aggregate allows at most 100 total memberships/private branches, 10,000 run-owned
+content rows/64 MiB, 1,000 knowledge records/32 MiB and 100 retained dependency
+identities. Existing per-body/global scans and audit capacities also apply. Knowledge
+size/count checks precede row digest reads. Exact knowledge schema/FK checks and the
+unchanged immutable update trigger are registered; any additional delete/cascade
+behavior fails closed. Public evidence publication insertion is fenced during apply.
+Strict 4-KiB confirmation parsing, no-store responses, authenticated owner and
+same-origin mutation rules remain unchanged.
 
-The existing owner-scoped repeatable-read preview adds `availableRunIds` and
-`privateBranchIds`. Queries select identifiers only, each bounded to 1,001 rows to
-detect overflow. More than 1,000 memberships hides the run list; more than 1,000
-owned private branches hides the branch list and blocks metadata deletion. Neither
-list returns a misleading partial preview. Foreign bodies/branches are not exposed
-as owned deletion targets. No question, report or private ciphertext is read by
-this added discovery path.
-
-The client reuses [run-body deletion](RUN_DELETION.md), [private-branch deletion](PRIVATE_BRANCH_DELETION.md)
-and [empty metadata deletion](CONVERSATION_DELETION.md). Each mutation rechecks its
-own exact fingerprint and current guards in its existing transaction. A discovery
-list grants no deletion authority. No new endpoint, schema or migration is added.
-
-## Retained references and limits
-
-Knowledge selections/preparations, independent approved evidence copies, copies in
-other conversations and other retained references can still block the relevant
-step. This flow does not silently clear those references. Existing content-free
-usage/replay receipts, independent inputs, schedules, billing, backups and exported
-files remain under their existing policies. Old backups can restore old content;
-complete account/external-copy erasure is not claimed.
-
-## Verification
-
-A real-route browser scenario in a generated isolated database creates a two-run
-conversation and a private branch, observes the source-copy blocker, separately
-deletes the private branch and child/source bodies, then confirms metadata removal.
-It verifies the draft, neighboring conversation and content-free receipts survive,
-the deleted current result closes and no generation request occurs. Existing empty
-metadata and run-deletion browser flows cover cancellation, stale confirmation,
-lost-response replay, same-origin/strict-body limits and active/copy blockers.
-
-PostgreSQL tests discover only owned existing targets without decrypting malformed
-fixture ciphertext and refuse private-list overflow without exposing partial IDs.
-Destructive verification uses generated fixtures only; no owner conversation is
-deleted as part of development.
+Successful deletion closes an affected open result/watch/private panel and refreshes
+history. The question, member choices and other new-question draft fields remain.
+Opening the dialog does not change the workspace tab. Verification deletes generated
+fixtures only, never the owner's conversations, and enables no paid model tests.
