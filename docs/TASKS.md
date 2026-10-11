@@ -1,8 +1,12 @@
 # Tasks
 
-- [ ] Owner-requested saved council pool in chat: complete member and round settings,
-  legacy-compatible encrypted content, explicit dispatch, visible status, responsive
-  controls and inexpensive opt-in real OpenRouter checks. Verification in progress.
+- [x] Owner-requested saved council pool deployed: complete member/round settings,
+  legacy-compatible encrypted content, explicit dispatch and Enter-save fencing,
+  visible status and responsive controls. 494 units, 280 PostgreSQL cases, generated
+  restore, final 16 browser checks, types/lint/Linux builds and actual LAN UI pass.
+  Twelve authorized cheap OpenRouter calls establish plain reply and council/review
+  delivery; one Ministral review-format failure remains in the preserved partial run.
+  Two named economic councils are saved. [Evidence](COUNCIL_POOL_ACCEPTANCE.md).
 
 - [x] Owner-reported OpenRouter failures and compact connection chat: owned worker
   internal-only network caused observed EAI_AGAIN. Outbound access repaired without

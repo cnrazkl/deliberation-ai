@@ -1,13 +1,45 @@
 # Current state
 
-## Saved council pool — implementation verification in progress
+Updated: 11 October 2026 (saved council pool deployed and inexpensive live checks complete)
 
-11 October 2026: the chat composer now exposes named council save/select controls and
-applies complete member plus review-round/self-revision settings. Strict encrypted v2
-content preserves legacy arrays/hashes and reviewed deletion; no migration. Local,
-deployment and explicitly authorized inexpensive OpenRouter live checks are underway.
+## Saved council pool — deployed and verified
 
-Updated: 10 October 2026 (worker egress and compact connection chat deployed and verified)
+The chat composer exposes named council save/select controls and applies ordered
+members plus review-round/self-revision settings. Selection preserves the question
+and sends nothing; existing preflight/frozen dispatch applies on explicit run.
+Enter in the council-name field saves without submitting the question. Strict encrypted
+v2 content preserves legacy arrays/hashes and reviewed deletion; no migration.
+
+494 units, 280 isolated PostgreSQL cases, workspace types, web lint and Linux
+package/worker/web production checks pass. Generated-only archive restore verifies
+active/deleted v2 content. The broad 118-case browser run passes 117; the remaining
+legacy test's save label and member-region selectors were updated for the new pool.
+All 16 final council/pool/template/help checks pass with native UUID disabled.
+Actual LAN HTTP verifies selection, rounds/self-revision after reload, question
+retention, Enter-save fencing and both palettes at 320/1110px with zero page errors.
+Production screenshots were inspected and temporary fixtures were erased by reviewed
+account deletion. Native PostgreSQL is stopped again; the owner's browser was untouched.
+
+The owner's OpenRouter model choices now additionally include Mistral Small 24B and
+Ministral 3B, preserving previous choices and execution revision. Twelve authorized
+inexpensive live calls cover two plain chats, a completed two-member/zero-review run,
+a partial mixed-model review run (Ministral `provider_response_invalid`) and a completed
+Small-24B council with two independent replies/two reviews. No new unknown result;
+failed/earlier unknown receipts remain. **Hızlı Ekonomik Konsey** and **Ekonomik Konsey**
+are saved in the owner's pool. Transport/format mechanics are verified; answer quality,
+universal capability and invoice cost are not inferred.
+
+Current web/worker/observer image is `deliberationai-rehearsal:60374dd507ec-council-pool-ui3`,
+manifest `sha256:9924e2ce68b27223b8dec25c92d8488cff603c32c523aa01d30984261f97cca6`,
+exported tree `fdc29425b41511fca0e5fd26a8e0242c57c814a2`. Executable source matches
+commit `1672a00`; final test-selector/docs updates follow that export. Deployment
+completed 2026-10-11T13:17:36Z at the unchanged LAN binding. Private pre-deployment dump
+inventory verified; no migration/restore. Foreign inventory/lifecycle and owned database
+baseline match; recreated worker catalog GET is 200. Completed task CLI producers stopped;
+application services remain running with zero restarts. Observation window
+`month-council-pool-20261011` starts 2026-10-11T13:17:49.874Z, due
+2026-11-10T13:17:49.874Z; first sample healthy. Monthly/human quality gates remain open.
+[Complete verification and live outcomes](COUNCIL_POOL_ACCEPTANCE.md).
 
 ## Provider connectivity and compact connection chat — deployed and verified
 
