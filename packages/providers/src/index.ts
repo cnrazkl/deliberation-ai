@@ -73,6 +73,7 @@ export type ProviderResult = {
 export class NormalizedProviderError extends Error {
   readonly rawText?: string;
   readonly metadata?: ProviderResult["metadata"];
+  readonly diagnostic?: { detail: string; providerCode: string };
 
   constructor(
     message: string,
@@ -81,6 +82,7 @@ export class NormalizedProviderError extends Error {
     readonly retryable: boolean,
     rawText?: string,
     metadata?: ProviderResult["metadata"],
+    diagnostic?: { detail: string; providerCode: string },
   ) {
     super(message);
     this.name = "NormalizedProviderError";
@@ -88,6 +90,7 @@ export class NormalizedProviderError extends Error {
       Object.defineProperty(this, "rawText", { value: rawText, enumerable: false });
     }
     if (metadata !== undefined) Object.defineProperty(this, "metadata", { value: metadata, enumerable: false });
+    if (diagnostic !== undefined) Object.defineProperty(this, "diagnostic", { value: diagnostic, enumerable: false });
   }
 }
 
@@ -107,6 +110,7 @@ export * from "./gemini-generate-content-provider";
 export * from "./model-catalog";
 export * from "./generation-check";
 export { generatePrivateText, generateConnectionChatText } from "./private-text";
+export { validateConnectionTestAttachments } from "./connection-test-media";
 export * from "./synthesis";
 export { inputFor, instructionsFor, outputJsonSchemaFor } from "./provider-utils";
 

@@ -1,125 +1,100 @@
-# Reviewed connection generation and model history
+# Connection tests and model history
 
-## Compact connection chat (10 October 2026)
+## Current owner workflow (11 October 2026)
 
-Creation and the saved connection's Bağlantı tab expose a short chat panel. Explicit
-**Kaydet Ve Test Et** saves new/edited credentials first; **Mesajı Gönder** uses unchanged
-saved settings. Models come from saved/draft selections. Message/model/connection edits
-invalidate approval; pending requests lock fields and dismissal. This probe sends exactly
-one bounded owner message and a fixed connection-test instruction, with no previous test,
-council, conversation, file or tool content. The separate connection-chat text entrypoint
-preserves private-history contracts and requests 512 output tokens/45 seconds. Default
-provider reasoning may consume output tokens. A plain-text success does not establish
-structured council output, factual accuracy, cost or future capabilities.
+Creation and the Bağlantı tab offer **Hızlı Bağlantı Testi**. Saved connections also
+have **Test ve Geçmiş**, with an always-open **Model Testi Ve Hata Ayıklama** area.
+There is no extra generation toggle, fixed 2 + 2 preview or ordinary approval checkbox.
+Choose a saved model, write a short message and click **Mesajı Gönder**. A larger
+visible price notice explains the potentially charged API call. **Kaydet Ve Test Et**
+first saves new/edited credentials; tab changes preserve connection drafts. Pending
+sends lock fields, tabs and dialog dismissal. Closing/reopening or reloading clears
+all new test messages, files and replies; previous test content is never rehydrated.
 
-Owned no-store GET `/api/provider-connections/:id/chat-check` reads observations only;
-strict POST review/send bodies are bounded to 8 KiB and messages to 1,200 characters.
-Review fingerprints include exact message, connection revision and connection-chat-v1
-profile. Approved sends reuse the existing durable encrypted submission, capacity,
-replay, uncertainty and deletion rules. Chat receipts retain kind/message/reply,
-truncation, normalized HTTP/transport code and nullable usage inside existing ciphertext;
-raw provider error bodies and credentials never enter these fields or logs. History
-clearly distinguishes plain-text from structured success. Lost browser responses retain
-their intent and offer read-only inspection; no automatic retry/polling occurs. Unknown
-receipts can be explicitly acknowledged through the existing generation/history panel.
+Each test sends only its current owner message and a short connection-test instruction,
+without council, conversation, prior test, memory, sources or tools. The debug area can
+add up to three small PNG/JPEG/WebP, PDF, WAV/MP3 files: 1 MiB each and 2 MiB combined.
+FileReader works on private LAN HTTP without crypto.subtle. Server signatures, canonical
+base64 and bounds are checked before dispatch. Files are not uploaded to library/run
+storage, parsed locally or persisted. Only current test files reach the selected API.
+Native/compatible mappings are listed in [PROVIDERS](PROVIDERS.md). Unsupported native
+API mappings fail locally; model-specific rejection appears from the provider. OpenRouter
+PDF tests pin native input, preventing implicit paid OCR from masking unsupported input.
 
-An observed LAN failure was internal-only worker networking (EAI_AGAIN); joining the
-owned access network restored read-only OpenRouter catalog access without resubmitting
-old unknown operations. Compose now supplies worker egress while the database remains
-internal. Existing historical unknown codes are not rewritten or attributed to account
-credit limits. New transport codes allowlist DNS, refused/reset connection, TLS and
-deadline diagnostics while preserving unknown-outcome handling.
+Aliases are optional per selected connection model in the Modeller tab or creation form.
+They appear beside exact IDs in council/test dropdowns, and never rewrite model identity,
+council templates, execution targets or provenance. The one-time manual model field is
+always visible inside the expanded model list. Preference-only saves preserve execution
+revision and catalogs/history; removing a selection removes its alias.
 
-Implemented 7 October 2026. This completes the existing Group 5 capability-history
-and bounded generation-check item in [TASKS](TASKS.md), not the whole operational
-evaluation group or DA-119/DA-126 empirical acceptance.
+## Transport, errors and replay
 
-## Owner workflow
+Owned no-store GET `/api/provider-connections/:id/chat-check` reads observations;
+POST review/send use strict streamed JSON (2,850,000-byte ceiling), a trimmed message
+up to 1,200 characters, and bounded files. Preparation fingerprints bind connection
+revision, model, message/profile, transient mode and each file's name/type/SHA-256.
+A second complete input digest prevents replay with changed files/message, even after
+connection editing. A row lock durably records submitted state before the only call.
+UUIDs are canonicalized; duplicate/replayed intent IDs never dispatch another request.
 
-Open Ayarlar → Yerel sağlayıcı bağlantıları → **Üretim testi ve model geçmişi**.
-Opening, choosing a model, viewing instructions and refreshing records are local
-read-only operations. The panel's model draft does not change the saved default,
-council members, question, files or private branches. The existing catalog action
-still only requests a list; it does not prove generation support.
+The transport requests 512 output tokens and 45 seconds, no tools/schema, provider-
+default reasoning and no redirects. Replies are bounded to 16,384 characters and wire
+responses to 131,072 bytes. Truncation, reported output above cap and nullable usage stay
+visible. These are requested limits and observed counters, not cost/invoice guarantees.
+Plain reply success does not establish structured council output, quality or future support.
+HTTP/transport error codes, known provider error types and generated safe explanations
+appear in the test transcript. HTTP-200 embedded provider errors are treated as failures.
+Raw provider error bodies can echo secrets/input and never cross the adapter or enter logs.
 
-The review shows the actual application instruction/user strings for a fixed
-synthetic 2 + 2 request, connection revision and requested settings. A separate
-checkbox authorizes one potentially charged generation. No owner conversation,
-memory, knowledge packet, tool result or attachment is sent. Search is off;
-normalized reasoning none can map to a provider default/lowest supported level.
-The adapter requests 512 output tokens and has a 45-second timeout. Neither is
-proof of remote enforcement, a spending limit or settled invoice cost.
+New browser requests set transient=true. Their encrypted receipts store only input digest,
+fingerprint, revision/model/provider, status, safe codes, timestamps, nullable usage and
+response identity. Message/reply/file names/bytes/explanatory text are omitted from storage.
+The browser holds visible results until dialog close/reload. **Sonucu Kontrol Et** reads
+that existing receipt without generation; a lost response recovers status, never fabricates
+or re-generates the missing reply. The Test ve Geçmiş tab shows only status/diagnostic
+metadata and catalog observations, including previous legacy receipts.
 
-**Yeni denemeyi incele** creates a fresh local intent and clears approval.
-**Kayıtları yenile** retains that identity and only reads history. Resubmitting a
-stored identity returns its receipt without another provider call. Inspect a
-lost response using that identity first. Model/connection changes invalidate the
-displayed approval. Success means valid structured output for this fixed request;
-truth, representative quality and other reasoning/image/search modes are untested.
+32 permanent intent identities per connection retain the existing replay fence. They
+are not automatically evicted; the next identity is refused at capacity. Legacy encrypted
+chat replies and the fixed generation-check API remain readable/replayable, but the
+ordinary UI no longer offers that fixed prompt. There is no migration, historical
+rewrite, worker queue or automatic retry. Strict envelope readers must support new
+optional fields before archive restore or binary rollback.
 
-## Versioned observation storage
+Submitted/unknown work blocks a fresh send inside the 45-second deadline plus five-
+second margin. Afterward the owner must explicitly accept the prior uncertain charge
+before a fresh call, or close its uncertainty through the existing PATCH without a
+provider call. That exceptional uncertainty acknowledgement remains separate from the
+removed routine send checkbox. Late completion preserves the original acknowledgement.
+Connection deletion retains its unresolved-operation guard. Old backups remain separate.
 
-The existing authenticated catalog ciphertext accepts `provider-observations-v1`:
-latest catalog, last ten revisioned catalogs and dropped count, plus at most 32
-permanent generation intents per connection. Catalog entries bind revision,
-provider/preset, original timestamp, model membership and normalized capability
-fields. The panel projects the selected model across them. Missing fields/model
-ids or a failed catalog do not prove unsupported generation.
+## Retained fixed-check compatibility
 
-Legacy latest-only catalogs remain readable as one historical entry with their
-original revision/time; missing time stays unknown. Editing increments revision
-and clears only latest suggestions, preserving history/intent IDs. An in-flight
-catalog cannot attach to a changed revision. Locked catalog, edit and generation
-transactions preserve each other's observations.
+GET `/api/provider-connections/:id/generation-check` still prepares the historical fixed
+structured prompt. POST/PATCH retain their 2,048-byte strict/explicit-acknowledgement
+contracts for compatible callers; the new free-message UI uses chat-check instead.
+The fixed adapter still bounds responses to 65,536 bytes. This compatibility endpoint
+makes no automatic calls and does not alter independent council round-0 execution.
 
-`connection-generation-v1` receipts bind intent UUID, model, connection revision,
-provider/preset and SHA-256 of reviewed application prompt/settings. Fingerprints
-are rechecked before dispatch. Provider wire framing is not archived. Changes to
-the probe prompt/profile require a new version; no history certifies future models.
+## Primary transport references
 
-Retained fields: submitted/succeeded/failed/outcome_unknown, start/finish and
-uncertainty acknowledgement times, fixed failure category, normalized HTTP error
-status, returned model/response id, nullable provider input/output tokens and
-elapsed time. Raw output/error bodies, credentials and owner content never enter
-history or logs. Provider-reported output above the requested 512 is explicitly
-flagged. Older receipts lacking the flag stay readable; their count still renders
-the warning. Missing usage remains unknown. Probes are separate from council/
-private usage and are not reconciled invoice ledger rows.
-
-Generation identities are not evicted: the 33rd fresh intent is refused, while
-old replay remains available. Connection deletion removes its scoped history;
-backup copies remain separate. Unacknowledged submitted/unknown intents block
-deletion. This history is not an account-level permanent financial ledger.
-
-## Submission and interruption
-
-An owned row lock durably encrypts submitted state before network execution.
-UUIDs are canonicalized, so letter-case changes cannot create another intent or
-alter encryption contexts. Duplicate UUID with changed model/fingerprint conflicts. Fresh intents are blocked
-while unresolved work is inside the 45-second deadline plus five-second margin.
-There is no automatic provider retry, polling, background queue or resend.
-
-After the margin, a fresh paid call needs explicit acknowledgement that the prior
-remote outcome and charge remain unknown. Alternatively **Belirsizliği onayla
-(API çağrısı yapmaz)** acknowledges the expired intent via PATCH without a call.
-It does not turn uncertainty into success or prove remote cancellation. Late
-completion preserves that acknowledgement and the original connection revision.
-
-GET `/api/provider-connections/:id/generation-check` is an owned no-store review.
-POST/PATCH reject foreign origins and strictly validate streamed bodies up to
-2,048 bytes. The provider package reuses all four actual council adapter families;
-an application facade returns only normalized metadata to persistence. SDK values
-remain inside adapters. Redirects are refused and response bodies bounded to
-65,536 bytes. Timeout/network/unreadable responses remain unknown; known rejection
-stays failed. Custom/local destinations keep the existing single-owner egress
-boundary and must not be exposed to untrusted owners without a separate design.
-
-No DDL migration is added. Restore auditing strictly validates legacy catalogs
-or new envelopes. Older binaries cannot read new JSON envelopes: use current
-source with a new archive, or a suitable pre-change archive for an old binary.
-Matching migration journals alone do not prove encrypted JSON compatibility.
+- [OpenRouter audio inputs](https://openrouter.ai/docs/guides/overview/multimodal/audio)
+- [OpenRouter PDF/native parser](https://openrouter.ai/docs/guides/overview/multimodal/pdfs)
+- [OpenRouter error vocabulary](https://openrouter.ai/docs/api_reference/errors-and-debugging)
 
 ## Verification and live evidence
+
+11 October simplification: 497 units, 290 isolated PostgreSQL cases and all 28 affected
+browser checks pass, including transient content stripping, complete-input replay,
+alias preservation across catalog/receipt writes, multimodal mapping/signature bounds,
+safe provider diagnostics, close/reset and council-draft retention. Workspace types,
+web lint and Linux production build pass. Generated-account tests on actual LAN HTTP
+verify creation/edit aliases, image/WAV/PDF delivery, HTTP 400/unsupported_modality,
+invalid-signature rejection before any dispatch, no routine checkbox and both palettes
+at 320/1110px. Five synthetic loopback calls; no paid external generation. Temporary
+account/connection/receipts and fixture server were removed. Deployment identity,
+database/service baselines and observation window are recorded in CURRENT_STATE.md.
+Earlier live provider checks below are retained historical evidence, not new acceptance.
 
 Offline adapter tests exercise all four wire families, fixed input, one-call
 behavior, requested caps, response bounds, known/unknown errors and the lowest

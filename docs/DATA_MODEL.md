@@ -1,5 +1,15 @@
 # Data model
 
+The existing encrypted `provider-observations-v1` envelope accepts optional
+`modelAliases` (up to 100 model-ID keys, 80-character trimmed labels). Preference-only
+saves retain catalogs/receipts and execution revision; removing a selection removes
+its alias. No column/migration is added. New transient chat receipts have `transient:
+true` and a SHA-256 `inputDigest`; stored receipts omit message, reply, file names,
+bytes and transient explanatory text. Minimal status/code/usage/timestamps/fingerprint
+remain for exactly-once claiming and uncertain-result inspection. Legacy chat receipts
+retain their original content. Strict readers must include the new optional fields
+before restoring/reading these envelopes; rolling back to older binaries is unsafe.
+
 Council pool content uses the existing `council_templates.members_ciphertext` and
 `council-template:<id>:members` authentication context. Legacy plaintext shape is an
 ordered member array. Complete saves encrypt `{version: "council-template-content-v2",

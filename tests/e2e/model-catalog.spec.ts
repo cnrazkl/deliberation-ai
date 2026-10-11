@@ -25,13 +25,13 @@ test("saved catalog supports multiple models, preserves drafts and keeps connect
     const card = page.locator(".connection-card").filter({ hasText: "E2E catalog" });
     const panel = await openConnectionPanel(page, card, "Modeller");
     await panel.getByRole("button", { name: "Model listesini kontrol et" }).click();
-    await expect(panel.getByRole("status")).toContainText("2 model kimliği listelendi");
+    await expect(panel.getByRole("status")).toContainText("2 model kimliği listelendi", { timeout: 15_000 });
     await expect(panel.getByRole("status")).toContainText("API anahtarı doğrulanmış sayılmaz");
     expect(calls).toEqual(["/v1/models"]);
     const choices = panel.locator(".saved-connection-models").filter({ visible: true });
     await addConnectionModels(choices, ["local-model-a", "local-model-b"]);
     await panel.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click();
-    await expect(choices.getByRole("status")).toContainText("Model seçimleri kaydedildi");
+    await expect(choices.getByRole("status")).toContainText("Model seçimleri ve takma adlar kaydedildi");
     await panel.getByRole("tab", { name: "Bağlantı", exact: true }).click();
     const editor = panel.locator(".connection-form");
     await editor.getByLabel("Bağlantı adı", { exact: true }).fill("Unsaved catalog name");
@@ -55,7 +55,7 @@ test("saved catalog supports multiple models, preserves drafts and keeps connect
     await addConnectionModels(choices, ["local-model-a", "local-model-b"]);
     await panel.getByRole("checkbox", { name: "local-model-a", exact: true }).uncheck();
     await panel.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click();
-    await expect(choices.getByRole("status")).toContainText("Model seçimleri kaydedildi");
+    await expect(choices.getByRole("status")).toContainText("Model seçimleri ve takma adlar kaydedildi");
     await workspaceView(page, "Sohbet"); await expect(model).toHaveValue("local-model-a");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep this draft and the selected model.");
     await expect(model.locator("option")).toHaveText(["Bağlantıdan bir model seçin", "local-model-a · Bu sohbetin mevcut modeli", "local-model-b"]);

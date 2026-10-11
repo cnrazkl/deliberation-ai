@@ -9,6 +9,22 @@ TLS/reset/deadline diagnostics are returned without raw error bodies. Network fa
 retain unknown outcomes and never retry automatically. Worker provider access requires
 the owned outbound access network; an internal-only Docker network cannot reach APIs.
 
+The connection debug tab accepts up to three signature-validated PNG/JPEG/WebP, PDF,
+WAV/MP3 inputs (1 MiB each, 2 MiB combined). Compatible adapters use image_url,
+input_audio and file parts; OpenRouter PDFs explicitly use the native parser engine.
+Native Anthropic maps images/documents; Responses maps input_image/input_file; Gemini
+maps all allowed files to inlineData. Audio is refused locally for Anthropic/Responses
+because their selected APIs lack this mapping; it is never silently dropped. Other
+model-specific rejection is left to the provider and displayed with safe diagnostics.
+New transient probe status/error codes are retained without message/reply/file bodies.
+HTTP errors and embedded HTTP-200 errors are normalized inside the adapter. Known
+provider error categories and generated explanations cross the boundary; raw error
+bodies that could reflect credentials/input do not. Private/synthesis transport keeps
+its existing contracts. Network generation remains opt-in and outside normal CI.
+[OpenRouter inputs](https://openrouter.ai/docs/guides/overview/multimodal/audio),
+[PDF engine](https://openrouter.ai/docs/guides/overview/multimodal/pdfs),
+[error types](https://openrouter.ai/docs/api_reference/errors-and-debugging).
+
 Connection creation no longer requires a default model. The owner saves multiple
 catalog IDs per connection and chooses those IDs in member dropdowns. Catalog fetching
 remains explicit and bounded; preferences do not certify access, capabilities or model

@@ -15,7 +15,6 @@ export async function addConnectionModels(scope: Locator, models: string[]) {
     if (await checkbox.count()) await checkbox.check();
     else {
       const manual = dropdown.locator(".connection-model-manual");
-      if (await manual.getAttribute("open") === null) await manual.locator("summary").click();
       await manual.getByLabel("Model kimliği", { exact: true }).fill(model);
       await manual.getByRole("button", { name: "Modeli Ekle", exact: true }).click();
     }

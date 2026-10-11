@@ -2,10 +2,15 @@
 
 `connection-chat-v1` sends a fixed short connection-test system instruction and one
 trimmed owner message (up to 1,200 characters). It asks for a short plain-text reply,
-with no previous test, council, conversation, memory, file or tool context. Review
+with no previous test, council, conversation, memory or tool context. Quick tests have
+no files; debug tests append only the owner's current small test files as multimodal
+user parts, without text extraction or a structured council instruction. Review
 fingerprints bind both strings, selected model, connection revision and the requested
 512 output tokens/45-second profile. Provider-default reasoning remains provider
-behavior. This entrypoint is separate from private history's message contract;
+behavior. New transient fingerprints additionally bind transient mode and each file's
+name, MIME type and SHA-256; replay separately checks the complete input digest.
+Neither file bytes nor the owner-written message/reply enter new persisted receipts.
+This entrypoint is separate from private history's message contract;
 success is a text connection observation, not council-schema or quality acceptance.
 [Contract](CONNECTION_GENERATION_CHECK.md).
 

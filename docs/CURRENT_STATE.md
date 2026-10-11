@@ -1,6 +1,39 @@
 # Current state
 
-Updated: 11 October 2026 (single-confirmation conversation deletion deployed and verified)
+Updated: 11 October 2026 (model aliases and transient multimodal connection tests deployed and verified)
+
+## Connection aliases and transient multimodal tests — deployed and verified
+
+The requested manual model field and Test ve Geçmiş content have no inner disclosure.
+Selected models accept optional connection-specific aliases. Quick/debug tests use the
+visible send action and larger price notice without a routine acknowledgement checkbox.
+Quick results clear on dialog close/reload; new receipts retain only content-free replay
+metadata. The debug tab takes a custom message and small image/PDF/WAV/MP3 inputs, with
+safe HTTP/provider/transport diagnostics. Existing uncertain-result guards and legacy
+receipts remain. No migration or council orchestration change. 497 units, 290 isolated
+PostgreSQL cases, all 28 affected browser cases, workspace types and zero-warning web
+lint pass. Linux persistence/worker/web types, lint and production web build pass.
+[Contract](CONNECTION_GENERATION_CHECK.md).
+
+Actual LAN HTTP verifies creation/edit aliases, quick reset, visible fee notice without
+the routine checkbox, image/WAV/PDF wire delivery, immediate HTTP 400/unsupported_modality
+diagnostics and invalid-signature refusal before dispatch. Stored receipts contain no
+test message/reply/file name/bytes; reopening clears files and replies but retains status.
+Council question drafts and exact model IDs remain. Both palettes fit 320/1110px with
+screenshots inspected and zero page errors. Five loopback synthetic calls, no paid
+external generation; generated account/connection/receipts erased and fixture server stopped.
+Native PostgreSQL is stopped again, matching its initial state.
+
+Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-connection-debug`,
+manifest `sha256:649a2ba68dd08d90977fe338c46d8165dd1bc36bc9adecbf86dd2dd6e6005099`,
+exported tree `08b529f2d069c26a8777685f872637ff360ff2c8`. Final source differs only in
+post-verification documentation. Deployment completed 2026-10-11T19:12:27Z at unchanged
+`192.168.1.112:33184`. Private pre-deployment dump inventory verified; no migration or
+restore. Foreign container inventory/lifecycle and owned database baseline match.
+Worker public catalog GET is 200; application services run with zero restarts.
+Observation `month-connection-debug-20261011` starts 2026-10-11T19:12:41.441Z, due
+2026-11-10T19:12:41.441Z; first sample healthy. Monthly observation/human quality gates
+remain open; earlier rollout artifacts below are historical.
 
 ## Single-confirmation conversation deletion — deployed and verified
 
@@ -31,7 +64,7 @@ calls. Temporary accounts/fixtures were erased by reviewed account deletion. The
 reported populated conversation is eligible in a read-only aggregate preview; no owner
 conversation or historical provider receipt was deleted for testing.
 
-Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-conversation-delete`,
+The conversation-deletion rollout used image `deliberationai-rehearsal:60374dd507ec-conversation-delete`,
 manifest `sha256:0050474093ebf1a744045cacb77440b5d4a0f0f9d1313831487fee954a449477`,
 exported tree `333b6c525f28409f3aa40879dc8b1d8f280a892a`. Final source differs only in
 post-verification documentation. Deployment completed 2026-10-11T14:21:58Z at unchanged

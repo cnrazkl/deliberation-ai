@@ -881,6 +881,8 @@ export type RunStatus = z.infer<typeof runStatusSchema>;
 
 export const selectedConnectionModelsSchema = z.array(z.string().trim().min(1).max(120)).max(100)
   .refine((models) => new Set(models).size === models.length, "Model seçimleri tekrarlanamaz.");
+export const connectionModelAliasesSchema = z.record(z.string().trim().min(1).max(120), z.string().trim().min(1).max(80))
+  .refine(aliases => Object.keys(aliases).length <= 100, "En fazla 100 model takma adı kaydedilebilir.");
 
 export const saveProviderConnectionSchema = z.object({
   id: z.string().uuid().optional(),
@@ -889,6 +891,7 @@ export const saveProviderConnectionSchema = z.object({
   apiKey: z.string().trim().max(512).default(""),
   defaultModel: z.string().trim().max(120).default(""),
   selectedModels: selectedConnectionModelsSchema.optional(),
+  modelAliases: connectionModelAliasesSchema.optional(),
   expectedRevision: z.number().int().positive().optional(),
   baseUrl: z.string().trim().url().max(2_048).optional(),
   endpointPreset: endpointPresetSchema.default("custom"),
@@ -976,11 +979,23 @@ export const generationCheckRequestSchema = z.strictObject({
   acknowledgeUnknown: z.boolean().default(false),
 });
 export const connectionChatMessageSchema = z.string().trim().min(1).max(1200);
+export const CONNECTION_TEST_FILE_BYTES = 1_048_576;
+export const connectionTestAttachmentSchema = z.strictObject({
+  name: z.string().trim().min(1).max(120),
+  mimeType: z.enum(["image/png", "image/jpeg", "image/webp", "application/pdf", "audio/wav", "audio/mpeg"]),
+  data: z.string().min(4).max(1_398_104).regex(/^[A-Za-z0-9+/]+={0,2}$/u).refine(data => data.length % 4 === 0),
+});
+export const connectionTestAttachmentsSchema = z.array(connectionTestAttachmentSchema).max(3).default([])
+  .refine(files => files.reduce((sum, file) => sum + file.data.length * 3 / 4 - (file.data.endsWith("==") ? 2 : file.data.endsWith("=") ? 1 : 0), 0) <= 2_097_152,
+    "Test dosyaları toplamda en fazla 2 MiB olabilir.");
+export type ConnectionTestAttachment = z.infer<typeof connectionTestAttachmentSchema>;
 export const connectionChatReviewSchema = z.strictObject({
   action: z.literal("review"), model: generationCheckRequestSchema.shape.model, message: connectionChatMessageSchema,
+  transient: z.boolean().default(false), attachments: connectionTestAttachmentsSchema,
 });
 export const connectionChatSendSchema = generationCheckRequestSchema.extend({
   action: z.literal("send"), message: connectionChatMessageSchema,
+  transient: z.boolean().default(false), attachments: connectionTestAttachmentsSchema,
 });
 export const generationObservationSchema = z.strictObject({
   version: z.literal("connection-generation-v1"),
@@ -997,12 +1012,16 @@ export const generationObservationSchema = z.strictObject({
   outputTokens: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
   elapsedMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
   kind: z.literal("chat").optional(),
+  transient: z.literal(true).optional(),
+  inputDigest: z.string().regex(/^[a-f0-9]{64}$/u).optional(),
   message: connectionChatMessageSchema.optional(),
   reply: z.string().max(16_384).optional(),
   replyTruncated: z.boolean().optional(),
   errorCode: z.string().regex(/^[a-z0-9_]{1,80}$/u).nullable().optional(),
+  errorDetail: z.string().max(500).optional(),
+  providerErrorCode: z.string().regex(/^[a-z0-9_]{1,80}$/u).optional(),
 }).superRefine((value, context) => {
-  if (Boolean(value.kind) !== Boolean(value.message) || value.reply !== undefined && (value.kind !== "chat" || value.status !== "succeeded")) {
+  if (!value.transient && Boolean(value.kind) !== Boolean(value.message) || value.reply !== undefined && (value.kind !== "chat" || value.status !== "succeeded")) {
     context.addIssue({ code: "custom", message: "Invalid connection chat receipt." });
   }
 });
@@ -1017,6 +1036,7 @@ export const providerObservationsSchema = z.strictObject({
     endpointPreset: endpointPresetSchema, check: modelCatalogCheckSchema })).max(MAX_CATALOG_HISTORY),
   catalogDropped: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   generationChecks: z.array(generationObservationSchema).max(MAX_GENERATION_CHECKS),
+  modelAliases: connectionModelAliasesSchema.optional(),
 }).superRefine((value, context) => {
   if (new Set(value.generationChecks.map((check) => check.id)).size !== value.generationChecks.length) {
     context.addIssue({ code: "custom", message: "Duplicate generation check identity." });

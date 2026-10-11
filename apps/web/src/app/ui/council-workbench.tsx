@@ -251,6 +251,7 @@ type ProviderConnection = {
   label: string;
   defaultModel: string;
   selectedModels?: string[];
+  modelAliases?: Record<string, string>;
   configured: true;
   baseUrl?: string;
   endpointPreset: EndpointPreset;
@@ -384,6 +385,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   const [connectionLabel, setConnectionLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [connectionSelectedModels, setConnectionSelectedModels] = useState<string[]>([]);
+  const [connectionModelAliases, setConnectionModelAliases] = useState<Record<string, string>>({});
   const [connectionProvider, setConnectionProvider] = useState<RemoteProvider>("openai");
   const [endpointPreset, setEndpointPreset] = useState<EndpointPreset>("custom");
   const [baseUrl, setBaseUrl] = useState("");
@@ -751,6 +753,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           label: connectionLabel,
           apiKey,
           selectedModels: connectionSelectedModels,
+          modelAliases: Object.fromEntries(Object.entries(connectionModelAliases).filter(([id]) => connectionSelectedModels.includes(id))),
           ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}),
           endpointPreset,
           reasoningProtocol,
@@ -773,6 +776,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       );
       setMembers((current) => assignConnectionToUnconfiguredMembers(current, [...connections, saved]));
       setApiKey("");
+      setConnectionModelAliases(saved.modelAliases ?? {});
       if (keepOpen) { setEditingConnectionId(saved.id); setConnectionDialog(saved.id); }
       else { setConnectionLabel(""); setConnectionSelectedModels([]); setEditingConnectionId(undefined); setConnectionDialog(undefined); }
       setConnectionNotice(editingConnectionId ? "Bağlantı başarıyla şifrelenerek güncellenmiştir." : "Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
@@ -793,6 +797,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     setConnectionLabel(connection.label);
     setApiKey("");
     setConnectionSelectedModels(connectionModels(connection));
+    setConnectionModelAliases(connection.modelAliases ?? {});
     setEndpointPreset(connection.endpointPreset);
     setBaseUrl(connection.baseUrl ?? "");
     setReasoningProtocol(connection.reasoningProtocol);
@@ -815,6 +820,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     setConnectionLabel("");
     setApiKey("");
     setConnectionSelectedModels([]);
+    setConnectionModelAliases({});
     setConnectionDialog(undefined);
   }
 
@@ -860,15 +866,15 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     }
   }
 
-  async function saveConnectionModels(connection: ProviderConnection, selectedModels: string[]): Promise<void> {
+  async function saveConnectionModels(connection: ProviderConnection, selectedModels: string[], modelAliases: Record<string, string>): Promise<void> {
     setSavingConnection(true);
     try {
     const response = await ownerFetch("/api/provider-connections", { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...connection, apiKey: "", selectedModels, expectedRevision: connection.revision }) });
+      body: JSON.stringify({ ...connection, apiKey: "", selectedModels, modelAliases, expectedRevision: connection.revision }) });
     if (!response.ok) throw new Error("Model seçimleri kaydedilemedi.");
     const saved = await response.json() as ProviderConnection;
     setConnections(current => current.map(item => item.id === saved.id ? saved : item));
-    if (editingConnectionId === saved.id) setConnectionSelectedModels(connectionModels(saved));
+    if (editingConnectionId === saved.id) { setConnectionSelectedModels(connectionModels(saved)); setConnectionModelAliases(saved.modelAliases ?? {}); }
     setMembers(current => assignConnectionToUnconfiguredMembers(current, connections.map(item => item.id === saved.id ? saved : item)));
     } finally { setSavingConnection(false); }
   }
@@ -1512,7 +1518,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   const connectionDirty = !dialogConnection || apiKey.trim() !== "" || connectionLabel !== dialogConnection.label
     || baseUrl !== (dialogConnection.baseUrl ?? "") || endpointPreset !== dialogConnection.endpointPreset
     || reasoningProtocol !== dialogConnection.reasoningProtocol || structuredOutputMode !== dialogConnection.structuredOutputMode
-    || JSON.stringify(connectionSelectedModels) !== JSON.stringify(connectionModels(dialogConnection));
+    || JSON.stringify(connectionSelectedModels) !== JSON.stringify(connectionModels(dialogConnection))
+    || JSON.stringify(connectionModelAliases) !== JSON.stringify(dialogConnection.modelAliases ?? {});
   const connectionTabs = [{ id: "details", label: "Bağlantı" }, { id: "models", label: "Modeller" }, { id: "test", label: "Test ve Geçmiş" }] as const;
   const connectionForm = (
     <form className="connection-form" onSubmit={event => { void saveConnection(event); }} onChange={() => { setConnectionNotice(undefined); setConnectionError(undefined); }}>
@@ -1625,7 +1632,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       ) : null}
       {!editingConnectionId ? <ConnectionModelPreview
         draft={{ provider: connectionProvider, endpointPreset, apiKey, ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}) }}
-        selectedModels={connectionSelectedModels} onModelsChange={setConnectionSelectedModels} disabled={savingConnection}
+        selectedModels={connectionSelectedModels} onModelsChange={setConnectionSelectedModels} aliases={connectionModelAliases} onAliasesChange={setConnectionModelAliases} disabled={savingConnection}
       /> : <p className="hint connection-model-edit-hint">Sohbette kullanacağınız modelleri <button type="button" className="text-button" onClick={() => setConnectionTab("models")}>Modeller sekmesinden</button> seçebilirsiniz.</p>}
       <p className="connection-reasoning-hint hint">Düşünme seviyesini her konsey üyesinin modelinin yanında seçin veya kapatın. Bu seçim görev bazında yapılır.</p>
       <details className="connection-advanced">
@@ -1755,17 +1762,17 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         description={dialogConnection ? "Bağlantı bilgilerinizi, sohbet modellerinizi ve deneme geçmişini buradan yönetin." : "Sağlayıcınızı seçin, API anahtarınızı ekleyin ve kullanacağınız modelleri belirleyin."}
         busy={savingConnection || connectionChatBusy || Boolean(checkingConnectionId)} onClose={cancelConnectionEdit}>
         {dialogConnection ? <div className="connection-tabs" role="tablist" aria-label="Bağlantı ayarları" onKeyDown={event => {
+          if (connectionChatBusy || savingConnection) return;
           if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
           event.preventDefault(); const index = connectionTabs.findIndex(tab => tab.id === connectionTab);
           const next = event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : 2)) % 3;
           setConnectionTab(connectionTabs[next]!.id); event.currentTarget.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
         }}>{connectionTabs.map(tab => <button type="button" role="tab" key={tab.id} id={`connection-tab-${tab.id}`} aria-selected={connectionTab === tab.id}
-          aria-controls={`connection-pane-${tab.id}`} tabIndex={connectionTab === tab.id ? 0 : -1} onClick={() => setConnectionTab(tab.id)}>{tab.label}</button>)}</div> : null}
+          aria-controls={`connection-pane-${tab.id}`} disabled={connectionChatBusy || savingConnection} tabIndex={connectionTab === tab.id ? 0 : -1} onClick={() => setConnectionTab(tab.id)}>{tab.label}</button>)}</div> : null}
         <div id="connection-pane-details" role={dialogConnection ? "tabpanel" : undefined} aria-labelledby={dialogConnection ? "connection-tab-details" : undefined} hidden={Boolean(dialogConnection) && connectionTab !== "details"}>
           {connectionDialog && (!dialogConnection || connectionTab === "details") ? connectionForm : null}
           {connectionDialog ? <ConnectionChatTester key="dialog-chat"
-            connection={dialogConnection} models={connectionSelectedModels} needsSave={connectionDirty}
-            draftBinding={JSON.stringify([dialogConnection?.id, dialogConnection?.revision, connectionProvider, connectionLabel, apiKey, baseUrl, endpointPreset, reasoningProtocol, structuredOutputMode, connectionSelectedModels])}
+            connection={dialogConnection} models={connectionSelectedModels} aliases={connectionModelAliases} needsSave={connectionDirty}
             disabled={savingConnection || Boolean(checkingConnectionId)} onSave={() => saveConnection(undefined, true)} onBusy={setConnectionChatBusy} /> : null}
         </div>
         <div id="connection-pane-models" role="tabpanel" aria-labelledby="connection-tab-models" hidden={!dialogConnection || connectionTab !== "models"}>
@@ -1775,13 +1782,13 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
               <div className="connection-catalog-heading"><div><h3>Sohbet Modelleri</h3><p>Bu bağlantıda kullanmak istediğiniz modelleri seçip kaydedin.</p></div><button className="secondary-button" type="button" disabled={savingConnection || Boolean(checkingConnectionId)} onClick={() => void checkConnectionModels(connection.id)}>{checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}</button></div>
               {catalog ? <p role="status" className="hint">{catalog.status === "available" ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."}` : catalog.status === "auth_failed" ? "Katalog isteği kimlik/yetki hatasıyla reddedildi." : catalog.status === "unsupported" ? "Bu uç noktada model listeleme desteklenmiyor veya yanıt biçimi bilinmiyor." : "Model listesine erişilemedi. Uç nokta, ağ ve sunucu durumunu kontrol edin."}</p> : null}
               {catalog?.checkedAt ? <small className="hint">Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small> : null}
-              <SavedConnectionModels models={catalog?.models ?? []} selectedModels={connectionModels(connection)} label={connection.label} onSave={models => saveConnectionModels(connection, models)} />
+              <SavedConnectionModels models={catalog?.models ?? []} selectedModels={connectionModels(connection)} aliases={connection.modelAliases ?? {}} label={connection.label} onSave={(models, aliases) => saveConnectionModels(connection, models, aliases)} />
               {connectionError ? <p className="alert error" role="alert">{connectionError}</p> : null}
             </div>;
           })}
         </div>
         <div id="connection-pane-test" role="tabpanel" aria-labelledby="connection-tab-test" hidden={!dialogConnection || connectionTab !== "test"}>
-          {connections.map(connection => <div key={connection.id} hidden={connectionDialog !== connection.id}><ConnectionGenerationPanel key={`${connection.id}:${connection.revision ?? 0}`} connection={connection} /></div>)}
+          {dialogConnection ? <ConnectionGenerationPanel key={dialogConnection.id} connection={dialogConnection} onBusy={setConnectionChatBusy} /> : null}
         </div>
       </ConnectionDialog>
 
@@ -2135,7 +2142,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                     >
                       <option value="" disabled>Bağlantıdan bir model seçin</option>
                       {member.model && !savedModels.includes(member.model) ? <option value={member.model}>{member.model} · Bu sohbetin mevcut modeli</option> : null}
-                      {savedModels.map(id => <option key={id} value={id}>{id}</option>)}
+                      {savedModels.map(id => <option key={id} value={id}>{selectedConnection?.modelAliases?.[id] ? `${selectedConnection.modelAliases[id]} · ${id}` : id}</option>)}
                     </select>
                     <small>
                       {savedModels.length ? "Ayarlarda bu bağlantı için seçtiğiniz modeller. Aynı bağlantıyı birden fazla üyede kullanabilirsiniz." : "Ayarlar → API bağlantılarınız bölümünde bu bağlantının modellerini seçin."}

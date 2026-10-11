@@ -1,4 +1,5 @@
-import { NVIDIA_HOSTED_BASE_URL, SYNTHESIS_OUTPUT_TOKENS, privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult } from "@deliberation-ai/contracts";
+import { NVIDIA_HOSTED_BASE_URL, SYNTHESIS_OUTPUT_TOKENS, privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult, type ConnectionTestAttachment } from "@deliberation-ai/contracts";
+import { connectionTestParts, connectionTestProviderError, validateConnectionTestAttachments } from "./connection-test-media";
 import { NormalizedProviderError } from "./index";
 import { assertRecoveryGenerationAllowed, providerHttpError, providerNetworkError, withProviderNetworkDeadline } from "./provider-utils";
 import { extractTokenUsage } from "./token-usage";
@@ -67,13 +68,14 @@ export async function generateSynthesisText(request: { model: string; instructio
     messages: [{ role: "system", content: input.instructions }, { role: "user", content: input.data }] }, options, true);
 }
 /** A connection probe has exactly one owner message and no private/council history. */
-export async function generateConnectionChatText(request: { model: string; instructions: string; message: string }, options: PlainTextTransportOptions): Promise<PrivateDeliveryResult> {
-  const input = z.object({ model: z.string().trim().min(1).max(120), instructions: z.string().min(1).max(8_000), message: z.string().trim().min(1).max(1200) }).strict().parse(request);
+export async function generateConnectionChatText(request: { model: string; instructions: string; message: string; attachments?: ConnectionTestAttachment[] }, options: PlainTextTransportOptions): Promise<PrivateDeliveryResult> {
+  const { attachments, ...text } = request;
+  const input = z.object({ model: z.string().trim().min(1).max(120), instructions: z.string().min(1).max(8_000), message: z.string().trim().min(1).max(1200) }).strict().parse(text);
   return generateBoundedText({ model: input.model, maxOutputTokens: 512,
-    messages: [{ role: "system", content: input.instructions }, { role: "user", content: input.message }] }, options, true);
+    messages: [{ role: "system", content: input.instructions }, { role: "user", content: input.message }] }, options, true, validateConnectionTestAttachments(attachments ?? []));
 }
 
-async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" | "messages" | "maxOutputTokens">, options: PlainTextTransportOptions, synthesis = false): Promise<PrivateDeliveryResult> {
+async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" | "messages" | "maxOutputTokens">, options: PlainTextTransportOptions, synthesis = false, testFiles?: ConnectionTestAttachment[]): Promise<PrivateDeliveryResult> {
   assertRecoveryGenerationAllowed();
   if (!options.operationKey) throw new NormalizedProviderError("İşlem kimliği gerekli.", "missing_operation_id", "known", false);
   const provider = options.provider ?? "openai-compatible";
@@ -93,7 +95,7 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
     messages[0]?.role !== "user" || messages.at(-1)?.role !== "user")) {
     throw new NormalizedProviderError("Özel mesaj sırası geçersiz.", "invalid_private_messages", "known", false);
   }
-  const body = gemini
+  const body: Record<string, unknown> = gemini
     ? { systemInstruction: { parts: [{ text: system!.content }] },
       contents: messages.map((item) => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] })),
       generationConfig: { candidateCount: 1, maxOutputTokens: input.maxOutputTokens, responseMimeType: "text/plain" } }
@@ -105,6 +107,14 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
     ? { model: input.model, system: system!.content, messages, max_tokens: input.maxOutputTokens }
     : { model: input.model, messages: input.messages,
       ...(options.endpointPreset === "openrouter" ? { max_completion_tokens: input.maxOutputTokens } : { max_tokens: input.maxOutputTokens }) };
+  if (testFiles?.length) {
+    const parts = connectionTestParts(provider, messages[0]!.content, testFiles);
+    if (gemini) body.contents = [{ role: "user", parts }];
+    else if (responses) body.input = [{ role: "system", content: system!.content }, { role: "user", content: parts }];
+    else body.messages = anthropic ? [{ role: "user", content: parts }] : [{ role: "system", content: system!.content }, { role: "user", content: parts }];
+    // Test native PDF support rather than silently purchasing OCR/falling back to extracted text.
+    if (options.endpointPreset === "openrouter" && testFiles.some(file => file.mimeType === "application/pdf")) body.plugins = [{ id: "file-parser", pdf: { engine: "native" } }];
+  }
   const label = gemini ? "Private Gemini" : responses ? "Private OpenAI" : anthropic ? "Private Anthropic" : "Private compatible";
   let value: unknown;
   try {
@@ -118,8 +128,11 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
         body: JSON.stringify(body),
       });
       if (options.endpointPreset === "nvidia" && response.status === 202) throw providerNetworkError("NVIDIA hosted (pending)");
-      if (!response.ok) throw providerHttpError(label, response.status);
-      const reader = response.body?.getReader(); if (!reader) throw new NormalizedProviderError("Yanıt boş.", "empty_response", "known", false);
+      if (!response.ok && testFiles === undefined) throw providerHttpError(label, response.status);
+      const reader = response.body?.getReader(); if (!reader) {
+        if (!response.ok) throw providerHttpError(label, response.status);
+        throw new NormalizedProviderError("Yanıt boş.", "empty_response", "known", false);
+      }
       const chunks: Uint8Array[] = []; let bytes = 0;
       try {
         for (;;) {
@@ -128,9 +141,17 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
           if (bytes > 131_072) { await reader.cancel(); throw new NormalizedProviderError("Yanıt sınırı aşıldı.", "response_too_large", "known", false); }
           chunks.push(next.value);
         }
-      } finally { reader.releaseLock(); }
-      try { return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown; }
-      catch { throw new NormalizedProviderError("Yanıt okunamadı.", "invalid_response", "known", false); }
+      } catch (error) { if (!response.ok) throw providerHttpError(label, response.status); throw error; }
+      finally { reader.releaseLock(); }
+      try {
+        const parsed: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        if (testFiles !== undefined) {
+          const error = connectionTestProviderError(parsed, response.ok ? undefined : response.status);
+          if (error) throw error;
+        }
+        return parsed;
+      }
+      catch (error) { if (error instanceof NormalizedProviderError) throw error; if (!response.ok) throw providerHttpError(label, response.status); throw new NormalizedProviderError("Yanıt okunamadı.", "invalid_response", "known", false); }
     }, options.timeoutMs ?? 90_000);
   } catch (error) {
     if (error instanceof NormalizedProviderError) throw error;

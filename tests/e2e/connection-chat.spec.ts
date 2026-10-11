@@ -23,31 +23,31 @@ test("save-and-test creates a connection, returns plain text and preserves the c
   try {
     await page.goto("/"); await page.getByLabel("Sorunuz", { exact: true }).fill("Keep my council draft"); await workspaceView(page, "Ayarlar");
     await page.getByRole("button", { name: "Yeni Bağlantı Ekle", exact: true }).click();
-    const dialog = page.getByRole("dialog"), form = dialog.locator(".connection-form"), chat = dialog.getByRole("region", { name: "Kısa bağlantı sohbeti" });
+    const dialog = page.getByRole("dialog"), form = dialog.locator(".connection-form"), chat = dialog.getByRole("region", { name: "Hızlı bağlantı testi" });
     await form.getByLabel("Sağlayıcı ailesi").selectOption("openai-compatible"); await form.getByLabel("Uç nokta türü").selectOption("ollama");
     await form.getByLabel("Bağlantı adı").fill(label); await form.getByLabel("Temel URL").fill(`http://127.0.0.1:${address.port}/v1`);
     await addConnectionModels(form, ["chat-fixture"]); await chat.getByLabel("Test mesajı").fill("Short test question");
-    await expect(chat.getByRole("button", { name: "Kaydet Ve Test Et" })).toBeDisabled();
-    await chat.getByRole("checkbox", { name: /Bu mesajı ve modeli/ }).check(); await chat.getByRole("button", { name: "Kaydet Ve Test Et" }).click();
+    await expect(chat.getByRole("checkbox")).toHaveCount(0);
+    await chat.getByRole("button", { name: "Kaydet Ve Test Et" }).click();
     await expect(chat).toContainText("Short fixture reply"); expect(calls).toBe(1); await expect(dialog).toBeVisible();
     id = (await (await request.get("/api/provider-connections")).json()).connections.find((item: { label: string }) => item.label === label)?.id;
     expect(id).toBeTruthy(); await page.keyboard.press("Escape");
     await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep my council draft");
     await workspaceView(page, "Ayarlar"); await openConnectionPanel(page, page.locator(".connection-card").filter({ hasText: label }));
-    await expect(chat).toContainText("Short fixture reply"); expect(calls).toBe(1);
+    await expect(chat).not.toContainText("Short fixture reply"); expect(calls).toBe(1);
     await chat.getByRole("button", { name: "Sonucu Kontrol Et" }).click(); expect(calls).toBe(1);
     await page.keyboard.press("Escape");
   } finally { if (id) await request.delete(`/api/provider-connections?id=${id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
 });
 
 for (const theme of ["light", "dark"]) for (const width of [320, 1110]) {
-  test(`populated connection chat fits ${width}px in ${theme} and edits revoke approval`, async ({ page, request }, info) => {
+  test(`transient connection chat fits ${width}px in ${theme} without an approval checkbox`, async ({ page, request }, info) => {
     const created = await request.post("/api/provider-connections", { data: { ...settings, label: `Chat layout fixture ${crypto.randomUUID()}`, baseUrl: "http://127.0.0.1:11434/v1", selectedModels: ["chat-fixture", "second-fixture"] } });
     const connection = await created.json(); let calls = 0;
     try {
       await page.route(`**/${connection.id}/chat-check`, route => {
         if (route.request().method() !== "GET") { calls++; return route.abort(); }
-        return route.fulfill({ json: { observations: { generationChecks: [{ version: "connection-generation-v1", id: "33333333-3333-4333-8333-333333333333", revision: 1,
+        return route.fulfill({ json: { observations: { version: "provider-observations-v1", latestCatalog: null, catalogHistory: [], catalogDropped: 0, generationChecks: [{ version: "connection-generation-v1", id: "33333333-3333-4333-8333-333333333333", revision: 1,
           model: "chat-fixture", provider: "openai-compatible", endpointPreset: "ollama", fingerprint: "a".repeat(64), status: "succeeded",
           startedAt: "2026-10-10T00:00:00.000Z", finishedAt: "2026-10-10T00:00:01.000Z", acknowledgedAt: null, failure: null, httpStatus: null,
           returnedModel: "chat-fixture", remoteResponseId: null, inputTokens: null, outputTokens: null, elapsedMs: 1000,
@@ -57,11 +57,11 @@ for (const theme of ["light", "dark"]) for (const width of [320, 1110]) {
       await page.setViewportSize({ width, height: 1066 }); await page.goto("/");
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme); await workspaceView(page, "Ayarlar");
       const dialog = await openConnectionPanel(page, page.locator(".connection-card").filter({ hasText: connection.label }));
-      const chat = dialog.getByRole("region", { name: "Kısa bağlantı sohbeti" }); await expect(chat).toContainText("bağlantı kısa sohbet yanıtını");
-      const acknowledgement = chat.getByRole("checkbox", { name: /Bu mesajı ve modeli/ }); await acknowledgement.check();
-      await chat.getByLabel("Test modeli").selectOption("second-fixture"); await expect(acknowledgement).not.toBeChecked();
-      await acknowledgement.check(); await dialog.locator(".connection-form").getByLabel("Bağlantı adı").fill("Changed fixture name");
-      await expect(acknowledgement).not.toBeChecked(); await expect(chat.getByRole("button", { name: "Kaydet Ve Test Et" })).toBeDisabled();
+      const chat = dialog.getByRole("region", { name: "Hızlı bağlantı testi" }); await expect(chat).not.toContainText("bağlantı kısa sohbet yanıtını");
+      await expect(chat.getByRole("checkbox")).toHaveCount(0);
+      await chat.getByLabel("Test modeli").selectOption("second-fixture");
+      await dialog.locator(".connection-form").getByLabel("Bağlantı adı").fill("Changed fixture name");
+      await expect(chat.getByRole("button", { name: "Kaydet Ve Test Et" })).toBeEnabled();
       expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await chat.screenshot({ path: info.outputPath(`chat-${theme}-${width}.png`) }); expect(calls).toBe(0);
@@ -87,8 +87,8 @@ test("chat displays HTTP error codes immediately and lost responses never resend
       lost = false; const response = await route.fetch(); expect(response.status()).toBe(200); await route.abort();
     });
     await page.goto("/"); await workspaceView(page, "Ayarlar"); const dialog = await openConnectionPanel(page, page.locator(".connection-card").filter({ hasText: connection.label }));
-    const chat = dialog.getByRole("region", { name: "Kısa bağlantı sohbeti" });
-    await chat.getByRole("checkbox", { name: /Bu mesajı ve modeli/ }).check(); await chat.getByRole("button", { name: "Mesajı Gönder" }).click();
+    const chat = dialog.getByRole("region", { name: "Hızlı bağlantı testi" });
+    await chat.getByRole("button", { name: "Mesajı Gönder" }).click();
     await expect.poll(() => calls).toBe(1); await page.keyboard.press("Escape"); await expect(dialog).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Bağlantı panelini kapat" })).toBeDisabled();
     release(); await expect(chat.getByRole("alert")).toBeVisible(); await expect(chat.getByRole("button", { name: "Mesajı Gönder" })).toBeDisabled();
@@ -120,7 +120,7 @@ test("chat rejects foreign-origin, missing approval, stale message and oversized
     expect((await request.post(endpoint, { data: { ...input, acknowledge: false } })).status()).toBe(422);
     expect((await request.post(endpoint, { data: { ...input, message: "Changed" } })).status()).toBe(409);
     expect((await request.post(endpoint, { data: { ...input, message: "x".repeat(1201) } })).status()).toBe(422);
-    expect((await request.post(endpoint, { data: "x".repeat(8193) })).status()).toBe(413);
+    expect((await request.post(endpoint, { data: "x".repeat(2_850_001) })).status()).toBe(413);
     const check = await (await request.post(endpoint, { data: input })).json(); expect(check.errorCode).toBe("provider_connection_refused");
     expect((await request.post(endpoint, { data: input })).headers()["cache-control"]).toBe("no-store");
     await request.patch(`/api/provider-connections/${connection.id}/generation-check`, { data: { id: check.id, fingerprint: check.fingerprint, acknowledgeUnknown: true } });

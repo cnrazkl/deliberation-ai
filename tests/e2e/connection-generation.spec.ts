@@ -4,66 +4,60 @@ import {expect, test, testOwnerId } from "./authenticated-test";
 import { workspaceView } from "./workspace-navigation";
 import { openConnectionPanel } from "./connection-model-selection";
 
-test("reviews one bounded generation, preserves the draft and replays its receipt without another call", async ({ page, request }) => withOwner(testOwnerId(), async () => {
+test("debug test accepts small image/audio/PDF, shows provider errors and retains aliases without saving bodies", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   let calls = 0;
   const server = createServer(async (incoming, outgoing) => {
     const chunks: Buffer[] = []; for await (const chunk of incoming) chunks.push(Buffer.from(chunk));
-    outgoing.setHeader("content-type", "application/json");
-    if (incoming.url === "/v1/models") { outgoing.end(JSON.stringify({ data: [{ id: "local-check" }] })); return; }
-    calls++;
-    const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-    expect(body.model).toBe("local-check"); expect(body.max_tokens).toBe(512); expect(body.tools).toBeUndefined();
+    const body = JSON.parse(Buffer.concat(chunks).toString("utf8")); calls++;
+    expect(body.max_tokens).toBe(512); expect(body.messages).toHaveLength(2);
+    expect(body.messages[1].content.map((part: { type: string }) => part.type)).toEqual(["text", "image_url", "input_audio", "file"]);
+    expect(body.messages[1].content[0].text).toBe("Describe my synthetic files.");
     expect(JSON.stringify(body)).not.toContain("KEEP MY DRAFT");
-    outgoing.end(JSON.stringify({ id: "fixture-response", model: "local-check", choices: [{ message: { content: JSON.stringify({
-      summary: "Dört.", claims: [{ statement: "2 + 2 = 4", kind: "shared", quote: "2 + 2 = 4" }],
-    }) }, finish_reason: "stop" }], usage: { prompt_tokens: 15, completion_tokens: 700 } }));
+    outgoing.setHeader("content-type", "application/json");
+    if (body.model === "no-vision") {
+      outgoing.writeHead(400); outgoing.end(JSON.stringify({ error: { code: 400, message: "Image input unsupported SENSITIVE ERROR BODY", metadata: { error_type: "unsupported_modality" } } }));
+    } else outgoing.end(JSON.stringify({ model: "local-check", choices: [{ message: { role: "assistant", content: "Synthetic media accepted." }, finish_reason: "stop" }], usage: { prompt_tokens: 15, completion_tokens: 30 } }));
   });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const address = server.address(); if (!address || typeof address === "string") throw new Error("Fixture bind failed.");
   let id: string | undefined;
   try {
-    const created = await request.post("/api/provider-connections", { data: { provider: "openai-compatible", label: `E2E generation ${crypto.randomUUID()}`,
-      apiKey: "", defaultModel: "local-check", baseUrl: `http://127.0.0.1:${address.port}/v1`, endpointPreset: "ollama", reasoningProtocol: "none", structuredOutputMode: "json-object" } });
+    const created = await request.post("/api/provider-connections", { data: { provider: "openai-compatible", label: `E2E debug ${crypto.randomUUID()}`,
+      apiKey: "", selectedModels: ["local-check", "no-vision"], baseUrl: `http://127.0.0.1:${address.port}/v1`, endpointPreset: "ollama", reasoningProtocol: "none", structuredOutputMode: "json-object" } });
     expect(created.ok()).toBe(true); id = (await created.json()).id;
-    await page.goto("/");
-    const draft = page.getByLabel("Sorunuz", { exact: true });
-    await draft.fill("KEEP MY DRAFT");
-    await workspaceView(page, "Ayarlar");
-    const tile = page.locator(".connection-card").filter({ hasText: "E2E generation" });
-    const card = await openConnectionPanel(page, tile, "Test ve Geçmiş");
-    await card.getByRole("button", { name: "Üretim testi ve model geçmişi" }).click();
-    await expect(card.getByRole("button", { name: /Onaylanan denemeyi/ })).toBeDisabled();
-    expect(calls).toBe(0);
-    await card.getByRole("tab", { name: "Modeller", exact: true }).click();
-    await card.getByRole("button", { name: "Model listesini kontrol et" }).click();
-    await expect(card.getByRole("status")).toContainText("1 model kimliği listelendi");
+    await page.goto("/"); await page.getByLabel("Sorunuz", { exact: true }).fill("KEEP MY DRAFT"); await workspaceView(page, "Ayarlar");
+    const tile = page.locator(".connection-card").filter({ hasText: "E2E debug" });
+    const card = await openConnectionPanel(page, tile, "Modeller");
+    const models = card.locator(".saved-connection-models").filter({ visible: true });
+    await models.getByLabel("local-check takma adı", { exact: true }).fill("Kolay Ad");
+    await models.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click(); await expect(models.getByRole("status")).toContainText("kaydedildi");
+    const saved = (await (await request.get("/api/provider-connections")).json()).connections.find((entry: { id: string }) => entry.id === id);
+    expect(saved.revision).toBe(1); expect(saved.modelAliases).toEqual({ "local-check": "Kolay Ad" });
     await card.getByRole("tab", { name: "Test ve Geçmiş", exact: true }).click();
-    await card.getByRole("button", { name: "Kayıtları yenile" }).click();
-    await expect(card).toContainText("Model listede"); expect(calls).toBe(0);
-    await card.getByLabel("Tam denemeyi inceledim; tek ücretlenebilir çağrıyı onaylıyorum.").check();
-    await card.getByRole("button", { name: /Onaylanan denemeyi/ }).click();
-    await expect(card).toContainText("Yapılandırılmış üretim başarılı"); expect(calls).toBe(1);
-    await expect(card.getByRole("alert")).toContainText("bildirdiği çıktı istenen sınırı aştı");
-    await card.getByLabel("Tam denemeyi inceledim; tek ücretlenebilir çağrıyı onaylıyorum.").check();
-    await card.getByRole("button", { name: /Onaylanan denemeyi/ }).click();
-    await expect(card).toContainText("Yapılandırılmış üretim başarılı"); expect(calls).toBe(1);
-    await workspaceView(page, "Sohbet"); await expect(draft).toHaveValue("KEEP MY DRAFT");
-    await page.reload(); await workspaceView(page, "Ayarlar"); await openConnectionPanel(page, tile, "Test ve Geçmiş");
-    await card.getByRole("button", { name: "Üretim testi ve model geçmişi" }).click();
-    await expect(card).toContainText("Yapılandırılmış üretim başarılı"); expect(calls).toBe(1);
-    await page.setViewportSize({ width: 390, height: 844 });
-    const box = await card.boundingBox(); expect(box!.width).toBeLessThanOrEqual(390);
-    await card.getByLabel("Denenecek model").fill(" local-check ");
-    await card.getByRole("button", { name: "Kayıtları yenile" }).click();
-    await expect(card).toContainText("Yapılandırılmış üretim başarılı"); expect(calls).toBe(1);
-    await card.getByLabel("Denenecek model").fill("changed-model");
-    await expect(card.getByRole("button", { name: /Onaylanan denemeyi/ })).toHaveCount(0); expect(calls).toBe(1);
-  } finally {
-    if (id) await request.delete(`/api/provider-connections?id=${id}`);
-    await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
-  }
+    const chat = card.getByRole("region", { name: "Model test ve hata ayıklama alanı" });
+    await expect(chat).toBeVisible(); await expect(chat.getByRole("checkbox")).toHaveCount(0);
+    await expect(chat.getByLabel("Test modeli").locator('option[value="local-check"]')).toHaveText("Kolay Ad · local-check");
+    await chat.getByLabel("Test mesajı").fill("Describe my synthetic files.");
+    await chat.getByLabel("Test dosyası ekle").setInputFiles([
+      { name: "tiny.png", mimeType: "image/png", buffer: Buffer.from([137,80,78,71,13,10,26,10]) },
+      { name: "tiny.wav", mimeType: "audio/wav", buffer: Buffer.from("RIFF1234WAVEfixture") },
+      { name: "tiny.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\nfixture") },
+    ]);
+    await chat.getByRole("button", { name: "Mesajı Gönder", exact: true }).click();
+    await expect(chat).toContainText("Synthetic media accepted."); expect(calls).toBe(1);
+    await chat.getByLabel("Test modeli").selectOption("no-vision"); await chat.getByRole("button", { name: "Mesajı Gönder", exact: true }).click();
+    await expect(chat).toContainText("HTTP 400"); await expect(chat).toContainText("unsupported_modality"); await expect(chat).toContainText("görsel girdisini reddetti");
+    await expect(card).not.toContainText("SENSITIVE ERROR BODY"); expect(calls).toBe(2);
+    const history = (await (await request.get(`/api/provider-connections/${id}/chat-check`)).json()).observations.generationChecks;
+    expect(history).toHaveLength(2); expect(JSON.stringify(history)).not.toMatch(/Describe my|Synthetic media|tiny\.png/u);
+    await page.keyboard.press("Escape"); await openConnectionPanel(page, tile, "Test ve Geçmiş");
+    await expect(chat).not.toContainText("Synthetic media accepted."); await expect(chat.getByRole("log")).not.toContainText("HTTP 400");
+    await expect(card.getByRole("region", { name: "Test işlem geçmişi" })).toContainText("HTTP 400"); expect(calls).toBe(2);
+    await page.keyboard.press("Escape"); await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("KEEP MY DRAFT");
+    await page.getByRole("button", { name: "Konseyi düzenle", exact: true }).click();
+    await expect(page.getByLabel("Üye 1 modeli").locator('option[value="local-check"]')).toHaveText("Kolay Ad · local-check");
+  } finally { if (id) await request.delete(`/api/provider-connections?id=${id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
 }));
-
 test("rejects stale, foreign-origin, unacknowledged and oversized checks before dispatch", async ({ request }) => withOwner(testOwnerId(), async () => {
   const created = await request.post("/api/provider-connections", { data: { provider: "openai-compatible", label: `E2E guards ${crypto.randomUUID()}`,
     apiKey: "", defaultModel: "local-check", baseUrl: "http://127.0.0.1:1/v1", endpointPreset: "ollama", reasoningProtocol: "none", structuredOutputMode: "json-object" } });

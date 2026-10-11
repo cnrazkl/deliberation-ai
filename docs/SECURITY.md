@@ -18,15 +18,21 @@ deletion fencing remain. Task questions, contexts, sources and execution quotas 
 saved in the pool. Applying saved settings never bypasses preflight/risk controls.
 
 Connection chat tests require an authenticated non-root owner, exact mutation origin,
-strict streamed JSON up to 8 KiB, a 1,200-character message, revision/message/profile
-fingerprint and explicit paid-call approval. A row-locked encrypted submitted receipt
+strict streamed JSON up to 2,850,000 bytes, a 1,200-character message, revision/message/
+profile/file fingerprint and explicit send-button action beside a visible price warning.
+A row-locked encrypted submitted receipt
 precedes dispatch; replay only returns that receipt. Uncertain work uses the existing
-deadline/margin and acknowledgement guards. Message/reply fields are bounded and
-encrypted in the connection observation envelope; no test input, output, credentials
+deadline/margin and acknowledgement guards. New transient receipts omit test message,
+reply, file names/bytes and explanatory error text; only content-free replay/diagnostic
+metadata persists. Legacy encrypted receipts are preserved. No test input, output, credentials
 or raw error body is logged. UI renders plain escaped text. Transport codes come from
 an allowlist, preserving uncertainty. The worker's outbound Docker network belongs
 only to the isolated project; database publishing and foreign service changes remain
-excluded. New text fields require the current source for strict archive restoration.
+excluded. New optional fields require the current source for strict archive restoration.
+Debug files require canonical base64, known MIME/signature and per-file/total limits;
+there are no arbitrary URLs, upload persistence or implicit OCR. FileReader works on
+private LAN HTTP without crypto.subtle; hashes/signatures are checked server-side.
+Error explanations use known categories rather than copying reflected provider text.
 
 Selected connection model IDs are owner-scoped configuration, with the same non-secret
 classification as the legacy default model. Up to 100 unique bounded IDs can be saved;

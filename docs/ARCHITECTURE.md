@@ -30,7 +30,7 @@ Old application binaries cannot read active v2 envelopes; restore/rollback requi
 compatible reader. Worker run contracts and frozen orchestration do not change.
 
 ConnectionChatTester uses the owned no-store `/api/provider-connections/:id/chat-check`
-route for read-only history, POST review and explicitly approved POST dispatch. Creation
+route for read-only receipt status, POST preparation and explicit send-button dispatch. Creation
 and unsaved edits invoke the existing save path first and retain the open dialog. The
 application facade uses a separate two-message connection-chat transport over the
 existing bounded text adapter, preserving private history's minimum-message contract.
@@ -38,7 +38,14 @@ Durable row-locked generation receipts share the existing 32-identity capacity a
 pending/uncertain/replay rules; chat fingerprints additionally bind the exact message
 and versioned text profile. No DDL or worker queue is added. Browser state controls
 pending dismissal, field locking and result inspection. Credentials stay in encrypted
-connection storage; test text/replies stay in its encrypted observation envelope.
+connection storage. New transient probes retain only fingerprint/input digest and bounded
+status/code/usage fields in the encrypted observation envelope, never test message/reply,
+file names or bytes. Browser results clear on dialog close/reload and are not rehydrated.
+Legacy durable chat receipts remain readable. Test ve Geçmiş hosts the same text transport
+with validated small multimodal parts; no fixed council prompt or structured claim output
+is required. Adapter signatures, byte/response bounds and provider-specific mappings govern
+files; native PDF testing never falls back to purchased OCR. Known error types/details
+are normalized inside the adapter; raw provider errors never cross the boundary.
 Transport diagnostics allowlist DNS/connect/TLS/reset/deadline codes while retaining
 unknown-outcome semantics and refusing retries. Raw network/provider errors never leave
 the adapters. The isolated rehearsal worker now joins the owned access network for
@@ -49,10 +56,15 @@ CouncilWorkbench presents compact API connection cards in workspace container qu
 restoration, Escape/backdrop dismissal and body-scroll restoration. Workbench retains
 form fields while switching tabs and clears entered secrets on close. Pending save or
 catalog lookup blocks dismissal. Saved model choices and per-connection generation
-panels remain mounted across tab/dialog changes, preserving draft selections and
-review/request identities. Catalog and generation requests still require their
-existing explicit actions; opening a card/tab never calls a provider. No API, schema,
-worker, ownership or execution boundary changes are introduced.
+panels remain mounted across tab changes, preserving draft selections and
+request identities; transient testers unmount on dialog close. Catalog and generation requests still require their
+existing explicit actions; opening a card/tab never calls a provider. Card/modal layout
+preserves worker, ownership and execution boundaries.
+
+Optional connection model aliases are bounded owner configuration inside the existing
+encrypted provider-observations envelope. Preference-only alias/model saves preserve
+execution revision, catalogs and receipts. Summaries project aliases for UI labels;
+adapters, templates and frozen runs continue to use exact model identifiers. No DDL.
 
 Provider connection model choices are bounded configuration, separate from execution
 snapshots and observed capabilities. Migration 0056 adds nullable selected_models JSONB;
@@ -61,7 +73,7 @@ Save accepts missing defaultModel for new clients. Preference-only updates lock 
 owned row, preserve catalog/history and execution revision, and can require an expected
 revision to reject concurrent credential/transport edits. The legacy default_model
 column remains as a compatibility fallback and mirrors the first explicit choice.
-ConnectionModelPicker owns search/disclosure and optional one-time manual additions;
+ConnectionModelPicker owns search/disclosure and always-open one-time manual additions;
 SavedConnectionModels owns unsaved choices. CouncilWorkbench persists selections and
 renders member model selects without changing already configured drafts. Root's provider
 editor uses the same picker; separate decision connections retain their pinned model.

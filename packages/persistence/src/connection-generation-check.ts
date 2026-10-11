@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { acknowledgeGenerationCheckSchema, connectionChatSendSchema, generationCheckRequestSchema, MAX_GENERATION_CHECKS, type GenerationObservation, type SaveProviderConnectionRequest } from "@deliberation-ai/contracts";
-import { connectionChatPrompt, executeBoundedConnectionChat, executeBoundedConnectionCheck, generationCheckPrompt, GENERATION_CHECK_TIMEOUT_MS, type ConnectionCheckExecution } from "@deliberation-ai/application";
+import { acknowledgeGenerationCheckSchema, connectionChatSendSchema, generationCheckRequestSchema, MAX_GENERATION_CHECKS, type GenerationObservation, type SaveProviderConnectionRequest, type ConnectionTestAttachment } from "@deliberation-ai/contracts";
+import { connectionChatPrompt, executeBoundedConnectionChat, executeBoundedConnectionCheck, generationCheckPrompt, GENERATION_CHECK_TIMEOUT_MS, validateConnectionTestAttachments, type ConnectionCheckExecution } from "@deliberation-ai/application";
 import { and, eq } from "drizzle-orm";
 import { getDatabase } from "./database";
 import { decryptText } from "./crypto";
@@ -12,10 +12,11 @@ type Row = typeof providerConnections.$inferSelect;
 export class ConnectionCheckConflictError extends Error {
   constructor(readonly reason: "stale" | "identity" | "pending" | "acknowledgement" | "capacity") { super("Bağlantı denemesi onayı veya durumu değişti."); }
 }
-function fingerprint(row: Row, model: string, message?: string) {
+function fingerprint(row: Row, model: string, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false) {
   return createHash("sha256").update(JSON.stringify({ id: row.id, revision: row.revision, provider: row.provider,
     baseUrl: row.baseUrl, endpointPreset: row.endpointPreset, reasoningProtocol: row.reasoningProtocol,
-    structuredOutputMode: row.structuredOutputMode, model, prompt: message === undefined ? generationCheckPrompt() : connectionChatPrompt(message) })).digest("hex");
+    structuredOutputMode: row.structuredOutputMode, model, prompt: message === undefined ? generationCheckPrompt() : connectionChatPrompt(message),
+    ...(transient || attachments.length ? { transient, attachments: attachments.map(file => ({ name: file.name, mimeType: file.mimeType, sha256: createHash("sha256").update(Buffer.from(file.data, "base64")).digest("hex") })) } : {}) })).digest("hex");
 }
 export async function getConnectionCheckHistory(id: string) {
   const [row] = await getDatabase().select().from(providerConnections).where(and(
@@ -23,13 +24,14 @@ export async function getConnectionCheckHistory(id: string) {
   )).limit(1);
   return row ? readProviderObservations(row) : undefined;
 }
-export async function reviewConnectionGenerationCheck(id: string, model?: string, message?: string) {
+export async function reviewConnectionGenerationCheck(id: string, model?: string, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false) {
   const [row] = await getDatabase().select().from(providerConnections).where(and(
     eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, id),
   )).limit(1);
   if (!row) return undefined;
+  validateConnectionTestAttachments(attachments);
   const selected = generationCheckRequestSchema.shape.model.parse(model ?? row.defaultModel);
-  return { connectionId: row.id, revision: row.revision, model: selected, fingerprint: fingerprint(row, selected, message),
+  return { connectionId: row.id, revision: row.revision, model: selected, fingerprint: fingerprint(row, selected, message, attachments, transient),
     ...(message === undefined ? generationCheckPrompt() : connectionChatPrompt(message)), observations: readProviderObservations(row) };
 }
 
@@ -40,11 +42,13 @@ export async function runConnectionGenerationCheck(id: string, input: unknown, e
   return runCheck(id, request, execute);
 }
 export async function runConnectionChatCheck(id: string, input: unknown,
-  execute: (target: SaveProviderConnectionRequest, id: string, message: string) => Promise<ConnectionCheckExecution> = executeBoundedConnectionChat) {
+  execute: (target: SaveProviderConnectionRequest, id: string, message: string, attachments: ConnectionTestAttachment[]) => Promise<ConnectionCheckExecution> = executeBoundedConnectionChat) {
   const request = connectionChatSendSchema.parse(input);
-  return runCheck(id, request, (target, operationId) => execute(target, operationId, request.message), request.message);
+  validateConnectionTestAttachments(request.attachments);
+  return runCheck(id, request, (target, operationId) => execute(target, operationId, request.message, request.attachments), request.message, request.attachments, request.transient);
 }
-async function runCheck(id: string, request: ReturnType<typeof generationCheckRequestSchema.parse>, execute: Executor, message?: string): Promise<GenerationObservation | undefined> {
+async function runCheck(id: string, request: ReturnType<typeof generationCheckRequestSchema.parse>, execute: Executor, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false): Promise<GenerationObservation | undefined> {
+  const inputDigest = transient || attachments.length ? createHash("sha256").update(JSON.stringify([message, attachments])).digest("hex") : undefined;
   const claim = await getDatabase().transaction(async (tx) => {
     const [row] = await tx.select().from(providerConnections).where(and(
       eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, id),
@@ -53,10 +57,10 @@ async function runCheck(id: string, request: ReturnType<typeof generationCheckRe
     const observations = readProviderObservations(row);
     const previous = observations.generationChecks.find((check) => check.id === request.requestId);
     if (previous) {
-      if (previous.fingerprint !== request.fingerprint || previous.model !== request.model || previous.message !== message) throw new ConnectionCheckConflictError("identity");
+      if (previous.fingerprint !== request.fingerprint || previous.model !== request.model || previous.inputDigest !== inputDigest || Boolean(previous.transient) !== transient || !transient && previous.message !== message) throw new ConnectionCheckConflictError("identity");
       return { check: previous, target: null };
     }
-    if (fingerprint(row, request.model, message) !== request.fingerprint) throw new ConnectionCheckConflictError("stale");
+    if (fingerprint(row, request.model, message, attachments, transient) !== request.fingerprint) throw new ConnectionCheckConflictError("stale");
     if (observations.generationChecks.length >= MAX_GENERATION_CHECKS) throw new ConnectionCheckConflictError("capacity");
     const pending = observations.generationChecks.filter((check) => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt);
     if (pending.some((check) => Date.now() - Date.parse(check.startedAt) < GENERATION_CHECK_TIMEOUT_MS + 5_000)) throw new ConnectionCheckConflictError("pending");
@@ -67,7 +71,8 @@ async function runCheck(id: string, request: ReturnType<typeof generationCheckRe
       provider: row.provider as GenerationObservation["provider"], endpointPreset: row.endpointPreset as GenerationObservation["endpointPreset"],
       fingerprint: request.fingerprint, status: "submitted", startedAt: now, finishedAt: null, acknowledgedAt: null,
       failure: null, httpStatus: null, outputCapExceeded: null, returnedModel: null, remoteResponseId: null, inputTokens: null, outputTokens: null, elapsedMs: null,
-      ...(message === undefined ? {} : { kind: "chat" as const, message }) };
+      ...(inputDigest ? { inputDigest } : {}),
+      ...(message === undefined ? {} : { kind: "chat" as const, ...(transient ? { transient: true as const } : { message }) }) };
     observations.generationChecks.push(check);
     await tx.update(providerConnections).set({ catalogSnapshotCiphertext: encryptProviderObservations(row.id, observations) }).where(eq(providerConnections.id, row.id));
     // Credentials stop at the adapter boundary and never enter the review/history.
@@ -82,7 +87,7 @@ async function runCheck(id: string, request: ReturnType<typeof generationCheckRe
   let completed: GenerationObservation;
   try {
     const result = await execute(claim.target, claim.check.id);
-    completed = { ...claim.check, ...result, outputCapExceeded: result.outputTokens === null ? null : result.outputTokens > generationCheckPrompt().maxOutputTokens,
+    completed = { ...claim.check, ...(transient ? { message } : {}), ...result, outputCapExceeded: result.outputTokens === null ? null : result.outputTokens > generationCheckPrompt().maxOutputTokens,
       finishedAt: new Date().toISOString(), elapsedMs: Date.now() - started };
   } catch {
     completed = { ...claim.check, status: "outcome_unknown", failure: "network_unknown", errorCode: "remote_outcome_unknown", finishedAt: new Date().toISOString(), elapsedMs: Date.now() - started };
@@ -96,7 +101,10 @@ async function runCheck(id: string, request: ReturnType<typeof generationCheckRe
     const index = observations.generationChecks.findIndex((check) => check.id === completed.id);
     if (index < 0) throw new ConnectionCheckConflictError("identity");
     completed.acknowledgedAt = observations.generationChecks[index]!.acknowledgedAt;
-    observations.generationChecks[index] = completed;
+    if (transient) {
+      const { message: _message, reply: _reply, errorDetail: _detail, ...receipt } = completed;
+      observations.generationChecks[index] = receipt;
+    } else observations.generationChecks[index] = completed;
     await tx.update(providerConnections).set({ catalogSnapshotCiphertext: encryptProviderObservations(row.id, observations) }).where(eq(providerConnections.id, row.id));
     return completed;
   });

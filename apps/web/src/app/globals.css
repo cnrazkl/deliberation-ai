@@ -1341,3 +1341,23 @@ details[open] > .disclosure-summary > .disclosure-chevron { transform: rotate(90
 .connection-chat-failure code { font-size: .8rem; white-space: normal; }
 .connection-chat-actions { display: flex; flex-wrap: wrap; gap: .7rem; }
 .connection-chat-actions button { flex: 1 1 160px; }
+.connection-model-manual h4, .connection-model-aliases h4 { margin: 0 0 8px; font-size: 14px; }
+.connection-model-aliases { display: grid; gap: 12px; margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; }
+.connection-model-aliases label { display: grid; gap: 6px; min-width: 0; }
+.connection-model-aliases label > span { overflow-wrap: anywhere; font-size: 12px; color: var(--muted); }
+.connection-model-aliases input { min-width: 0; width: 100%; }
+.connection-test-cost-note { padding: 14px 16px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; background: var(--surface-subtle); font-size: 14px; line-height: 1.7; }
+.connection-test-cost-note strong { display: block; margin-bottom: 4px; }
+.connection-generation-panel { border: 0; background: transparent; overflow: visible; }
+.connection-generation-panel > .connection-chat-test { margin-top: 0; }
+.connection-test-files { display: grid; gap: 10px; padding: 14px; border: 1px dashed var(--line); border-radius: 14px; }
+.connection-test-files label { display: grid; gap: 8px; min-width: 0; }
+.connection-test-files input { width: 100%; min-width: 0; }
+.connection-test-file { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.connection-test-file span { flex: 1 1 160px; overflow-wrap: anywhere; font-size: 12px; }
+.connection-test-file button { flex: 0 0 auto; }
+.connection-test-history { display: grid; gap: 14px; margin-top: 20px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.connection-test-history h3, .connection-test-history h4, .connection-test-history p { margin: 0; }
+.connection-test-receipts { display: grid; gap: 12px; list-style: none; padding: 0; margin: 0; }
+.connection-test-receipts li { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; overflow-wrap: anywhere; }
+.connection-test-receipts code { white-space: normal; font-size: 12px; }

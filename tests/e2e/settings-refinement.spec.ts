@@ -59,18 +59,18 @@ for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1
       const card = page.locator(".connection-card").filter({ hasText: "Layout check" });
       const dialog = await openConnectionPanel(page, card, "Test ve Geçmiş");
       const panel = dialog.locator(".connection-generation-panel").filter({ visible: true });
-      await panel.getByRole("button", { name: "Üretim testi ve model geçmişi" }).click();
-      await expect(panel.getByRole("button", { name: /Onaylanan denemeyi/ })).toBeDisabled();
+      await expect(panel.getByRole("region", { name: "Model test ve hata ayıklama alanı" })).toBeVisible();
+      await expect(panel.getByRole("button", { name: "Üretim testi ve model geçmişi" })).toHaveCount(0);
       await expect(panel.getByRole("alert")).toHaveCount(0);
       const geometry = await panel.evaluate(el => {
         const card = el.closest(".connection-dialog")!.getBoundingClientRect(), box = el.getBoundingClientRect();
-        const note = el.querySelector(".connection-generation-note")!.getBoundingClientRect();
-        const controls = el.querySelector(".connection-generation-controls")!.getBoundingClientRect();
+        const note = el.querySelector(".connection-test-cost-note")!.getBoundingClientRect();
+        const controls = el.querySelector(".connection-chat-test > label")!.getBoundingClientRect();
         return { left: box.left - card.left, right: card.right - box.right, bottom: parseFloat(getComputedStyle(el.closest(".connection-dialog-content")!).paddingBottom), gap: controls.top - note.bottom };
       });
       expect(geometry.left).toBeGreaterThanOrEqual(16); expect(geometry.right).toBeGreaterThanOrEqual(16);
       expect(geometry.bottom).toBeGreaterThanOrEqual(16); expect(geometry.gap).toBeGreaterThanOrEqual(16);
-      expect(await panel.getByRole("button").first().evaluate(el => getComputedStyle(el).textTransform)).toBe("capitalize");
+      expect(await panel.locator("button").first().evaluate(el => getComputedStyle(el).textTransform)).toBe("capitalize");
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       expect(generationRequests).toBe(0);
       if (width === 960) { await panel.scrollIntoViewIfNeeded(); await page.screenshot({ path: testInfo.outputPath(`connections-${theme}.png`) }); }

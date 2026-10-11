@@ -18,7 +18,7 @@ test("chat sends only the reviewed single message through a bounded plain-text t
   const result = await executeBoundedConnectionChat(target, "intent", "Short fixture question");
   expect(result).toMatchObject({ status: "succeeded", reply: "Fixture reply", replyTruncated: true, inputTokens: null });
   expect(vi.mocked(generateConnectionChatText).mock.calls.at(-1)).toEqual([
-    { model: "fixture", instructions: expect.any(String), message: "Short fixture question" },
+    { model: "fixture", instructions: expect.any(String), message: "Short fixture question", attachments: [] },
     { provider: "openai-compatible", apiKey: "synthetic", baseUrl: "https://example.test", endpointPreset: "custom", operationKey: "intent", timeoutMs: 45000 },
   ]);
 });

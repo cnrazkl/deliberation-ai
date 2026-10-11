@@ -12,8 +12,8 @@ const messages: Record<ModelCatalogCheck["status"], string> = {
   unavailable: "Model listesine ulaşılamadı. Tekrar deneyin veya model kimliğini elle girin.",
 };
 
-export function ConnectionModelPreview({ draft, selectedModels, onModelsChange, disabled }: {
-  draft: PreviewProviderModelsRequest; selectedModels: string[]; onModelsChange: (models: string[]) => void; disabled: boolean;
+export function ConnectionModelPreview({ draft, selectedModels, onModelsChange, aliases, onAliasesChange, disabled }: {
+  draft: PreviewProviderModelsRequest; selectedModels: string[]; onModelsChange: (models: string[]) => void; aliases?: Record<string, string>; onAliasesChange?: (aliases: Record<string, string>) => void; disabled: boolean;
 }) {
   const binding = JSON.stringify([draft.provider, draft.endpointPreset, draft.baseUrl, draft.apiKey]);
   const [state, setState] = useState<{ binding: string; result: ModelCatalogCheck | null; pending: boolean; failed: boolean }>({ binding, result: null, pending: false, failed: false });
@@ -55,7 +55,7 @@ export function ConnectionModelPreview({ draft, selectedModels, onModelsChange, 
     <div role="status" aria-live="polite">
       {failed ? <p>Model listesi alınamadı. Tekrar deneyin veya model kimliğini elle girin.</p> : result ? <p>{messages[result.status]} {result.status === "available" ? `${result.models.length} model listelendi.` : ""}</p> : null}
     </div>
-    <ConnectionModelPicker models={result?.models ?? []} selectedModels={selectedModels} onChange={onModelsChange} disabled={disabled || pending} />
+    <ConnectionModelPicker models={result?.models ?? []} selectedModels={selectedModels} onChange={onModelsChange} aliases={aliases ?? {}} {...(onAliasesChange ? { onAliasesChange } : {})} disabled={disabled || pending} />
     {result?.truncated ? <p className="hint">Sağlayıcı listesinin yalnız ilk bölümü gösteriliyor; eksik model kimlikleri elle girilebilir.</p> : null}
     {result ? <p className="hint">{result.verification === "authenticated_catalog" ? "Anahtar, sağlayıcının kimlik doğrulamalı kataloğunda kabul edildi." : "Bu liste API anahtarının doğrulandığını göstermez."} Katalog kaydı; yanıt üretimi, ücret veya düşünme seviyesi desteğini doğrulamaz.</p> : null}
   </section>;

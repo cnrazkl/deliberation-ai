@@ -19,6 +19,7 @@ export type ProviderConnectionSummary = {
   label: string;
   defaultModel: string;
   selectedModels: string[];
+  modelAliases: Record<string, string>;
   baseUrl?: string;
   endpointPreset: SaveProviderConnectionRequest["endpointPreset"];
   reasoningProtocol: SaveProviderConnectionRequest["reasoningProtocol"];
@@ -48,6 +49,7 @@ function summary(row: typeof providerConnections.$inferSelect): ProviderConnecti
     label: row.label,
     defaultModel: row.defaultModel,
     selectedModels: selectedConnectionModelsSchema.parse(row.selectedModels ?? (row.defaultModel ? [row.defaultModel] : [])),
+    modelAliases: readProviderObservations(row).modelAliases ?? {},
     ...(row.baseUrl ? { baseUrl: row.baseUrl } : {}),
     endpointPreset: row.endpointPreset as SaveProviderConnectionRequest["endpointPreset"],
     reasoningProtocol: row.reasoningProtocol as SaveProviderConnectionRequest["reasoningProtocol"],
@@ -105,6 +107,9 @@ export async function saveProviderConnection(
       && existing.provider === request.provider && existing.label === request.label
       && existing.baseUrl === (request.baseUrl ?? null) && existing.endpointPreset === request.endpointPreset
       && existing.reasoningProtocol === request.reasoningProtocol && existing.structuredOutputMode === request.structuredOutputMode;
+    const observations = existing ? readProviderObservations(existing) : { version: "provider-observations-v1" as const, latestCatalog: null, catalogHistory: [], catalogDropped: 0, generationChecks: [] };
+    const aliases = request.modelAliases ?? observations.modelAliases ?? {};
+    const keptAliases = Object.fromEntries(Object.entries(aliases).filter(([model]) => (selectedModels ?? existing?.selectedModels ?? []).includes(model)));
     const values = {
       ownerId: getOwnerId(),
       provider: request.provider,
@@ -118,8 +123,8 @@ export async function saveProviderConnection(
       secretCiphertext: request.apiKey
         ? encryptText(request.apiKey, `provider-connection:${id}:secret`)
         : existing?.secretCiphertext ?? encryptText("", `provider-connection:${id}:secret`),
-      catalogSnapshotCiphertext: preferencesOnly ? existing.catalogSnapshotCiphertext
-        : existing ? encryptProviderObservations(id, { ...readProviderObservations(existing), latestCatalog: null }) : null,
+      catalogSnapshotCiphertext: encryptProviderObservations(id, { ...observations, latestCatalog: preferencesOnly ? observations.latestCatalog : null,
+        ...(Object.keys(keptAliases).length ? { modelAliases: keptAliases } : { modelAliases: undefined }) }),
       revision: preferencesOnly ? existing.revision : (existing?.revision ?? 0) + 1,
       keyVersion: Number(process.env.KEY_VERSION ?? "1"),
       updatedAt: new Date(),
@@ -147,7 +152,7 @@ export async function listProviderConnections(): Promise<ProviderConnectionSumma
 export async function loadProviderConnectionSecret(
   connectionId: string,
 ): Promise<
-  | (Omit<ProviderConnectionSummary, "configured" | "updatedAt" | "catalogCheck"> & { apiKey: string; revision: number })
+  | (Omit<ProviderConnectionSummary, "configured" | "updatedAt" | "catalogCheck" | "modelAliases"> & { apiKey: string; revision: number })
   | undefined
 > {
   const [row] = await getDatabase()

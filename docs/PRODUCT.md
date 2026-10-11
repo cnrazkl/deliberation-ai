@@ -41,18 +41,22 @@ Test ve Geçmiş tabs. Successful encrypted save closes the modal, updates cards
 reports success beside the list without reloading. Failed saves retain fields and
 show their error inside the panel. Tab changes retain unsaved connection fields;
 Escape/close returns focus to the triggering card/button and clears entered secrets.
-Generation review/history opens inside a padded, rounded connection panel with
-separate model, action and acknowledgement groups. Review and explicit paid-submit
-requirements remain unchanged.
+The Test ve Geçmiş tab is directly visible without another disclosure. Its small
+chat/debug area accepts a chosen model, owner-written message and optional small
+image/PDF/audio files. The send button authorizes one potentially charged
+test; a larger visible price warning replaces the routine acknowledgement checkbox.
 
-Connection creation/editing also offers **Bağlantıyı Deneyin**, a compact single-model
+Connection creation/editing also offers **Hızlı Bağlantı Testi**, a compact single-model
 chat test. The model dropdown uses the connection's selected models. **Kaydet Ve Test
 Et** explicitly saves a new connection or changed settings before sending; an unchanged
-saved connection uses **Mesajı Gönder**. The visible message/model and one potentially
-charged call require explicit acknowledgement. Each test sends only its own message,
+saved connection uses **Mesajı Gönder**. The visible message/model and price warning
+precede that explicit action. Each quick test sends only its own message,
 without council, conversation, file or tool context. The requested limit is 512 output
 tokens and 45 seconds, with provider-default reasoning and no tools or council schema.
-Replies, truncation, nullable usage and safe HTTP/transport error codes appear in place.
+Replies, truncation, nullable usage and safe HTTP/transport/provider error codes appear in place.
+Test messages/replies/files remain in browser memory and clear on dialog close/reload;
+old results are not rehydrated. Durable content-free receipts retain replay and unknown
+outcome protection. A lost reply can recover its recorded status, never invent its text.
 **Sonucu Kontrol Et** reads the existing receipt without generation. Lost responses
 block another send until inspected; unresolved history retains the existing explicit
 uncertainty acknowledgement and no automatic retry. Tests do not change configured
@@ -76,6 +80,10 @@ save up to 100 models to use in chat. A connection may be saved before choosing 
 The Modeller tab can refresh the catalog and save revised model choices without changing
 existing council drafts or provider execution settings. When a catalog is unsupported
 or incomplete, a model identifier can be added once in connection settings.
+The manual model field is always visible inside the expanded model list. Selected
+models can have optional connection-specific aliases, editable alongside their choices.
+Aliases appear in council/test dropdowns beside the original identifier; execution,
+frozen councils, model identity and provenance always use the original identifier.
 Council members use dropdowns of that connection's saved models; the same connection
 may supply different models to multiple members, or each member may use a different
 connection. Existing draft/template models remain selectable if preferences change.
@@ -180,8 +188,8 @@ jobs and verified return to the preserved original. Settings show separate priva
 decision/probe backlogs, queue age and backup metadata with notices. Selected local
 backup/export removal requires an exact review. [Operating contract](LOCAL_RECOVERY.md).
 
-Settings connection cards now expose **Üretim testi ve model geçmişi**: versioned
-per-model catalogs and a separately reviewed fixed generation test. Viewing never
+Settings connection cards expose **Test ve Geçmiş**: revisioned catalogs, content-free
+test statuses and a free-message debugging area with optional small files. Viewing never
 generates; intent replay prevents an extra call. Rejections, unknown outcomes and
 reported usage above the requested cap stay visible without billing or universal
 capability claims. [Workflow](CONNECTION_GENERATION_CHECK.md).

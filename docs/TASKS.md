@@ -1,5 +1,14 @@
 # Tasks
 
+- [x] Owner-requested connection test simplification/model aliases: no redundant
+  inner disclosures, temporary quick replies, send-button price notice, free-message
+  debug with small image/PDF/audio files and safe diagnostics; connection-specific
+  aliases in model/council/test selectors. 497 units, 290 isolated PostgreSQL cases,
+  28 affected browser checks, types/lint/Linux production build and generated-only
+  actual LAN media/error/alias/reset/draft/layout checks pass. Owned deployment and
+  cleanup verified; service/database baselines preserved. No paid external generation.
+  See CURRENT_STATE.md and [test contract](CONNECTION_GENERATION_CHECK.md).
+
 - [x] Owner-requested simple conversation deletion and viewport retention: one explicit
   dialog confirmation for atomic run/private/local-binding/metadata deletion, visible
   retained-copy warnings, stale/lease/unknown/schema/owner guards and unchanged body
