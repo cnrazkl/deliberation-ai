@@ -1,5 +1,15 @@
 # Data model
 
+Council pool content uses the existing `council_templates.members_ciphertext` and
+`council-template:<id>:members` authentication context. Legacy plaintext shape is an
+ordered member array. Complete saves encrypt `{version: "council-template-content-v2",
+members, settings: {reviewRounds, selfRevisionEnabled}}`; readers accept both strictly.
+Round count is 0–3, and self-revision requires a nonzero count. Creation-request hashes
+bind the optional settings without changing hashes for legacy requests. Member counts,
+ownership, names, indexes and deletion metadata remain unchanged. Reviewed deletion
+clears complete content to the existing authenticated empty-array tombstone. No new
+column or migration is needed; old binaries do not understand active v2 content.
+
 Migration `0056_absurd_lord_tyger.sql` adds nullable JSONB
 `provider_connections.selected_models`. Values are configuration identifiers, bounded
 to 100 unique non-empty model IDs of at most 120 characters. Null preserves legacy

@@ -1,5 +1,9 @@
 # Tasks
 
+- [ ] Owner-requested saved council pool in chat: complete member and round settings,
+  legacy-compatible encrypted content, explicit dispatch, visible status, responsive
+  controls and inexpensive opt-in real OpenRouter checks. Verification in progress.
+
 - [x] Owner-reported OpenRouter failures and compact connection chat: owned worker
   internal-only network caused observed EAI_AGAIN. Outbound access repaired without
   restart or generation; compose fix survives worker recreation. Save-and-test creation/editing,

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { councilMembersSchema, saveCouncilTemplateSchema, councilTemplateDeletionReceiptSchema,
-  type CouncilMemberConfig, type SaveCouncilTemplateRequest, type CouncilTemplateDeletionReceipt } from "@deliberation-ai/contracts";
+import { councilTemplateContentSchema, saveCouncilTemplateSchema, councilTemplateDeletionReceiptSchema,
+  type CouncilMemberConfig, type CouncilTemplateSettings, type SaveCouncilTemplateRequest, type CouncilTemplateDeletionReceipt } from "@deliberation-ai/contracts";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { decryptJson, encryptJson } from "./crypto";
@@ -15,7 +15,8 @@ export class CouncilTemplateDeletionStaleError extends Error {}
 type Row = typeof councilTemplates.$inferSelect;
 const owned = (id: string) => and(eq(councilTemplates.ownerId, getOwnerId()), eq(councilTemplates.id, id));
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
-const contentHash = (value: Pick<SaveCouncilTemplateRequest, "name" | "description" | "members">) => hash({ name: value.name, description: value.description, members: value.members });
+const contentHash = (value: Pick<SaveCouncilTemplateRequest, "name" | "description" | "members" | "settings">) => hash({ name: value.name, description: value.description, members: value.members,
+  ...(value.settings ? { settings: value.settings } : {}) });
 
 async function lockWrites(tx: ConversationTransaction) {
   await tx.execute(sql`set local lock_timeout='5s'`);
@@ -23,7 +24,7 @@ async function lockWrites(tx: ConversationTransaction) {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${getOwnerId()}), hashtext('council-template-writes-v1'))`);
   await tx.execute(sql`lock table council_templates in share row exclusive mode`);
 }
-export type CouncilTemplate = { id: string; name: string; description: string; members: CouncilMemberConfig[];
+export type CouncilTemplate = { id: string; name: string; description: string; members: CouncilMemberConfig[]; settings?: CouncilTemplateSettings;
   memberCount: number; createdAt: string; updatedAt: string };
 export function decodeCouncilTemplateDeletion(row: Pick<Row, "id" | "deletedAt" | "deletionReceiptCiphertext" | "creationRequestId" | "creationRequestHash" | "memberCount" | "name" | "description" | "membersCiphertext">): CouncilTemplateDeletionReceipt | undefined {
   if (!row.deletedAt && !row.deletionReceiptCiphertext) return undefined;
@@ -39,9 +40,11 @@ function mapTemplate(row: Row): CouncilTemplate {
   if (decodeCouncilTemplateDeletion(row)) throw new CouncilTemplateConflictError();
   if (Boolean(row.creationRequestId) !== Boolean(row.creationRequestHash)) throw new ConversationIntegrityError();
   if (row.creationRequestHash && !/^[a-f0-9]{64}$/.test(row.creationRequestHash)) throw new ConversationIntegrityError();
-  const members = councilMembersSchema.parse(decryptJson(row.membersCiphertext, `council-template:${row.id}:members`));
+  const content = councilTemplateContentSchema.parse(decryptJson(row.membersCiphertext, `council-template:${row.id}:members`));
+  const members = Array.isArray(content) ? content : content.members;
   if (members.length !== row.memberCount) throw new ConversationIntegrityError();
   return { id: row.id, name: row.name, description: row.description, members, memberCount: row.memberCount,
+    ...(!Array.isArray(content) ? { settings: content.settings } : {}),
     createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() };
 }
 export async function listCouncilTemplates(): Promise<CouncilTemplate[]> {
@@ -67,7 +70,8 @@ export async function saveCouncilTemplate(input: SaveCouncilTemplateRequest): Pr
     if (sameName && sameName.id !== existing?.id) throw new CouncilTemplateConflictError();
     const id = existing?.id ?? randomUUID();
     const values = { ownerId: getOwnerId(), name: request.name, description: request.description,
-      membersCiphertext: encryptJson(request.members, `council-template:${id}:members`), memberCount: request.members.length, updatedAt: new Date() };
+      membersCiphertext: encryptJson(request.settings ? { version: "council-template-content-v2", members: request.members, settings: request.settings } : request.members,
+        `council-template:${id}:members`), memberCount: request.members.length, updatedAt: new Date() };
     const [saved] = existing ? await tx.update(councilTemplates).set(values).where(owned(id)).returning() :
       await tx.insert(councilTemplates).values({ id, ...values, creationRequestId: request.requestId!, creationRequestHash: contentHash(request) }).returning();
     if (!saved) throw new CouncilTemplateConflictError();

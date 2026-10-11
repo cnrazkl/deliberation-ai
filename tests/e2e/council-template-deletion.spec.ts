@@ -19,7 +19,7 @@ test("reviews template deletion, rejects stale confirmation and recovers a lost 
     await page.goto("/"); await revealCouncilControls(page); const question = page.getByRole("textbox", { name: "Sorunuz", exact: true });
     await question.fill("Generated template deletion keeps this draft question");
     await page.getByLabel("Şablon adı", { exact: true }).fill(name);
-    await page.getByRole("button", { name: "Şablonu kaydet", exact: true }).click();
+    await page.getByRole("button", { name: "Konseyi Kaydet", exact: true }).click();
     const reviewButton = page.getByRole("button", { name: `${name} şablonunu silmeyi incele`, exact: true });
     await expect(reviewButton).toBeVisible(); const id = ids[0]!;
     await reviewButton.click(); const panel = page.getByRole("region", { name: "Şablon silme önizlemesi" });

@@ -30,7 +30,7 @@ test("lost template save responses retry without overwriting drafts or resurrect
     await question.fill("Generated template save question stays unchanged");
     const field = page.getByRole("textbox", { name: "Şablon adı", exact: true });
     await field.fill(name);
-    const save = page.getByRole("button", { name: "Şablonu kaydet", exact: true });
+    const save = page.getByRole("button", { name: "Konseyi Kaydet", exact: true });
     await expect(save).toBeEnabled();
     await save.click();
     await expect(field).toHaveValue(name);

@@ -1,5 +1,20 @@
 # Architecture
 
+CouncilPool is a client presentation component inside the question composer.
+CouncilWorkbench retains owned template loading, durable save intent, active identity
+and exact draft comparison. Selection copies members and stored round/self-revision
+settings into existing state; normal preview fingerprints and dispatch are unchanged.
+Pool controls are disabled during run submission, save/deletion, continuation loading
+and awaiting-context resolution. No selection triggers provider work.
+
+Council-template persistence accepts an optional strict settings object and authenticates
+new complete content as `council-template-content-v2` inside the existing members
+ciphertext. Legacy arrays and legacy creation hashes retain their original meaning.
+Creation hashes additionally bind settings when present. There is no DDL; owned locks,
+reviewed deletion, empty-array tombstones and durable replay fencing remain intact.
+Old application binaries cannot read active v2 envelopes; restore/rollback requires a
+compatible reader. Worker run contracts and frozen orchestration do not change.
+
 ConnectionChatTester uses the owned no-store `/api/provider-connections/:id/chat-check`
 route for read-only history, POST review and explicitly approved POST dispatch. Creation
 and unsaved edits invoke the existing save path first and retain the open dialog. The

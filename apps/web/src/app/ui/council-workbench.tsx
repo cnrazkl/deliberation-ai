@@ -7,11 +7,13 @@ import { WorkspaceShell, type WorkspaceView } from "./workspace-shell";
 import { LocalDiagnosticsPanel } from "./local-diagnostics-panel";
 import { PrivateOutputDefaultPanel } from "./private-output-default-panel";
 import { CouncilTemplateDeletionPanel } from "./council-template-deletion-panel";
+import { CouncilPool } from "./council-pool";
 import type { RunRecord } from "@deliberation-ai/application";
 import { auditPromptRevision, findCriticalMissingContext, PROMPT_REVISION_VERSION, suggestStructuredQuestion } from "@deliberation-ai/domain";
 import { MAX_ATTACHMENT_BYTES, MAX_PDF_ATTACHMENT_BYTES, MAX_RUN_ATTACHMENTS, MAX_TOTAL_ATTACHMENT_BYTES } from "@deliberation-ai/contracts";
 import type {
   CouncilMemberConfig,
+  CouncilTemplateSettings,
   FrozenContinuation,
   ContinuationCompactionPacket,
   CreateRunRequest,
@@ -285,6 +287,7 @@ type CouncilTemplate = {
   description: string;
   members: CouncilMemberConfig[];
   memberCount: number;
+  settings?: CouncilTemplateSettings;
 };
 
 type SharedMemoryEntry = {
@@ -368,6 +371,9 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   const [members, setMembers] = useState<CouncilMemberConfig[]>(() => memberCatalog.slice(0, 2));
   const [templates, setTemplates] = useState<CouncilTemplate[]>([]);
   const [templateName, setTemplateName] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [templateNotice, setTemplateNotice] = useState<string>();
+  const [templateError, setTemplateError] = useState<string>();
   const [savingTemplate, setSavingTemplate] = useState(false);
   const templateIntent = useRef<{ body: string; requestId: string } | undefined>(undefined);
   const [deletingTemplateId, setDeletingTemplateId] = useState<string>();
@@ -679,12 +685,14 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   }
 
   async function saveTemplate(): Promise<void> {
-    if (!templateName.trim() || savingTemplate || deletingTemplateBusy) return;
-    const draft = { name: templateName.trim(), description: `${members.length} üyeli kayıtlı sağlayıcı konseyi`, members };
+    if (!templateName.trim() || savingTemplate || deletingTemplateBusy || pending || !memberConfigurationValid) return;
+    const draft = { name: templateName.trim(), description: `${members.length} üyeli kayıtlı sağlayıcı konseyi`, members,
+      settings: { reviewRounds, selfRevisionEnabled: selfRevisionEnabled && reviewRounds > 0 } };
     const bodyKey = JSON.stringify(draft);
     if (!templateIntent.current || templateIntent.current.body !== bodyKey) templateIntent.current = { body: bodyKey, requestId: createBrowserRequestId() };
     setSavingTemplate(true);
-    setError(undefined);
+    setTemplateError(undefined);
+    setTemplateNotice(undefined);
     try {
       const response = await ownerFetch("/api/council-templates", {
         method: "POST",
@@ -698,17 +706,32 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       const saved = body as CouncilTemplate;
       setTemplates((current) => [...current.filter((item) => item.id !== saved.id), saved].sort((a, b) => a.name.localeCompare(b.name, "tr")));
       setTemplateName("");
+      setSelectedTemplateId(saved.id);
+      setTemplateNotice(`${saved.name} konsey havuzuna kaydedildi.`);
       templateIntent.current = undefined;
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Şablon kaydedilemedi.");
+      setTemplateError(reason instanceof Error ? reason.message : "Konsey kaydedilemedi.");
     } finally {
       setSavingTemplate(false);
     }
   }
 
+  function selectTemplate(id: string): void {
+    if (pending || savingTemplate || deletingTemplateBusy || loadingContinuation || needsContext) return;
+    setSelectedTemplateId(id);
+    setTemplateError(undefined);
+    const template = templates.find(item => item.id === id);
+    if (!template) { setTemplateNotice(undefined); return; }
+    setMembers(template.members.map(member => ({ ...member })));
+    setReviewRounds(template.settings?.reviewRounds ?? 1);
+    setSelfRevisionEnabled(template.settings?.selfRevisionEnabled ?? false);
+    setTemplateNotice(`${template.name} hazır. Sorunuzu yazıp Konseyi Çalıştır'a basabilirsiniz.`);
+  }
+
   const onTemplateDeleted = useCallback(() => {
     setTemplates((current) => current.filter((item) => item.id !== deletingTemplateId));
     setDeletingTemplateId(undefined);
+    setSelectedTemplateId(current => current === deletingTemplateId ? "" : current);
   }, [deletingTemplateId]);
 
   async function saveConnection(event?: FormEvent<HTMLFormElement>, keepOpen = false): Promise<ProviderConnection | undefined> {
@@ -1478,6 +1501,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       );
     },
   );
+  const selectedTemplate = templates.find(template => template.id === selectedTemplateId);
+  const templateModified = Boolean(selectedTemplate && (JSON.stringify(selectedTemplate.members) !== JSON.stringify(members)
+    || (selectedTemplate.settings?.reviewRounds ?? 1) !== reviewRounds
+    || (selectedTemplate.settings?.selfRevisionEnabled ?? false) !== (selfRevisionEnabled && reviewRounds > 0)));
 
   const dialogConnection = connections.find(connection => connection.id === connectionDialog);
   const connectionDirty = !dialogConnection || apiKey.trim() !== "" || connectionLabel !== dialogConnection.label
@@ -1824,6 +1851,11 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         {!connections.length ? <div className="connection-onboarding"><div><strong>İlk adım: modellerinizi bağlayın</strong><p>Başlamak için bir sağlayıcı bağlantısı ekleyin. API anahtarınızı kendi hesabınızda kaydedin.</p></div><button type="button" className="secondary-button" onClick={() => setView("settings")}>Bağlantıları ayarla <span aria-hidden="true">→</span></button></div> : null}
       <form className="question-card" onSubmit={submit}>
         <div className="composer-heading"><span className="eyebrow">SORUNUZLA BAŞLAYIN</span><h2>Konseye ne sormak istersiniz?</h2><p>Kararı veya problemi yazın. Önemli koşulları ve beklediğiniz sonucu ekleyin.</p></div>
+        <CouncilPool templates={templates.filter(template => template.members.every(member => member.provider !== "fake"))}
+          selectedId={selectedTemplateId} selectedName={selectedTemplate?.name} modified={templateModified} members={members} reviewRounds={reviewRounds}
+          name={templateName} disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation || needsContext}
+          canSave={memberConfigurationValid} saving={savingTemplate} notice={templateModified ? undefined : templateNotice} error={templateError}
+          onSelect={selectTemplate} onNameChange={setTemplateName} onSave={() => void saveTemplate()} />
         {compactionDraft ? <ContinuationCompactionEditor packet={compactionDraft.packet} summary={compactionDraft.summary}
           reviewed={continuationReviewed} disabled={pending || loadingContinuation}
           onSummaryChange={(summary) => { setCompactionDraft((current) => current ? { ...current, summary } : undefined); setContinuationReviewed(false); }}
@@ -2196,18 +2228,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             </label>
             {selfRevisionEnabled && reviewRounds > 0 ? <small>İlk yanıtlar korunur; öneriler otomatik olarak doğru kabul edilmez. Ek bağlam ve çıktı tokenları oluşabilir.</small> : null}
           </div>
-        <div className="template-controls">
-          <input
-            aria-label="Şablon adı"
-            value={templateName}
-            maxLength={80}
-            placeholder="Şablon adı"
-            onChange={(event) => setTemplateName(event.target.value)}
-          />
-          <button type="button" disabled={savingTemplate || deletingTemplateBusy || !templateName.trim() || !memberConfigurationValid} onClick={saveTemplate}>
-            {savingTemplate ? "Kaydediliyor…" : "Şablonu kaydet"}
-          </button>
-        </div>
+        <p className="hint">Bu yapılandırmayı soru alanındaki Konsey Havuzu üzerinden kaydedebilir ve yeniden seçebilirsiniz.</p>
         {templates.some((template) => template.members.every((member) => member.provider !== "fake")) ? (
           <div className="template-list">
             {templates.filter((template) => template.members.every((member) => member.provider !== "fake")).map((template) => (
@@ -2215,10 +2236,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                 <button
                   className="template-button"
                   type="button"
-                  disabled={deletingTemplateBusy}
-                  onClick={() => {
-                    setMembers(template.members);
-                  }}
+                  disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation || needsContext}
+                  onClick={() => selectTemplate(template.id)}
                 >
                   {template.name} <small>{template.memberCount} üye</small>
                 </button>

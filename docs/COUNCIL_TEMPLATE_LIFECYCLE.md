@@ -4,6 +4,16 @@ Verified 3 October 2026. Reviewed deletion and durable creation retries are comp
 
 ## Saving and retrying
 
+The chat **Konsey Havuzu** saves ordered members together with optional review-round
+and self-revision settings. New browser saves always supply both settings. Selection
+restores them without sending; legacy member-only content applies 1/false. Modified
+drafts are shown separately and can be saved under a new name. Conflicting names are
+still rejected. The current question/context/quotas are not reusable template content.
+Complete content is encrypted as a strict versioned v2 envelope in the existing column;
+legacy member arrays and creation hashes remain supported. Retry comparisons include
+settings when present. Deletion clears the full envelope with the existing tombstone.
+No DDL is introduced; rollback needs a reader supporting the v2 format.
+
 New creation requires a UUID requestId. The UI retains it for retries of an unchanged name, description and ordered member draft. Changed drafts start a fresh identity. An unchanged retry returns the original row without rewriting ciphertext or timestamps. Changed content, a conflicting active name, missing/foreign update ids and deleted identities return 409. Explicit updates supply only id and preserve the original creation hash. Neither/both identity fields return 422.
 
 Owner/request uniqueness survives deletion; owner/name uniqueness applies to active rows. A fresh requestId can reuse a deleted name; an old identity cannot attach to it. Legacy rows retain nullable creation metadata; no historical request identity is inferred.

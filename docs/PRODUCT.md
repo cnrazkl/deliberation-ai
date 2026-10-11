@@ -1,5 +1,23 @@
 # Product
 
+## Saved council pool
+
+The chat composer exposes **Konsey Havuzu** before the question. Owners can name and
+save their current council, then select it from **Kayıtlı Konsey** in later chats.
+Selection applies every ordered member's connection, model, role, reasoning, web and
+attachment settings plus review-round count and self-revision setting. The question,
+sources, context, risk assessment and local execution quotas remain per task. Selection
+does not generate: **Konseyi Çalıştır** uses the applied configuration through the
+existing preflight and frozen-input path. Changes show a modified draft and can be
+saved under a fresh name. Saved councils survive page reload and new conversations;
+the active choice is a browser draft, not an automatic account default.
+
+Legacy member-only templates apply one review round and no self-revision. Missing or
+changed connections must be corrected in council configuration before execution.
+Saving reports success/error inside the pool, preserves unchanged retry identities,
+and cannot silently overwrite a conflicting saved name. Reviewed deletion remains in
+the council configuration; deletion leaves the current member draft and frozen runs.
+
 The blue/navy brand mark uses three separate, equally sized geometric dialogue
 facets pointing toward an open center. Each retains its own direction and color.
 Entry, account bar, workspace navigation and public help share the same scalable

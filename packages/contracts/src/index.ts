@@ -600,12 +600,26 @@ export const localScheduleDeletionReceiptSchema = z.object({ version: z.literal(
   retainedLastRunId: z.string().uuid().nullable() }).strict();
 export type LocalScheduleDeletionReceipt = z.infer<typeof localScheduleDeletionReceiptSchema>;
 
+export const councilTemplateSettingsSchema = z.object({
+  reviewRounds: reviewRoundCountSchema,
+  selfRevisionEnabled: z.boolean(),
+}).strict().refine(value => value.reviewRounds > 0 || !value.selfRevisionEnabled, {
+  message: "Self revision requires a review round.",
+});
+export type CouncilTemplateSettings = z.infer<typeof councilTemplateSettingsSchema>;
+export const councilTemplateContentSchema = z.union([
+  councilMembersSchema,
+  z.object({ version: z.literal("council-template-content-v2"), members: councilMembersSchema,
+    settings: councilTemplateSettingsSchema }).strict(),
+]);
+
 export const saveCouncilTemplateSchema = z.object({
   id: z.string().uuid().optional(),
   requestId: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(80),
   description: z.string().trim().max(240).default(""),
   members: councilMembersSchema,
+  settings: councilTemplateSettingsSchema.optional(),
 }).strict().superRefine((value, context) => {
   if (Boolean(value.id) === Boolean(value.requestId)) context.addIssue({ code: "custom", message: "Supply an update id or a creation request id, exclusively." });
 });

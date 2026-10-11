@@ -249,6 +249,20 @@ button:disabled { cursor: not-allowed; }
 .composer-disclosure[open] > summary { margin-bottom: 14px; }
 .question-card { box-shadow: none; }
 .question-card > textarea { min-height: 120px; }
+.council-pool { display: grid; gap: 14px; margin: 0 0 22px; padding: 18px; min-width: 0; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-subtle); }
+.council-pool-heading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+.council-pool-heading h3 { margin: 0; font-size: 17px; }
+.council-pool-heading p { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.council-pool-badge { border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 12px; white-space: nowrap; background: var(--surface); }
+.council-pool-selector, .council-pool-save label { display: grid; gap: 7px; min-width: 0; font-size: 13px; font-weight: 600; }
+.council-pool select, .council-pool input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--muted); border-radius: 10px; padding: 10px 12px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; }
+.council-pool-models { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.council-pool-models li { display: grid; gap: 3px; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); font-size: 12px; overflow-wrap: anywhere; }
+.council-pool-models span { color: var(--muted); }
+.council-pool-save { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.council-pool-save label { flex: 1 1 220px; }
+.council-pool-save button { flex: 0 1 auto; min-height: 44px; }
+@container workspace (max-width: 440px) { .council-pool { padding: 14px; } .council-pool-save button { width: 100%; } }
 .question-card .token-preview { background: transparent; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 12px 0 0; }
 .connection-onboarding { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--accent-soft); padding: 12px 16px; border-radius: 12px; font-size: 13px; }
 .schedule-draft-summary { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 18px; overflow-wrap: anywhere; }

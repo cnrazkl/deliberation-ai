@@ -1,5 +1,12 @@
 # Current state
 
+## Saved council pool — implementation verification in progress
+
+11 October 2026: the chat composer now exposes named council save/select controls and
+applies complete member plus review-round/self-revision settings. Strict encrypted v2
+content preserves legacy arrays/hashes and reviewed deletion; no migration. Local,
+deployment and explicitly authorized inexpensive OpenRouter live checks are underway.
+
 Updated: 10 October 2026 (worker egress and compact connection chat deployed and verified)
 
 ## Provider connectivity and compact connection chat — deployed and verified

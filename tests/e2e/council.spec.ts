@@ -276,7 +276,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.getByLabel("Üye 4 konsey görevi")).toHaveValue("red-team");
   const templateName = `E2E dört üye ${Date.now()}`;
   await page.getByLabel("Şablon adı").fill(templateName);
-  await page.getByRole("button", { name: "Şablonu kaydet" }).click();
+  await page.getByRole("button", { name: "Konseyi Kaydet" }).click();
   await expect(page.locator(".template-button").filter({ hasText: templateName })).toBeVisible();
   await page.getByLabel("Üye sayısı").selectOption("2");
   await page.locator(".template-button").filter({ hasText: templateName }).click();
@@ -524,7 +524,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.getByRole("region", { name: "Model ayrıntıları" })).toContainText(
     "1 geçmiş bağlam kaydı",
   );
-  await expect(page.getByText("Analist B", { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Model ayrıntıları" }).getByText("Analist B", { exact: true })).toBeVisible();
   await expect(page.getByText("Deneme üyesi planlanan hata senaryosunu tetikledi.")).toBeVisible();
 
   await workspaceView(page, "Sohbet");

@@ -4,8 +4,8 @@ import { eq, inArray, or } from "drizzle-orm";
 import { defaultFakeCouncilMembers, saveCouncilTemplateSchema } from "@deliberation-ai/contracts";
 import { closeDatabase, getDatabase } from "./database";
 import { councilTemplates } from "./schema";
-import { encryptJson } from "./crypto";
-import { CouncilTemplateConflictError, CouncilTemplateDeletionStaleError, previewCouncilTemplateDeletion, deleteCouncilTemplateContent, saveCouncilTemplate } from "./council-templates";
+import { encryptJson, decryptJson } from "./crypto";
+import { CouncilTemplateConflictError, CouncilTemplateDeletionStaleError, previewCouncilTemplateDeletion, deleteCouncilTemplateContent, saveCouncilTemplate, listCouncilTemplates } from "./council-templates";
 
 const names: string[] = [];
 const requestIds: string[] = [];
@@ -25,6 +25,34 @@ afterEach(async () => {
   requestIds.length = 0;
 });
 afterAll(closeDatabase);
+
+test("saved council settings are encrypted, survive list/retry and cannot be changed by an old intent", async () => {
+  const request = { ...input(), settings: { reviewRounds: 2 as const, selfRevisionEnabled: true } };
+  const saved = await saveCouncilTemplate(request);
+  expect(saved.settings).toEqual(request.settings);
+  expect((await listCouncilTemplates()).find(template => template.id === saved.id)?.settings).toEqual(request.settings);
+  const [row] = await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, saved.id));
+  expect(decryptJson(row!.membersCiphertext, `council-template:${saved.id}:members`)).toEqual({ version: "council-template-content-v2", members: request.members, settings: request.settings });
+  expect(await saveCouncilTemplate(request)).toEqual(saved);
+  await expect(saveCouncilTemplate({ ...request, settings: { reviewRounds: 1, selfRevisionEnabled: false } })).rejects.toBeInstanceOf(CouncilTemplateConflictError);
+  expect(await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, saved.id))).toEqual([row]);
+  const preview = await previewCouncilTemplateDeletion(saved.id);
+  expect(await deleteCouncilTemplateContent(saved.id, preview!.fingerprint!)).toBeTruthy();
+  const [deleted] = await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, saved.id));
+  expect(decryptJson(deleted!.membersCiphertext, `council-template:${saved.id}:members`)).toEqual([]);
+  await expect(saveCouncilTemplate(request)).rejects.toBeInstanceOf(CouncilTemplateConflictError);
+});
+
+test("legacy member-only templates keep their original creation hash and remain readable", async () => {
+  const request = input();
+  const saved = await saveCouncilTemplate(request);
+  expect(saved.settings).toBeUndefined();
+  expect((await listCouncilTemplates()).find(template => template.id === saved.id)).toEqual(saved);
+  expect(await saveCouncilTemplate(request)).toEqual(saved);
+  const updated = await saveCouncilTemplate({ ...request, requestId: undefined, id: saved.id, settings: { reviewRounds: 0, selfRevisionEnabled: false } });
+  expect(updated.settings).toEqual({ reviewRounds: 0, selfRevisionEnabled: false });
+  await expect(saveCouncilTemplate(request)).rejects.toBeInstanceOf(CouncilTemplateConflictError);
+});
 
 test("an identical creation retry returns the same row without changing encrypted content or timestamps", async () => {
   const request = input();

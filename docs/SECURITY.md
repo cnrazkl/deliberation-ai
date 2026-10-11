@@ -1,5 +1,12 @@
 # Security
 
+Council-pool selection loads only the signed-in owner's reusable configurations and
+makes no provider request. Complete template settings share the existing authenticated
+member ciphertext and are bound by durable creation hashes. Legacy hashes remain valid
+only for member-only requests. Save conflicts, deleted identities and exact reviewed
+deletion fencing remain. Task questions, contexts, sources and execution quotas are not
+saved in the pool. Applying saved settings never bypasses preflight/risk controls.
+
 Connection chat tests require an authenticated non-root owner, exact mutation origin,
 strict streamed JSON up to 8 KiB, a 1,200-character message, revision/message/profile
 fingerprint and explicit paid-call approval. A row-locked encrypted submitted receipt

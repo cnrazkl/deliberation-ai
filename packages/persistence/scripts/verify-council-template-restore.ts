@@ -43,7 +43,9 @@ async function main() {
     const migration = spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "pnpm --filter @deliberation-ai/persistence db:migrate"],
       { cwd: repo, env: process.env, windowsHide: true, encoding: "utf8", timeout: 60_000 });
     if (migration.error || migration.status !== 0) throw new Error("Disposable migrations failed.");
-    const input = { requestId: randomUUID(), name: "Generated archive template", description: "Synthetic restore fixture", members: defaultFakeCouncilMembers };
+    const input = { requestId: randomUUID(), name: "Generated archive template", description: "Synthetic restore fixture", members: defaultFakeCouncilMembers,
+      settings: { reviewRounds: 2 as const, selfRevisionEnabled: true } };
+    const active = await saveCouncilTemplate({ ...input, name: "Generated active pool", requestId: randomUUID() });
     const template = await saveCouncilTemplate(input);
     const preview = (await previewCouncilTemplateDeletion(template.id))!; assert.equal(preview.eligible, true);
     const receipt = await deleteCouncilTemplateContent(template.id, preview.fingerprint!);
@@ -56,7 +58,7 @@ async function main() {
     try { assert.ok((await auditRestoredEncryption(client)).decryptedValues >= 2); } finally { await client.end(); }
     const [after] = await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, template.id));
     assert.deepEqual(after, before);
-    assert.equal((await listCouncilTemplates()).length, 0);
+    assert.deepEqual(await listCouncilTemplates(), [active]);
     assert.deepEqual(await deleteCouncilTemplateContent(template.id, preview.fingerprint!), receipt);
     await assert.rejects(saveCouncilTemplate(input), CouncilTemplateConflictError);
     const reused = await saveCouncilTemplate({ ...input, requestId: randomUUID() }); assert.notEqual(reused.id, template.id);
