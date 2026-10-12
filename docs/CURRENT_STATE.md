@@ -1,6 +1,29 @@
 # Current state
 
-Updated: 12 October 2026 (compact council/history and deletion correction deployed)
+Updated: 12 October 2026 (Müzakere workspace terminology deployed)
+
+## Müzakere terminology - deployed and verified
+
+Workspace menus, history, opening/deletion, model selection, usage/error copy and
+Markdown headings now use Müzakere. Help is explicitly excluded at the owner's
+request and remains unchanged. Existing data/API/prompt identities are preserved.
+Workspace/script types, zero-warning lint, six existing Markdown export checks and
+Linux persistence/worker/web types/lint/production build pass. Generated-only LAN
+checks verify menus/history/open/delete/cancel/new-draft/error copy and preserved
+navigation drafts. Light/dark 320/1578px screenshots inspected; no page errors or
+model requests. The first live harness selected a covered backdrop; the corrected
+sidebar-close selector passes. Temporary accounts and dependent fixtures are erased.
+Help source/menu/test paths have no diff. Native PostgreSQL stayed stopped.
+
+Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-muzakere`,
+manifest `sha256:e84c753a2146d133117713808a179824db50499b600a034fcab8e436b80fdfd2`,
+exported tree `7e3793b838812fbca7f82152f7a5d3a61baebe97`. Subsequent changes are
+verification documentation only. Deployment completed 2026-10-12T02:13:26Z at
+unchanged `192.168.1.112:33184`; private dump inventory verified, no migration/restore.
+Foreign containers and owned database lifecycle match the pre-deployment baseline;
+web/worker/observer run with zero restarts. Observation `month-muzakere-20261012`
+starts 2026-10-12T02:13:39.752Z, due 2026-11-11T02:13:39.752Z; first sample healthy.
+Earlier releases below are historical; monthly/human quality gates remain open.
 
 ## Compact council/history and actionable deletion - deployed and verified
 
@@ -34,7 +57,7 @@ or provider generation. Generated account and all dependent fixtures erased.
 Read-only verification of the reported owner's conversation now returns eligible,
 no blockers and no pending operations; its actual data was not deleted or changed.
 
-Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-council-library-ready`,
+Historical web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-council-library-ready`,
 manifest `sha256:80125d3b10528e85dcd96ee5969c938626d5646894cb65408ec09cb359531dd5`,
 exported tree `404b0a61323ff30df3c3c09945f85ab48bea5e5e`. Subsequent source changes are
 verification documentation only. Deployment completed 2026-10-12T02:00:38Z at

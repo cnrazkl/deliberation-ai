@@ -32,7 +32,7 @@ export function ThemeSelect() {
     </select>
   </label>;
 }
-const labels: Record<WorkspaceView, string> = { chat: "Sohbet", councils: "Konseyler", schedules: "Zamanlayıcı", settings: "Ayarlar" };
+const labels: Record<WorkspaceView, string> = { chat: "Müzakere", councils: "Konseyler", schedules: "Zamanlayıcı", settings: "Ayarlar" };
 function WorkspaceIcon({ view }: { view: WorkspaceView }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {view === "chat" ? <path d="M20 11.5a8 8 0 0 1-8 8H5l-3 2v-10a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z" /> : view === "councils" ? <><circle cx="9" cy="7" r="3" /><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-3-5" /></> : view === "schedules" ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></> : <><path d="M4 7h16M4 17h16" /><circle cx="8" cy="7" r="3" fill="var(--sidebar)" /><circle cx="16" cy="17" r="3" fill="var(--sidebar)" /></>}
@@ -50,12 +50,12 @@ export function WorkspaceShell({ view, onViewChange, sidebarOpen, onSidebarOpenC
   return <div className="app-shell">
     <a className="skip-link" href="#workspace-content">İçeriğe geç</a>
     {sidebarOpen && <button className="sidebar-backdrop" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar} />}
-    <aside id="workspace-sidebar" className={`app-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Sohbet geçmişi ve gezinme"
+    <aside id="workspace-sidebar" className={`app-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Müzakere geçmişi ve gezinme"
       onKeyDown={(event) => { if (event.key === "Escape") closeSidebar(); }}>
       <div className="sidebar-brand"><BrandHomeLink strong onHome={() => { onViewChange("chat"); setSidebarOpen(false); focusContent(); }} />
         <button type="button" className="sidebar-close secondary-button" aria-label="Geçmiş menüsünü kapat" onClick={closeSidebar}>×</button>
       </div>
-      <button type="button" className="new-chat-button" aria-label="＋ Yeni sohbet" disabled={newChatDisabled} onClick={() => { onNewChat(); setSidebarOpen(false); }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni sohbet</button>
+      <button type="button" className="new-chat-button" aria-label="＋ Yeni Müzakere" disabled={newChatDisabled} onClick={() => { onNewChat(); setSidebarOpen(false); }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni Müzakere</button>
       <nav className="workspace-nav" aria-label="Ana menü">
         {(Object.keys(labels) as WorkspaceView[]).map((item) => <button type="button" key={item} aria-label={labels[item]}
           aria-current={view === item ? "page" : undefined} onClick={() => { onViewChange(item); setSidebarOpen(false); focusContent(); }}>
@@ -63,12 +63,12 @@ export function WorkspaceShell({ view, onViewChange, sidebarOpen, onSidebarOpenC
           {item === "settings" && attentionCount > 0 && <small className="nav-attention" title={`${attentionCount} sağlayıcı işlemi karar bekliyor`}>{attentionCount}</small>}
         </button>)}
       </nav>
-      <div className="sidebar-history" onClick={(event) => { if ((event.target as HTMLElement).closest("[data-open-history]")) { setSidebarOpen(false); focusContent(); } }}><p className="sidebar-section-label">SOHBET GEÇMİŞİ</p>{sidebar}</div>
+      <div className="sidebar-history" onClick={(event) => { if ((event.target as HTMLElement).closest("[data-open-history]")) { setSidebarOpen(false); focusContent(); } }}><p className="sidebar-section-label">MÜZAKERE GEÇMİŞİ</p>{sidebar}</div>
       <div className="sidebar-footer"><ThemeSelect /><small>Bağımsız görüşler · İzlenebilir sonuçlar</small></div>
     </aside>
     <main className="app-main" id="workspace-content">
       <header className="workspace-topbar">
-        <button ref={toggle} type="button" className="sidebar-toggle secondary-button" aria-label="Sohbet geçmişini aç" aria-expanded={sidebarOpen} aria-controls="workspace-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+        <button ref={toggle} type="button" className="sidebar-toggle secondary-button" aria-label="Müzakere geçmişini aç" aria-expanded={sidebarOpen} aria-controls="workspace-sidebar" onClick={() => setSidebarOpen(!sidebarOpen)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
         <div><span className="eyebrow">ÇALIŞMA ALANI</span><h1 ref={heading} tabIndex={-1}>{view === "chat" ? "Birlikte düşünelim." : labels[view]}</h1></div>
         <span className="local-badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>Size ait çalışma alanı</span>
       </header>

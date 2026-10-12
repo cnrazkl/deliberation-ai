@@ -1,9 +1,9 @@
 import type { Page } from "@playwright/test";
 
-export async function workspaceView(page: Page, name: "Sohbet" | "Konseyler" | "Ayarlar" | "Zamanlayıcı") {
+export async function workspaceView(page: Page, name: "Müzakere" | "Konseyler" | "Ayarlar" | "Zamanlayıcı") {
   const connectionDialog = page.getByRole("dialog");
   if (await connectionDialog.isVisible()) await connectionDialog.getByRole("button", { name: "Bağlantı panelini kapat", exact: true }).click();
-  const toggle = page.getByRole("button", { name: "Sohbet geçmişini aç", exact: true });
+  const toggle = page.getByRole("button", { name: "Müzakere geçmişini aç", exact: true });
   const nav = page.getByRole("navigation", { name: "Ana menü", includeHidden: true });
   await nav.waitFor({ state: "attached" });
   if (!await nav.isVisible()) await toggle.click();
@@ -19,7 +19,7 @@ export async function revealCouncilControls(page: Page) {
   }
 }
 export async function revealChatTab(page: Page, tab: "Soru" | "Kaynaklar Ve Dosyalar" | "Bağlam Ve Kontroller" | "Sonuçlar", expand = true) {
-  await workspaceView(page, "Sohbet"); await page.getByRole("tab", { name: tab, exact: true }).click();
+  await workspaceView(page, "Müzakere"); await page.getByRole("tab", { name: tab, exact: true }).click();
   if (expand) await page.locator('[id^="chat-panel-"]:not([hidden]) details').evaluateAll(items => items.forEach(item => { (item as HTMLDetailsElement).open = true; }));
 }
 export async function saveCouncilForChat(page: Page, name = `Browser council ${Date.now()}`) {

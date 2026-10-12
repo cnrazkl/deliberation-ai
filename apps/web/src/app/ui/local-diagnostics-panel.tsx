@@ -84,7 +84,7 @@ export function LocalDiagnosticsPanel() {
             <div><small>Etkin zamanlama</small><strong>{diagnostics.activeSchedules}</strong></div>
           </div>
           {diagnostics.operational ? <div className="diagnostics-grid">
-            <div><small>Özel sohbet bekleyen / belirsiz</small><strong>{diagnostics.operational.privatePending} / {diagnostics.operational.privateUnknown}</strong></div>
+            <div><small>Özel müzakere bekleyen / belirsiz</small><strong>{diagnostics.operational.privatePending} / {diagnostics.operational.privateUnknown}</strong></div>
             <div><small>Karar bekleyen / belirsiz</small><strong>{diagnostics.operational.decisionPending} / {diagnostics.operational.decisionUnknown}</strong></div>
             <div><small>Bağlantı denemesi bekleyen / belirsiz</small><strong>{diagnostics.operational.probePending} / {diagnostics.operational.probeUnknown}</strong></div>
             <div><small>Kuyruk bekleyen / aktif (DB geneli)</small><strong>{diagnostics.operational.queue.pending ?? "bilinmiyor"} / {diagnostics.operational.queue.active ?? "bilinmiyor"}</strong></div>
@@ -95,7 +95,7 @@ export function LocalDiagnosticsPanel() {
             <div><small>Kopyalanmış özel sonuçlar</small><strong>{diagnostics.operational.privateCopied} tarihsel kayıt</strong></div>
           </div> : null}
           {localDiagnosticsAlerts(diagnostics).map((message) => <p key={message} className="inline-warning" role="status">{message}</p>)}
-          <p className="hint">Son kontrol: {new Date(diagnostics.checkedAt).toLocaleString("tr-TR")} · Son worker nabzı: {diagnostics.latestHeartbeatAt ? new Date(diagnostics.latestHeartbeatAt).toLocaleString("tr-TR") : "yok"}. Konsey, özel sohbet, karar ve bağlantı denemesi ayrı sayaçlardır. Yedek sayımı geri yükleme doğrulaması değildir. Anlık süre toplam çalışma gecikmesi değildir. Bu gösterge sağlayıcı API bağlantısını veya bir model isteğini test etmez.</p>
+          <p className="hint">Son kontrol: {new Date(diagnostics.checkedAt).toLocaleString("tr-TR")} · Son worker nabzı: {diagnostics.latestHeartbeatAt ? new Date(diagnostics.latestHeartbeatAt).toLocaleString("tr-TR") : "yok"}. Konsey, özel müzakere, karar ve bağlantı denemesi ayrı sayaçlardır. Yedek sayımı geri yükleme doğrulaması değildir. Anlık süre toplam çalışma gecikmesi değildir. Bu gösterge sağlayıcı API bağlantısını veya bir model isteğini test etmez.</p>
         </>
       ) : null}
       <button type="button" className="secondary-button" disabled={pending} onClick={() => void refresh()}>Durumu yenile</button>

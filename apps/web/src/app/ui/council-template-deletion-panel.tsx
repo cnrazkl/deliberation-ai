@@ -37,7 +37,7 @@ export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, 
   return <DeletionDialog title="Konsey Şablonunu Sil" busy={busy} onCancel={onCancel}><section aria-label="Şablon silme önizlemesi">
     <h3>Şablon silme önizlemesi</h3><p>Şablon kimliği: {templateId}</p>
     <p>Yalnız bu kayıtlı şablonun adı, açıklaması ve üye ayarları kaldırılır. Taslak sorunuz ve üye ayarlarınız korunur.</p>
-    {selectedInChat && <p className="inline-warning">Bu konsey şu anda sohbette seçili. Silerseniz kayıtlı konsey seçimi kalkar; yeni gönderim için başka bir konsey seçmeniz gerekir.</p>}
+    {selectedInChat && <p className="inline-warning">Bu konsey şu anda müzakerede seçili. Silerseniz kayıtlı konsey seçimi kalkar; yeni gönderim için başka bir konsey seçmeniz gerekir.</p>}
     <p>Önceki çalışmalar ve zamanlamalar kendi kopyalarını saklar; kuyruktaki işler durmaz. Yedekler ve dışa aktarılan dosyalar silinmez. Oluşturma isteğinin kimliği/özeti ve şifreli silme kaydı saklanır.</p>
     {preview ? <>
       <p>{preview.name} · {preview.memberCount} üye</p>

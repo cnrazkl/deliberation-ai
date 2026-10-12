@@ -22,11 +22,11 @@ export function AccountDeletionPanel({ user, onClose }: { user?: LocalUserSummar
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Hesap silinemedi."); setBusy(false); }
   }
   return <section className="account-panel account-panel-danger" aria-label="Hesap silme"><span className="account-form-eyebrow">KALICI SİLME</span><h2>Hesabı kalıcı olarak sil</h2>
-    <p>Hesap, tüm oturumları, sohbetleri, özel mesajları, kaynakları, zamanlamaları ve API bağlantıları bu kurulumdan kalıcı olarak silinir.</p>
+    <p>Hesap, tüm oturumları, müzakereleri, özel mesajları, kaynakları, zamanlamaları ve API bağlantıları bu kurulumdan kalıcı olarak silinir.</p>
     <p>Önceden alınan yedekler ve dışa aktarılan dosyalar ayrıca yönetilir. Silme, sağlayıcılardaki API anahtarlarını iptal etmez.</p>
     {error && <p role="alert" className="inline-error">{error}</p>}
     {!preview && !error && <p>Hesap verileri inceleniyor…</p>}
-    {preview && <><p><strong>@{preview.user.username}</strong> · {preview.runCount} sohbet çalışması · {preview.connectionCount} bağlantı · {preview.recordCount} uygulama kaydı</p>
+    {preview && <><p><strong>@{preview.user.username}</strong> · {preview.runCount} müzakere çalışması · {preview.connectionCount} bağlantı · {preview.recordCount} uygulama kaydı</p>
       {preview.blockers.map(block => <p key={block} role="alert">{block}</p>)}
       {preview.eligible && <form onSubmit={confirm}>
         <label>Silinecek kullanıcı adı<input name="username" required autoComplete="off" /></label>

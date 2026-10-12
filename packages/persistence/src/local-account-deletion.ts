@@ -99,7 +99,7 @@ async function inspect(client: PoolClient, user: NonNullable<Awaited<ReturnType<
       throw new LocalAuthError("Başka hesaba bağlı kayıt bulundu; silme engellendi.", 409);
   }
   const blockers: string[] = [];
-  if ((await client.query("SELECT 1 FROM runs WHERE owner_id=$1 AND status IN ('queued','running') LIMIT 1", [owner])).rowCount) blockers.push("Devam eden veya sırada bekleyen sohbet var. Önce iptal edip tamamlanmasını bekleyin.");
+  if ((await client.query("SELECT 1 FROM runs WHERE owner_id=$1 AND status IN ('queued','running') LIMIT 1", [owner])).rowCount) blockers.push("Devam eden veya sırada bekleyen müzakere var. Önce iptal edip tamamlanmasını bekleyin.");
   if ((await client.query("SELECT 1 FROM decision_assessments WHERE owner_id=$1 AND status IN ('queued','running') LIMIT 1", [owner])).rowCount) blockers.push("Devam eden karar değerlendirmesi var.");
   if ((await client.query(`SELECT 1 FROM pgboss.job t WHERE ${jobs} AND state='active' LIMIT 1`, [owner])).rowCount) blockers.push("Çalışan arka plan işi var.");
   const privateRows = (await client.query<Parameters<typeof decodePrivateBranchBody>[0]>(`SELECT id,conversation_id AS "conversationId",source_run_id AS "sourceRunId",source_member_id AS "sourceMemberId",parent_branch_id AS "parentBranchId",revision,message_count AS "messageCount",body_ciphertext AS "bodyCiphertext" FROM conversation_private_branches WHERE owner_id=$1`, [owner])).rows;

@@ -74,7 +74,7 @@ export async function inspectConnectionImpact(tx: ConversationTransaction, row: 
       const matches = members.filter(member => member.connectionId?.toLowerCase() === row.id && (all || removedModels.includes(member.model)));
       if (matches.length) affectedRunMembers.set(run.id, matches.map(member => member.id));
       const conversation = memberships.find(item => item.runId === run.id);
-      add("Sohbet Çalışması", run.id, conversation ? `Konuşma ${conversation.conversationId.slice(0, 8)} · çalışma ${run.id.slice(0, 8)}` : `Çalışma ${run.id.slice(0, 8)}`, members, run.status, ["queued", "running"].includes(run.status), [run.membersCiphertext, run.updatedAt]);
+      add("Müzakere Çalışması", run.id, conversation ? `Müzakere ${conversation.conversationId.slice(0, 8)} · çalışma ${run.id.slice(0, 8)}` : `Çalışma ${run.id.slice(0, 8)}`, members, run.status, ["queued", "running"].includes(run.status), [run.membersCiphertext, run.updatedAt]);
     }
     const pendingOps = await tx.select({ id: providerOperations.id, runId: providerOperations.runId, memberId: providerOperations.memberId, model: providerOperations.model, status: providerOperations.status }).from(providerOperations).innerJoin(runs, eq(runs.id, providerOperations.runId))
       .where(and(eq(runs.ownerId, getOwnerId()), inArray(providerOperations.status, ["prepared", "submitted", "outcome_unknown", "retry_authorized"]),
@@ -93,7 +93,7 @@ export async function inspectConnectionImpact(tx: ConversationTransaction, row: 
     }
     for (const branch of await tx.select({ id: conversationPrivateBranches.id, conversationId: conversationPrivateBranches.conversationId, sourceRunId: conversationPrivateBranches.sourceRunId, sourceMemberId: conversationPrivateBranches.sourceMemberId, parentBranchId: conversationPrivateBranches.parentBranchId, revision: conversationPrivateBranches.revision, messageCount: conversationPrivateBranches.messageCount, bodyCiphertext: conversationPrivateBranches.bodyCiphertext }).from(conversationPrivateBranches).where(eq(conversationPrivateBranches.ownerId, getOwnerId()))) {
       const body = decodePrivateBranchBody(branch);
-      add("Özel Sohbet", branch.id, `Özel dal ${branch.id.slice(0, 8)}`, [body.seed.member], privateDeliveryPending(body) ? "Gönderim bekliyor" : "Kayıtlı", privateDeliveryPending(body), branch.bodyCiphertext);
+      add("Özel Müzakere", branch.id, `Özel dal ${branch.id.slice(0, 8)}`, [body.seed.member], privateDeliveryPending(body) ? "Gönderim bekliyor" : "Kayıtlı", privateDeliveryPending(body), branch.bodyCiphertext);
     }
     for (const check of readProviderObservations(row).generationChecks) if (["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt && (all || removedModels.includes(check.model))) {
       impact.references.push({ kind: "Bağlantı Testi", id: check.id, label: `Test ${check.id.slice(0, 8)}`, models: [check.model], status: check.status, blocking: true }); evidence.push(check);

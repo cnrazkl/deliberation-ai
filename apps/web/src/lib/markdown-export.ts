@@ -68,18 +68,18 @@ export function createSynthesisMarkdown(run: RunExport): string {
     "## Dondurulmuş kaynak paketi", json(run.knowledgePacket)]);
 }
 export function createConversationMarkdown(value: ConversationExport): string {
-  const parts = ["# DeliberationAI konuşma geçmişi", `Konuşma: ${value.conversation.conversationId}`, `Dışa aktarım: ${value.exportedAt}`,
+  const parts = ["# DeliberationAI müzakere geçmişi", `Müzakere: ${value.conversation.conversationId}`, `Dışa aktarım: ${value.exportedAt}`,
     "Dosya şifresizdir; kayıtlı soru ve ham yanıtlar içerir. Devam eden çalışmaların anlık durumu alınır.",
-    "## Kapsam ve konuşma kaynağı", markdownBlock(value.scope), json(value.conversation)];
+    "## Kapsam ve müzakere kaynağı", markdownBlock(value.scope), json(value.conversation)];
   for (const item of value.runs) {
     parts.push(`---\n\n# Çalışma ${item.runId}`);
-    if (!item.payload) { parts.push("İçerik erişilemiyor; konuşma üyeliği korunuyor."); continue; }
+    if (!item.payload) { parts.push("İçerik erişilemiyor; müzakere üyeliği korunuyor."); continue; }
     const { report, question, ...metadata } = item.payload;
     parts.push(`Durum: ${literal(item.payload.status)}`, "## Soru", markdownBlock(question), "## Çalışma kaynağı ve saklanan geçmiş", json(metadata));
     if (report) parts.push(...reportHistory(report));
     else parts.push("Rapor henüz mevcut değil.");
   }
-  parts.push("---\n\n# Özel dal konuşmaları");
+  parts.push("---\n\n# Özel dal müzakereleri");
   if (value.knowledgeSelection) parts.push("## Bilgi koleksiyonu seçimi", json(value.knowledgeSelection));
   for (const branch of value.privateBranches ?? []) {
     parts.push(`## Özel dal ${branch.id}`, "### Kaynak soru", markdownBlock(branch.body.seed.question),

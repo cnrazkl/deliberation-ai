@@ -148,7 +148,7 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
           intent.current = null; ++readGeneration.current; setDeletionId(null); setSelectedId(null); setBranch(null); setText("");
           setLoading(true); setDetailLoading(false); setRefresh((value) => value + 1);
         }} />}
-      <p className="section-hint">İndirme ve konuşma dışa aktarımı özel taslakları okunabilir metin olarak içerir. Dal içeriği ayrı onayla silinebilir; kullanım kayıtları, kaynak rapor ve dış kopyalar korunur.</p>
+      <p className="section-hint">İndirme ve müzakere dışa aktarımı özel taslakları okunabilir metin olarak içerir. Dal içeriği ayrı onayla silinebilir; kullanım kayıtları, kaynak rapor ve dış kopyalar korunur.</p>
     </div>}
   </section>;
 }
@@ -184,7 +184,7 @@ export function PrivateBranchSeedButton({ runId, memberId }: { runId: string; me
     <button type="button" className="secondary-button" disabled={busy || Boolean(created)} onClick={() => void inspect()}>Bu yanıtla özel dal taslağı aç</button>
     {error && <p role="alert" className="error">{error}</p>}
     {preview && <section aria-label="Özel dal kaynak önizlemesi">
-      <p>Yalnız kaynak soru ve {preview.seed.member.label} üyesinin ilk ham yanıtı kopyalanacak. Önceki konuşma bağlamı, diğer üyeler, incelemeler ve ekler dahil edilmez. Kaynak içerik saklanır; yeni modele gönderim yapılmaz.</p>
+      <p>Yalnız kaynak soru ve {preview.seed.member.label} üyesinin ilk ham yanıtı kopyalanacak. Önceki müzakere bağlamı, diğer üyeler, incelemeler ve ekler dahil edilmez. Kaynak içerik saklanır; yeni modele gönderim yapılmaz.</p>
       <details><summary>Kopyalanacak içeriği incele</summary><p>{preview.seed.question}</p><pre>{preview.seed.rawText}</pre></details>
       <button type="button" className="secondary-button" disabled={busy} onClick={() => void create()}>Özel dalı kaydet</button>
       <button type="button" className="secondary-button" disabled={busy} onClick={() => { setPreview(null); setError(null); }}>Vazgeç</button>

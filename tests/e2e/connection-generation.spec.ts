@@ -54,7 +54,7 @@ test("debug test accepts small image/audio/PDF, shows provider errors and retain
     await page.keyboard.press("Escape"); await openConnectionPanel(page, tile, "Test Ve Hata Ayıklama");
     await expect(chat).not.toContainText("Synthetic media accepted."); await expect(chat).not.toContainText("HTTP 400");
     await expect(chat.getByRole("region", { name: "Mevcut testin teknik ayrıntıları" })).toContainText("Bir mesaj gönderdiğinizde"); expect(calls).toBe(2);
-    await page.keyboard.press("Escape"); await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("KEEP MY DRAFT");
+    await page.keyboard.press("Escape"); await workspaceView(page, "Müzakere"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("KEEP MY DRAFT");
     await workspaceView(page, "Konseyler");
     await page.getByLabel("Üye 1 bağlantısı", { exact: true }).selectOption(id!);
     await expect(page.getByLabel("Üye 1 modeli").locator('option[value="local-check"]')).toHaveText("Kolay Ad · local-check");

@@ -6,7 +6,7 @@ import { ownerFetch } from "../../lib/session-fetch";
 import { ConnectionModelPicker } from "./connection-model-picker";
 
 const messages: Record<ModelCatalogCheck["status"], string> = {
-  available: "Model listesi alındı. Sohbette kullanmak istediğiniz modelleri seçin.",
+  available: "Model listesi alındı. Müzakerede kullanmak istediğiniz modelleri seçin.",
   auth_failed: "Sağlayıcı anahtarı kabul etmedi. Anahtarı ve uç noktayı kontrol edin.",
   unsupported: "Bu uç nokta model listelemeyi desteklemiyor. Model kimliğini elle girebilirsiniz.",
   unavailable: "Model listesine ulaşılamadı. Tekrar deneyin veya model kimliğini elle girin.",

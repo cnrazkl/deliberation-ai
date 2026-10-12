@@ -27,8 +27,8 @@ export function privateBranchError(error: unknown) {
   if (error instanceof PrivateDeliveryBlockedError) return privateBranchJson({ error: "Bu gönderim destek, risk veya kapasite sınırları nedeniyle engellendi. Önizlemeyi yenileyin." }, 422);
   if (error instanceof PrivateBranchConflictError) return privateBranchJson({ error: "Kaynak veya dal değişti. Güncel kaydı inceleyip tekrar deneyin." }, 409);
   if (error instanceof PrivateBranchSourceError) return privateBranchJson({ error: "Tamamlanmış ve okunabilir bir ilk yanıt gerekli." }, 409);
-  if (error instanceof ConversationPendingError) return privateBranchJson({ error: "Konuşma indeksinin tamamlanması gerekiyor." }, 503);
-  if (error instanceof ConversationSizeError) return privateBranchJson({ error: "Dal veya konuşma bu işlem için çok büyük." }, 413);
+  if (error instanceof ConversationPendingError) return privateBranchJson({ error: "Müzakere indeksinin tamamlanması gerekiyor." }, 503);
+  if (error instanceof ConversationSizeError) return privateBranchJson({ error: "Dal veya müzakere bu işlem için çok büyük." }, 413);
   if (error instanceof ConversationIntegrityError) return privateBranchJson({ error: "Kayıt tutarlılığı doğrulanamadı." }, 409);
   return privateBranchJson({ error: "Özel dal işlemi tamamlanamadı." }, 500);
 }

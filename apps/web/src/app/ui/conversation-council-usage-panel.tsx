@@ -23,8 +23,8 @@ export function ConversationCouncilUsagePanel({ conversationId }: { conversation
     } catch (caught) { if (current === generation.current && !controller.signal.aborted) setError(caught instanceof Error ? caught.message : "Konsey kullanımı okunamadı."); }
     finally { if (current === generation.current) setBusy(false); }
   }
-  return <details className="composer-disclosure private-usage-summary" aria-label="Konuşmanın konsey kullanım özeti">
-    <summary>Konuşmadaki konsey işlemlerinin token kullanımı</summary>
+  return <details className="composer-disclosure private-usage-summary" aria-label="Müzakerenin konsey kullanım özeti">
+    <summary>Müzakeredeki konsey işlemlerinin token kullanımı</summary>
     <p className="section-hint">İlk tur, incelemeler ve yeniden denemelerin kayıtlarıdır. İşlem kaydı gerçek API çağrısı sayısı değildir. Özel dal kullanımı aşağıda ayrı alınır; özetlerin zamanları farklı olabilir. Fatura veya parasal bütçe değildir.</p>
     <button type="button" disabled={busy} onClick={() => void refresh()}>{busy ? "Kullanım okunuyor…" : "Konsey kullanımını getir"}</button>
     {error ? <p role="alert">{error}</p> : null}

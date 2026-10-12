@@ -10,7 +10,7 @@ import { conversations, conversationRuns, runs } from "../../packages/persistenc
 test("discovers saved conversations, paginates and opens a result without changing the draft or starting generation", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const ids: string[] = []; const conversationIds: string[] = [];
   try {
-    const value = await enqueueDurableRun({ question: `Kayıtlı konuşma hangi alternatifleri içerir ${randomUUID()}?`, idempotencyKey: randomUUID(), providerMode: "fake", scenario: "success", reviewRounds: 0, memoryEntryIds: [] });
+    const value = await enqueueDurableRun({ question: `Kayıtlı müzakere hangi alternatifleri içerir ${randomUUID()}?`, idempotencyKey: randomUUID(), providerMode: "fake", scenario: "success", reviewRounds: 0, memoryEntryIds: [] });
     ids.push(value.runId); await executeDurableRun(value.runId);
     const view = (await loadRunConversation(value.runId))!; conversationIds.push(view.conversationId);
     await getDatabase().update(conversations).set({ createdAt: sql`'2301-01-01 00:00:00+00'::timestamptz` }).where(eq(conversations.id, view.conversationId));
@@ -25,22 +25,22 @@ test("discovers saved conversations, paginates and opens a result without changi
     let dispatches = 0;
     page.on("request", (req) => { if (new URL(req.url()).pathname === "/api/runs" && req.method() === "POST") dispatches++; });
     await page.goto("/"); await revealCouncilControls(page);
-    const library = page.getByRole("region", { name: "Kayıtlı konuşmalar", exact: true });
+    const library = page.getByRole("region", { name: "Kayıtlı müzakereler", exact: true });
     await expect(library.locator("[data-conversation-id]")).toHaveCount(20);
-    await library.getByRole("button", { name: "Daha eski konuşmaları göster" }).click();
+    await library.getByRole("button", { name: "Daha eski müzakereleri göster" }).click();
     await expect(library.locator(`[data-conversation-id="${conversationIds.at(-1)}"]`)).toBeVisible();
-    const draft = `Konuşmalar arasında korunacak taslak ${randomUUID()}`;
+    const draft = `Müzakereler arasında korunacak taslak ${randomUUID()}`;
     await revealChatTab(page, "Soru");
     await page.getByLabel("Sorunuz", { exact: true }).fill(draft);
     await revealCouncilControls(page);
     const selectedConnection = await page.getByRole("combobox", { name: "Üye 1 bağlantısı", exact: true }).inputValue();
-    await library.locator(`[data-conversation-id="${view.conversationId}"]`).getByRole("button", { name: "Konuşmayı aç", exact: true }).click();
-    await expect(page.getByRole("region", { name: "Konuşma kaydı", exact: true })).toContainText(view.conversationId);
+    await library.locator(`[data-conversation-id="${view.conversationId}"]`).getByRole("button", { name: "Müzakereyi aç", exact: true }).click();
+    await expect(page.getByRole("region", { name: "Müzakere kaydı", exact: true })).toContainText(view.conversationId);
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);
     await revealCouncilControls(page);
     await expect(page.getByRole("combobox", { name: "Üye 1 bağlantısı", exact: true })).toHaveValue(selectedConnection);
     expect(dispatches).toBe(0);
-    await library.getByRole("button", { name: "Konuşma listesini yenile" }).click();
+    await library.getByRole("button", { name: "Müzakere listesini yenile" }).click();
     await expect(library.locator("[data-conversation-id]")).toHaveCount(20);
   } finally {
     await closeBoss();
@@ -76,17 +76,17 @@ test("retrying the list preserves the draft and a refreshed first page rejects a
   });
   try {
     await page.goto("/"); await revealCouncilControls(page);
-    const library = page.getByRole("region", { name: "Kayıtlı konuşmalar", exact: true });
+    const library = page.getByRole("region", { name: "Kayıtlı müzakereler", exact: true });
     await expect(library.getByRole("alert")).toHaveText("Liste geçici olarak erişilemiyor.");
     await revealChatTab(page, "Soru");
     await page.getByLabel("Sorunuz", { exact: true }).fill("Liste yenilenirken korunacak taslak");
     listStage = "current";
-    await library.getByRole("button", { name: "Konuşma listesini yenile" }).click();
+    await library.getByRole("button", { name: "Müzakere listesini yenile" }).click();
     await expect(library.locator(`[data-conversation-id="${currentId}"]`)).toBeVisible();
-    await library.getByRole("button", { name: "Daha eski konuşmaları göster" }).click();
+    await library.getByRole("button", { name: "Daha eski müzakereleri göster" }).click();
     await olderSeen;
     listStage = "fresh";
-    await library.getByRole("button", { name: "Konuşma listesini yenile" }).click();
+    await library.getByRole("button", { name: "Müzakere listesini yenile" }).click();
     await expect(library.locator(`[data-conversation-id="${freshId}"]`)).toBeVisible();
     releaseOlder();
     await expect(library.locator("[data-conversation-id]")).toHaveCount(1);

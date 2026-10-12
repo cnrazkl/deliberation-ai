@@ -43,28 +43,28 @@ test("deletes a populated conversation with one confirmation while preserving th
     const branch = await created.json();
     expect((await request.get(`/api/runs/${child}/conversation`)).status()).toBe(200);
     await page.goto("/");
-    const library = page.getByRole("region", { name: "Kayıtlı konuşmalar", exact: true });
+    const library = page.getByRole("region", { name: "Kayıtlı müzakereler", exact: true });
     const card = library.locator(`[data-conversation-id="${conversationId}"]`);
     // The delete entry must be visible without expanding other operations.
-    await expect(card.getByRole("button", { name: "Konuşmayı Sil", exact: true })).toBeVisible();
+    await expect(card.getByRole("button", { name: "Müzakereyi Sil", exact: true })).toBeVisible();
     await page.getByLabel("Sorunuz", { exact: true }).fill("Draft preserved throughout conversation cleanup");
-    await card.getByRole("button", { name: "Konuşmayı aç", exact: true }).click();
+    await card.getByRole("button", { name: "Müzakereyi aç", exact: true }).click();
     await expect(page.locator("#council-result")).toBeVisible();
     // Sidebar controls stay visible while the long report is open.
     await page.evaluate(() => window.scrollTo({ top: 500, behavior: "instant" }));
-    const trigger = card.getByRole("button", { name: "Konuşmayı Sil", exact: true });
+    const trigger = card.getByRole("button", { name: "Müzakereyi Sil", exact: true });
     await trigger.scrollIntoViewIfNeeded(); await trigger.focus();
     const scrollBefore = await page.evaluate(() => window.scrollY);
     await trigger.click();
-    const panel = page.getByRole("dialog", { name: "Konuşmayı Sil", exact: true });
+    const panel = page.getByRole("dialog", { name: "Müzakereyi Sil", exact: true });
     await expect(panel).toHaveCount(1);
-    await expect(panel).toContainText("2 çalışma ve 1 özel sohbet");
+    await expect(panel).toContainText("2 çalışma ve 1 özel müzakere");
     await expect(panel).toContainText("Bağlı Kayıtlar Korunacak");
     await panel.getByText("Bağlı Kayıtları Göster", { exact: false }).click();
     await expect(panel).toContainText(external);
     await expect(panel.getByRole("checkbox")).toHaveCount(0);
     expect(await page.evaluate(() => window.scrollY)).toBeCloseTo(scrollBefore, 0);
-    await panel.getByRole("button", { name: "Evet, Konuşmayı Sil" }).click();
+    await panel.getByRole("button", { name: "Evet, Müzakereyi Sil" }).click();
     await expect(panel).toHaveCount(0); await expect(card).toHaveCount(0);
     await expect(page.locator("#council-result")).toHaveCount(0);
     for (const id of [child, source]) expect((await request.get(`/api/runs/${id}`)).status()).toBe(404);

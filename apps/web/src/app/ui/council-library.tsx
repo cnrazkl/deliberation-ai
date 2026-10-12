@@ -9,7 +9,7 @@ export function CouncilLibrary({ templates, selectedId, invalidIds, disabled, on
     <div className="council-library-heading"><div><h2>Konsey Havuzu</h2><p className="hint">Kayıtlı konseylerinizi inceleyin ve yönetin.</p></div><span className="connection-count">{templates.length}</span></div>
     {!templates.length ? <p className="hint">Henüz kayıtlı konsey yok. Aşağıdaki yapılandırmayı tamamlayıp yeni konsey oluşturun.</p> : <div className="council-library-grid">
       {templates.map(template => <article key={template.id} className="council-preview-card" data-template-id={template.id}>
-        <div className="council-preview-heading"><h3>{template.name}</h3>{selectedId === template.id && <small className="badge">Sohbette Seçili</small>}</div>
+        <div className="council-preview-heading"><h3>{template.name}</h3>{selectedId === template.id && <small className="badge">Müzakerede Seçili</small>}</div>
         <p className="hint">{template.members.length} üye · {template.settings?.reviewRounds ?? 1} inceleme turu</p>
         <div className="council-preview-models">{template.members.slice(0, 3).map(member => <span key={member.id} title={member.model}>{modelLabel(member)}</span>)}{template.members.length > 3 && <span>+{template.members.length - 3} model</span>}</div>
         {invalidIds.includes(template.id) && <small className="inline-warning">Bağlantı veya model seçimini güncelleyin.</small>}

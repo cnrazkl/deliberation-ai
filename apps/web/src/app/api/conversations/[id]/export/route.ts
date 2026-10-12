@@ -12,10 +12,10 @@ async function sessionPOST(request: Request, context: { params: Promise<{ id: st
   const format = new URL(request.url).searchParams.get("format") ?? "json";
   if (format !== "json" && format !== "md") return Response.json({ error: "Dışa aktarım biçimi geçersiz." }, { status: 400 });
   const { id } = await context.params;
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return Response.json({ error: "Konuşma bulunamadı." }, { status: 404 });
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return Response.json({ error: "Müzakere bulunamadı." }, { status: 404 });
   try {
     const result = await exportConversation(id);
-    if (!result) return Response.json({ error: "Konuşma bulunamadı." }, { status: 404 });
+    if (!result) return Response.json({ error: "Müzakere bulunamadı." }, { status: 404 });
     if (format === "md") return new Response(createConversationMarkdown(result), { headers: {
       "Content-Type": "text/markdown; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
       "Content-Disposition": `attachment; filename="deliberationai-conversation-${id}.md"`,

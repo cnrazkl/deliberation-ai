@@ -234,7 +234,7 @@ const endpointPresets: Record<
 
 const nativeProviderGuides: Record<Exclude<RemoteProvider, "openai-compatible">, { guide: string; modelExample: string }> = {
   openai: {
-    guide: "OpenAI API anahtarınızı girin. Modelleri listeleyip sohbette kullanmak istediklerinizi seçebilirsiniz; varsayılan model gerekmez.",
+    guide: "OpenAI API anahtarınızı girin. Modelleri listeleyip müzakerede kullanmak istediklerinizi seçebilirsiniz; varsayılan model gerekmez.",
     modelExample: "gpt-5.6-sol",
   },
   anthropic: {
@@ -1664,7 +1664,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       {!editingConnectionId ? <ConnectionModelPreview
         draft={{ provider: connectionProvider, endpointPreset, apiKey, ...(baseUrl.trim() ? { baseUrl: baseUrl.trim() } : {}) }}
         selectedModels={connectionSelectedModels} onModelsChange={setConnectionSelectedModels} aliases={connectionModelAliases} onAliasesChange={setConnectionModelAliases} disabled={savingConnection}
-      /> : <p className="hint connection-model-edit-hint">Sohbette kullanacağınız modelleri <button type="button" className="text-button" title="Kaydedilmiş bağlantıdaki model seçimlerini açar." onClick={() => setConnectionTab("models")}>Modeller sekmesinden</button> seçebilirsiniz.</p>}
+      /> : <p className="hint connection-model-edit-hint">Müzakerede kullanacağınız modelleri <button type="button" className="text-button" title="Kaydedilmiş bağlantıdaki model seçimlerini açar." onClick={() => setConnectionTab("models")}>Modeller sekmesinden</button> seçebilirsiniz.</p>}
       <p className="connection-reasoning-hint hint">Düşünme seviyesini her konsey üyesinin modelinin yanında seçin veya kapatın. Bu seçim görev bazında yapılır.</p>
       <details className="connection-advanced">
         <summary>Gelişmiş uç nokta ayarları</summary>
@@ -1760,7 +1760,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
       <section className="primary-connections api-connections" aria-labelledby="api-connections-title">
         <div className="api-connections-heading">
-          <div className="settings-section-heading"><span className="eyebrow">MODELLERİNİZ</span><h2 id="api-connections-title">API Bağlantıları <span className="connection-count">{connections.length}</span></h2><p>Bağlantılarınızı yönetin, sohbetinizde kullanacağınız modelleri seçin.</p></div>
+          <div className="settings-section-heading"><span className="eyebrow">MODELLERİNİZ</span><h2 id="api-connections-title">API Bağlantıları <span className="connection-count">{connections.length}</span></h2><p>Bağlantılarınızı yönetin, müzakerenizde kullanacağınız modelleri seçin.</p></div>
           <button className="primary-button" type="button" aria-haspopup="dialog" title="Sağlayıcı bilgileri, API anahtarı ve model seçimleri için yeni bağlantı penceresi açar." onClick={newConnection} disabled={savingConnection || Boolean(removingConnectionId)}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni Bağlantı Ekle
           </button>
@@ -1774,7 +1774,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             return <article className="connection-card connection-tile" key={connection.id} aria-label={`${connection.label} sağlayıcı bağlantısı`}>
               <header><span className="connection-provider-icon" aria-hidden="true">{providerName.slice(0, 2).toLocaleUpperCase("tr")}</span><div><h3 title={connection.label}>{connection.label}</h3><p>{providerName}</p></div></header>
               <div className="connection-tile-meta"><span>{chosen.length} model seçili</span><span className={`connection-usage ${useCount ? "active" : "idle"}`}>{useCount ? `Bu görevde ${useCount} üye` : "Hazırda"}</span></div>
-              <div className="connection-model-snippets">{chosen.length ? <>{chosen.slice(0, 2).map(model => <span key={model} title={model}>{model}</span>)}{chosen.length > 2 ? <small>+{chosen.length - 2} model</small> : null}</> : <p>Sohbette kullanmak için model seçin.</p>}</div>
+              <div className="connection-model-snippets">{chosen.length ? <>{chosen.slice(0, 2).map(model => <span key={model} title={model}>{model}</span>)}{chosen.length > 2 ? <small>+{chosen.length - 2} model</small> : null}</> : <p>Müzakerede kullanmak için model seçin.</p>}</div>
               <button type="button" title="Bu bağlantıda kullanacağınız modelleri ve isteğe bağlı takma adlarını seçer." className="secondary-button connection-models-action" aria-haspopup="dialog" disabled={savingConnection || Boolean(removingConnectionId)} onClick={() => { editConnection(connection); setConnectionTab("models"); }}>Modelleri Seç <span aria-hidden="true">→</span></button>
               <div className="connection-tile-actions">
                 <button type="button" className="secondary-button" aria-haspopup="dialog" disabled={savingConnection || Boolean(removingConnectionId)} title="Bağlantı ayarlarını düzenler; hızlı ve ayrıntılı test alanlarını açar." onClick={() => editConnection(connection)}>Düzenle</button>
@@ -1793,7 +1793,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         </details>
       </section>
       <ConnectionDialog open={Boolean(connectionDialog) && view === "settings"} title={dialogConnection?.label ?? "Yeni Bağlantı Ekle"}
-        description={dialogConnection ? "Bağlantı bilgilerinizi, sohbet modellerinizi ve mevcut testin ayrıntılarını buradan yönetin." : "Sağlayıcınızı seçin, API anahtarınızı ekleyin ve kullanacağınız modelleri belirleyin."}
+        description={dialogConnection ? "Bağlantı bilgilerinizi, müzakere modellerinizi ve mevcut testin ayrıntılarını buradan yönetin." : "Sağlayıcınızı seçin, API anahtarınızı ekleyin ve kullanacağınız modelleri belirleyin."}
         busy={savingConnection || connectionChatBusy || Boolean(checkingConnectionId)} onClose={cancelConnectionEdit}>
         {dialogConnection ? <div className="connection-tabs" role="tablist" aria-label="Bağlantı ayarları" onKeyDown={event => {
           if (connectionChatBusy || savingConnection) return;
@@ -1813,7 +1813,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           {connections.map(connection => {
             const catalog = catalogChecks[connection.id];
             return <div className="connection-model-workspace" key={connection.id} hidden={connectionDialog !== connection.id}>
-              <div className="connection-catalog-heading"><div><h3>Sohbet Modelleri</h3><p>Bu bağlantıda kullanmak istediğiniz modelleri seçip kaydedin.</p></div><button className="secondary-button" type="button" disabled={savingConnection || Boolean(checkingConnectionId)} title="Sağlayıcının model kataloğunu sorgular. Yanıt üretmez; katalog erişimi model çağrısını garanti etmez." onClick={() => void checkConnectionModels(connection.id)}>{checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}</button></div>
+              <div className="connection-catalog-heading"><div><h3>Müzakere Modelleri</h3><p>Bu bağlantıda kullanmak istediğiniz modelleri seçip kaydedin.</p></div><button className="secondary-button" type="button" disabled={savingConnection || Boolean(checkingConnectionId)} title="Sağlayıcının model kataloğunu sorgular. Yanıt üretmez; katalog erişimi model çağrısını garanti etmez." onClick={() => void checkConnectionModels(connection.id)}>{checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}</button></div>
               {catalog ? <p role="status" className="hint">{catalog.status === "available" ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."}` : catalog.status === "auth_failed" ? "Katalog isteği kimlik/yetki hatasıyla reddedildi." : catalog.status === "unsupported" ? "Bu uç noktada model listeleme desteklenmiyor veya yanıt biçimi bilinmiyor." : "Model listesine erişilemedi. Uç nokta, ağ ve sunucu durumunu kontrol edin."}</p> : null}
               {catalog?.checkedAt ? <small className="hint">Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small> : null}
               {catalog?.sourceUrl ? <p className="hint">Katalog kaynağı: <code>{catalog.sourceUrl}</code></p> : null}
@@ -1887,8 +1887,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         <LocalDiagnosticsPanel />
       </section>
       <section className="workspace workspace-view" hidden={view !== "schedules"} aria-label="Zamanlayıcı alanı">
-        <p className="view-intro">Sohbette hazırladığınız soru ve konsey ile tekrar eden çalışmalar oluşturun.</p>
-        <div className="schedule-draft-summary"><strong>Zamanlanacak soru</strong><p>{question || "Önce Sohbet bölümünde bir soru yazın."}</p><button type="button" className="secondary-button" onClick={() => setView("chat")}>Soruyu ve konseyi düzenle</button></div>
+        <p className="view-intro">Müzakerede hazırladığınız soru ve konsey ile tekrar eden çalışmalar oluşturun.</p>
+        <div className="schedule-draft-summary"><strong>Zamanlanacak soru</strong><p>{question || "Önce Müzakere bölümünde bir soru yazın."}</p><button type="button" className="secondary-button" onClick={() => setView("chat")}>Soruyu ve konseyi düzenle</button></div>
       <LocalSchedulesPanel onOpenRun={openSavedRun}
         creationBlockedReason={knowledgePacket || knowledgeBlocked ? "Kaynak paketli çalışmalar henüz zamanlanamaz. Kaynak paketini açıkça kaldırın." : continuationSource ? "Geçmiş rapor içeren devam çalışmaları henüz zamanlanamaz. Önce geçmiş bağlamı kaldırın." : undefined}
         question={question}
@@ -1901,7 +1901,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
 
       </section>
       <section className="workspace workspace-view" hidden={view !== "councils"} aria-label="Konsey yönetimi">
-        <p className="section-intro">Konseyleri oluşturun, üyelerini düzenleyin ve sohbetten yeniden kullanmak için kaydedin.</p>
+        <p className="section-intro">Konseyleri oluşturun, üyelerini düzenleyin ve müzakereden yeniden kullanmak için kaydedin.</p>
         <CouncilLibrary templates={templates.filter(template => template.members.every(member => member.provider !== "fake"))} selectedId={selectedTemplateId} invalidIds={invalidTemplateIds}
           disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation} onDelete={setDeletingTemplateId}
           modelLabel={member => { const connection = connections.find(item => item.id === member.connectionId); return connection?.modelAliases?.[member.model] || member.model; }}
@@ -2156,7 +2156,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       </section>
       <section className="workspace workspace-view" hidden={view !== "chat"} aria-label="Konsey çalışma alanı">
         {!connections.length ? <div className="connection-onboarding"><div><strong>İlk adım: modellerinizi bağlayın</strong><p>Başlamak için bir sağlayıcı bağlantısı ekleyin. API anahtarınızı kendi hesabınızda kaydedin.</p></div><button type="button" className="secondary-button" onClick={() => setView("settings")}>Bağlantıları ayarla <span aria-hidden="true">→</span></button></div> : null}
-      <WorkspaceTabs id="chat" label="Sohbet bölümleri" selected={chatTab} onSelect={setChatTab} tabs={[{ id: "question", label: "Soru" }, { id: "sources", label: "Kaynaklar Ve Dosyalar" }, { id: "controls", label: "Bağlam Ve Kontroller" }, { id: "results", label: "Sonuçlar" }]} />
+      <WorkspaceTabs id="chat" label="Müzakere bölümleri" selected={chatTab} onSelect={setChatTab} tabs={[{ id: "question", label: "Soru" }, { id: "sources", label: "Kaynaklar Ve Dosyalar" }, { id: "controls", label: "Bağlam Ve Kontroller" }, { id: "results", label: "Sonuçlar" }]} />
       <form className="question-card" hidden={chatTab === "results"} onSubmit={submit}>
         <div role="tabpanel" id="chat-panel-question" aria-labelledby="chat-tab-question" hidden={chatTab !== "question"}>
         <div className="composer-heading"><span className="eyebrow">SORUNUZLA BAŞLAYIN</span><h2>Konseye ne sormak istersiniz?</h2><p>Kararı veya problemi yazın. Önemli koşulları ve beklediğiniz sonucu ekleyin.</p></div>
@@ -2295,10 +2295,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         {tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0 ?
           <div className="inline-warning">Bu soruda kritik bağlam eksik olabilir. Devam ettiğinizde açıklama soruları açılır; siz incelemeden model çağrısı başlamaz.</div> : null}
         <details className="composer-disclosure"><DisclosureSummary title="Çalışma sınırları" description="API çağrısı ve yanıt tokenı kotaları" icon="limits" status={executionLimitsEnabled ? "Etkin" : "Kapalı"} /><ExecutionLimitsEditor enabled={executionLimitsEnabled} limits={configuredExecutionLimits} plannedProviderCalls={plannedProviderCalls} onEnabledChange={setExecutionLimitsEnabled} onChange={setConfiguredExecutionLimits} /></details>
-      <details className="settings-card memory-card context-disclosure" role="region" aria-label="Ortak konuşma belleği"><summary>Konuşma belleği · {selectedMemoryEntryIds.length} seçili kayıt</summary>
+      <details className="settings-card memory-card context-disclosure" role="region" aria-label="Ortak müzakere belleği"><summary>Müzakere belleği · {selectedMemoryEntryIds.length} seçili kayıt</summary>
         <div className="memory-heading">
           <div>
-            <strong>Ortak konuşma belleği</strong>
+            <strong>Ortak müzakere belleği</strong>
             <small>{memoryEntries.length}/20 kayıt · bu çalışma için {selectedMemoryEntryIds.length}/5 seçili</small>
           </div>
         </div>
@@ -2345,7 +2345,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
 
       {error ? <div className="alert error" role="alert">{error}</div> : null}
       <div role="tabpanel" id="chat-panel-results" aria-labelledby="chat-tab-results" hidden={chatTab !== "results"}>
-      {!run && !privateConversationId ? <p className="empty">Henüz açık bir çalışma sonucu yok. Kayıtlı bir sohbeti açın veya Soru sekmesinden konsey çalıştırın.</p> : null}
+      {!run && !privateConversationId ? <p className="empty">Henüz açık bir çalışma sonucu yok. Kayıtlı bir müzakereyi açın veya Soru sekmesinden konsey çalıştırın.</p> : null}
       {privateConversationId && <PrivateBranchesPanel key={privateConversationId} conversationId={privateConversationId} onClose={() => setPrivateConversationId(undefined)} />}
       <PreflightDraftsPanel refreshKey={draftRefreshKey} focusDraftId={focusDraftId} onStarted={(created) => {
         cancelActiveWatchRef.current?.();
@@ -2376,7 +2376,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
               ) : null}
               {report && ["completed", "partially_completed"].includes(run.status) ? <button type="button" className="secondary-button" disabled={pending || loadingContinuation} onClick={() => void selectContinuation()}>{loadingContinuation ? "Bağlam hazırlanıyor…" : "Bu rapordan yeni soruyla devam et"}</button> : null}
               {report && ["completed", "partially_completed"].includes(run.status) ? <button type="button" className="secondary-button" disabled={pending || loadingContinuation} onClick={() => void selectContinuation("compaction")}>Geçmişi kısaltarak yeni soruyla devam et</button> : null}
-              {!report && terminalStatuses.has(run.status) ? <button type="button" className="secondary-button" disabled={pending || loadingContinuation} title="Kaydedilmiş soruyu temiz bir sohbet taslağına alır; model çağrısı yapmaz." onClick={() => { const savedQuestion = run.question; newChat(); setQuestion(savedQuestion); }}>Soruyu Yeniden Hazırla</button> : null}
+              {!report && terminalStatuses.has(run.status) ? <button type="button" className="secondary-button" disabled={pending || loadingContinuation} title="Kaydedilmiş soruyu temiz bir müzakere taslağına alır; model çağrısı yapmaz." onClick={() => { const savedQuestion = run.question; newChat(); setQuestion(savedQuestion); }}>Soruyu Yeniden Hazırla</button> : null}
             </div>
             {report ? <small>İndirilen dosya şifresizdir; soru, rapor ve ham model yanıtlarını içerir. API anahtarları ve ek dosyalarının ham içerikleri dahil değildir.</small> : null}
             <small>

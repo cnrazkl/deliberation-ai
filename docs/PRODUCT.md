@@ -1,5 +1,15 @@
 # Product
 
+## Workspace terminology
+
+The Turkish interface calls a chat/conversation **Müzakere**: **Yeni Müzakere**,
+the **Müzakere** sidebar menu, **Müzakere Geçmişi**, saved negotiations, model
+selection, open/delete confirmations, usage, errors and exported Markdown headings.
+This is display terminology only; existing chat/conversation keys, routes, schemas,
+saved content and prompt contracts retain their identities and behavior.
+The owner has frozen the Help menu/content until an explicit request to update it;
+general workspace changes must not include Help content work.
+
 ## Saved council pool
 
 The **Konseyler** sidebar menu owns council creation, editing, copying and deletion.

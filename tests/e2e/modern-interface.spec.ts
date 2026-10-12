@@ -38,7 +38,7 @@ for (const theme of ["light", "dark"] as const) {
       const dangerColor = await page.getByRole("button", { name: "Hesabımı sil", exact: true }).evaluate(element => getComputedStyle(element).color.match(/[\d.]+/g)!.map(Number));
       expect(dangerColor[0]).toBeGreaterThan(dangerColor[2]!);
       await page.keyboard.press("Escape");
-      for (const view of ["Sohbet", "Ayarlar", "Zamanlayıcı"] as const) {
+      for (const view of ["Müzakere", "Ayarlar", "Zamanlayıcı"] as const) {
         await workspaceView(page, view);
         const topbar = (await page.locator(".workspace-topbar").boundingBox())!;
         const toolbar = (await account.boundingBox())!;
@@ -74,7 +74,7 @@ for (const theme of ["light", "dark"] as const) {
         expect(issues, `${view} contrast in ${theme} at ${width}px`).toEqual([]);
         if (width !== 820) await page.screenshot({ path: testInfo.outputPath(`${theme}-${width}-${view}.png`) });
       }
-      await workspaceView(page, "Sohbet"); await expect(draft).toHaveValue("Tasarım doğrulamasında korunacak soru taslağı");
+      await workspaceView(page, "Müzakere"); await expect(draft).toHaveValue("Tasarım doğrulamasında korunacak soru taslağı");
     }
   });
 }

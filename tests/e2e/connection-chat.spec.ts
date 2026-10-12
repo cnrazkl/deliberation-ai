@@ -33,7 +33,7 @@ test("save-and-test creates a connection, returns plain text and preserves the c
     await expect(chat).toContainText("Short fixture reply"); expect(calls).toBe(1); await expect(dialog).toBeVisible();
     id = (await (await request.get("/api/provider-connections")).json()).connections.find((item: { label: string }) => item.label === label)?.id;
     expect(id).toBeTruthy(); await page.keyboard.press("Escape");
-    await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep my council draft");
+    await workspaceView(page, "Müzakere"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep my council draft");
     await workspaceView(page, "Ayarlar"); await openConnectionPanel(page, page.locator(".connection-card").filter({ hasText: label }));
     await expect(chat).not.toContainText("Short fixture reply"); expect(calls).toBe(1);
     await chat.getByRole("button", { name: "Sonucu Kontrol Et" }).click(); expect(calls).toBe(1);
@@ -52,13 +52,13 @@ for (const theme of ["light", "dark"]) for (const width of [320, 1110]) {
           model: "chat-fixture", provider: "openai-compatible", endpointPreset: "ollama", fingerprint: "a".repeat(64), status: "succeeded",
           startedAt: "2026-10-10T00:00:00.000Z", finishedAt: "2026-10-10T00:00:01.000Z", acknowledgedAt: null, failure: null, httpStatus: null,
           returnedModel: "chat-fixture", remoteResponseId: null, inputTokens: null, outputTokens: null, elapsedMs: 1000,
-          kind: "chat", message: "Merhaba, bu bağlantı çalışıyor mu?", reply: "Evet, bağlantı kısa sohbet yanıtını döndürüyor.\n" + "uzun-satır-".repeat(36),
+          kind: "chat", message: "Merhaba, bu bağlantı çalışıyor mu?", reply: "Evet, bağlantı kısa müzakere yanıtını döndürüyor.\n" + "uzun-satır-".repeat(36),
         }] } } });
       });
       await page.setViewportSize({ width, height: 1066 }); await page.goto("/");
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme); await workspaceView(page, "Ayarlar");
       const dialog = await openConnectionPanel(page, page.locator(".connection-card").filter({ hasText: connection.label }));
-      const chat = dialog.getByRole("region", { name: "Hızlı bağlantı testi" }); await expect(chat).not.toContainText("bağlantı kısa sohbet yanıtını");
+      const chat = dialog.getByRole("region", { name: "Hızlı bağlantı testi" }); await expect(chat).not.toContainText("bağlantı kısa müzakere yanıtını");
       await expect(chat.getByRole("checkbox")).toHaveCount(0);
       await chat.getByLabel("Test modeli").selectOption("second-fixture");
       await dialog.locator(".connection-form").getByLabel("Bağlantı adı").fill("Changed fixture name");

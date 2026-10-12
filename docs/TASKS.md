@@ -1,5 +1,11 @@
 # Tasks
 
+- [x] Owner-requested Müzakere terminology for the workspace and related copy;
+  Help is frozen until the owner explicitly requests its update and is unchanged.
+  Types/lint, six existing export checks, Linux build and generated-only live
+  navigation/history/confirmation/draft/error/layout checks pass. Existing data,
+  routes and prompt identities are unchanged. Rollout is tracked in CURRENT_STATE.md.
+
 - [x] Owner-requested compact council pool, lower creation controls, Sil labels,
   compact/clickable history, direct private draft access and actionable conversation
   deletion. Consumed retry grants no longer act as current pending work and retain

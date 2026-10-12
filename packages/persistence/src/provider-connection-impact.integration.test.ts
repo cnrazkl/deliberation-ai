@@ -30,7 +30,7 @@ test("model removal reviews saved templates and historical runs, preserves froze
   const request = { ...settings, id: connection.id, selectedModels: ["model-b"] };
   let impact!: ProviderConnectionImpactError;
   try { await saveProviderConnection(request); } catch (error) { expect(error).toBeInstanceOf(ProviderConnectionImpactError); impact = error as ProviderConnectionImpactError; }
-  expect(impact.impact.references.map(reference => reference.kind)).toEqual(expect.arrayContaining(["Konsey Şablonu", "Sohbet Çalışması"])); expect(impact.impact.eligible).toBe(true);
+  expect(impact.impact.references.map(reference => reference.kind)).toEqual(expect.arrayContaining(["Konsey Şablonu", "Müzakere Çalışması"])); expect(impact.impact.eligible).toBe(true);
   const saved = await saveProviderConnection({ ...request, impactFingerprint: impact.impact.fingerprint }); expect(saved.selectedModels).toEqual(["model-b"]);
   await expect(getDatabase().transaction(tx => assertSelectedProviderMembers(tx, members))).rejects.toBeInstanceOf(ProviderMemberUnavailableError);
   await expect(saveCouncilTemplate({ id: template.id, name: template.name, description: "", members })).rejects.toBeInstanceOf(ProviderMemberUnavailableError);

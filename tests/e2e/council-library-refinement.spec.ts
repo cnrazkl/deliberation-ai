@@ -13,7 +13,7 @@ test("compact council cards edit and warn on selected deletion; creation stays b
   try {
     await page.goto("/"); await page.getByRole("region", { name: "Konsey Havuzu", exact: true }).getByLabel("Kayıtlı Konsey").selectOption(template.id);
     await workspaceView(page, "Konseyler");
-    const card = page.locator(`[data-template-id="${template.id}"]`); await expect(card).toContainText("Sohbette Seçili");
+    const card = page.locator(`[data-template-id="${template.id}"]`); await expect(card).toContainText("Müzakerede Seçili");
     await expect(page.locator(".template-list")).toHaveCount(0);
     await card.getByRole("button", { name: `${template.name} konseyini düzenle`, exact: true }).click();
     const editor = page.getByRole("region", { name: "Konsey kaydı", exact: true });
@@ -22,7 +22,7 @@ test("compact council cards edit and warn on selected deletion; creation stays b
     await editor.getByLabel("Şablon adı").fill(`${template.name} edited`); await editor.getByRole("button", { name: "Değişiklikleri Kaydet", exact: true }).click();
     await expect(editor.getByRole("status")).toContainText("kaydedildi");
     await card.getByRole("button", { name: `${template.name} edited konseyini sil`, exact: true }).click();
-    const dialog = page.getByRole("dialog", { name: "Konsey Şablonunu Sil" }); await expect(dialog).toContainText("şu anda sohbette seçili");
+    const dialog = page.getByRole("dialog", { name: "Konsey Şablonunu Sil" }); await expect(dialog).toContainText("şu anda müzakerede seçili");
     await dialog.getByRole("button", { name: "Silme incelemesini kapat" }).click(); await expect(card).toBeVisible();
     await card.getByRole("button", { name: `${template.name} edited konseyini sil`, exact: true }).click();
     await dialog.getByRole("checkbox").check(); await dialog.getByRole("button", { name: "Sil", exact: true }).click(); await expect(card).toHaveCount(0);
@@ -45,9 +45,9 @@ for (const pending of [false, true]) test(`conversation deletion ${pending ? "sh
     await history.getByRole("button", { name: "Çalışmayı Sil", exact: true }).click(); await expect(page.locator(".sidebar-history [aria-label='Çalışma içeriği silme önizlemesi']")).toHaveCount(0);
     await page.getByRole("dialog", { name: "Çalışmayı Sil" }).getByRole("button", { name: "Silmeden vazgeç" }).click();
     const card = page.locator(`[data-conversation-id="${conversationId}"]`); await expect(card.locator(".conversation-options")).toHaveCount(0); await expect(card.getByRole("button", { name: "Özel dal taslaklarını göster", exact: true })).toBeVisible();
-    await card.getByRole("button", { name: "Konuşmayı Sil", exact: true }).click(); const dialog = page.getByRole("dialog", { name: "Konuşmayı Sil", exact: true });
-    if (pending) { await expect(dialog).toContainText("offline-debug-model"); await expect(dialog).toContainText("remote_outcome_unknown"); await expect(dialog.getByRole("button", { name: "Evet, Konuşmayı Sil", exact: true })).toBeDisabled(); await dialog.getByRole("button", { name: "İşlemi Kapat", exact: true }).click(); }
-    await expect(dialog.getByRole("button", { name: "Evet, Konuşmayı Sil", exact: true })).toBeEnabled(); await dialog.getByRole("button", { name: "Evet, Konuşmayı Sil", exact: true }).click();
+    await card.getByRole("button", { name: "Müzakereyi Sil", exact: true }).click(); const dialog = page.getByRole("dialog", { name: "Müzakereyi Sil", exact: true });
+    if (pending) { await expect(dialog).toContainText("offline-debug-model"); await expect(dialog).toContainText("remote_outcome_unknown"); await expect(dialog.getByRole("button", { name: "Evet, Müzakereyi Sil", exact: true })).toBeDisabled(); await dialog.getByRole("button", { name: "İşlemi Kapat", exact: true }).click(); }
+    await expect(dialog.getByRole("button", { name: "Evet, Müzakereyi Sil", exact: true })).toBeEnabled(); await dialog.getByRole("button", { name: "Evet, Müzakereyi Sil", exact: true }).click();
     await expect(card).toHaveCount(0); expect((await request.get(`/api/runs/${runId}`)).status()).toBe(404); expect(generation).toBe(0);
   } finally { await getDatabase().delete(runDeletions).where(eq(runDeletions.id, runId)); await getDatabase().delete(conversationRuns).where(eq(conversationRuns.conversationId, conversationId)); await getDatabase().delete(conversations).where(eq(conversations.id, conversationId)); await getDatabase().delete(runs).where(inArray(runs.id, [runId])); await closeDatabase(); }
 }));

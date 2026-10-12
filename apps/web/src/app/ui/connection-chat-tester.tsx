@@ -16,7 +16,7 @@ const failureText: Record<string, string> = {
   provider_http_401: "Sağlayıcı API anahtarını kabul etmedi.",
   provider_http_402: "Sağlayıcı ödeme veya kredi nedeniyle isteği reddetti.",
   provider_http_429: "Sağlayıcı istek veya kullanım sınırı bildirdi.",
-  invalid_private_response: "Sağlayıcı geçerli, görünür bir sohbet yanıtı döndürmedi.",
+  invalid_private_response: "Sağlayıcı geçerli, görünür bir müzakere yanıtı döndürmedi.",
 };
 export function ConnectionChatTester({ connection, models, aliases = {}, needsSave, disabled, onSave, onBusy, debugging = false, onResult }: {
   connection: Connection | undefined; models: string[]; aliases?: Record<string, string>; needsSave: boolean; disabled: boolean;
@@ -145,7 +145,7 @@ export function ConnectionChatTester({ connection, models, aliases = {}, needsSa
       {connection || intent ? <button type="button" title="Uygulamada kaydedilmiş işlem durumunu okur. Modele yeniden istek göndermez ve yeni API ücreti oluşturmaz. Geçici yanıt sunucuda saklanmadığı için sonradan geri getirilemez." className="secondary-button" disabled={busy || disabled} onClick={() => void refresh()}>Sonucu Kontrol Et</button> : null}</div>
     {needsSave ? <p className="hint">Bu işlem önce bağlantıyı şifreleyerek kaydeder veya değişikliklerini günceller, ardından mesajı gönderir.</p> : null}
     {error ? <p className="alert error" role="alert">{error}{intent ? " Yeni çağrı göndermeden Sonucu Kontrol Et ile kaydı okuyun." : ""}</p> : null}
-    <p className="hint">Mesaj, dosya ve yanıtlar geçicidir; pencereyi kapatınca veya sayfayı yenileyince temizlenir. Sohbet geçmişiniz eklenmez. 512 çıktı tokenı ve 45 saniye istenir. Çift gönderimi önleyen içeriksiz işlem durumu saklanır.</p>
+    <p className="hint">Mesaj, dosya ve yanıtlar geçicidir; pencereyi kapatınca veya sayfayı yenileyince temizlenir. Müzakere geçmişiniz eklenmez. 512 çıktı tokenı ve 45 saniye istenir. Çift gönderimi önleyen içeriksiz işlem durumu saklanır.</p>
     {debugging ? <ConnectionDebugTrace record={debugRecord} /> : null}
   </section>;
 }

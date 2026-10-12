@@ -99,7 +99,7 @@ export function AuthShell() {
       <section className="account-login-card" aria-labelledby="account-login-title">
         <span className="account-form-eyebrow">{register ? "YENİ BİR BAŞLANGIÇ" : "ÇALIŞMA ALANINIZA DÖNÜN"}</span>
         <h1 id="account-login-title">{register ? "Hesap oluştur" : "Giriş yap"}</h1>
-        <p className="account-form-intro">{register ? "Kullanıcı adınızı ve parolanızı seçin. Bağlantılarınızı hesabınızı oluşturduktan sonra ekleyebilirsiniz." : "Sohbetleriniz ve API bağlantılarınız, kendi hesabınızda sizi bekliyor."}</p>
+        <p className="account-form-intro">{register ? "Kullanıcı adınızı ve parolanızı seçin. Bağlantılarınızı hesabınızı oluşturduktan sonra ekleyebilirsiniz." : "Müzakereleriniz ve API bağlantılarınız, kendi hesabınızda sizi bekliyor."}</p>
         {error && <p role="alert" className="account-auth-message account-auth-error">{error}</p>}
         {notice && <p role="status" className="account-auth-message account-auth-success">{notice}</p>}
         <form onSubmit={authenticate} aria-busy={busy}>

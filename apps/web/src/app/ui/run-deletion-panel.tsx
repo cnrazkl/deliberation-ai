@@ -7,7 +7,7 @@ const labels: Record<RunDeletionBlock, string> = {
   pending_operations: "Bekleyen veya sonucu belirsiz bir sağlayıcı işlemi var. Önce durumunu çözün.",
   decision_boundary: "Karar değerlendirmesi içeren çalışmalar bu silme sürümünün dışında.",
   copied_content: "Bu içeriği kullanan çalışma veya özel dal kopyaları var. Önce bunları ayrı ayrı inceleyin.",
-  owner_mismatch: "Bağlı kayıtların sahipliği veya ilişkileri doğrulanamadı.", pending_index: "Konuşma indeksinin tamamlanması gerekiyor.",
+  owner_mismatch: "Bağlı kayıtların sahipliği veya ilişkileri doğrulanamadı.", pending_index: "Müzakere indeksinin tamamlanması gerekiyor.",
   schema_changed: "Kayıt yapısı değişmiş; silme politikası yeniden değerlendirilmelidir.",
   inspection_limit: "Güvenli inceleme sınırı aşıldı; silme yapılmayacak.", audit_capacity: "Saklanan silme kayıtlarının kapasitesi doldu.",
   invalid_queue_job: "Kuyruk kaydı doğrulanamadı.",
@@ -40,7 +40,7 @@ export function RunDeletionPanel({ runId, onCancel, onDeleted, onBusy }: {
   }
   return <section aria-label="Çalışma içeriği silme önizlemesi">
     <strong>Çalışma içeriği silme önizlemesi</strong><p>Çalışma: {runId}</p>
-    <p>Bu çalışmanın sorusu, raporu, ham yanıtları, ekleri, kayıtlı bağlamı, iddia/kaynak ve bellek kayıtları kaldırılır. Konuşma kimliği ve kullanım izleri saklanır.</p>
+    <p>Bu çalışmanın sorusu, raporu, ham yanıtları, ekleri, kayıtlı bağlamı, iddia/kaynak ve bellek kayıtları kaldırılır. Müzakere kimliği ve kullanım izleri saklanır.</p>
     <p>Şifreli silme kaydı işlem kimliklerini ve varsa kullanım sayaçlarını korur; ücret iadesi yapmaz. Fatura kayıtları, ayrı ön kontrol soruları, zamanlama şablonları, araç sonuçları, yedekler ve indirdiğiniz dosyalar saklanır. Eski yedek içerikleri geri getirebilir.</p>
     {preview && <>
       <p>{Object.values(preview.contentCounts).reduce((sum, count) => sum + count, 0)} içerik kaydı kaldırılacak; {preview.receiptCount} sağlayıcı işleminin metin içermeyen kullanım kaydı korunacak.</p>

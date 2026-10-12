@@ -84,7 +84,7 @@ test("connection panel preserves drafts, handles failures, restores focus and ke
     const reviewCount = reviews; await page.keyboard.press("Escape"); await openConnectionPanel(page, card, "Test Ve Hata Ayıklama");
     await expect(dialog.getByRole("region", { name: "Model test ve hata ayıklama alanı" })).toBeVisible(); expect(reviews).toBe(reviewCount);
     await page.keyboard.press("Escape");
-    await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep my current question.");
+    await workspaceView(page, "Müzakere"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep my current question.");
     await workspaceView(page, "Ayarlar");
     await page.route("**/api/provider-connections?*", route => route.fulfill({ status: 503, json: { error: "Controlled deletion failure" } }));
     await card.getByRole("button", { name: "Sil", exact: true }).click(); await expect(page.locator(".primary-connections").getByRole("alert")).toContainText("Controlled deletion failure");

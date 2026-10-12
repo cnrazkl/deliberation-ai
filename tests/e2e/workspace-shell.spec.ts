@@ -5,7 +5,7 @@ import { revealChatTab, workspaceView } from "./workspace-navigation";
 
 const runId = "11111111-1111-4111-8111-111111111111";
 const conversationId = "22222222-2222-4222-8222-222222222222";
-const question = "Kaydedilmiş örnek konuşma nasıl yeniden açılır?";
+const question = "Kaydedilmiş örnek müzakere nasıl yeniden açılır?";
 const createdAt = "2026-10-03T12:00:00.000Z";
 async function fixtures(page: Page) {
   const run: RunRecord = { runId, question, idempotencyKey: "workspace-fixture", requestHash: "workspace-fixture",
@@ -53,7 +53,7 @@ for (const { width, zoom } of [...[320, 390, 640, 820, 1024, 1440].map((width) =
       buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "base64") });
     await expect(page.locator(".attachment-list")).toContainText("long-file-name");
     if (width === 390) await page.locator(".attachment-picker").screenshot({ path: "test-results/da112-mobile-attachments.png" });
-    for (const view of ["Sohbet", "Konseyler", "Ayarlar", "Zamanlayıcı"] as const) {
+    for (const view of ["Müzakere", "Konseyler", "Ayarlar", "Zamanlayıcı"] as const) {
       await workspaceView(page, view);
       // Include expanded settings/diagnostics, not just the initial collapsed shell.
       await page.locator(".workspace-view:not([hidden]) details").evaluateAll((items) => {
@@ -82,7 +82,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   page.on("request", (request) => { if (request.method() !== "GET" && new URL(request.url()).pathname.startsWith("/api/")) writes++; });
   await page.goto("/");
   const chat = page.getByRole("region", { name: "Konsey çalışma alanı", exact: true });
-  const sidebar = page.getByRole("complementary", { name: "Sohbet geçmişi ve gezinme" });
+  const sidebar = page.getByRole("complementary", { name: "Müzakere geçmişi ve gezinme" });
   await expect(chat).toBeVisible();
   await expect(page.getByRole("region", { name: "Konsey yönetimi", exact: true })).toBeHidden();
   await expect(page.getByRole("region", { name: "Ayarlar alanı", exact: true })).toBeHidden();
@@ -106,7 +106,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   await expect(chat).toBeVisible();
   await expect(page.locator("#council-result")).toContainText(question);
   await expect(draft).toHaveValue("Bölümler arasında korunması gereken soru taslağı");
-  await sidebar.getByRole("button", { name: "Konuşmayı aç", exact: true }).click();
+  await sidebar.getByRole("button", { name: "Müzakereyi aç", exact: true }).click();
   await expect(draft).toHaveValue("Bölümler arasında korunması gereken soru taslağı");
   await page.reload();
   await expect(sidebar.getByLabel("Tema")).toHaveValue("dark");
@@ -119,7 +119,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   await sidebar.getByLabel("Tema").selectOption("system");
   await page.emulateMedia({ colorScheme: "dark" });
   expect(await page.locator("html").evaluate((element) => getComputedStyle(element).colorScheme)).toBe("dark");
-  await sidebar.getByRole("button", { name: "＋ Yeni sohbet", exact: true }).click();
+  await sidebar.getByRole("button", { name: "＋ Yeni Müzakere", exact: true }).click();
   await expect(draft).toHaveValue("");
   await expect(draft).toBeFocused();
   await expect(page.getByRole("region", { name: "Konsey yapılandırması", exact: true })).toHaveCount(0);
@@ -132,15 +132,15 @@ test("opens mobile history, navigates without overflow and returns to the preser
   await fixtures(page); await page.goto("/");
   const draft = page.getByLabel("Sorunuz", { exact: true });
   await draft.fill("Mobil görünümde korunacak soru taslağı");
-  const sidebar = page.getByRole("complementary", { name: "Sohbet geçmişi ve gezinme" });
+  const sidebar = page.getByRole("complementary", { name: "Müzakere geçmişi ve gezinme" });
   await expect(sidebar).toBeHidden();
-  await page.getByRole("button", { name: "Sohbet geçmişini aç", exact: true }).click();
+  await page.getByRole("button", { name: "Müzakere geçmişini aç", exact: true }).click();
   await expect(sidebar).toBeVisible();
   await sidebar.getByLabel("Tema").selectOption("dark");
   await workspaceView(page, "Ayarlar");
   await expect(sidebar).toBeHidden();
   await expect(page.getByRole("heading", { name: "Ayarlar", exact: true })).toBeVisible();
-  await workspaceView(page, "Sohbet");
+  await workspaceView(page, "Müzakere");
   await expect(draft).toHaveValue("Mobil görünümde korunacak soru taslağı");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: "test-results/da111-dark-mobile.png" });
@@ -152,8 +152,8 @@ for (const { width, height } of [{ width: 1225, height: 918 }, { width: 390, hei
     await page.getByLabel("Sorunuz", { exact: true }).fill("Sabit gezinme sırasında korunacak soru taslağı");
     await workspaceView(page, "Ayarlar");
     await page.locator('.workspace-view:not([hidden]) details').evaluateAll((items) => { for (const item of items) (item as HTMLDetailsElement).open = true; });
-    const sidebar = page.getByRole("complementary", { name: "Sohbet geçmişi ve gezinme" });
-    if (!await sidebar.isVisible()) await page.getByRole("button", { name: "Sohbet geçmişini aç", exact: true }).click();
+    const sidebar = page.getByRole("complementary", { name: "Müzakere geçmişi ve gezinme" });
+    if (!await sidebar.isVisible()) await page.getByRole("button", { name: "Müzakere geçmişini aç", exact: true }).click();
     const bar = page.getByRole("banner", { name: "Hesap" });
     const bounds = () => page.evaluate(() => {
       const header = document.querySelector(".account-bar")!.getBoundingClientRect();
@@ -168,7 +168,7 @@ for (const { width, height } of [{ width: 1225, height: 918 }, { width: 390, hei
       expect(position.headerTop).toBe(0); expect(position.sidebarTop).toBe(position.headerBottom);
       expect(position.sidebarBottom).toBe(position.viewport);
     }
-    for (const name of ["Listeyi yenile", "Konuşma listesini yenile"]) {
+    for (const name of ["Listeyi yenile", "Müzakere listesini yenile"]) {
       const refresh = sidebar.getByRole("button", { name, exact: true });
       await expect(refresh).toHaveText(""); await expect(refresh.locator("svg")).toHaveAttribute("aria-hidden", "true");
       await expect(refresh).toBeEnabled();
@@ -177,7 +177,7 @@ for (const { width, height } of [{ width: 1225, height: 918 }, { width: 390, hei
     }
     await page.screenshot({ path: `test-results/pinned-navigation-${width}.png` });
     if (width <= 800) await page.getByRole("button", { name: "Geçmiş menüsünü kapat", exact: true }).last().click();
-    await workspaceView(page, "Sohbet");
+    await workspaceView(page, "Müzakere");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Sabit gezinme sırasında korunacak soru taslağı");
   });
 }

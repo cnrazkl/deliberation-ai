@@ -43,10 +43,10 @@ test("selected files produce reviewed frozen citations through real routes and l
     collectionId = (await (await creatingCollection).json()).id;
     await panel.getByRole("button", { name: "Okuma izni ver", exact: true }).click();
     const creatingConversation = page.waitForResponse((response) => response.url().endsWith("/api/knowledge") && response.request().postDataJSON().operation === "conversation");
-    await panel.getByRole("button", { name: "Yeni kaynak sohbeti", exact: true }).click();
+    await panel.getByRole("button", { name: "Yeni kaynak müzakeresi", exact: true }).click();
     conversationId = (await (await creatingConversation).json()).conversationId;
     await panel.getByRole("checkbox", { name: `${title} · Okuma izni açık`, exact: true }).check();
-    await panel.getByLabel("Sohbet konusu", { exact: true }).fill("Sentetik destek örneği");
+    await panel.getByLabel("Müzakere konusu", { exact: true }).fill("Sentetik destek örneği");
     await panel.getByRole("button", { name: "Seçimi kaydet", exact: true }).click();
     await panel.getByRole("combobox", { name: "Dosyaların kaydedileceği koleksiyon", exact: true }).selectOption({ label: title });
     await panel.getByLabel("Yerel kütüphaneye dosya seç", { exact: true }).setInputFiles(["docs/evaluation/knowledge-fixtures/support-table.pdf", "docs/evaluation/knowledge-fixtures/scanned-support.pdf", "docs/evaluation/knowledge-fixtures/ambiguous-support.png"]);

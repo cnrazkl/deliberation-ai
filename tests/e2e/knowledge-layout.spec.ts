@@ -94,7 +94,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [390, 960, 1
     await expect(panel.getByRole("button", { name: "Dosya seç", exact: true })).toBeDisabled();
     await assertSourceGeometry(page);
     await panel.getByRole("button", { name: "Koleksiyonları göster", exact: true }).click();
-    await panel.getByRole("button", { name: "Yeni kaynak sohbeti", exact: true }).click();
+    await panel.getByRole("button", { name: "Yeni kaynak müzakeresi", exact: true }).click();
     await panel.getByRole("checkbox", { name: `${fixture.title} · Okuma izni açık`, exact: true }).check();
     await panel.getByRole("button", { name: "Seçimi kaydet", exact: true }).click();
     await panel.getByRole("combobox", { name: "Dosyaların kaydedileceği koleksiyon", exact: true }).selectOption(fixture.collectionId);

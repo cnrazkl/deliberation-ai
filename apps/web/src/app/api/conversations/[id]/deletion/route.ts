@@ -16,11 +16,11 @@ const json = (body: unknown, status = 200) => Response.json(body, { status, head
 
 async function sessionGET(request: Request, context: Context) {
   const { id } = await context.params;
-  if (!uuid.test(id)) return json({ error: "Konuşma bulunamadı." }, 404);
+  if (!uuid.test(id)) return json({ error: "Müzakere bulunamadı." }, 404);
   try {
     const preview = await (new URL(request.url).searchParams.get("scope") === "content"
       ? previewConversationContentDeletion(id.toLowerCase()) : previewConversationDeletion(id.toLowerCase()));
-    return preview ? json(preview) : json({ error: "Konuşma bulunamadı." }, 404);
+    return preview ? json(preview) : json({ error: "Müzakere bulunamadı." }, 404);
   } catch { return json({ error: "Silme önizlemesi hazırlanamadı." }, 500); }
 }
 
@@ -28,7 +28,7 @@ async function sessionPOST(request: Request, context: Context) {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) { rejected.headers.set("Cache-Control", "no-store"); return rejected; }
   const { id } = await context.params;
-  if (!uuid.test(id)) return json({ error: "Konuşma bulunamadı." }, 404);
+  if (!uuid.test(id)) return json({ error: "Müzakere bulunamadı." }, 404);
   // The confirmation carries no content. Bound the actual streamed bytes, not
   // just a caller-controlled Content-Length header.
   const reader = request.body?.getReader();
@@ -50,11 +50,11 @@ async function sessionPOST(request: Request, context: Context) {
   try {
     const result = await ("confirmContentDeletion" in parsed.data
       ? deleteConversationContent(id.toLowerCase(), parsed.data.fingerprint) : deleteEmptyConversation(id.toLowerCase(), parsed.data.fingerprint));
-    return result ? json(result) : json({ error: "Konuşma bulunamadı veya zaten silindi." }, 404);
+    return result ? json(result) : json({ error: "Müzakere bulunamadı veya zaten silindi." }, 404);
   } catch (error) {
-    if (error instanceof ConversationDeletionStaleError) return json({ error: "Konuşma kaydı değişti. Yeni silme önizlemesini inceleyin." }, 409);
-    if (error instanceof ConversationDeletionBlockedError || error instanceof RunDeletionBlockedError || error instanceof PrivateBranchDeletionBlockedError) return json({ error: "Bu konuşma şu anda silinemez. Durumu yenileyin." }, 409);
-    return json({ error: "Konuşma kaydı silinemedi." }, 500);
+    if (error instanceof ConversationDeletionStaleError) return json({ error: "Müzakere kaydı değişti. Yeni silme önizlemesini inceleyin." }, 409);
+    if (error instanceof ConversationDeletionBlockedError || error instanceof RunDeletionBlockedError || error instanceof PrivateBranchDeletionBlockedError) return json({ error: "Bu müzakere şu anda silinemez. Durumu yenileyin." }, 409);
+    return json({ error: "Müzakere kaydı silinemedi." }, 500);
   }
 }
 

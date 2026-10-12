@@ -6,22 +6,22 @@ import type { ConversationContentDeletionBlock, ConversationContentDeletionPrevi
 import { DeletionDialog } from "./deletion-dialog";
 
 const reasons: Record<ConversationContentDeletionBlock, string> = {
-  active_run: "Bu konuşmada hâlâ çalışan bir işlem var. İşlem bittikten sonra silebilirsiniz.",
+  active_run: "Bu müzakerede hâlâ çalışan bir işlem var. İşlem bittikten sonra silebilirsiniz.",
   pending_operations: "Sağlayıcı sonucu bekleyen veya belirsiz bir işlem var. Aşağıdaki işlem ayrıntılarını inceleyip kapatılabilir kayıtları kapatın.",
-  pending_delivery: "Özel sohbette sonucu beklenen bir mesaj var. Önce bu işlemi sonuçlandırın.",
-  copied_content: "Bu konuşmadan alınmış içerikler başka kayıtlarda kullanılıyor.",
-  copied_branches: "Bu özel sohbetten alınmış içerikler başka bir özel sohbette kullanılıyor.",
-  retained_references: "Bu konuşmanın bağlantıları başka bir konuşmada kullanılıyor.",
-  decision_boundary: "Bu konuşmaya bağlı kaynak değerlendirmesi var; bu işlemle birlikte silinemiyor.",
-  pending_index: "Konuşma kayıtlarının aktarımı tamamlanmayı bekliyor.",
+  pending_delivery: "Özel müzakerede sonucu beklenen bir mesaj var. Önce bu işlemi sonuçlandırın.",
+  copied_content: "Bu müzakereden alınmış içerikler başka kayıtlarda kullanılıyor.",
+  copied_branches: "Bu özel müzakereden alınmış içerikler başka bir özel müzakerede kullanılıyor.",
+  retained_references: "Bu müzakerenin bağlantıları başka bir müzakerede kullanılıyor.",
+  decision_boundary: "Bu müzakereye bağlı kaynak değerlendirmesi var; bu işlemle birlikte silinemiyor.",
+  pending_index: "Müzakere kayıtlarının aktarımı tamamlanmayı bekliyor.",
   owner_mismatch: "Kayıtların sahipliği doğrulanamadığı için silme durduruldu.",
   schema_changed: "Veri yapısı değiştiği için silme durduruldu.",
-  too_many_members: "Bu konuşma tek işlem için desteklenen 100 çalışma ve özel sohbet sınırını aşıyor.",
-  inspection_limit: "Bu konuşma güvenli silme incelemesinin boyut sınırını aşıyor.",
+  too_many_members: "Bu müzakere tek işlem için desteklenen 100 çalışma ve özel müzakere sınırını aşıyor.",
+  inspection_limit: "Bu müzakere güvenli silme incelemesinin boyut sınırını aşıyor.",
   audit_capacity: "Silme kayıtlarının kapasitesi dolduğu için silme durduruldu.",
   invalid_queue_job: "İşlem kaydı doğrulanamadığı için silme durduruldu.",
 };
-const dependencyNames = { conversation: "Bağlı konuşma", run: "İçeriği kullanan çalışma", private: "İçeriği kullanan özel sohbet", publication: "Kütüphaneye kaydedilmiş kanıt" };
+const dependencyNames = { conversation: "Bağlı müzakere", run: "İçeriği kullanan çalışma", private: "İçeriği kullanan özel müzakere", publication: "Kütüphaneye kaydedilmiş kanıt" };
 
 export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel, onOperationsChanged }: {
   conversationId: string; onDeleted: (runIds: string[]) => void; onCancel: () => void; onOperationsChanged?: () => void;
@@ -39,9 +39,9 @@ export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel,
     void ownerFetch(`/api/conversations/${conversationId}/deletion?scope=content`, { cache: "no-store", signal: controller.signal }).then(async response => {
       if (response.status === 404) { if (!controller.signal.aborted) deleted.current(reviewedIds.current); return; }
       const value = await response.json() as ConversationContentDeletionPreview & { error?: string };
-      if (!response.ok) throw new Error(value.error ?? "Konuşma incelenemedi.");
+      if (!response.ok) throw new Error(value.error ?? "Müzakere incelenemedi.");
       if (!controller.signal.aborted) { setPreview(value); reviewedIds.current = value.runIds; setError(undefined); }
-    }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Konuşma incelenemedi."); });
+    }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Müzakere incelenemedi."); });
     return () => { alive.current = false; controller.abort(); };
   }, [conversationId, refresh]);
   function reload() { setPreview(undefined); setError(undefined); setRefresh(value => value + 1); }
@@ -64,21 +64,21 @@ export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel,
       const response = await ownerFetch(`/api/conversations/${conversationId}/deletion`, { method: "POST", cache: "no-store",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId, fingerprint: preview.fingerprint, confirmContentDeletion: true }) });
       const value = await response.json() as { error?: string; deletedRunIds?: string[] };
-      if (!response.ok) throw new Error(value.error ?? "Konuşma silinemedi.");
+      if (!response.ok) throw new Error(value.error ?? "Müzakere silinemedi.");
       if (alive.current) deleted.current(value.deletedRunIds ?? preview.runIds);
     } catch (cause) {
       if (alive.current) { setError(cause instanceof Error ? cause.message : "Sonuç alınamadı. Durumu yenileyerek kontrol edin."); setPreview(undefined); }
     } finally { submitting.current = false; if (alive.current) setBusy(false); }
   }
-  return <DeletionDialog title="Konuşmayı Sil" busy={busy} onCancel={onCancel}>
-    <section aria-label="Konuşma silme onayı">
-      <p className="deletion-question">Bu konuşmayı silmek istediğinize emin misiniz?</p>
+  return <DeletionDialog title="Müzakereyi Sil" busy={busy} onCancel={onCancel}>
+    <section aria-label="Müzakere silme onayı">
+      <p className="deletion-question">Bu müzakereyi silmek istediğinize emin misiniz?</p>
       {preview && <>
-        <p>{preview.eligible ? `Konuşma, ${preview.runIds.length} çalışma ve ${preview.privateBranchIds.length} özel sohbet ile birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz.` : "Silme koşulları kontrol edildi. Aşağıdaki durum çözülmeden konuşma silinemez."}</p>
-        {preview.knowledgeRecordCount > 0 && <p>Bu konuşmanın kaynak seçimleri ve hazırlanmış bağlamları da silinir. Kütüphanedeki dosyalar korunur.</p>}
+        <p>{preview.eligible ? `Müzakere, ${preview.runIds.length} çalışma ve ${preview.privateBranchIds.length} özel müzakere ile birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz.` : "Silme koşulları kontrol edildi. Aşağıdaki durum çözülmeden müzakere silinemez."}</p>
+        {preview.knowledgeRecordCount > 0 && <p>Bu müzakerenin kaynak seçimleri ve hazırlanmış bağlamları da silinir. Kütüphanedeki dosyalar korunur.</p>}
         {preview.blockedReasons.length > 0 && <div className="deletion-blockers" role="status"><strong>Şu Anda Silinemiyor</strong>
           <ul>{preview.blockedReasons.map(reason => <li key={reason}>{reasons[reason] ?? `Silme engeli: ${reason}`}</li>)}</ul>
-          {(preview.activeRuns ?? []).map(item => <p key={item.id}>Çalışma {item.id.slice(0, 8)} · {item.status === "queued" ? "Sırada" : "Çalışıyor"}. İşlemin bitmesini bekleyin veya Sohbet ekranından iptal edin.</p>)}
+          {(preview.activeRuns ?? []).map(item => <p key={item.id}>Çalışma {item.id.slice(0, 8)} · {item.status === "queued" ? "Sırada" : "Çalışıyor"}. İşlemin bitmesini bekleyin veya Müzakere ekranından iptal edin.</p>)}
           {(preview.pendingOperations ?? []).length > 0 && <div className="deletion-pending-operations">
             <p>Silme engeli oluşturan işlemler aşağıda. Kapatma yeni API çağrısı yapmaz; önceki çağrının sonucunu veya ücretini doğrulamaz ve ücret iadesi sağlamaz.</p>
             {(preview.pendingOperations ?? []).map(item => <article key={item.id}><strong>{item.model}</strong><small>{item.memberId} · Çalışma {item.runId.slice(0, 8)} · İşlem {item.id.slice(0, 8)}</small>
@@ -89,18 +89,18 @@ export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel,
           </div>}
         </div>}
         {preview.dependencies.length > 0 && <div className="deletion-blockers"><strong>Bağlı Kayıtlar Korunacak</strong>
-          <p>Bu konuşmadan kopyalanmış içerikler aşağıdaki kayıtlarda bulunuyor. Yalnız bu konuşma silinir; diğer kayıtlardaki bağımsız kopyalar kalır.</p>
+          <p>Bu müzakereden kopyalanmış içerikler aşağıdaki kayıtlarda bulunuyor. Yalnız bu müzakere silinir; diğer kayıtlardaki bağımsız kopyalar kalır.</p>
           <details><summary>Bağlı Kayıtları Göster ({preview.dependencies.length})</summary>
             <ul>{preview.dependencies.map(item => <li key={`${item.kind}:${item.id}`}>{dependencyNames[item.kind]}: <code>{item.id}</code></li>)}</ul>
           </details>
         </div>}
         <p className="section-hint">Kullanım kayıtları, bağımsız kaynaklar, zamanlamalar ve yedeklerdeki kopyalar korunur. Yeni API isteği gönderilmez.</p>
       </>}
-      {!preview && !error && <p className="hint" role="status">Konuşma ve bağlantıları kontrol ediliyor…</p>}
+      {!preview && !error && <p className="hint" role="status">Müzakere ve bağlantıları kontrol ediliyor…</p>}
       {error && <p className="error" role="alert">{error}</p>}
       <div className="deletion-dialog-actions">
         <button type="button" className="secondary-button" disabled={busy} onClick={onCancel}>Vazgeç</button>
-        <button type="button" className="danger-button secondary-button" disabled={busy || !preview?.eligible} onClick={() => void remove()}>{busy ? "Siliniyor…" : "Evet, Konuşmayı Sil"}</button>
+        <button type="button" className="danger-button secondary-button" disabled={busy || !preview?.eligible} onClick={() => void remove()}>{busy ? "Siliniyor…" : "Evet, Müzakereyi Sil"}</button>
       </div>
       {(error || preview && !preview.eligible) && <button type="button" className="secondary-button" disabled={busy} onClick={reload}>Durumu Yenile</button>}
     </section>

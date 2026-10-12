@@ -6,7 +6,7 @@ export function ConnectionImpactDialog({ impact, draftModels, onDecision }: { im
     {impact ? <section className="connection-impact-review" aria-label="Bağlantı bağımlılıkları"><h3>{impact.label} · {impact.action === "delete" ? "Bağlantıyı Sil" : "Bağlantıyı Güncelle"}</h3>
       <p>{impact.action === "delete" ? "Bağlantı ve API anahtarı kaldırılacak." : impact.transportChanged ? "API anahtarı veya aktarım ayarları değişecek." : "Aşağıdaki modeller kullanılabilir seçimlerden kaldırılacak."}</p>
       {impact.removedModels.length ? <p className="hint">Kaldırılacak modeller: {impact.removedModels.join(", ")}</p> : null}
-      <p>Eski sohbetlerin dondurulmuş kayıtları korunur. Bağlı konseyleri ve duraklatılmış zamanlayıcıları tekrar kullanmadan önce model seçimlerini düzeltmeniz gerekir.</p>
+      <p>Eski müzakerelerin dondurulmuş kayıtları korunur. Bağlı konseyleri ve duraklatılmış zamanlayıcıları tekrar kullanmadan önce model seçimlerini düzeltmeniz gerekir.</p>
       {draftModels.length ? <p className="inline-warning">Bu tarayıcıdaki konsey taslağı: {draftModels.join(", ")}. Yeni gönderim için seçimleri güncelleyin.</p> : null}
       <ul className="connection-impact-list">{impact.references.map(reference => <li key={`${reference.kind}:${reference.id}`}><strong>{reference.kind} · {reference.label}</strong><small>{reference.models.join(", ")} · {reference.status}</small>{reference.blocking ? <span className="inline-warning">Bu işlem değişikliği engelliyor.</span> : null}</li>)}</ul>
       {!impact.references.length ? <p className="hint">Bu bağlantıya bağlı kayıt bulunamadı.</p> : null}

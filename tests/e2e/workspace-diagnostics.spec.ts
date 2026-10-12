@@ -52,7 +52,7 @@ test("file cancellation and a text-selection drag outside the modal preserve it;
     await page.mouse.move(box.x + 20, box.y + 20); await page.mouse.down(); await page.mouse.move(popup.x - 20, box.y + 20); await page.mouse.up();
     await expect(dialog).toBeVisible(); await expect(message).toHaveValue("Select this text and drag beyond the popup.");
     await page.mouse.click(popup.x - 20, popup.y + 40); await expect(dialog).not.toBeVisible();
-    await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("My council question stays unchanged.");
+    await workspaceView(page, "Müzakere"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("My council question stays unchanged.");
   } finally { await deleteGeneratedConnection(request, `/api/provider-connections?id=${connection.id}`); }
 });
 
@@ -107,14 +107,14 @@ test("model removal reviews dependencies, invalidates chat selection and is repa
     await review.getByRole("button", { name: "Vazgeç", exact: true }).click();
     expect((await (await request.get("/api/provider-connections")).json()).connections.find((item: { id: string }) => item.id === connection.id).selectedModels).toContain("model-a");
     await dialog.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click(); await review.getByRole("button", { name: "Değişikliği Onayla", exact: true }).click(); await expect(review).not.toBeVisible();
-    await expect(models.getByRole("status")).toContainText("kaydedildi"); await page.keyboard.press("Escape"); await workspaceView(page, "Sohbet");
+    await expect(models.getByRole("status")).toContainText("kaydedildi"); await page.keyboard.press("Escape"); await workspaceView(page, "Müzakere");
     await expect(pool.getByLabel("Kayıtlı Konsey").locator(`option[value="${template.id}"]`)).toHaveJSProperty("disabled", true); await expect(page.getByRole("button", { name: "Konseyi çalıştır", exact: true })).toBeDisabled();
     const rejected = await request.post("/api/runs", { data: { idempotencyKey: randomUUID(), question: "Compare two ways to organize notes briefly.", members, reviewRounds: 0, providerMode: "remote" } }); expect(rejected.status()).toBe(422); expect((await rejected.json()).code).toBe("council_model_unavailable");
     await workspaceView(page, "Konseyler"); await page.getByLabel("Üye 1 modeli", { exact: true }).selectOption("model-b"); await page.getByLabel("Üye 2 modeli", { exact: true }).selectOption("model-b");
     const editor = page.getByRole("region", { name: "Konsey kaydı", exact: true });
     await editor.getByRole("button", { name: "Değişiklikleri Kaydet", exact: true }).click(); await expect(editor.getByRole("status")).toContainText("kaydedildi");
     const saved = (await (await request.get("/api/council-templates")).json()).templates.find((item: { id: string }) => item.id === template.id); expect(saved.members.every((member: { model: string }) => member.model === "model-b")).toBe(true);
-    await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Compare two ways to organize notes briefly.");
+    await workspaceView(page, "Müzakere"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Compare two ways to organize notes briefly.");
     for (const name of ["Kaynaklar Ve Dosyalar", "Bağlam Ve Kontroller", "Soru"]) await page.getByRole("tab", { name, exact: true }).click();
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Compare two ways to organize notes briefly."); await expect(page.getByRole("button", { name: "Konseyi çalıştır", exact: true })).toBeEnabled();
   } finally {

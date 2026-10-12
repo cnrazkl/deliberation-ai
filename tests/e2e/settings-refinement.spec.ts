@@ -32,7 +32,7 @@ test("connection creation reports encrypted success in place and failures never 
     await expect(form.getByRole("alert")).toContainText("Controlled save failure");
     await expect(page.locator(".primary-connections .connection-save-notice")).toHaveCount(0);
     await expect(form.getByLabel("Bağlantı adı", { exact: true })).toHaveValue("Failed save check");
-    await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Preserve this draft when saving a connection.");
+    await workspaceView(page, "Müzakere"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Preserve this draft when saving a connection.");
   } finally { if (savedId) await deleteGeneratedConnection(request, `/api/provider-connections?id=${savedId}`); }
 });
 

@@ -39,7 +39,7 @@ export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
   return <details className="composer-disclosure knowledge-panel"><DisclosureSummary title="Yerel bilgi kaynakları" description="Kütüphanenizden kaynak ve alıntı seçin" icon="knowledge" />
     <div className="knowledge-body">
       <div className="knowledge-intro">
-        <p>Dosyalarınızı koleksiyonlara kaydedin, bu sohbet için kaynak seçin ve gönderilecek alıntıları inceleyin.</p>
+        <p>Dosyalarınızı koleksiyonlara kaydedin, bu müzakere için kaynak seçin ve gönderilecek alıntıları inceleyin.</p>
         <p className="hint">Yalnız seçtiğiniz alıntılar ilk turdaki bütün üyelere gönderilir; tam dosyalar ve ikinci tur kaynakları gönderilmez. Görsel/OCR doğrulaması ve bağımsız kalite değerlendirmesi henüz yoktur.</p>
       </div>
       <section className="knowledge-step" aria-labelledby="knowledge-collections-heading">
@@ -53,17 +53,17 @@ export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
         </div>
         {hasMore && <p className="hint">İlk 20 koleksiyon gösteriliyor; diğer koleksiyonlar bu seçimde aranmaz.</p>}
         <div className="knowledge-selection">
-          <p className="hint">Okuma izni verin, bir kaynak sohbeti açın ve en fazla 3 koleksiyon seçerek seçimi kaydedin.</p>
+          <p className="hint">Okuma izni verin, bir kaynak müzakeresi açın ve en fazla 3 koleksiyon seçerek seçimi kaydedin.</p>
           <div className="knowledge-actions">
-            <button className="secondary-button" type="button" disabled={busy} onClick={() => void work(async () => { invalidate(); const next = await command<{ conversationId: string }>({ operation: "conversation" }); setConversationId(next.conversationId); await refresh(next.conversationId); })}>Yeni kaynak sohbeti</button>
-            {runId && <button className="secondary-button" type="button" disabled={busy} onClick={() => void work(async () => { invalidate(); const response = await ownerFetch(`/api/runs/${runId}/conversation`, { cache: "no-store" }); const next = await response.json() as { conversationId: string }; if (!response.ok) throw new Error("Sohbet okunamadı."); setConversationId(next.conversationId); await refresh(next.conversationId); })}>Açık raporun sohbetini seç</button>}
+            <button className="secondary-button" type="button" disabled={busy} onClick={() => void work(async () => { invalidate(); const next = await command<{ conversationId: string }>({ operation: "conversation" }); setConversationId(next.conversationId); await refresh(next.conversationId); })}>Yeni kaynak müzakeresi</button>
+            {runId && <button className="secondary-button" type="button" disabled={busy} onClick={() => void work(async () => { invalidate(); const response = await ownerFetch(`/api/runs/${runId}/conversation`, { cache: "no-store" }); const next = await response.json() as { conversationId: string }; if (!response.ok) throw new Error("Müzakere okunamadı."); setConversationId(next.conversationId); await refresh(next.conversationId); })}>Açık raporun müzakeresini seç</button>}
           </div>
           {collections.length > 0 && <div className="knowledge-collection-list">{collections.map((item) => <article className="knowledge-collection" key={item.collectionId}>
             <label className="knowledge-check"><input type="checkbox" disabled={busy || item.grantStatus !== "active" || !conversationId || selected.length >= 3 && !selected.includes(item.collectionId)} checked={selected.includes(item.collectionId)}
               onChange={(event) => { invalidate(); setSelected(event.target.checked ? [...selected, item.collectionId] : selected.filter((id) => id !== item.collectionId)); }} /><span>{item.title} · {item.grantStatus === "active" ? "Okuma izni açık" : "İzin kapalı"}</span></label>
             <button className="secondary-button" type="button" disabled={busy} onClick={() => void work(async () => { invalidate(); await command({ operation: "grant", collectionId: item.collectionId, revision: item.grantRevision, status: item.grantStatus === "active" ? "revoked" : "active" }); await refresh(); })}>{item.grantStatus === "active" ? "İzni iptal et" : "Okuma izni ver"}</button>
           </article>)}</div>}
-          {conversationId && <div className="knowledge-field-action"><label className="knowledge-field">Sohbet konusu<input disabled={busy} value={topic} placeholder="Örn. Destek koşullarını karşılaştırma" maxLength={4_000} onChange={(event) => { invalidate(); setTopic(event.target.value); }} /></label>
+          {conversationId && <div className="knowledge-field-action"><label className="knowledge-field">Müzakere konusu<input disabled={busy} value={topic} placeholder="Örn. Destek koşullarını karşılaştırma" maxLength={4_000} onChange={(event) => { invalidate(); setTopic(event.target.value); }} /></label>
             <button className="secondary-button" type="button" disabled={busy || !selected.length} onClick={() => void work(async () => { invalidate(); await command({ operation: "bind", conversationId, revision: selection?.revision ?? null, selection: { topic, scopes: selected.map(scopeFor) } }); await refresh(); })}>Seçimi kaydet</button></div>}
         </div>
       </section>
@@ -104,7 +104,7 @@ export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
         <p className="hint" id="knowledge-query-help">Kaynakta geçen kısa sözcükleri açıkça girin. En fazla 12 farklı sözcük kullanın; arama bütün sözcükleri aynı kaynakta birlikte arar. Sorunuz otomatik aktarılmaz.</p>
         <p className="knowledge-query-feedback" id="knowledge-query-feedback" role="status">{queryInspection.termCount}/12 farklı arama sözcüğü{!queryInspection.valid ? " · " + queryInspection.message : ""}</p>
         <label className="knowledge-check knowledge-option"><input type="checkbox" disabled={busy} checked={allowEmpty} onChange={(event) => { invalidate(); setAllowEmpty(event.target.checked); }} /><span>Arama sonuçsuz kalırsa kanıtsız paketi ayrıca inceleyerek devam edebilirim</span></label>
-        {!selection && <p className="hint">Paketi hazırlamak için 1. adımda sohbetin koleksiyon seçimini kaydedin.</p>}
+        {!selection && <p className="hint">Paketi hazırlamak için 1. adımda müzakerenin koleksiyon seçimini kaydedin.</p>}
         <div className="knowledge-actions"><button type="button" disabled={busy || !selection || !queryInspection.valid} onClick={() => void work(async () => { invalidate(); const value = await command<KnowledgePacket>({ operation: "prepare", id: createBrowserRequestId(), conversationId, selectionRevision: selection!.revision, query: query.trim(), allowWithoutEvidence: allowEmpty }); setPacket(value); })}>Kanıt paketini hazırla</button></div>
         {packet && <section className="knowledge-packet" aria-label="Hazırlanan kaynak paketi"><h4>Gönderilecek kaynak paketi</h4><p>Arama: {packet.query} · Konu: {packet.topic || "Belirtilmedi"}</p><p className="hint">{packet.excerpts.length} alıntı · {packet.excerpts.reduce((sum, item) => sum + item.text.length, 0)} karakter · {packet.createdAt}. İçerik ve güncellik incelenmedi. Hazırlama sonrası sürüm değişirse yeniden hazırlayın.</p>
           <div className="knowledge-coverage">{packet.coverage.map((item) => <p key={item.collectionId}>{collections.find((collection) => collection.collectionId === item.collectionId)?.title ?? item.collectionId}: {item.inspected} dosya, {item.matches} eşleşme, {item.selected} alıntı, {item.omitted} dışarıda, {item.unavailable} kullanılamıyor.</p>)}</div>
@@ -115,7 +115,7 @@ export function KnowledgePanel({ runId, onChange }: { runId: string | undefined;
         </section>}
       </section>
       <div className="knowledge-footer">
-        <p className="hint">Bu sohbet için kaynak kullanmak isteğe bağlıdır.</p>
+        <p className="hint">Bu müzakere için kaynak kullanmak isteğe bağlıdır.</p>
         <button className="secondary-button" type="button" disabled={busy} onClick={() => { setPacket(null); setReviewed(false); onChange(null, false); }}>Kaynak paketi olmadan devam et</button>
       </div>
       {error && <p className="knowledge-error" role="alert">{error}</p>}
