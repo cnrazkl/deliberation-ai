@@ -1,3 +1,4 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { withOwner } from "@deliberation-ai/persistence";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
@@ -36,7 +37,7 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
     const dialog = await openConnectionPanel(page, card, "Modeller");
     await dialog.getByRole("button", { name: "Model listesini kontrol et" }).click();
     expect(catalogCalls).toBe(1);
-    await workspaceView(page, "Sohbet");
+    await revealCouncilControls(page);
     await page.getByLabel("Üye 1 bağlantısı").selectOption(connectionId);
     await page.getByLabel("Üye 1 modeli").selectOption("vendor/task-specific-model");
     await expect(page.getByLabel("Üye 1 modeli")).toHaveValue("vendor/task-specific-model");
@@ -46,6 +47,6 @@ test("NVIDIA hosted editor fixes conservative settings and permits explicit manu
     await expect(dialog.getByLabel("API anahtarı", { exact: true })).toHaveValue("");
     expect((await card.boundingBox())!.width).toBeLessThanOrEqual(390);
   } finally {
-    if (connectionId) await request.delete(`/api/provider-connections?id=${encodeURIComponent(connectionId)}`);
+    if (connectionId) await deleteGeneratedConnection(request, `/api/provider-connections?id=${encodeURIComponent(connectionId)}`);
   }
 }));

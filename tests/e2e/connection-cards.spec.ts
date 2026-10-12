@@ -1,3 +1,4 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { expect, test } from "./authenticated-test";
 import { workspaceView } from "./workspace-navigation";
 import { addConnectionModels, openConnectionPanel } from "./connection-model-selection";
@@ -35,7 +36,7 @@ for (const theme of ["light", "dark"] as const) for (const [width, columns] of [
       await page.keyboard.press("Escape"); await expect(dialog).not.toBeVisible();
       expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden");
       expect(providerRequests).toBe(0);
-    } finally { for (const id of ids) await request.delete(`/api/provider-connections?id=${id}`); }
+    } finally { for (const id of ids) await deleteGeneratedConnection(request, `/api/provider-connections?id=${id}`); }
   });
 }
 
@@ -77,18 +78,18 @@ test("connection panel preserves drafts, handles failures, restores focus and ke
     await dialog.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click();
     await expect(dialog.locator(".saved-connection-models").filter({ visible: true }).getByRole("status")).toContainText("kaydedildi");
     expect((await (await request.get("/api/provider-connections")).json()).connections.find((connection: { id: string }) => connection.id === id).selectedModels).toEqual(["local-a", "local-b"]);
-    await dialog.getByRole("tab", { name: "Test ve Geçmiş", exact: true }).click();
+    await dialog.getByRole("tab", { name: "Test Ve Hata Ayıklama", exact: true }).click();
     await expect(dialog.getByRole("region", { name: "Model test ve hata ayıklama alanı" })).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Üretim testi ve model geçmişi", exact: true })).toHaveCount(0);
-    const reviewCount = reviews; await page.keyboard.press("Escape"); await openConnectionPanel(page, card, "Test ve Geçmiş");
+    const reviewCount = reviews; await page.keyboard.press("Escape"); await openConnectionPanel(page, card, "Test Ve Hata Ayıklama");
     await expect(dialog.getByRole("region", { name: "Model test ve hata ayıklama alanı" })).toBeVisible(); expect(reviews).toBe(reviewCount);
     await page.keyboard.press("Escape");
     await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep my current question.");
     await workspaceView(page, "Ayarlar");
     await page.route("**/api/provider-connections?*", route => route.fulfill({ status: 503, json: { error: "Controlled deletion failure" } }));
-    await card.getByRole("button", { name: "Sil", exact: true }).click(); await expect(page.locator(".primary-connections").getByRole("alert")).toContainText("silinemedi");
+    await card.getByRole("button", { name: "Sil", exact: true }).click(); await expect(page.locator(".primary-connections").getByRole("alert")).toContainText("Controlled deletion failure");
     await expect(card).toBeVisible(); await page.unroute("**/api/provider-connections?*");
-    await card.getByRole("button", { name: "Sil", exact: true }).click(); await expect(card).toHaveCount(0);
+    await card.getByRole("button", { name: "Sil", exact: true }).click(); await page.getByRole("dialog", { name: "Bağlı Kayıtları İnceleyin", exact: true }).getByRole("button", { name: "Eminim, Bağlantıyı Sil", exact: true }).click(); await expect(card).toHaveCount(0);
     expect(generationRequests).toBe(0);
-  } finally { if (id) await request.delete(`/api/provider-connections?id=${id}`); }
+  } finally { if (id) await deleteGeneratedConnection(request, `/api/provider-connections?id=${id}`); }
 });

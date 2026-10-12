@@ -1,6 +1,7 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { createServer } from "node:http";
 import { expect, test, testOrigin } from "./authenticated-test";
-import { workspaceView } from "./workspace-navigation";
+import { workspaceView, revealCouncilControls } from "./workspace-navigation";
 import { addConnectionModels } from "./connection-model-selection";
 
 test("new connection lists models on explicit click without persistence or generation", async ({ page, request, playwright }) => {
@@ -58,7 +59,7 @@ test("new connection lists models on explicit click without persistence or gener
     expect(saved.ok()).toBe(true); savedId = (await saved.json() as { id: string }).id;
     await expect(page.locator(".primary-connections .connection-save-notice")).toHaveText("Yeni bağlantı başarıyla şifrelenerek eklenmiştir.");
     expect(calls).toHaveLength(1);
-    await workspaceView(page, "Sohbet"); await page.getByRole("button", { name: "Konseyi düzenle", exact: true }).click();
+    await revealCouncilControls(page);
     await page.getByLabel("Üye 1 bağlantısı").selectOption(savedId!);
     await page.getByLabel("Üye 1 modeli").selectOption("local-a");
     await page.getByLabel("Üye 2 bağlantısı").selectOption(savedId!);
@@ -67,7 +68,7 @@ test("new connection lists models on explicit click without persistence or gener
     await expect(page.getByLabel("Üye 2 modeli")).toHaveValue("local-b");
     expect(calls).toHaveLength(1);
   } finally {
-    if (savedId) await request.delete(`/api/provider-connections?id=${encodeURIComponent(savedId)}`);
+    if (savedId) await deleteGeneratedConnection(request, `/api/provider-connections?id=${encodeURIComponent(savedId)}`);
     await anonymous.dispose();
     await root.dispose();
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));

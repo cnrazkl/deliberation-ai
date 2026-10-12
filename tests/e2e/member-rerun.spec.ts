@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls, workspaceView } from "./workspace-navigation";
+import { revealCouncilControls, revealChatTab, saveCouncilForChat, mockCouncilStorage, workspaceView } from "./workspace-navigation";
 import { createServer, type Server } from "node:http";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import type { ExecutionLimits } from "@deliberation-ai/contracts";
@@ -199,7 +199,7 @@ test("keeps limits optional and blocks an insufficient plan before any dispatch"
   // Browser-only connection metadata enables the form; no credential or connection is saved.
   await page.route("**/api/provider-connections", async (route) => {
     if (route.request().method() !== "GET") return route.abort("blockedbyclient");
-    await route.fulfill({ json: { connections: [{ id: crypto.randomUUID(), provider: "openai-compatible",
+    await route.fulfill({ json: { connections: [{ id: "44444444-4444-4444-8444-444444444444", provider: "openai-compatible",
       label: "E2E limits browser-only", defaultModel: "offline-ui", configured: true,
       baseUrl: "http://127.0.0.1:1/v1", endpointPreset: "litellm", reasoningProtocol: "none",
       structuredOutputMode: "json-object" }] } });
@@ -214,10 +214,12 @@ test("keeps limits optional and blocks an insufficient plan before any dispatch"
     scheduleSubmissions += 1;
     await route.abort("blockedbyclient");
   });
-  await page.goto("/"); await revealCouncilControls(page);
+  await mockCouncilStorage(page); await page.goto("/"); await saveCouncilForChat(page);
+  await page.getByLabel("Sorunuz", { exact: true }).fill("Compare two color palettes for a small page.");
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   const option = page.getByRole("checkbox", { name: "Bu çalışma için çağrı ve yanıt kotası sınırı uygula", exact: true });
   const limitPanel = page.getByRole("region", { name: "Çağrı ve yanıt kotası sınırları", exact: true });
-  const start = page.getByRole("button", { name: "Konseyi çalıştır", exact: true });
+  const start = page.getByRole("button", { name: "Konseyi çalıştır", exact: true, includeHidden: true });
   const schedulePanel = page.getByRole("region", { name: "Yerel zamanlamalar", exact: true, includeHidden: true });
   const createSchedule = schedulePanel.getByRole("button", { name: "Duraklatılmış zamanlama oluştur", exact: true, includeHidden: true });
   await expect(option).not.toBeChecked();
@@ -226,7 +228,7 @@ test("keeps limits optional and blocks an insufficient plan before any dispatch"
   await workspaceView(page, "Zamanlayıcı");
   await schedulePanel.getByLabel("Zamanlama adı", { exact: true }).fill("E2E limits no dispatch");
   await expect(createSchedule).toBeEnabled();
-  await workspaceView(page, "Sohbet");
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   await option.check();
   const callLimit = page.getByLabel("En fazla API çağrısı", { exact: true });
   const perCall = page.getByLabel("Çağrı başına yanıt tokenı kotası", { exact: true });
@@ -237,7 +239,9 @@ test("keeps limits optional and blocks an insufficient plan before any dispatch"
   await expect(limitPanel.getByRole("alert")).toContainText("en az 4 çağrı gerekir");
   await expect(start).toBeDisabled();
   await expect(createSchedule).toBeDisabled();
+  await revealChatTab(page, "Soru");
   await page.getByLabel("Sorunuz", { exact: true }).press("Control+Enter");
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   await callLimit.fill("4");
   await perCall.fill("1024");
   await quota.fill("4095");
@@ -247,7 +251,9 @@ test("keeps limits optional and blocks an insufficient plan before any dispatch"
   await quota.fill("4096");
   await expect(start).toBeEnabled();
   await expect(createSchedule).toBeEnabled();
+  await revealCouncilControls(page);
   await page.getByRole("combobox", { name: "Çapraz inceleme turu", exact: true }).selectOption("3");
+  await saveCouncilForChat(page); await revealChatTab(page, "Bağlam Ve Kontroller");
   await expect(limitPanel.getByRole("alert")).toContainText("en az 8 çağrı gerekir");
   await expect(start).toBeDisabled();
   await expect(createSchedule).toBeDisabled();

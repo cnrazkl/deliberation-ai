@@ -1,5 +1,15 @@
 # Tasks
 
+- [x] Owner-requested 12 October workspace/test fixes: exact input, current audit,
+  safe modal/file interaction, dependencies, council management and chat tabs.
+  502 units, 294 isolated PostgreSQL cases, all 122 browser scenarios (full run plus
+  corrected pool rerun), types/lint/
+  Linux build and generated-only LAN verification pass. Owned deployment/fixture
+  cleanup and service/database baselines verified; native PostgreSQL restored to
+  its initial stopped state. Audit and staged/full-history secret scans pass.
+  See CURRENT_STATE.md and [contract](WORKSPACE_DIAGNOSTICS.md).
+
+
 - [x] Owner-requested connection test simplification/model aliases: no redundant
   inner disclosures, temporary quick replies, send-button price notice, free-message
   debug with small image/PDF/audio files and safe diagnostics; connection-specific

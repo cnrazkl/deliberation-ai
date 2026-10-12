@@ -1,3 +1,4 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { createServer } from "node:http";
 import { getPool } from "@deliberation-ai/persistence";
 import { expect, test } from "./authenticated-test";
@@ -11,7 +12,7 @@ test("save-and-test creates a connection, returns plain text and preserves the c
     const chunks: Buffer[] = []; for await (const chunk of incoming) chunks.push(Buffer.from(chunk));
     const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
     calls++; expect(body.model).toBe("chat-fixture"); expect(body.max_tokens).toBe(512);
-    expect(body.messages).toHaveLength(2); expect(body.messages[1]).toEqual({ role: "user", content: "Short test question" });
+    expect(body.messages).toHaveLength(1); expect(body.messages[0]).toEqual({ role: "user", content: "Short test question" });
     expect(body.tools).toBeUndefined(); expect(body.response_format).toBeUndefined(); expect(JSON.stringify(body)).not.toContain("Keep my council draft");
     outgoing.setHeader("content-type", "application/json");
     outgoing.end(JSON.stringify({ model: "chat-fixture", choices: [{ message: { role: "assistant", content: "Short fixture reply" }, finish_reason: "stop" }] }));
@@ -37,7 +38,7 @@ test("save-and-test creates a connection, returns plain text and preserves the c
     await expect(chat).not.toContainText("Short fixture reply"); expect(calls).toBe(1);
     await chat.getByRole("button", { name: "Sonucu Kontrol Et" }).click(); expect(calls).toBe(1);
     await page.keyboard.press("Escape");
-  } finally { if (id) await request.delete(`/api/provider-connections?id=${id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
+  } finally { if (id) await deleteGeneratedConnection(request, `/api/provider-connections?id=${id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
 });
 
 for (const theme of ["light", "dark"]) for (const width of [320, 1110]) {
@@ -66,7 +67,7 @@ for (const theme of ["light", "dark"]) for (const width of [320, 1110]) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await chat.screenshot({ path: info.outputPath(`chat-${theme}-${width}.png`) }); expect(calls).toBe(0);
       await page.keyboard.press("Escape");
-    } finally { await request.delete(`/api/provider-connections?id=${connection.id}`); }
+    } finally { await deleteGeneratedConnection(request, `/api/provider-connections?id=${connection.id}`); }
   });
 }
 
@@ -99,7 +100,7 @@ test("chat displays HTTP error codes immediately and lost responses never resend
     })).toBe(true);
     await expect(chat).not.toContainText("PRIVATE ERROR BODY"); expect(calls).toBe(1);
     await page.keyboard.press("Escape");
-  } finally { release(); await request.delete(`/api/provider-connections?id=${connection.id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
+  } finally { release(); await deleteGeneratedConnection(request, `/api/provider-connections?id=${connection.id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
 });
 
 test("chat rejects foreign-origin, missing approval, stale message and oversized input before dispatch", async ({ request }) => {
@@ -107,7 +108,7 @@ test("chat rejects foreign-origin, missing approval, stale message and oversized
   try {
     const history = await request.get(`/api/provider-connections/${empty.id}/chat-check`);
     expect(history.status()).toBe(200); expect((await history.json()).observations.generationChecks).toEqual([]);
-  } finally { await request.delete(`/api/provider-connections?id=${empty.id}`); }
+  } finally { await deleteGeneratedConnection(request, `/api/provider-connections?id=${empty.id}`); }
   const unbound = createServer(); await new Promise<void>(resolve => unbound.listen(0, "127.0.0.1", resolve));
   const address = unbound.address(); if (!address || typeof address === "string") throw new Error("Fixture bind failed");
   await new Promise<void>(resolve => unbound.close(() => resolve()));

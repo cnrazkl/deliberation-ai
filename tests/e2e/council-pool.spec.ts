@@ -1,9 +1,10 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { randomUUID } from "node:crypto";
 import { eq, inArray } from "drizzle-orm";
 import { withOwner, closeDatabase, getDatabase, councilTemplates } from "@deliberation-ai/persistence";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { expect, test, testOwnerId } from "./authenticated-test";
-import { revealCouncilControls } from "./workspace-navigation";
+import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 
 test("saved council pool restores models and rounds, preserves the question and freezes the chosen draft on submit", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const created = await request.post("/api/provider-connections", { data: { provider: "openai-compatible", label: `Pool fixture ${randomUUID()}`,
@@ -27,9 +28,11 @@ test("saved council pool restores models and rounds, preserves the question and 
     await expect(page.getByLabel("Üye 2 modeli", { exact: true })).toHaveValue("second-fixture");
     await expect(page.getByLabel("Çapraz inceleme turu")).toHaveValue("0");
     await page.getByLabel("Çapraz inceleme turu").selectOption("2");
-    await expect(pool.getByLabel("Kayıtlı Konsey")).toHaveValue(""); await expect(pool).toContainText("Düzenlenmiş Taslak");
+    await expect(pool.getByLabel("Kayıtlı Konsey")).toHaveValue(""); await expect(pool).toContainText("Yeni Konsey Taslağı");
     await pool.getByLabel("Şablon adı").fill(`${name} edited`);
-    await pool.getByLabel("Şablon adı").press("Enter"); await expect(pool.getByLabel("Şablon adı")).toHaveValue("");
+    await pool.getByRole("button", { name: "Yeni Konsey Olarak Kaydet", exact: true }).click();
+    await expect(pool.getByRole("status")).toContainText(`${name} edited konsey havuzuna kaydedildi.`);
+    await expect(pool.getByLabel("Şablon adı")).toHaveValue(`${name} edited`);
     const list = (await (await request.get("/api/council-templates")).json()).templates;
     const edited = list.find((value: { name: string }) => value.name === `${name} edited`); ids.push(edited.id);
     expect(edited.settings).toEqual({ reviewRounds: 2, selfRevisionEnabled: false }); expect(dispatched).toBe(0);
@@ -43,7 +46,7 @@ test("saved council pool restores models and rounds, preserves the question and 
     await expect.poll(() => submitted).toBeTruthy(); expect(dispatched).toBe(1);
     expect(submitted?.reviewRounds).toBe(0); expect(submitted?.selfRevisionEnabled).toBe(false); expect(submitted?.members).toEqual(members);
     expect(submitted?.question).toBe("Compare two ways to organize project notes briefly.");
-  } finally { if (ids.length) await getDatabase().delete(councilTemplates).where(inArray(councilTemplates.id, ids)); await request.delete(`/api/provider-connections?id=${connection.id}`); await closeDatabase(); }
+  } finally { if (ids.length) await getDatabase().delete(councilTemplates).where(inArray(councilTemplates.id, ids)); await deleteGeneratedConnection(request, `/api/provider-connections?id=${connection.id}`); await closeDatabase(); }
 }));
 
 for (const theme of ["light", "dark"]) for (const width of [320, 1110]) {

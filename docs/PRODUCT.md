@@ -2,14 +2,15 @@
 
 ## Saved council pool
 
-The chat composer exposes **Konsey Havuzu** before the question. Owners can name and
-save their current council, then select it from **Kayıtlı Konsey** in later chats.
+The **Konseyler** sidebar menu owns council creation, editing, copying and deletion.
+The chat composer exposes **Konsey Havuzu** only to select a saved council from
+**Kayıtlı Konsey**. Unsaved or unavailable configurations cannot start new work.
 Selection applies every ordered member's connection, model, role, reasoning, web and
 attachment settings plus review-round count and self-revision setting. The question,
 sources, context, risk assessment and local execution quotas remain per task. Selection
 does not generate: **Konseyi Çalıştır** uses the applied configuration through the
-existing preflight and frozen-input path. Changes show a modified draft and can be
-saved under a fresh name. Saved councils survive page reload and new conversations;
+existing preflight and frozen-input path. Changes update the existing council or
+save a named copy in Konseyler. Saved councils survive page reload and new conversations;
 the active choice is a browser draft, not an automatic account default.
 
 Legacy member-only templates apply one review round and no self-revision. Missing or
@@ -37,11 +38,11 @@ initial capitals. Settings retain one theme control in the persistent sidebar.
 columns according to available workspace width. Cards show provider, selected-model
 count, current-member use and edit/delete actions. **Yeni Bağlantı Ekle** opens a
 separate modal; **Düzenle** opens the saved connection's Bağlantı, Modeller and
-Test ve Geçmiş tabs. Successful encrypted save closes the modal, updates cards and
+Test Ve Hata Ayıklama tabs. Successful encrypted save closes the modal, updates cards and
 reports success beside the list without reloading. Failed saves retain fields and
 show their error inside the panel. Tab changes retain unsaved connection fields;
 Escape/close returns focus to the triggering card/button and clears entered secrets.
-The Test ve Geçmiş tab is directly visible without another disclosure. Its small
+The Test Ve Hata Ayıklama tab is directly visible without another disclosure. Its small
 chat/debug area accepts a chosen model, owner-written message and optional small
 image/PDF/audio files. The send button authorizes one potentially charged
 test; a larger visible price warning replaces the routine acknowledgement checkbox.
@@ -50,7 +51,7 @@ Connection creation/editing also offers **Hızlı Bağlantı Testi**, a compact 
 chat test. The model dropdown uses the connection's selected models. **Kaydet Ve Test
 Et** explicitly saves a new connection or changed settings before sending; an unchanged
 saved connection uses **Mesajı Gönder**. The visible message/model and price warning
-precede that explicit action. Each quick test sends only its own message,
+precede that explicit action. Each quick test sends exactly its unchanged message, with no added system instruction,
 without council, conversation, file or tool context. The requested limit is 512 output
 tokens and 45 seconds, with provider-default reasoning and no tools or council schema.
 Replies, truncation, nullable usage and safe HTTP/transport/provider error codes appear in place.
@@ -61,6 +62,11 @@ outcome protection. A lost reply can recover its recorded status, never invent i
 block another send until inspected; unresolved history retains the existing explicit
 uncertainty acknowledgement and no automatic retry. Tests do not change configured
 council members or drafts; saving retains the usual assignment of unconfigured members.
+Debugging shows and downloads only the current redacted request/response and runtime
+record. Connection/model mutations review dependencies and refuse affected active or
+unresolved work. Removed selected models invalidate saved councils until repaired;
+historical snapshots remain. File controls are styled, and file cancellation or text
+selection cannot dismiss the modal. [Workflow and limits](WORKSPACE_DIAGNOSTICS.md).
 
 Settings and council controls use spaced action groups, aligned checkbox/radio labels
 and centered geometric disclosure icons. Original/candidate prompt choices occupy
@@ -151,7 +157,7 @@ Account-management/password-change fields use the same visible input treatment.
 
 The signed-in workspace highlights the question composer with writing guidance,
 placeholder, character count and its existing explicit submit action; detailed council
-configuration follows the composer and remains reachable through **Konseyi düzenle**. API setup has
+configuration and template management live in **Konseyler**; chat selects saved councils. API setup has
 a separate first-step callout when no connection exists and leads the settings page;
 private defaults and advanced tools follow it. Navigation, form fields and action buttons
 share clear styling across themes and screen sizes. Changing views preserves drafts
@@ -188,7 +194,7 @@ jobs and verified return to the preserved original. Settings show separate priva
 decision/probe backlogs, queue age and backup metadata with notices. Selected local
 backup/export removal requires an exact review. [Operating contract](LOCAL_RECOVERY.md).
 
-Settings connection cards expose **Test ve Geçmiş**: revisioned catalogs, content-free
+Settings connection cards expose **Test Ve Hata Ayıklama**: revisioned catalogs, content-free
 test statuses and a free-message debugging area with optional small files. Viewing never
 generates; intent replay prevents an extra call. Rejections, unknown outcomes and
 reported usage above the requested cap stay visible without billing or universal

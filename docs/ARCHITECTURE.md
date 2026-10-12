@@ -1,5 +1,12 @@
 # Architecture
 
+Connection mutation review and new-work admission share the owner transaction lock
+`provider-bindings-v1`. Owned bounded dependency evidence is fingerprinted before
+confirmation; removed selected models cannot enter new runs/templates/schedules/private
+deliveries. Immutable history and replay identities remain. No DDL.
+[Boundaries and diagnostic DTO](WORKSPACE_DIAGNOSTICS.md).
+
+
 ConversationContentDeletion composes the existing run/private inspection and audit
 writers inside one owner-locked transaction. Its exact retained-copy scope is derived
 from owned conversation memberships, never client-supplied target lists. Local
@@ -14,7 +21,8 @@ Conversation deletion needs one explicit button confirmation; template review ke
 its existing checkbox/fingerprint and retry semantics inside the same dialog wrapper.
 See [the complete closure and limits](CONVERSATION_CLEANUP.md).
 
-CouncilPool is a client presentation component inside the question composer.
+CouncilPool serves the chat selector and separate Konseyler management view.
+WorkspaceTabs hides mounted chat panels without losing drafts.
 CouncilWorkbench retains owned template loading, durable save intent, active identity
 and exact draft comparison. Selection copies members and stored round/self-revision
 settings into existing state; normal preview fingerprints and dispatch are unchanged.
@@ -32,7 +40,7 @@ compatible reader. Worker run contracts and frozen orchestration do not change.
 ConnectionChatTester uses the owned no-store `/api/provider-connections/:id/chat-check`
 route for read-only receipt status, POST preparation and explicit send-button dispatch. Creation
 and unsaved edits invoke the existing save path first and retain the open dialog. The
-application facade uses a separate two-message connection-chat transport over the
+application facade uses a separate single-user-message connection-chat-v2 transport over the
 existing bounded text adapter, preserving private history's minimum-message contract.
 Durable row-locked generation receipts share the existing 32-identity capacity and
 pending/uncertain/replay rules; chat fingerprints additionally bind the exact message
@@ -41,19 +49,22 @@ pending dismissal, field locking and result inspection. Credentials stay in encr
 connection storage. New transient probes retain only fingerprint/input digest and bounded
 status/code/usage fields in the encrypted observation envelope, never test message/reply,
 file names or bytes. Browser results clear on dialog close/reload and are not rehydrated.
-Legacy durable chat receipts remain readable. Test ve Geçmiş hosts the same text transport
+Legacy durable chat receipts remain readable internally; chat-check GET/review
+project content-free status only. Test Ve Hata Ayıklama hosts the same text transport
 with validated small multimodal parts; no fixed council prompt or structured claim output
 is required. Adapter signatures, byte/response bounds and provider-specific mappings govern
 files; native PDF testing never falls back to purchased OCR. Known error types/details
-are normalized inside the adapter; raw provider errors never cross the boundary.
+are normalized inside the adapter. Opt-in debug observers produce a strict bounded,
+credential-redacted transport DTO returned only by the current send, never receipts.
 Transport diagnostics allowlist DNS/connect/TLS/reset/deadline codes while retaining
-unknown-outcome semantics and refusing retries. Raw network/provider errors never leave
-the adapters. The isolated rehearsal worker now joins the owned access network for
+unknown-outcome semantics and refusing retries. Raw network errors remain inside adapters. Debug provider bodies cross only as
+redacted, bounded strings in the ephemeral trace DTO; they never enter logs. The isolated rehearsal worker now joins the owned access network for
 outbound provider traffic, like web; the database remains exclusively internal.
 
 CouncilWorkbench presents compact API connection cards in workspace container queries
 (one/two/three/four columns). ConnectionDialog owns a native modal, focus cycling and
-restoration, Escape/backdrop dismissal and body-scroll restoration. Workbench retains
+restoration, target-scoped cancel handling, pointer-origin backdrop dismissal and
+body-scroll restoration. Workbench retains
 form fields while switching tabs and clears entered secrets on close. Pending save or
 catalog lookup blocks dismissal. Saved model choices and per-connection generation
 panels remain mounted across tab changes, preserving draft selections and

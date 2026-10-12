@@ -1,16 +1,18 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls } from "./workspace-navigation";
+import { revealCouncilControls, revealChatTab, saveCouncilForChat } from "./workspace-navigation";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import {expect, test, testOwnerId } from "./authenticated-test";
-import { cancelDurableRun, closeDatabase, deleteProviderConnection, getDatabase } from "@deliberation-ai/persistence";
+import { cancelDurableRun, closeDatabase, getDatabase } from "@deliberation-ai/persistence";
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { inArray } from "drizzle-orm";
 import { runs } from "../../packages/persistence/src/schema";
 import type { RunRecord } from "@deliberation-ai/application";
 import type { ContinuationCompactionPacket, FrozenContinuation } from "@deliberation-ai/contracts";
 
 test("reviews full history, starts a fresh council against a local mock and exports frozen provenance", async ({ page, request }) => withOwner(testOwnerId(), async () => {
+  test.setTimeout(60_000);
   const sent: string[] = [];
   const server = createServer(async (incoming, outgoing) => {
     const chunks: Buffer[] = [];
@@ -44,11 +46,13 @@ test("reviews full history, starts a fresh council against a local mock and expo
     await page.locator(`[data-run-id="${sourceId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await page.getByRole("button", { name: "Bu rapordan yeni soruyla devam et", exact: true }).click();
     const history = page.getByRole("region", { name: "Yeni çalışmanın geçmiş bağlamı" });
-    await expect(history).toContainText(sourceId);
+    await expect(page.locator("#chat-panel-question")).toContainText(sourceId);
     await history.getByText("Gönderilecek geçmiş bağlamın tamamını incele", { exact: true }).click();
     await expect(history.locator("pre")).toContainText("Azınlık önerisi");
+    await revealCouncilControls(page);
     for (const index of [1, 2]) await page.getByRole("combobox", { name: `Üye ${index} bağlantısı`, exact: true }).selectOption(connectionId);
     await page.getByRole("combobox", { name: "Çapraz inceleme turu", exact: true }).selectOption("0");
+    await saveCouncilForChat(page);
     const question = `Önceki görüşlere göre alternatifleri nasıl karşılaştırırız ${randomUUID()}?`;
     await page.getByLabel("Sorunuz", { exact: true }).fill(question);
     const start = page.getByRole("button", { name: "Konseyi çalıştır", exact: true });
@@ -83,12 +87,15 @@ test("reviews full history, starts a fresh council against a local mock and expo
     expect(sent).toHaveLength(4);
     const branches = page.getByRole("region", { name: "Çalışma dalları", exact: true });
     await expect(branches).toContainText("Tam geçmişle devam");
+    await revealChatTab(page, "Soru");
     const draft = `Gezinirken korunacak soru taslağı ${randomUUID()}`;
     await page.getByLabel("Sorunuz", { exact: true }).fill(draft);
+    await revealChatTab(page, "Sonuçlar");
     await branches.locator(`[data-branch-run-id="${sourceId}"]`).getByRole("button", { name: "Bağlı çalışmayı aç" }).click();
     await expect(branches).toContainText("Bağımsız çalışma");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);
-    await expect(history).toContainText(sourceId);
+    await expect(page.locator("#chat-panel-question")).toContainText(sourceId);
+    await revealChatTab(page, "Sonuçlar");
     await branches.locator(`[data-branch-run-id="${childId}"]`).getByRole("button", { name: "Bağlı çalışmayı aç" }).click();
     await expect(branches).toContainText("Tam geçmişle devam");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);
@@ -140,13 +147,14 @@ test("reviews full history, starts a fresh council against a local mock and expo
     expect((await request.post(`/api/conversations/${randomUUID()}/export`)).status()).toBe(404);
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);
     expect(sent).toHaveLength(4);
+    await revealChatTab(page, "Soru");
     await history.getByRole("button", { name: "Geçmiş bağlamı kaldır", exact: true }).click();
     await expect(history).toHaveCount(0);
   } finally {
     for (const id of ids) await cancelDurableRun(id);
     if (ids.length) await getDatabase().delete(runs).where(inArray(runs.id, ids));
     if (connectionId) {
-      await deleteProviderConnection(connectionId);
+      await deleteGeneratedConnection(request, `/api/provider-connections?id=${connectionId}`);
     }
     await closeDatabase();
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
@@ -154,6 +162,7 @@ test("reviews full history, starts a fresh council against a local mock and expo
 }));
 
 test("reviews a manual summary and omissions, invalidates approval on edits and keeps original text out of local provider calls", async ({ page, request }) => withOwner(testOwnerId(), async () => {
+  test.setTimeout(60_000);
   const sent: string[] = [];
   const server = createServer(async (incoming, outgoing) => {
     const chunks: Buffer[] = [];
@@ -193,8 +202,10 @@ test("reviews a manual summary and omissions, invalidates approval on edits and 
     const summary = editor.getByLabel("Yeni çalışmaya gönderilecek geçmiş özeti", { exact: true });
     await summary.fill("Alternatif yol ve belirsizlikler bir sonraki değerlendirmede ayrıca incelensin.");
     const approval = editor.getByRole("checkbox", { name: "Özeti ve atlanan bilgileri inceledim; bu kısaltmayla devam et", exact: true });
+    await revealCouncilControls(page);
     for (const index of [1, 2]) await page.getByRole("combobox", { name: `Üye ${index} bağlantısı`, exact: true }).selectOption(connectionId);
     await page.getByRole("combobox", { name: "Çapraz inceleme turu", exact: true }).selectOption("0");
+    await saveCouncilForChat(page);
     const question = `Bu özete göre hangi varsayımları inceleyelim ${randomUUID()}?`;
     await page.getByLabel("Sorunuz", { exact: true }).fill(question);
     const start = page.getByRole("button", { name: "Konseyi çalıştır", exact: true });
@@ -237,7 +248,7 @@ test("reviews a manual summary and omissions, invalidates approval on edits and 
   } finally {
     for (const id of ids) await cancelDurableRun(id);
     if (ids.length) await getDatabase().delete(runs).where(inArray(runs.id, ids));
-    if (connectionId) await deleteProviderConnection(connectionId);
+    if (connectionId) await deleteGeneratedConnection(request, `/api/provider-connections?id=${connectionId}`);
     await closeDatabase();
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }

@@ -1,9 +1,9 @@
 # Connection tests and model history
 
-## Current owner workflow (11 October 2026)
+## Current owner workflow (12 October 2026)
 
 Creation and the Bağlantı tab offer **Hızlı Bağlantı Testi**. Saved connections also
-have **Test ve Geçmiş**, with an always-open **Model Testi Ve Hata Ayıklama** area.
+have **Test Ve Hata Ayıklama**, with an always-open **Model Testi Ve Hata Ayıklama** area.
 There is no extra generation toggle, fixed 2 + 2 preview or ordinary approval checkbox.
 Choose a saved model, write a short message and click **Mesajı Gönder**. A larger
 visible price notice explains the potentially charged API call. **Kaydet Ve Test Et**
@@ -11,7 +11,7 @@ first saves new/edited credentials; tab changes preserve connection drafts. Pend
 sends lock fields, tabs and dialog dismissal. Closing/reopening or reloading clears
 all new test messages, files and replies; previous test content is never rehydrated.
 
-Each test sends only its current owner message and a short connection-test instruction,
+Each test sends only its exact current owner message, with no added system instruction,
 without council, conversation, prior test, memory, sources or tools. The debug area can
 add up to three small PNG/JPEG/WebP, PDF, WAV/MP3 files: 1 MiB each and 2 MiB combined.
 FileReader works on private LAN HTTP without crypto.subtle. Server signatures, canonical
@@ -30,7 +30,7 @@ revision and catalogs/history; removing a selection removes its alias.
 ## Transport, errors and replay
 
 Owned no-store GET `/api/provider-connections/:id/chat-check` reads observations;
-POST review/send use strict streamed JSON (2,850,000-byte ceiling), a trimmed message
+POST review/send use strict streamed JSON (2,850,000-byte ceiling), an unchanged, nonempty message
 up to 1,200 characters, and bounded files. Preparation fingerprints bind connection
 revision, model, message/profile, transient mode and each file's name/type/SHA-256.
 A second complete input digest prevents replay with changed files/message, even after
@@ -44,15 +44,17 @@ visible. These are requested limits and observed counters, not cost/invoice guar
 Plain reply success does not establish structured council output, quality or future support.
 HTTP/transport error codes, known provider error types and generated safe explanations
 appear in the test transcript. HTTP-200 embedded provider errors are treated as failures.
-Raw provider error bodies can echo secrets/input and never cross the adapter or enter logs.
+Raw provider error bodies can echo secrets/input. They never enter logs; only the
+current debug response exposes a bounded, credential-redacted transport trace.
 
 New browser requests set transient=true. Their encrypted receipts store only input digest,
 fingerprint, revision/model/provider, status, safe codes, timestamps, nullable usage and
 response identity. Message/reply/file names/bytes/explanatory text are omitted from storage.
 The browser holds visible results until dialog close/reload. **Sonucu Kontrol Et** reads
 that existing receipt without generation; a lost response recovers status, never fabricates
-or re-generates the missing reply. The Test ve Geçmiş tab shows only status/diagnostic
-metadata and catalog observations, including previous legacy receipts.
+or re-generates the missing reply. The Test Ve Hata Ayıklama tab shows only the current test and offers redacted
+request/response/runtime inspection and a JSON download. Older receipts are not shown.
+[Current diagnostic workflow and dependency limits](WORKSPACE_DIAGNOSTICS.md).
 
 32 permanent intent identities per connection retain the existing replay fence. They
 are not automatically evicted; the next identity is refused at capacity. Legacy encrypted

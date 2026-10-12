@@ -79,6 +79,7 @@ import { attachRunToConversation, lockConversationMembership } from "./conversat
 import { loadFrozenMemoryEntries } from "./memory-entries";
 import { loadFrozenToolContexts, loadRelevantToolContexts } from "./mcp-connections";
 import { claimOccurrences, claims, evidenceSources, modelRuns, preflightDrafts, providerConnections, providerOperations, runEvents, runs } from "./schema";
+import { assertSelectedProviderMembers } from "./provider-connection-impact";
 import { candidateSourceAvailable } from "./evidence-sources";
 import * as schema from "./schema";
 import { loadKnowledgePacket, readRunKnowledgePacket, authorizeKnowledgePacketInSnapshot, assertKnowledgePacketAttachmentRouting } from "./knowledge-packets";
@@ -454,9 +455,7 @@ export async function enqueueDurableRun(request: CreateRunRequest, scheduleFence
       return mapRun(alreadyQueued);
     }
     if (knowledgePacket) await authorizeKnowledgePacketInSnapshot(tx, knowledgePacket, true);
-    const connectionIds = members.flatMap((member) => member.connectionId ? [member.connectionId] : []);
-    const selectedConnections = connectionIds.length ? await tx.select().from(providerConnections)
-      .where(and(eq(providerConnections.ownerId, getOwnerId()), inArray(providerConnections.id, connectionIds))).for("share") : [];
+    const selectedConnections = await assertSelectedProviderMembers(tx, members);
     for (const member of members) {
       const connection = selectedConnections.find((item) => item.id === member.connectionId);
       if (connection?.endpointPreset === "nvidia") {
@@ -623,6 +622,7 @@ export async function enqueueSelectedMemberRerun(input: {
       throw new FollowUpUnavailableError("Kaynak raporda bütün üyelerin doğrulanmış ilk yanıtları bulunmalı.");
     }
     const requiredMembers = source.reviewRounds > 0 ? members : members.filter((member) => member.id === input.memberId);
+    await assertSelectedProviderMembers(tx, requiredMembers);
     const requiredIds = requiredMembers.flatMap((member) => member.connectionId ? [member.connectionId] : []);
     const connections = requiredIds.length > 0 ? await tx.select({ id: providerConnections.id, provider: providerConnections.provider })
       .from(providerConnections).where(and(inArray(providerConnections.id, requiredIds), eq(providerConnections.ownerId, getOwnerId()))) : [];

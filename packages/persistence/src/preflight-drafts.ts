@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { assertSelectedProviderMembers } from "./provider-connection-impact";
 import { buildRoundZeroPromptPlan, buildRiskPreflight, hashRunRequest, IdempotencyConflictError, resolveRunMembers, type RunRecord } from "@deliberation-ai/application";
 import { createRunRequestSchema, type CreateRunRequest, type PromptRevisionRequest } from "@deliberation-ai/contracts";
 import { auditPromptRevision, composeClarifiedQuestion, findCriticalMissingContext, PROMPT_REVISION_VERSION, PREFLIGHT_CONTEXT_POLICY_VERSION, preflightQuestionsSchema, type PreflightChoice } from "@deliberation-ai/domain";
@@ -63,6 +64,7 @@ export async function createAwaitingPreflightDraft(request: CreateRunRequest): P
   if (questions.length === 0 || request.preflightDecision) throw new PreflightDraftError("Bu istek için bekleyen bir açıklama sorusu yok.");
   return getDatabase().transaction(async (db) => {
     await lockConversationMembership(db);
+    await assertSelectedProviderMembers(db, resolveRunMembers(request));
     const id = randomUUID();
     const [created] = await db.insert(preflightDrafts).values({
       id, ownerId: getOwnerId(), idempotencyKey: request.idempotencyKey,

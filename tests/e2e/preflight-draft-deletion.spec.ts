@@ -4,6 +4,7 @@ import {expect, test, testOwnerId } from "./authenticated-test";
 import { eq, sql } from "drizzle-orm";
 import { createRunRequestSchema, defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { createAwaitingPreflightDraft, getDatabase, preflightDrafts, closeDatabase } from "@deliberation-ai/persistence";
+import { revealChatTab } from "./workspace-navigation";
 
 test("reviews draft deletion, preserves unsaved inputs on cancel, rejects stale state and recovers a lost committed response", async ({ page, request }) => withOwner(testOwnerId(), async () => {
   const input = createRunRequestSchema.parse({ idempotencyKey: randomUUID(), question: "Bu sözleşmeyi feshetmeli miyim?",
@@ -14,8 +15,9 @@ test("reviews draft deletion, preserves unsaved inputs on cancel, rejects stale 
   try {
     await page.route("**/api/preflight-drafts", (route) => route.fulfill({ json: { drafts: [draft] } }));
     await page.goto("/");
-    const question = page.getByRole("textbox", { name: "Sorunuz", exact: true });
+    const question = page.getByLabel("Sorunuz", { exact: true });
     await question.fill("Keep this unrelated owner question unchanged");
+    await revealChatTab(page, "Sonuçlar");
     const pending = page.getByRole("region", { name: "Yanıt bekleyen ön değerlendirmeler" });
     await pending.getByRole("button", { name: new RegExp(draft.id.slice(0, 8)) }).click();
     await pending.getByLabel("Eksik bilgilere yanıt").fill("Keep this unsaved clarification on cancel");

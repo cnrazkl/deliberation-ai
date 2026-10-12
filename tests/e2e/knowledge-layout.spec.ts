@@ -1,3 +1,4 @@
+import { revealChatTab } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import type { KnowledgePacket } from "@deliberation-ai/contracts";
 import { expect, test, type Page, testOwnerId } from "./authenticated-test";
@@ -87,6 +88,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [390, 960, 1
     await page.setViewportSize({ width, height: 918 });
     const fixture = await sourceFixtures(page); await page.goto("/");
     await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
+    await revealChatTab(page, "Kaynaklar Ve Dosyalar", false);
     const panel = page.locator(".knowledge-panel"); await panel.locator("summary").click();
     await expect(panel.getByRole("heading", { level: 3 })).toHaveCount(3);
     await expect(panel.getByRole("button", { name: "Dosya seç", exact: true })).toBeDisabled();

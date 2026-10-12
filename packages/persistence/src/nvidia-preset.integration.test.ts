@@ -41,7 +41,9 @@ test("queued NVIDIA revision is frozen; editing it rejects execution before any 
     const run = await enqueueDurableRun(input); runId = run.runId;
     const stored = await getPool().query("SELECT members_ciphertext FROM runs WHERE id=$1", [runId]);
     expect(decryptJson(stored.rows[0].members_ciphertext, `run:${runId}:members`)).toEqual(members.map((member) => ({ ...member, nvidiaConnectionRevision: 1 })));
-    await saveProviderConnection({ ...settings, id: connection.id, label: connection.label, apiKey: "", defaultModel: "vendor/edited-model" });
+    await expect(saveProviderConnection({ ...settings, id: connection.id, label: connection.label, apiKey: "", defaultModel: "vendor/edited-model" })).rejects.toMatchObject({ impact: { eligible: false } });
+    // Simulated out-of-band database drift still fences the already-frozen NVIDIA dispatch.
+    await getPool().query("UPDATE provider_connections SET revision=revision+1, default_model='vendor/edited-model' WHERE id=$1", [connection.id]);
     const completed = await executeDurableRun(runId, executeWorkerCouncil);
     expect(completed?.status).toBe("failed");
     expect(network).not.toHaveBeenCalled();

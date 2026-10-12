@@ -1,7 +1,7 @@
 import { withOwner } from "@deliberation-ai/persistence";
 import {expect, test, type Page, testOwnerId } from "./authenticated-test";
 import type { RunRecord } from "@deliberation-ai/application";
-import { revealCouncilControls, workspaceView } from "./workspace-navigation";
+import { revealChatTab, workspaceView } from "./workspace-navigation";
 
 const runId = "11111111-1111-4111-8111-111111111111";
 const conversationId = "22222222-2222-4222-8222-222222222222";
@@ -45,7 +45,7 @@ for (const { width, zoom } of [...[320, 390, 640, 820, 1024, 1440].map((width) =
       document.body.style.zoom = String(zoom);
       document.documentElement.dataset.theme = width === 390 ? "dark" : "light";
     }, { width, zoom });
-    await revealCouncilControls(page);
+    await revealChatTab(page, "Kaynaklar Ve Dosyalar");
     const chooserEvent = page.waitForEvent("filechooser");
     await page.getByRole("button", { name: "＋ Dosya seç", exact: true }).click();
     const chooser = await chooserEvent;
@@ -53,7 +53,7 @@ for (const { width, zoom } of [...[320, 390, 640, 820, 1024, 1440].map((width) =
       buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "base64") });
     await expect(page.locator(".attachment-list")).toContainText("long-file-name");
     if (width === 390) await page.locator(".attachment-picker").screenshot({ path: "test-results/da112-mobile-attachments.png" });
-    for (const view of ["Sohbet", "Ayarlar", "Zamanlayıcı"] as const) {
+    for (const view of ["Sohbet", "Konseyler", "Ayarlar", "Zamanlayıcı"] as const) {
       await workspaceView(page, view);
       // Include expanded settings/diagnostics, not just the initial collapsed shell.
       await page.locator(".workspace-view:not([hidden]) details").evaluateAll((items) => {
@@ -84,7 +84,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   const chat = page.getByRole("region", { name: "Konsey çalışma alanı", exact: true });
   const sidebar = page.getByRole("complementary", { name: "Sohbet geçmişi ve gezinme" });
   await expect(chat).toBeVisible();
-  await expect(page.locator(".council-config")).not.toHaveAttribute("open");
+  await expect(page.getByRole("region", { name: "Konsey yönetimi", exact: true })).toBeHidden();
   await expect(page.getByRole("region", { name: "Ayarlar alanı", exact: true })).toBeHidden();
   await expect(page.getByRole("region", { name: "Zamanlayıcı alanı", exact: true })).toBeHidden();
   await expect(sidebar.getByText(question, { exact: true }).first()).toBeVisible();
@@ -122,8 +122,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   await sidebar.getByRole("button", { name: "＋ Yeni sohbet", exact: true }).click();
   await expect(draft).toHaveValue("");
   await expect(draft).toBeFocused();
-  const fieldBounds = await draft.boundingBox(), configBounds = await page.locator(".council-config").boundingBox();
-  expect(fieldBounds && configBounds && fieldBounds.y < configBounds.y).toBe(true);
+  await expect(page.getByRole("region", { name: "Konsey yapılandırması", exact: true })).toHaveCount(0);
   await page.screenshot({ path: "test-results/workspace-refresh-chat.png", fullPage: true });
   expect(writes).toBe(0);
 }));

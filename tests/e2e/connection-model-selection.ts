@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-export async function openConnectionPanel(page: Page, card: Locator, tab: "Bağlantı" | "Modeller" | "Test ve Geçmiş" = "Bağlantı") {
+export async function openConnectionPanel(page: Page, card: Locator, tab: "Bağlantı" | "Modeller" | "Test Ve Hata Ayıklama" = "Bağlantı") {
   await card.getByRole("button", { name: tab === "Modeller" ? "Modelleri Seç" : "Düzenle", exact: true }).click();
   const dialog = page.getByRole("dialog"); await dialog.waitFor({ state: "visible" });
   if (tab !== "Bağlantı") await dialog.getByRole("tab", { name: tab, exact: true }).click();

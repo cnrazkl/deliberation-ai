@@ -2,7 +2,7 @@ import { withLocalSession } from "../../../../../lib/local-auth";
 import { z } from "zod";
 import { IdempotencyConflictError } from "@deliberation-ai/application";
 import { ExecutionPlanLimitsError } from "@deliberation-ai/domain";
-import { enqueueSelectedMemberRerun, FollowUpUnavailableError } from "@deliberation-ai/persistence";
+import { enqueueSelectedMemberRerun, FollowUpUnavailableError, ProviderMemberUnavailableError } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../../../lib/request-security";
 import { ConversationPendingError } from "@deliberation-ai/persistence";
 import { conversationError } from "../../../../../lib/conversation-errors";
@@ -30,6 +30,7 @@ async function sessionPOST(request: Request, context: { params: Promise<{ id: st
     const run = await enqueueSelectedMemberRerun({ sourceRunId: id, ...parsed.data });
     return Response.json(run, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    if (error instanceof ProviderMemberUnavailableError) return Response.json({ error: error.message, code: "council_model_unavailable" }, { status: 422 });
     if (error instanceof ConversationPendingError) return conversationError(error);
     if (error instanceof ExecutionPlanLimitsError) return Response.json({ error: error.message }, { status: 422 });
     if (error instanceof IdempotencyConflictError) return Response.json({ error: error.message }, { status: 409 });

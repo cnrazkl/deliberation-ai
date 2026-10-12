@@ -9,7 +9,7 @@ import { afterAll, expect, test } from "vitest";
 import { encryptJson, encryptText } from "./crypto";
 import { closeDatabase, getDatabase } from "./database";
 import { LOCAL_OWNER_ID } from "./owner";
-import { deleteProviderConnection, saveProviderConnection } from "./provider-connections";
+import { deleteProviderConnection, saveProviderConnection, previewProviderConnectionDeletion } from "./provider-connections";
 import { recordProviderBilling, recordProviderBillingChange } from "./provider-billing";
 import { getStatementHistory, listStatementHeads, previewStatementVersion, recordStatementVersion, statementIdentity } from "./billing-statement-history";
 import { pricingFingerprint } from "./provider-pricing";
@@ -131,7 +131,10 @@ test("preserves the saved snapshot but denies freshness when live encrypted bill
 
 test("retains statement history after run/connection deletion and reports missing receipts", async () => {
   const data = await fixture(); const first = await recordStatementVersion(data.input, digest);
-  await getDatabase().delete(runs).where(eq(runs.id, data.runId)); await deleteProviderConnection(data.connection.id);
+  await getDatabase().delete(runs).where(eq(runs.id, data.runId));
+  const impact = (await previewProviderConnectionDeletion(data.connection.id))!;
+  expect(impact.references.some(reference => reference.kind === "Fatura Kaydı")).toBe(true);
+  await deleteProviderConnection(data.connection.id, impact.fingerprint);
   const historical = (await getStatementHistory(first.id))!;
   expect(historical.freshness).toBe("ledger_changed"); expect(historical.liveInspection!.receiptChecks.retainedWithoutReceipt).toBe(1);
   expect(historical.versions).toHaveLength(1);

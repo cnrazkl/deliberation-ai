@@ -2,7 +2,7 @@ import { withLocalSession } from "../../../lib/local-auth";
 import { createScheduleSchema, updateScheduleSchema } from "@deliberation-ai/contracts";
 import { IdempotencyConflictError, MissingContextError, RiskConfigurationError } from "@deliberation-ai/application";
 import { ExecutionPlanLimitsError } from "@deliberation-ai/domain";
-import { createLocalSchedule, listLocalSchedules, updateLocalSchedule } from "@deliberation-ai/persistence";
+import { createLocalSchedule, listLocalSchedules, updateLocalSchedule, ProviderMemberUnavailableError } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../lib/request-security";
 
 export const runtime = "nodejs";
@@ -21,6 +21,7 @@ async function sessionPOST(request: Request) {
   try {
     return Response.json(await createLocalSchedule(parsed.data), { status: 201 });
   } catch (error) {
+    if (error instanceof ProviderMemberUnavailableError) return Response.json({ error: error.message, code: "council_model_unavailable" }, { status: 422 });
     if (error instanceof IdempotencyConflictError) return Response.json({ error: "Oluşturma isteği değişmiş veya zamanlama silinmiş." }, { status: 409 });
     if (error instanceof ExecutionPlanLimitsError) return Response.json({ error: error.message }, { status: 422 });
     if (error instanceof RiskConfigurationError) return Response.json({ error: error.message, riskAssessment: error.assessment }, { status: 422 });
@@ -39,6 +40,7 @@ async function sessionPATCH(request: Request) {
     const schedule = await updateLocalSchedule(id, parsed.data);
     return schedule ? Response.json(schedule) : Response.json({ error: "Zamanlama bulunamadı." }, { status: 404 });
   } catch (error) {
+    if (error instanceof ProviderMemberUnavailableError) return Response.json({ error: error.message, code: "council_model_unavailable" }, { status: 422 });
     if (error instanceof ExecutionPlanLimitsError) return Response.json({ error: error.message }, { status: 422 });
     if (error instanceof RiskConfigurationError) return Response.json({ error: error.message, riskAssessment: error.assessment }, { status: 422 });
     if (error instanceof MissingContextError) return Response.json({ error: error.message, questions: error.questions }, { status: 422 });

@@ -22,6 +22,10 @@ describe("owner-triggered model catalog checks", () => {
     expect(JSON.stringify(result)).not.toContain("private-test-key");
     const customBase = await checkProviderConnectionModels({ ...base, baseUrl: "http://127.0.0.1:3001/v1" }, fetcher);
     expect(customBase.verification).toBe("catalog_only");
+    expect(customBase.sourceUrl).toBe("http://127.0.0.1:3001/v1/models");
+    const secretQuery = await checkProviderConnectionModels({ ...base, baseUrl: "https://proxy.example.test/v1?api_key=private-test-key" }, fetcher);
+    expect(secretQuery.sourceUrl).not.toContain("private-test-key");
+    expect(secretQuery.sourceUrl).toContain("REDACTED");
   });
 
   test("uses OpenRouter's user-filtered endpoint and distinguishes generic catalog-only checks", async () => {

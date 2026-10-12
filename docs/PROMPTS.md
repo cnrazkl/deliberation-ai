@@ -1,6 +1,14 @@
 # Prompt contracts
 
-`connection-chat-v1` sends a fixed short connection-test system instruction and one
+Connection quick/debug tests use `connection-chat-v2`: exactly one unchanged user
+message plus explicit test files; no system, instructions, history or council prompt.
+The nonempty check does not trim the transmitted string. Private/council/synthesis
+contracts remain separate. [Test workflow](WORKSPACE_DIAGNOSTICS.md).
+
+
+## Historical v1 receipt compatibility
+
+Before 12 October, `connection-chat-v1` sent a fixed short connection-test system instruction and one
 trimmed owner message (up to 1,200 characters). It asks for a short plain-text reply,
 with no previous test, council, conversation, memory or tool context. Quick tests have
 no files; debug tests append only the owner's current small test files as multimodal
@@ -9,7 +17,8 @@ fingerprints bind both strings, selected model, connection revision and the requ
 512 output tokens/45-second profile. Provider-default reasoning remains provider
 behavior. New transient fingerprints additionally bind transient mode and each file's
 name, MIME type and SHA-256; replay separately checks the complete input digest.
-Neither file bytes nor the owner-written message/reply enter new persisted receipts.
+These historical fingerprints remain replayable; no new test uses this prompt.
+Neither file bytes nor owner-written message/reply enter new transient receipts.
 This entrypoint is separate from private history's message contract;
 success is a text connection observation, not council-schema or quality acceptance.
 [Contract](CONNECTION_GENERATION_CHECK.md).

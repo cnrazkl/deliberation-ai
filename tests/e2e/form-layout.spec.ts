@@ -1,5 +1,5 @@
 import { expect, test } from "./authenticated-test";
-import { revealCouncilControls, workspaceView } from "./workspace-navigation";
+import { revealChatTab, workspaceView } from "./workspace-navigation";
 
 for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1440]) {
   test(`settings and council form controls have spacing at ${width}px in ${theme}`, async ({ page }, info) => {
@@ -25,7 +25,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1
     await form.getByText("Gelişmiş uç nokta ayarları", { exact: true }).click();
     await expect(form.getByLabel("Düşünme parametresi")).toBeVisible();
     await form.screenshot({ path: info.outputPath(`connection-${theme}-${width}.png`) });
-    await workspaceView(page, "Sohbet"); await revealCouncilControls(page);
+    await revealChatTab(page, "Bağlam Ve Kontroller");
     const prompt = page.getByRole("region", { name: "İstem sürümleri" });
     await prompt.getByRole("radio", { name: "Düzenlenebilir adayı kullan" }).focus(); await page.keyboard.press("Space");
     await expect(prompt.getByRole("radio", { name: "Düzenlenebilir adayı kullan" })).toBeChecked();
@@ -60,7 +60,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1
     expect(issues).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await prompt.screenshot({ path: info.outputPath(`prompt-${theme}-${width}.png`) });
-    await page.locator(".council-config .form-options").screenshot({ path: info.outputPath(`council-${theme}-${width}.png`) });
+    await workspaceView(page, "Konseyler"); await page.locator(".council-config .form-options").screenshot({ path: info.outputPath(`council-${theme}-${width}.png`) });
     expect(mutations).toBe(0);
   });
 }

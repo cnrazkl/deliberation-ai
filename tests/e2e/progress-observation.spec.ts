@@ -1,6 +1,7 @@
 import { withOwner } from "@deliberation-ai/persistence";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import type { RunRecord } from "@deliberation-ai/application";
+import { mockCouncilStorage, saveCouncilForChat } from "./workspace-navigation";
 
 test("keeps observing an active run after the former polling deadline", async ({ page }) => withOwner(testOwnerId(), async () => {
   test.setTimeout(60_000);
@@ -79,7 +80,7 @@ test("keeps observing an active run after the former polling deadline", async ({
     } });
   });
 
-  await page.goto("/");
+  await mockCouncilStorage(page); await page.goto("/"); await saveCouncilForChat(page);
   await expect(page.getByRole("button", { name: "Konseyi çalıştır" })).toBeEnabled();
   await page.getByLabel("Sorunuz").fill(question);
   await expect(page.getByRole("button", { name: "Konseyi çalıştır" })).toBeEnabled();

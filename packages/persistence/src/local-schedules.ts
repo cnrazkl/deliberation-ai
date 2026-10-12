@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { assertSelectedProviderMembers } from "./provider-connection-impact";
 import { assessRequestRisk, assertRiskConfiguration, executionPlanFits, ExecutionPlanLimitsError, findCriticalMissingContext, MissingContextError, plannedProviderCalls, RiskConfigurationError } from "@deliberation-ai/domain";
 import {
   councilMembersSchema,
@@ -88,6 +89,7 @@ export async function createLocalSchedule(request: CreateScheduleRequest): Promi
       return mapSchedule(existing);
     }
     const id = randomUUID();
+    await assertSelectedProviderMembers(tx, request.members);
     const [row] = await tx.insert(localSchedules).values({
       creationRequestId, creationRequestHash,
       id,
@@ -119,6 +121,7 @@ export async function updateLocalSchedule(id: string, update: UpdateScheduleRequ
     if (!existing) return undefined;
     if (update.status === "active") {
       const schedule = mapSchedule(existing);
+      await assertSelectedProviderMembers(tx, schedule.members);
       const missing = findCriticalMissingContext(schedule.question);
       if (missing.length > 0) throw new MissingContextError(missing);
       assertRiskConfiguration(assessRequestRisk({ question: schedule.question, requestedProfile: schedule.riskProfile }), schedule.members, schedule.reviewRounds);

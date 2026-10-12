@@ -1,5 +1,12 @@
 # Orchestration
 
+New local-bound run/rerun, schedule creation/resume and preflight admission validate
+that each exact model remains selected on its owned connection under the same owner
+transaction lock as connection mutations. Affected queued/running or uncertain work
+blocks edits/removal. Completed snapshots, receipts, round independence and worker
+execution stay unchanged. [Dependency contract](WORKSPACE_DIAGNOSTICS.md).
+
+
 Council, private-delivery and decision queue handlers derive owner context from the
 persisted job target before loading inputs/connections/receipts. Missing targets cause
 no root fallback. Schedule dispatch enumerates stored owners and binds each separately.

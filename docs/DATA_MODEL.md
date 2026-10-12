@@ -1,5 +1,12 @@
 # Data model
 
+`connection-test-trace-v1` is an optional transport response DTO, always removed
+before encrypting persistent receipts. New debug intent digests bind the debug profile;
+legacy non-debug digest semantics remain. Catalog observations may include `sourceUrl`.
+Connection dependency previews/fingerprints are computed owner-local records, not new
+columns. No DDL or migration. [Contracts](WORKSPACE_DIAGNOSTICS.md).
+
+
 The existing encrypted `provider-observations-v1` envelope accepts optional
 `modelAliases` (up to 100 model-ID keys, 80-character trimmed labels). Preference-only
 saves retain catalogs/receipts and execution revision; removing a selection removes

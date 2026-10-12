@@ -1,6 +1,6 @@
 import { withLocalSession } from "../../../../../lib/local-auth";
 import { IdempotencyConflictError, RiskConfigurationError } from "@deliberation-ai/application";
-import { ContinuationUnavailableError, AttachmentValidationError, MemorySelectionError, PreflightDraftError, PreflightMismatchError, startPreflightDraft } from "@deliberation-ai/persistence";
+import { ContinuationUnavailableError, AttachmentValidationError, MemorySelectionError, PreflightDraftError, PreflightMismatchError, ProviderMemberUnavailableError, startPreflightDraft } from "@deliberation-ai/persistence";
 import { z } from "zod";
 import { promptRevisionSchema } from "@deliberation-ai/contracts";
 import { ExecutionPlanLimitsError } from "@deliberation-ai/domain";
@@ -27,6 +27,7 @@ async function sessionPOST(request: Request, { params }: { params: Promise<{ id:
     const run = await startPreflightDraft({ id, ...parsed.data });
     return Response.json(run, { status: 201 });
   } catch (error) {
+    if (error instanceof ProviderMemberUnavailableError) return Response.json({ error: error.message, code: "council_model_unavailable" }, { status: 422 });
     if (error instanceof ContinuationUnavailableError) return Response.json({ error: error.message }, { status: 422 });
     if (error instanceof PreflightDraftError) return Response.json({ error: error.message }, { status: 404 });
     if (error instanceof PreflightMismatchError || error instanceof IdempotencyConflictError) return Response.json({ error: error.message }, { status: 409 });

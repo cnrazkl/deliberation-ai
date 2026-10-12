@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-export async function workspaceView(page: Page, name: "Sohbet" | "Ayarlar" | "Zamanlayıcı") {
+export async function workspaceView(page: Page, name: "Sohbet" | "Konseyler" | "Ayarlar" | "Zamanlayıcı") {
   const connectionDialog = page.getByRole("dialog");
   if (await connectionDialog.isVisible()) await connectionDialog.getByRole("button", { name: "Bağlantı panelini kapat", exact: true }).click();
   const toggle = page.getByRole("button", { name: "Sohbet geçmişini aç", exact: true });
@@ -12,13 +12,34 @@ export async function workspaceView(page: Page, name: "Sohbet" | "Ayarlar" | "Za
 
 // Existing behavioral tests explicitly reveal controls now collapsed by default.
 export async function revealCouncilControls(page: Page) {
-  await workspaceView(page, "Sohbet");
-  const disclosures = [page.locator(".council-config"), page.locator(".attachment-picker"), page.locator(".token-preview"),
-    page.locator("details.composer-disclosure").filter({ has: page.locator(".execution-limits-control") }),
-    page.locator("details.composer-disclosure").filter({ has: page.locator(".prompt-revision-editor") }), page.locator(".context-disclosure")];
+  await workspaceView(page, "Konseyler");
+  const disclosures = [page.locator(".council-config")];
   for (const details of disclosures) {
     if (await details.count() && await details.getAttribute("open") === null) await details.locator(":scope > summary").click();
   }
+}
+export async function revealChatTab(page: Page, tab: "Soru" | "Kaynaklar Ve Dosyalar" | "Bağlam Ve Kontroller" | "Sonuçlar", expand = true) {
+  await workspaceView(page, "Sohbet"); await page.getByRole("tab", { name: tab, exact: true }).click();
+  if (expand) await page.locator('[id^="chat-panel-"]:not([hidden]) details').evaluateAll(items => items.forEach(item => { (item as HTMLDetailsElement).open = true; }));
+}
+export async function saveCouncilForChat(page: Page, name = `Browser council ${Date.now()}`) {
+  await revealCouncilControls(page);
+  const pool = page.getByRole("region", { name: "Konsey Havuzu", exact: true });
+  await pool.getByLabel("Şablon adı", { exact: true }).fill(name);
+  const copy = pool.getByRole("button", { name: "Yeni Konsey Olarak Kaydet", exact: true });
+  if (await copy.count()) await copy.click();
+  else await pool.getByRole("button", { name: "Konseyi Kaydet", exact: true }).click();
+  await pool.getByRole("status").filter({ hasText: "kaydedildi" }).waitFor();
+  await revealChatTab(page, "Soru");
+}
+/** Offline form tests use synthetic metadata and must not persist a nonexistent connection. */
+export async function mockCouncilStorage(page: Page) {
+  await page.route("**/api/council-templates", async route => {
+    if (route.request().method() === "POST") {
+      const data = route.request().postDataJSON();
+      await route.fulfill({ json: { ...data, id: "33333333-3333-4333-8333-333333333333", memberCount: data.members.length } });
+    } else await route.fulfill({ json: { templates: [] } });
+  });
 }
 export async function revealConversationOptions(page: Page) {
   await page.locator(".conversation-options").first().waitFor({ state: "visible" });

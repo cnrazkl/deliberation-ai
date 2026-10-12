@@ -1,4 +1,5 @@
-import { NVIDIA_HOSTED_BASE_URL, SYNTHESIS_OUTPUT_TOKENS, privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult, type ConnectionTestAttachment } from "@deliberation-ai/contracts";
+import { NVIDIA_HOSTED_BASE_URL, SYNTHESIS_OUTPUT_TOKENS, connectionChatMessageSchema, connectionTestTraceSchema, privateDeliveryRequestSchema, privateDeliveryResultSchema, type PrivateDeliveryRequest, type PrivateDeliveryResult, type ConnectionTestAttachment, type ConnectionTestTrace } from "@deliberation-ai/contracts";
+import { connectionTraceBody, connectionTraceHeaders, connectionTraceUrl } from "./connection-test-trace";
 import { connectionTestParts, connectionTestProviderError, validateConnectionTestAttachments } from "./connection-test-media";
 import { NormalizedProviderError } from "./index";
 import { assertRecoveryGenerationAllowed, providerHttpError, providerNetworkError, withProviderNetworkDeadline } from "./provider-utils";
@@ -54,6 +55,7 @@ const openaiReplySchema = z.object({
 
 export type PlainTextTransportOptions = {
   provider?: "openai-compatible" | "anthropic" | "openai" | "google"; baseUrl: string; apiKey: string; endpointPreset: string; operationKey: string; fetch?: typeof fetch; timeoutMs?: number;
+  onTestTrace?: (trace: ConnectionTestTrace) => void;
 };
 
 /** Separate plain-text boundary; council schemas/prompts are never reused. */
@@ -68,11 +70,11 @@ export async function generateSynthesisText(request: { model: string; instructio
     messages: [{ role: "system", content: input.instructions }, { role: "user", content: input.data }] }, options, true);
 }
 /** A connection probe has exactly one owner message and no private/council history. */
-export async function generateConnectionChatText(request: { model: string; instructions: string; message: string; attachments?: ConnectionTestAttachment[] }, options: PlainTextTransportOptions): Promise<PrivateDeliveryResult> {
+export async function generateConnectionChatText(request: { model: string; message: string; attachments?: ConnectionTestAttachment[] }, options: PlainTextTransportOptions): Promise<PrivateDeliveryResult> {
   const { attachments, ...text } = request;
-  const input = z.object({ model: z.string().trim().min(1).max(120), instructions: z.string().min(1).max(8_000), message: z.string().trim().min(1).max(1200) }).strict().parse(text);
+  const input = z.object({ model: z.string().trim().min(1).max(120), message: connectionChatMessageSchema }).strict().parse(text);
   return generateBoundedText({ model: input.model, maxOutputTokens: 512,
-    messages: [{ role: "system", content: input.instructions }, { role: "user", content: input.message }] }, options, true, validateConnectionTestAttachments(attachments ?? []));
+    messages: [{ role: "user", content: input.message }] }, options, true, validateConnectionTestAttachments(attachments ?? []));
 }
 
 async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" | "messages" | "maxOutputTokens">, options: PlainTextTransportOptions, synthesis = false, testFiles?: ConnectionTestAttachment[]): Promise<PrivateDeliveryResult> {
@@ -88,15 +90,17 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
   const anthropic = provider === "anthropic";
   const responses = provider === "openai";
   const gemini = provider === "google";
-  const [system, ...messages] = input.messages;
+  const connectionTest = testFiles !== undefined;
+  const system = connectionTest ? undefined : input.messages[0];
+  const messages = connectionTest ? input.messages : input.messages.slice(1);
   // Refuse translation that would drop/reorder an instruction or continue an
   // assistant prefill. Consecutive owner turns remain separate, in exact order.
-  if ((anthropic || responses || gemini) && (system?.role !== "system" || messages.some((item) => item.role === "system") ||
+  if (connectionTest ? messages.length !== 1 || messages[0]?.role !== "user" : (anthropic || responses || gemini) && (system?.role !== "system" || messages.some((item) => item.role === "system") ||
     messages[0]?.role !== "user" || messages.at(-1)?.role !== "user")) {
     throw new NormalizedProviderError("Özel mesaj sırası geçersiz.", "invalid_private_messages", "known", false);
   }
   const body: Record<string, unknown> = gemini
-    ? { systemInstruction: { parts: [{ text: system!.content }] },
+    ? { ...(system ? { systemInstruction: { parts: [{ text: system.content }] } } : {}),
       contents: messages.map((item) => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] })),
       generationConfig: { candidateCount: 1, maxOutputTokens: input.maxOutputTokens, responseMimeType: "text/plain" } }
     : responses
@@ -104,29 +108,43 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
       max_output_tokens: input.maxOutputTokens, store: false, background: false, stream: false,
       truncation: "disabled", text: { format: { type: "text" } } }
     : anthropic
-    ? { model: input.model, system: system!.content, messages, max_tokens: input.maxOutputTokens }
+    ? { model: input.model, ...(system ? { system: system.content } : {}), messages, max_tokens: input.maxOutputTokens }
     : { model: input.model, messages: input.messages,
       ...(options.endpointPreset === "openrouter" ? { max_completion_tokens: input.maxOutputTokens } : { max_tokens: input.maxOutputTokens }) };
   if (testFiles?.length) {
     const parts = connectionTestParts(provider, messages[0]!.content, testFiles);
     if (gemini) body.contents = [{ role: "user", parts }];
-    else if (responses) body.input = [{ role: "system", content: system!.content }, { role: "user", content: parts }];
-    else body.messages = anthropic ? [{ role: "user", content: parts }] : [{ role: "system", content: system!.content }, { role: "user", content: parts }];
+    else if (responses) body.input = [{ role: "user", content: parts }];
+    else body.messages = [{ role: "user", content: parts }];
     // Test native PDF support rather than silently purchasing OCR/falling back to extracted text.
     if (options.endpointPreset === "openrouter" && testFiles.some(file => file.mimeType === "application/pdf")) body.plugins = [{ id: "file-parser", pdf: { engine: "native" } }];
   }
   const label = gemini ? "Private Gemini" : responses ? "Private OpenAI" : anthropic ? "Private Anthropic" : "Private compatible";
+  const url = `${options.baseUrl.replace(/\/$/, "")}${gemini ? `/models/${encodeURIComponent(input.model)}:generateContent` : responses ? "/responses" : anthropic ? "/v1/messages" : "/chat/completions"}`;
+  const headers = { "content-type": "application/json", "idempotency-key": options.operationKey,
+    ...(gemini ? { "x-goog-api-key": options.apiKey, "x-goog-request-id": options.operationKey }
+      : anthropic ? { "x-api-key": options.apiKey, "anthropic-version": "2023-06-01" }
+      : options.apiKey ? { authorization: `Bearer ${options.apiKey}` } : {}) };
+  const wireBody = JSON.stringify(body), started = Date.now();
+  let stage: ConnectionTestTrace["result"]["stage"] = "transport";
+  let responseStatus: number | null = null, responseHeaders: Record<string, string> = {}, responseBody: string | null = null, receivedBytes = 0, truncated = false;
+  const trace = (error?: NormalizedProviderError) => {
+    if (!connectionTest || !options.onTestTrace) return;
+    const safe = connectionTestTraceSchema.safeParse({ version: "connection-test-trace-v1", provider, startedAt: new Date(started).toISOString(), finishedAt: new Date().toISOString(), elapsedMs: Date.now() - started,
+      request: { method: "POST", url: connectionTraceUrl(url), headers: connectionTraceHeaders(headers, options.apiKey), body: connectionTraceBody(wireBody, options.apiKey, true).slice(0, 32768), wireBytes: Buffer.byteLength(wireBody), binaryDataOmitted: Boolean(testFiles?.length) },
+      response: { status: responseStatus, headers: responseHeaders, body: responseBody, receivedBytes, truncated },
+      runtime: { node: process.version, platform: process.platform, arch: process.arch, adapter: "connection-chat-v2", timeoutMs: options.timeoutMs ?? 90_000, operationId: options.operationKey },
+      result: { stage, code: error?.code ?? null, outcome: error ? error.outcome === "unknown" ? "unknown" : "known_failure" : "success" } });
+    if (safe.success) { try { options.onTestTrace(safe.data); } catch { /* An observer must not change the provider outcome. */ } }
+  };
   let value: unknown;
   try {
     value = await withProviderNetworkDeadline(async (signal) => {
-      const response = await (options.fetch ?? fetch)(`${options.baseUrl.replace(/\/$/, "")}${gemini ? `/models/${encodeURIComponent(input.model)}:generateContent` : responses ? "/responses" : anthropic ? "/v1/messages" : "/chat/completions"}`, {
+      const response = await (options.fetch ?? fetch)(url, {
         method: "POST", redirect: "error", signal,
-        headers: { "content-type": "application/json", "idempotency-key": options.operationKey,
-          ...(gemini ? { "x-goog-api-key": options.apiKey, "x-goog-request-id": options.operationKey }
-            : anthropic ? { "x-api-key": options.apiKey, "anthropic-version": "2023-06-01" }
-            : options.apiKey ? { authorization: `Bearer ${options.apiKey}` } : {}) },
-        body: JSON.stringify(body),
+        headers, body: wireBody,
       });
+      stage = "response"; responseStatus = response.status; responseHeaders = connectionTraceHeaders(response.headers, options.apiKey);
       if (options.endpointPreset === "nvidia" && response.status === 202) throw providerNetworkError("NVIDIA hosted (pending)");
       if (!response.ok && testFiles === undefined) throw providerHttpError(label, response.status);
       const reader = response.body?.getReader(); if (!reader) {
@@ -138,11 +156,20 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
         for (;;) {
           const next = await reader.read(); if (next.done) break;
           bytes += next.value.byteLength;
-          if (bytes > 131_072) { await reader.cancel(); throw new NormalizedProviderError("Yanıt sınırı aşıldı.", "response_too_large", "known", false); }
+          receivedBytes = bytes;
+          if (bytes > 131_072) { truncated = true; responseBody = connectionTraceBody(Buffer.concat([...chunks, next.value]).subarray(0, 131_072).toString("utf8"), options.apiKey).slice(0, 131072); await reader.cancel(); throw new NormalizedProviderError("Yanıt sınırı aşıldı.", "response_too_large", "known", false); }
           chunks.push(next.value);
         }
       } catch (error) { if (!response.ok) throw providerHttpError(label, response.status); throw error; }
-      finally { reader.releaseLock(); }
+      finally {
+        if (responseBody === null && chunks.length) {
+          const partial = connectionTraceBody(Buffer.concat(chunks).toString("utf8"), options.apiKey);
+          responseBody = partial.slice(0, 131072); truncated ||= partial.length > 131072;
+        }
+        reader.releaseLock();
+      }
+      const safeBody = connectionTraceBody(Buffer.concat(chunks).toString("utf8"), options.apiKey);
+      responseBody = safeBody.slice(0, 131072); truncated ||= safeBody.length > 131072;
       try {
         const parsed: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
         if (testFiles !== undefined) {
@@ -154,13 +181,15 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
       catch (error) { if (error instanceof NormalizedProviderError) throw error; if (!response.ok) throw providerHttpError(label, response.status); throw new NormalizedProviderError("Yanıt okunamadı.", "invalid_response", "known", false); }
     }, options.timeoutMs ?? 90_000);
   } catch (error) {
-    if (error instanceof NormalizedProviderError) throw error;
-    throw providerNetworkError(label, error);
+    const normalized = error instanceof NormalizedProviderError ? error : providerNetworkError(label, error);
+    trace(normalized); throw normalized;
   }
+  stage = "normalization";
   try {
-    if (anthropic) return normalizeAnthropicReply(value, input.model);
-    if (responses) return normalizeOpenAIReply(value, input.model);
-    if (gemini) return normalizeGeminiReply(value, input.model);
+    if (anthropic || responses || gemini) {
+      const result = anthropic ? normalizeAnthropicReply(value, input.model) : responses ? normalizeOpenAIReply(value, input.model) : normalizeGeminiReply(value, input.model);
+      trace(); return result;
+    }
     const json = value as { id?: unknown; model?: unknown; choices?: Array<{ finish_reason?: string; message?: { content?: unknown; tool_calls?: unknown } }>; usage?: unknown } | null;
     const choice = json?.choices?.[0]; const raw = choice?.message?.content;
     const usage = extractTokenUsage("openai-compatible", json?.usage);
@@ -171,8 +200,9 @@ async function generateBoundedText(input: Pick<PrivateDeliveryRequest, "model" |
       provider: "openai-compatible", model: typeof json?.model === "string" ? json.model : input.model,
       remoteResponseId: typeof json?.id === "string" ? json.id : "", ...usage,
     });
-    return parsed.data;
+    trace(); return parsed.data;
   } catch (error) {
+    trace(error instanceof NormalizedProviderError ? error : new NormalizedProviderError("Yanıt işlenemedi.", "invalid_response", "known", false));
     if (synthesis && error instanceof NormalizedProviderError) {
       // Preserve only bounded visible text, never wire envelopes or opaque reasoning.
       const record = value && typeof value === "object" ? value as Record<string, unknown> : {};

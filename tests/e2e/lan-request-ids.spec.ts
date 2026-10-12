@@ -1,3 +1,4 @@
+import { revealCouncilControls, revealChatTab, saveCouncilForChat } from "./workspace-navigation";
 import { expect, test } from "./authenticated-test";
 import type { RunRecord } from "@deliberation-ai/application";
 
@@ -8,6 +9,11 @@ for (const highRisk of [false, true]) {
       id: "11111111-1111-4111-8111-111111111111", provider: "openai", label: "Offline LAN fixture", configured: true,
       defaultModel: "fixture-model", endpointPreset: "custom", reasoningProtocol: "openai", structuredOutputMode: "json-schema",
     }] } }));
+    await page.route("**/api/council-templates", async route => {
+      if (route.request().method() === "POST") {
+        const data = route.request().postDataJSON(); await route.fulfill({ json: { ...data, id: "33333333-3333-4333-8333-333333333333", memberCount: data.members.length } });
+      } else await route.fulfill({ json: { templates: [] } });
+    });
     const attempts: Array<{ key: string; members: number; rounds: number; profile: string }> = [];
     let loseResponse = true;
     await page.route("**/api/runs", async route => {
@@ -25,14 +31,15 @@ for (const highRisk of [false, true]) {
     });
     await page.goto("/");
     expect(await page.evaluate(() => typeof crypto.randomUUID)).toBe("undefined");
+    await revealCouncilControls(page);
     if (highRisk) {
-      await page.locator(".council-config > summary").click();
       await page.getByLabel("Üye sayısı", { exact: true }).selectOption("3");
       await page.getByLabel("Değerlendirme profili", { exact: true }).selectOption("high");
       await page.getByRole("combobox", { name: "Çapraz inceleme turu", exact: true }).selectOption("3");
       await expect(page.getByLabel("Üye sayısı", { exact: true })).toHaveValue("4");
       await expect(page.getByLabel("Red-team karşılaştırmasını etkinleştir")).toBeChecked();
     }
+    await saveCouncilForChat(page);
     const question = page.getByLabel("Sorunuz", { exact: true });
     const draft = "Renk paletlerini hangi ölçütlerle karşılaştırmalıyım?";
     await question.fill(draft);
@@ -47,6 +54,7 @@ for (const highRisk of [false, true]) {
     expect(attempts[1]!.members).toBe(highRisk ? 4 : 2); expect(attempts[1]!.rounds).toBe(highRisk ? 3 : 1);
     expect(attempts[1]!.profile).toBe(highRisk ? "high" : "standard");
     await expect(question).toHaveValue(draft);
+    await revealChatTab(page, "Soru");
     await expect(submit).toBeEnabled(); await submit.click();
     await expect.poll(() => attempts.length).toBe(3);
     expect(attempts[2]!.key).not.toBe(attempts[1]!.key);

@@ -12,6 +12,8 @@ import { readProviderObservations, encryptProviderObservations } from "./provide
 import { getDatabase } from "./database";
 import { getOwnerId } from "./owner";
 import { providerConnections } from "./schema";
+import { createHash } from "node:crypto";
+import { assertConnectionImpact, inspectConnectionImpact, lockProviderBindings, ProviderConnectionImpactError } from "./provider-connection-impact";
 
 export type ProviderConnectionSummary = {
   id: string;
@@ -68,6 +70,7 @@ export async function saveProviderConnection(
   const request = saveProviderConnectionSchema.parse(input);
   const db = getDatabase();
   return db.transaction(async (tx) => {
+    await lockProviderBindings(tx);
     const [existing] = request.id
       ? await tx
           .select()
@@ -100,7 +103,7 @@ export async function saveProviderConnection(
           && (existing.endpointPreset === "nvidia" || request.endpointPreset === "nvidia")) && !request.apiKey)) {
       throw new ProviderConnectionSecretRequiredError();
     }
-    const legacyModelChanged = input.defaultModel !== undefined && request.defaultModel !== existing?.defaultModel;
+    const legacyModelChanged = Boolean(request.defaultModel) && input.defaultModel !== undefined && request.defaultModel !== existing?.defaultModel;
     const selectedModels = request.selectedModels && legacyModelChanged && request.defaultModel
       ? [request.defaultModel, ...request.selectedModels.filter(model => model !== request.defaultModel)] : request.selectedModels;
     const preferencesOnly = existing && selectedModels !== undefined && !legacyModelChanged && !request.apiKey
@@ -129,6 +132,16 @@ export async function saveProviderConnection(
       keyVersion: Number(process.env.KEY_VERSION ?? "1"),
       updatedAt: new Date(),
     };
+    if (existing) {
+      const transportChanged = existing.provider !== values.provider || existing.baseUrl !== values.baseUrl || existing.endpointPreset !== values.endpointPreset || existing.reasoningProtocol !== values.reasoningProtocol || existing.structuredOutputMode !== values.structuredOutputMode || Boolean(request.apiKey);
+      const models = values.selectedModels ?? (values.defaultModel ? [values.defaultModel] : []);
+      const removed = (existing.selectedModels ?? (existing.defaultModel ? [existing.defaultModel] : [])).some(model => !models.includes(model));
+      if (transportChanged || removed) {
+        const { impactFingerprint: _fingerprint, ...target } = request;
+        const impact = await inspectConnectionImpact(tx, existing, { selectedModels: models, transportChanged, targetDigest: createHash("sha256").update(JSON.stringify(target)).digest("hex") });
+        assertConnectionImpact(impact, request.impactFingerprint);
+      }
+    }
     const [saved] = existing
       ? await tx
           .update(providerConnections)
@@ -202,8 +215,15 @@ export async function saveProviderConnectionCatalogCheck(
   });
 }
 
-export async function deleteProviderConnection(connectionId: string): Promise<boolean> {
+export async function previewProviderConnectionDeletion(connectionId: string) {
+  return getDatabase().transaction(async tx => {
+    const [row] = await tx.select().from(providerConnections).where(and(eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, connectionId))).limit(1);
+    return row ? inspectConnectionImpact(tx, row, null) : undefined;
+  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+export async function deleteProviderConnection(connectionId: string, impactFingerprint?: string): Promise<boolean> {
   return getDatabase().transaction(async (tx) => {
+    await lockProviderBindings(tx);
     const [row] = await tx.select().from(providerConnections).where(and(
       eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, connectionId),
     )).for("update").limit(1);
@@ -211,6 +231,9 @@ export async function deleteProviderConnection(connectionId: string): Promise<bo
     if (readProviderObservations(row).generationChecks.some((check) => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt)) {
       throw new ProviderConnectionCheckPendingError();
     }
+    const impact = await inspectConnectionImpact(tx, row, null);
+    assertConnectionImpact(impact, impactFingerprint);
+    if (impactFingerprint && impact.fingerprint !== impactFingerprint) throw new ProviderConnectionImpactError(impact);
     await tx.delete(providerConnections).where(eq(providerConnections.id, connectionId));
     return true;
   });

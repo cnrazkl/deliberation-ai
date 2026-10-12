@@ -6,6 +6,7 @@ export function ConnectionDialog({ open, title, description, busy, onClose, chil
   open: boolean; title: string; description: string; busy: boolean; onClose: () => void; children: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const backdropPointer = useRef(false);
   const titleId = useId(), descriptionId = useId();
   useEffect(() => {
     const element = dialog.current;
@@ -30,15 +31,22 @@ export function ConnectionDialog({ open, title, description, busy, onClose, chil
         event.preventDefault(); (event.shiftKey ? last : first)?.focus();
       }
     }}
-    onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}
+    onCancel={event => { if (event.target !== event.currentTarget) return; event.preventDefault(); if (!busy) onClose(); }}
+    onPointerDown={event => {
+      const box = event.currentTarget.getBoundingClientRect();
+      backdropPointer.current = event.target === event.currentTarget &&
+        (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom);
+    }}
+    onPointerCancel={() => { backdropPointer.current = false; }}
     onClick={event => {
-      if (busy || event.target !== event.currentTarget) return;
+      const startedOutside = backdropPointer.current; backdropPointer.current = false;
+      if (busy || !startedOutside || event.target !== event.currentTarget) return;
       const box = event.currentTarget.getBoundingClientRect();
       if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) onClose();
     }}>
     <header className="connection-dialog-header">
       <div><span className="eyebrow">API BAĞLANTISI</span><h2 id={titleId}>{title}</h2><p id={descriptionId}>{description}</p></div>
-      <button type="button" className="secondary-button connection-dialog-close" aria-label="Bağlantı panelini kapat" disabled={busy} onClick={onClose}>
+      <button type="button" className="secondary-button connection-dialog-close" aria-label="Bağlantı panelini kapat" title="Bu pencereyi kapatır." disabled={busy} onClick={onClose}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
       </button>
     </header>

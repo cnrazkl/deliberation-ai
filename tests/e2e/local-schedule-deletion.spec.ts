@@ -1,5 +1,6 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { workspaceView } from "./workspace-navigation";
+import { workspaceView, revealCouncilControls, saveCouncilForChat } from "./workspace-navigation";
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { randomUUID } from "node:crypto";
 import {expect,test, testOwnerId } from "./authenticated-test";
 import { eq,inArray,sql } from "drizzle-orm";
@@ -8,16 +9,21 @@ import { getDatabase,localSchedules,closeDatabase } from "@deliberation-ai/persi
 test("deduplicates a lost schedule creation, reviews deletion and recovers a lost committed delete without changing the question",async({page,request})=>withOwner(testOwnerId(), async () => {
   const ids:string[]=[];const requests:Array<Record<string,unknown>>=[];let generations=0;let first=true;
   const name=`E2E schedule ${randomUUID()}`;
+  let connectionId: string | undefined;
   page.on("request",value=>{if(value.method()==="POST"&&new URL(value.url()).pathname==="/api/runs")generations++;});
   try{
-    await page.route("**/api/provider-connections",route=>route.fulfill({json:{connections:[{id:"11111111-1111-4111-8111-111111111111",provider:"openai",label:"Offline schedule fixture",defaultModel:"offline-fixture",endpointPreset:"custom",reasoningProtocol:"openai",structuredOutputMode:"json-schema"}]}}));
+    const saved = await request.post("/api/provider-connections", { data: { provider: "openai", label: name, apiKey: "offline-test-key", selectedModels: ["offline-fixture"], endpointPreset: "custom", reasoningProtocol: "openai", structuredOutputMode: "json-schema" } });
+    expect(saved.ok()).toBe(true); connectionId = (await saved.json()).id;
     await page.route("**/api/local-schedules",async route=>{
       if(route.request().method()!=="POST")return route.continue();
       requests.push(route.request().postDataJSON());const response=await route.fetch();expect(response.ok()).toBe(true);
       const body=await response.json();if(!ids.includes(body.id))ids.push(body.id);
       if(first){first=false;await route.abort();}else await route.fulfill({response});
     });
-    await page.goto("/");const question=page.getByLabel("Sorunuz",{exact:true});await question.fill("Generated schedule browser comparison question");
+    await page.goto("/"); await revealCouncilControls(page);
+    for (const index of [1, 2]) await page.getByLabel(`Üye ${index} bağlantısı`, { exact: true }).selectOption(connectionId!);
+    await saveCouncilForChat(page);
+    const question=page.getByLabel("Sorunuz",{exact:true});await question.fill("Generated schedule browser comparison question");
     await workspaceView(page,"Zamanlayıcı");
     const panel=page.getByRole("region",{name:"Yerel zamanlamalar"});await panel.getByLabel("Zamanlama adı").fill(name);
     await panel.getByLabel("İlk çalışma").fill("2400-01-01T03:00");const create=panel.getByRole("button",{name:"Duraklatılmış zamanlama oluştur"});
@@ -52,5 +58,5 @@ test("deduplicates a lost schedule creation, reviews deletion and recovers a los
     expect((await request.post("/api/local-schedules",{data:requests[0]})).status()).toBe(409);
     expect((await request.patch(`/api/local-schedules?id=${id}`,{data:{status:"active"}})).status()).toBe(404);
     await expect(question).toHaveValue("Generated schedule browser comparison question");expect(generations).toBe(0);
-  }finally{if(ids.length)await getDatabase().delete(localSchedules).where(inArray(localSchedules.id,ids));await closeDatabase();}
+  }finally{if(ids.length)await getDatabase().delete(localSchedules).where(inArray(localSchedules.id,ids));if (connectionId) await deleteGeneratedConnection(request, `/api/provider-connections?id=${connectionId}`);await closeDatabase();}
 }));

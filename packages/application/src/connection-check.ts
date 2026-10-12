@@ -1,10 +1,10 @@
-import { providerOutputSchema, type GenerationObservation, type SaveProviderConnectionRequest, type ConnectionTestAttachment } from "@deliberation-ai/contracts";
+import { providerOutputSchema, type GenerationObservation, type SaveProviderConnectionRequest, type ConnectionTestAttachment, type ConnectionTestTrace } from "@deliberation-ai/contracts";
 import { executeGenerationCheck, generateConnectionChatText, NormalizedProviderError, type ProviderResult } from "@deliberation-ai/providers";
 export { generationCheckPrompt, GENERATION_CHECK_TIMEOUT_MS } from "@deliberation-ai/providers";
 export { validateConnectionTestAttachments } from "@deliberation-ai/providers";
-export type ConnectionCheckExecution = Pick<GenerationObservation, "status" | "failure" | "returnedModel" | "remoteResponseId" | "inputTokens" | "outputTokens" | "httpStatus" | "reply" | "replyTruncated" | "errorCode" | "errorDetail" | "providerErrorCode">;
+export type ConnectionCheckExecution = Pick<GenerationObservation, "status" | "failure" | "returnedModel" | "remoteResponseId" | "inputTokens" | "outputTokens" | "httpStatus" | "reply" | "replyTruncated" | "errorCode" | "errorDetail" | "providerErrorCode" | "trace">;
 export function connectionChatPrompt(message: string) {
-  return { version: "connection-chat-v1", system: "Bu yalnız bir API bağlantı testidir. Kullanıcının mesajını kısa ve açık biçimde yanıtla. Araç veya harici kaynak kullanma.",
+  return { version: "connection-chat-v2",
     user: message, maxOutputTokens: 512, timeoutMs: 45_000 };
 }
 function failureFields(error: unknown): ConnectionCheckExecution {
@@ -36,16 +36,21 @@ export async function executeBoundedConnectionCheck(target: SaveProviderConnecti
     return failureFields(error);
   }
 }
-export async function executeBoundedConnectionChat(target: SaveProviderConnectionRequest, id: string, message: string, attachments: ConnectionTestAttachment[] = []): Promise<ConnectionCheckExecution> {
+export async function executeBoundedConnectionChat(target: SaveProviderConnectionRequest, id: string, message: string, attachments: ConnectionTestAttachment[] = [], debug = false): Promise<ConnectionCheckExecution> {
+  let trace: ConnectionTestTrace | undefined;
   try {
     const prompt = connectionChatPrompt(message);
     const baseUrl = target.baseUrl ?? ({ openai: "https://api.openai.com/v1", anthropic: "https://api.anthropic.com", google: "https://generativelanguage.googleapis.com/v1beta", "openai-compatible": "" }[target.provider]);
     if (!baseUrl) throw new NormalizedProviderError("Bağlantı adresi eksik.", "provider_not_configured", "known", false);
-    const result = await generateConnectionChatText({ model: target.defaultModel, instructions: prompt.system, message: prompt.user, attachments },
-    { provider: target.provider, apiKey: target.apiKey, baseUrl, endpointPreset: target.endpointPreset, operationKey: id, timeoutMs: prompt.timeoutMs });
-    if (result.finishReason === "other") throw new NormalizedProviderError("Deneme yanıtı tamamlanmadı.", "invalid_private_response", "known", false);
+    const result = await generateConnectionChatText({ model: target.defaultModel, message: prompt.user, attachments },
+    { provider: target.provider, apiKey: target.apiKey, baseUrl, endpointPreset: target.endpointPreset, operationKey: id, timeoutMs: prompt.timeoutMs,
+      ...(debug ? { onTestTrace: value => { trace = value; } } : {}) });
+    if (result.finishReason === "other") {
+      if (trace) trace = { ...trace, result: { stage: "normalization", code: "invalid_private_response", outcome: "known_failure" } };
+      throw new NormalizedProviderError("Deneme yanıtı tamamlanmadı.", "invalid_private_response", "known", false);
+    }
     return { ...metadataFields({ provider: target.provider, model: result.model, remoteResponseId: result.remoteResponseId ?? "",
       ...(result.inputTokens === null ? {} : { inputTokens: result.inputTokens }), ...(result.outputTokens === null ? {} : { outputTokens: result.outputTokens }) }),
-      status: "succeeded", failure: null, httpStatus: null, errorCode: null, reply: result.text, replyTruncated: result.finishReason === "length" };
-  } catch (error) { return failureFields(error); }
+      status: "succeeded", failure: null, httpStatus: null, errorCode: null, reply: result.text, replyTruncated: result.finishReason === "length", ...(trace ? { trace } : {}) };
+  } catch (error) { return { ...failureFields(error), ...(trace ? { trace } : {}) }; }
 }

@@ -4,7 +4,7 @@ import { createRunRequestSchema } from "@deliberation-ai/contracts";
 import { ExecutionPlanLimitsError } from "@deliberation-ai/domain";
 import { ContinuationUnavailableError, AttachmentValidationError, createAwaitingPreflightDraft, enqueueDurableRun, listDurableRuns, MemorySelectionError, PreflightMismatchError } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../lib/request-security";
-import { ConversationPendingError } from "@deliberation-ai/persistence";
+import { ConversationPendingError, ProviderMemberUnavailableError } from "@deliberation-ai/persistence";
 import { conversationError } from "../../../lib/conversation-errors";
 
 export const runtime = "nodejs";
@@ -43,6 +43,7 @@ async function sessionPOST(request: Request) {
     const run = await enqueueDurableRun(parsed.data);
     return Response.json(run, { status: 201 });
   } catch (error) {
+    if (error instanceof ProviderMemberUnavailableError) return Response.json({ error: error.message, code: "council_model_unavailable" }, { status: 422 });
     if (error instanceof ConversationPendingError) return conversationError(error);
     if (error instanceof ContinuationUnavailableError) return Response.json({ error: error.message }, { status: 422 });
     if (error instanceof MissingContextError) {
@@ -50,6 +51,7 @@ async function sessionPOST(request: Request) {
         const draft = await createAwaitingPreflightDraft(parsed.data);
         return Response.json({ preflightDraft: draft }, { status: 202, headers: { "Cache-Control": "no-store" } });
       } catch (draftError) {
+        if (draftError instanceof ProviderMemberUnavailableError) return Response.json({ error: draftError.message, code: "council_model_unavailable" }, { status: 422 });
         if (draftError instanceof ExecutionPlanLimitsError) return Response.json({ error: draftError.message }, { status: 422 });
         if (draftError instanceof IdempotencyConflictError) return Response.json({ error: draftError.message }, { status: 409 });
         return Response.json({ error: "Bekleyen ön değerlendirme kaydedilemedi." }, { status: 500 });

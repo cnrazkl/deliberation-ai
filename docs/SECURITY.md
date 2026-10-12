@@ -1,5 +1,16 @@
 # Security
 
+Current-test diagnostics are optional authenticated response DTOs, never log records.
+Adapters redact configured keys, credential headers/query fields, cookies and opaque
+state, replacing binary inputs with size/SHA-256 before returning bounded wire bodies.
+Browser audit/export clears on close/reload and includes owner-entered text/replies.
+Persistent and legacy receipt contents are not returned by chat-check GET/review.
+Connection/model mutations require current owner-local dependency confirmation and
+refuse unreadable, over-bound or affected active/unresolved work. Admission shares the
+owner binding lock and validates exact selected IDs. No historical cascade.
+[Inspection scope and limits](WORKSPACE_DIAGNOSTICS.md).
+
+
 Complete-conversation deletion uses one explicit confirmation bound to an owned,
 repeatable snapshot. All run/private audits and body, membership, local knowledge
 binding/packet and metadata removals commit together, under table/owner locks and

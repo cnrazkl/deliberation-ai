@@ -8,6 +8,7 @@ import { getDatabase } from "./database";
 import { getOwnerId } from "./owner";
 import { councilTemplates } from "./schema";
 import { ConversationIntegrityError, type ConversationTransaction } from "./conversation-membership";
+import { assertSelectedProviderMembers } from "./provider-connection-impact";
 
 export class CouncilTemplateConflictError extends Error {}
 export class CouncilTemplateDeletionBlockedError extends Error {}
@@ -65,6 +66,7 @@ export async function saveCouncilTemplate(input: SaveCouncilTemplateRequest): Pr
         return saved;
       }
     } else if (request.id) throw new CouncilTemplateConflictError();
+    await assertSelectedProviderMembers(tx, request.members);
     const [sameName] = await tx.select({ id: councilTemplates.id }).from(councilTemplates)
       .where(and(eq(councilTemplates.ownerId, getOwnerId()), eq(councilTemplates.name, request.name), isNull(councilTemplates.deletedAt))).limit(1);
     if (sameName && sameName.id !== existing?.id) throw new CouncilTemplateConflictError();

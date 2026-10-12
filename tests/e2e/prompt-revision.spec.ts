@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls } from "./workspace-navigation";
+import { revealChatTab, saveCouncilForChat, mockCouncilStorage } from "./workspace-navigation";
 import {expect, test, testOwnerId } from "./authenticated-test";
 
 test("shows additive prompt differences, allows editing and blocks omission before submission", async ({ page }) => withOwner(testOwnerId(), async () => {
@@ -15,19 +15,20 @@ test("shows additive prompt differences, allows editing and blocks omission befo
     submissions += 1;
     await route.fulfill({ status: 422, json: { error: "Fixture must not submit" } });
   });
-  await page.goto("/"); await revealCouncilControls(page);
+  await mockCouncilStorage(page); await page.goto("/"); await saveCouncilForChat(page);
   const question = "Renk paletlerini hangi ölçütlerle karşılaştırmalıyım?";
   await page.getByRole("textbox", { name: "Sorunuz", exact: true }).fill(question);
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   const editor = page.getByRole("region", { name: "İstem sürümleri" });
   await expect(editor).toContainText(question);
   await editor.getByRole("radio", { name: "Düzenlenebilir adayı kullan" }).check();
   await editor.getByText("Özgün metne göre fark ve denetim").click();
   await expect(editor).toContainText("Yanıt çerçevesi");
-  await expect(page.getByRole("button", { name: "Konseyi çalıştır" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Konseyi çalıştır", includeHidden: true })).toBeEnabled();
   await editor.getByRole("textbox", { name: "Yapılandırılmış aday istem" }).fill("Yalnızca tek cümleyle yanıt ver.");
   await expect(editor).toContainText("özgün metin tam ve tek kez korunmuyor");
-  await expect(page.getByRole("button", { name: "Konseyi çalıştır" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Konseyi çalıştır", includeHidden: true })).toBeDisabled();
   await editor.getByRole("radio", { name: "Özgün soruyu kullan" }).check();
-  await expect(page.getByRole("button", { name: "Konseyi çalıştır" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Konseyi çalıştır", includeHidden: true })).toBeEnabled();
   expect(submissions).toBe(0);
 }));

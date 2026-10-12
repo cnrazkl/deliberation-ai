@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls } from "./workspace-navigation";
+import { revealCouncilControls, revealChatTab, saveCouncilForChat, mockCouncilStorage } from "./workspace-navigation";
 import {expect, test, testOwnerId } from "./authenticated-test";
 
 test("explains automatic risk and requires controls without changing the owner's question or calling a model", async ({ page, request }) => withOwner(testOwnerId(), async () => {
@@ -15,25 +15,29 @@ test("explains automatic risk and requires controls without changing the owner's
     submissions += 1;
     await route.fulfill({ status: 422, json: { error: "Fixture must not submit" } });
   });
-  await page.goto("/"); await revealCouncilControls(page);
+  await mockCouncilStorage(page); await page.goto("/"); await saveCouncilForChat(page);
   const question = page.getByRole("textbox", { name: "Sorunuz", exact: true });
   const risk = page.getByLabel("Risk ön değerlendirmesi");
   await question.fill("İlaç dozunu nasıl değiştirmeliyim?");
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   await expect(risk).toContainText("Uygulanacak profil: Yüksek risk");
   await expect(risk).toContainText("Sağlık / tedavi · soru");
   await expect(page.getByLabel("Değerlendirme profili")).toHaveValue("standard");
-  await expect(page.getByRole("button", { name: "Açıklama sorularını aç" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Açıklama sorularını aç", includeHidden: true })).toBeDisabled();
   await page.getByRole("button", { name: "Gerekli risk kontrollerini ekle" }).click();
+  await revealCouncilControls(page); await page.getByLabel("Red-team karşılaştırmasını etkinleştir").check();
   await expect(page.getByLabel("Red-team karşılaştırmasını etkinleştir")).toBeChecked();
   await expect(page.getByLabel("Çapraz inceleme turu")).toHaveValue("1");
-  await expect(page.getByRole("button", { name: "Açıklama sorularını aç" })).toBeEnabled();
+  await saveCouncilForChat(page);
+  await expect(page.getByRole("button", { name: "Açıklama sorularını aç", includeHidden: true })).toBeEnabled();
   await expect(question).toHaveValue("İlaç dozunu nasıl değiştirmeliyim?");
   await expect(page.getByLabel("Değerlendirme profili")).toHaveValue("standard");
 
   // Changing the draft recomputes the risk; the owner's added members remain.
   await question.fill("Renk paletlerini nasıl karşılaştırmalıyım?");
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   await expect(risk).toContainText("Uygulanacak profil: Standart");
-  await expect(page.getByLabel("Red-team karşılaştırmasını etkinleştir")).toBeEnabled();
+  await expect(page.locator(".council-config input[aria-label=\"Red-team karşılaştırmasını etkinleştir\"]")).toBeEnabled();
   await expect(risk).toContainText("güvenli olduğuna dair onay değildir");
   expect(submissions).toBe(0);
 

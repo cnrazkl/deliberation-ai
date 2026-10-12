@@ -4,8 +4,9 @@ import { randomUUID } from "node:crypto";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import type { KnowledgePacket } from "@deliberation-ai/contracts";
 import type { RunRecord } from "@deliberation-ai/application";
-import { revealCouncilControls } from "./workspace-navigation";
-import { cancelDurableRun, closeDatabase, deleteProviderConnection, getDatabase } from "@deliberation-ai/persistence";
+import { revealCouncilControls, revealChatTab, saveCouncilForChat } from "./workspace-navigation";
+import { cancelDurableRun, closeDatabase, getDatabase } from "@deliberation-ai/persistence";
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { eq, inArray } from "drizzle-orm";
 import * as s from "../../packages/persistence/src/schema";
 
@@ -31,7 +32,9 @@ test("selected files produce reviewed frozen citations through real routes and l
     await page.goto("/"); await revealCouncilControls(page);
     for (const index of [1, 2]) await page.getByRole("combobox", { name: `Üye ${index} bağlantısı`, exact: true }).selectOption(connectionId);
     await page.getByRole("combobox", { name: "Çapraz inceleme turu", exact: true }).selectOption("0");
+    await saveCouncilForChat(page);
     await page.getByLabel("Sorunuz", { exact: true }).fill("Sentetik destek tablosundaki sürümler nasıl ayrılır?");
+    await revealChatTab(page, "Kaynaklar Ve Dosyalar", false);
     const panel = page.locator(".knowledge-panel"); await panel.locator("summary").click();
     const title = `Offline knowledge ${randomUUID()}`;
     await panel.getByLabel("Koleksiyon adı", { exact: true }).fill(title);
@@ -71,11 +74,11 @@ test("selected files produce reviewed frozen citations through real routes and l
     const prepared = await preparing; expect(prepared.status()).toBe(200); expect(prepared.headers()["cache-control"]).toBe("no-store");
     const packet = await prepared.json() as KnowledgePacket;
     expect(packet.excerpts).toHaveLength(1); expect(packet.excerpts[0]!.page).toBe(1); expect(packet.coverage[0]!.unavailable).toBe(2);
-    const start = page.getByRole("button", { name: "Konseyi çalıştır", exact: true }); await expect(start).toBeDisabled();
+    const start = page.getByRole("button", { name: "Konseyi çalıştır", exact: true, includeHidden: true }); await expect(start).toBeDisabled();
     await panel.getByRole("checkbox", { name: "Alıntıları, eksikleri ve bütün ilk tur üyelerine gönderimi inceledim", exact: true }).check();
     await expect(start).toBeEnabled();
     await expect(page.getByRole("button", { name: "Duraklatılmış zamanlama oluştur", exact: true, includeHidden: true })).toBeDisabled();
-    const posted = page.waitForResponse((response) => response.url().endsWith("/api/runs") && response.request().method() === "POST"); await start.click();
+    const posted = page.waitForResponse((response) => response.url().endsWith("/api/runs") && response.request().method() === "POST"); await revealChatTab(page, "Soru"); await start.click();
     const runResponse = await posted; expect(runResponse.status()).toBe(201); const run = await runResponse.json() as RunRecord;
     runId = run.runId;
     await expect.poll(async () => (await (await request.get(`/api/runs/${run.runId}`)).json() as RunRecord).status, { timeout: 25_000 }).toBe("completed");
@@ -99,6 +102,7 @@ test("selected files produce reviewed frozen citations through real routes and l
     expect(resumed.status()).toBe(200); const resumedBody = await resumed.json();
     expect(resumedBody.preview.promptPlan.version).toBe("council-knowledge-v1");
     expect(JSON.parse(resumedBody.preview.promptPlan.members[0].userInput).knowledgePacket.fingerprint).toBe(packet.fingerprint);
+    await revealChatTab(page, "Kaynaklar Ve Dosyalar");
     await panel.getByRole("button", { name: "İzni iptal et", exact: true }).click();
     await expect(start).toBeDisabled();
     expect((await request.post("/api/knowledge", { data: { operation: "prepare", id: randomUUID(), conversationId: packet.conversationId, selectionRevision: packet.selectionRevision, query: "destek", allowWithoutEvidence: false } })).status()).toBe(422);
@@ -117,7 +121,7 @@ test("selected files produce reviewed frozen citations through real routes and l
       if (sources.length) { await getDatabase().delete(s.knowledgeSourceVersions).where(inArray(s.knowledgeSourceVersions.sourceId, sources.map((item) => item.id))); await getDatabase().delete(s.knowledgeSources).where(eq(s.knowledgeSources.collectionId, collectionId)); }
       await getDatabase().delete(s.knowledgeGrants).where(eq(s.knowledgeGrants.collectionId, collectionId)); await getDatabase().delete(s.knowledgeCollections).where(eq(s.knowledgeCollections.id, collectionId));
     }
-    if (connectionId) await deleteProviderConnection(connectionId);
+    if (connectionId) await deleteGeneratedConnection(request, `/api/provider-connections?id=${connectionId}`);
     await closeDatabase(); await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 }));

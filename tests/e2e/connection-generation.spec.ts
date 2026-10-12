@@ -1,3 +1,4 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { withOwner } from "@deliberation-ai/persistence";
 import { createServer } from "node:http";
 import {expect, test, testOwnerId } from "./authenticated-test";
@@ -9,9 +10,9 @@ test("debug test accepts small image/audio/PDF, shows provider errors and retain
   const server = createServer(async (incoming, outgoing) => {
     const chunks: Buffer[] = []; for await (const chunk of incoming) chunks.push(Buffer.from(chunk));
     const body = JSON.parse(Buffer.concat(chunks).toString("utf8")); calls++;
-    expect(body.max_tokens).toBe(512); expect(body.messages).toHaveLength(2);
-    expect(body.messages[1].content.map((part: { type: string }) => part.type)).toEqual(["text", "image_url", "input_audio", "file"]);
-    expect(body.messages[1].content[0].text).toBe("Describe my synthetic files.");
+    expect(body.max_tokens).toBe(512); expect(body.messages).toHaveLength(1);
+    expect(body.messages[0].content.map((part: { type: string }) => part.type)).toEqual(["text", "image_url", "input_audio", "file"]);
+    expect(body.messages[0].content[0].text).toBe("Describe my synthetic files.");
     expect(JSON.stringify(body)).not.toContain("KEEP MY DRAFT");
     outgoing.setHeader("content-type", "application/json");
     if (body.model === "no-vision") {
@@ -33,7 +34,7 @@ test("debug test accepts small image/audio/PDF, shows provider errors and retain
     await models.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click(); await expect(models.getByRole("status")).toContainText("kaydedildi");
     const saved = (await (await request.get("/api/provider-connections")).json()).connections.find((entry: { id: string }) => entry.id === id);
     expect(saved.revision).toBe(1); expect(saved.modelAliases).toEqual({ "local-check": "Kolay Ad" });
-    await card.getByRole("tab", { name: "Test ve Geçmiş", exact: true }).click();
+    await card.getByRole("tab", { name: "Test Ve Hata Ayıklama", exact: true }).click();
     const chat = card.getByRole("region", { name: "Model test ve hata ayıklama alanı" });
     await expect(chat).toBeVisible(); await expect(chat.getByRole("checkbox")).toHaveCount(0);
     await expect(chat.getByLabel("Test modeli").locator('option[value="local-check"]')).toHaveText("Kolay Ad · local-check");
@@ -47,16 +48,17 @@ test("debug test accepts small image/audio/PDF, shows provider errors and retain
     await expect(chat).toContainText("Synthetic media accepted."); expect(calls).toBe(1);
     await chat.getByLabel("Test modeli").selectOption("no-vision"); await chat.getByRole("button", { name: "Mesajı Gönder", exact: true }).click();
     await expect(chat).toContainText("HTTP 400"); await expect(chat).toContainText("unsupported_modality"); await expect(chat).toContainText("görsel girdisini reddetti");
-    await expect(card).not.toContainText("SENSITIVE ERROR BODY"); expect(calls).toBe(2);
+    await expect(chat.getByRole("log")).not.toContainText("SENSITIVE ERROR BODY"); await expect(chat.getByRole("region", { name: "Mevcut testin teknik ayrıntıları" })).toBeVisible(); expect(calls).toBe(2);
     const history = (await (await request.get(`/api/provider-connections/${id}/chat-check`)).json()).observations.generationChecks;
     expect(history).toHaveLength(2); expect(JSON.stringify(history)).not.toMatch(/Describe my|Synthetic media|tiny\.png/u);
-    await page.keyboard.press("Escape"); await openConnectionPanel(page, tile, "Test ve Geçmiş");
-    await expect(chat).not.toContainText("Synthetic media accepted."); await expect(chat.getByRole("log")).not.toContainText("HTTP 400");
-    await expect(card.getByRole("region", { name: "Test işlem geçmişi" })).toContainText("HTTP 400"); expect(calls).toBe(2);
+    await page.keyboard.press("Escape"); await openConnectionPanel(page, tile, "Test Ve Hata Ayıklama");
+    await expect(chat).not.toContainText("Synthetic media accepted."); await expect(chat).not.toContainText("HTTP 400");
+    await expect(chat.getByRole("region", { name: "Mevcut testin teknik ayrıntıları" })).toContainText("Bir mesaj gönderdiğinizde"); expect(calls).toBe(2);
     await page.keyboard.press("Escape"); await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("KEEP MY DRAFT");
-    await page.getByRole("button", { name: "Konseyi düzenle", exact: true }).click();
+    await workspaceView(page, "Konseyler");
+    await page.getByLabel("Üye 1 bağlantısı", { exact: true }).selectOption(id!);
     await expect(page.getByLabel("Üye 1 modeli").locator('option[value="local-check"]')).toHaveText("Kolay Ad · local-check");
-  } finally { if (id) await request.delete(`/api/provider-connections?id=${id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
+  } finally { if (id) await deleteGeneratedConnection(request, `/api/provider-connections?id=${id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
 }));
 test("rejects stale, foreign-origin, unacknowledged and oversized checks before dispatch", async ({ request }) => withOwner(testOwnerId(), async () => {
   const created = await request.post("/api/provider-connections", { data: { provider: "openai-compatible", label: `E2E guards ${crypto.randomUUID()}`,
@@ -76,5 +78,5 @@ test("rejects stale, foreign-origin, unacknowledged and oversized checks before 
     const updated = await (await request.get(endpoint)).json(); expect(updated.observations.generationChecks).toEqual([]);
     expect((await request.patch(endpoint, { data: { id: input.requestId, fingerprint: input.fingerprint, acknowledgeUnknown: true } })).status()).toBe(409);
     expect((await request.get(endpoint)).headers()["cache-control"]).toBe("no-store");
-  } finally { await request.delete(`/api/provider-connections?id=${connection.id}`); }
+  } finally { await deleteGeneratedConnection(request, `/api/provider-connections?id=${connection.id}`); }
 }));

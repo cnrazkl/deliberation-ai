@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { ConnectionDebugTrace, type ConnectionDebugRecord } from "./connection-debug-trace";
 import { generationObservationSchema, CONNECTION_TEST_FILE_BYTES, type ConnectionTestAttachment, type GenerationObservation } from "@deliberation-ai/contracts";
 import { createBrowserRequestId } from "../../lib/browser-request-id";
 import { ownerFetch } from "../../lib/session-fetch";
@@ -27,11 +28,13 @@ export function ConnectionChatTester({ connection, models, aliases = {}, needsSa
   const [files, setFiles] = useState<ConnectionTestAttachment[]>([]), [readingFiles, setReadingFiles] = useState(false);
   const [busy, setBusy] = useState(false), [error, setError] = useState<string | null>(null);
   const [checks, setChecks] = useState<GenerationObservation[]>([]);
+  const [debugRecord, setDebugRecord] = useState<ConnectionDebugRecord | null>(null);
   const [receipts, setReceipts] = useState<GenerationObservation[]>([]);
   const [intent, setIntent] = useState<{ connectionId: string; requestId: string; model: string; message: string; fingerprint: string } | null>(null);
   const connectionId = connection?.id;
   const working = useRef(false);
   const transcript = useRef<HTMLDivElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const pending = receipts.some(check => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt);
   useEffect(() => { if (transcript.current) transcript.current.scrollTop = transcript.current.scrollHeight; }, [checks]);
   useEffect(() => {
@@ -62,30 +65,36 @@ export function ConnectionChatTester({ connection, models, aliases = {}, needsSa
   async function send() {
     if (working.current || readingFiles || !selected || !message.trim() || pending && !acknowledgeUnknown || intent) return;
     working.current = true; setBusy(true); onBusy(true); setError(null);
+    const record: ConnectionDebugRecord = { version: "connection-debug-v1", startedAt: new Date().toISOString(), model: selected, message,
+      files: files.map(file => ({ name: file.name, mimeType: file.mimeType, encodedBytes: file.data.length })), browser: { userAgent: navigator.userAgent, online: navigator.onLine, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }, steps: [] };
+    if (debugging) { setChecks([]); setDebugRecord(record); }
     try {
       const saved = needsSave ? await onSave() : connection;
       if (!saved) return;
       const endpoint = `/api/provider-connections/${saved.id}/chat-check`;
-      const payload = { model: selected, message: message.trim(), attachments: debugging ? files : [], transient: true };
+      const payload = { model: selected, message, attachments: debugging ? files : [], transient: true, debug: debugging };
       const previewResponse = await ownerFetch(endpoint, { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "review", ...payload }) });
       const preview = await previewResponse.json();
+      record.steps.push({ action: "Uygulama: isteği doğrulama", status: previewResponse.status, code: preview.code ?? null });
       if (!previewResponse.ok) throw new Error(`${preview.error ?? "Deneme incelenemedi"} · ${preview.code ?? `HTTP ${previewResponse.status}`}`);
-      const attempt = { connectionId: saved.id, requestId: createBrowserRequestId(), model: selected, message: message.trim(), fingerprint: preview.fingerprint };
+      const attempt = { connectionId: saved.id, requestId: createBrowserRequestId(), model: selected, message, fingerprint: preview.fingerprint };
       setIntent(attempt);
       const response = await ownerFetch(endpoint, { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "send", ...attempt, ...payload, connectionId: undefined, acknowledge: true, acknowledgeUnknown }) });
       const body = await response.json();
+      record.steps.push({ action: "Uygulama: testi gönderme", status: response.status, code: body.code ?? null });
       if (!response.ok) {
         if (response.status >= 400 && response.status < 500) setIntent(null);
         throw new Error(`${body.error ?? "Deneme tamamlanamadı"} · ${body.code ?? `HTTP ${response.status}`}`);
       }
       const check = generationObservationSchema.parse(body);
-      setChecks(current => [...current.filter(item => item.id !== check.id), check]);
+      record.result = check;
+      setChecks(current => debugging ? [check] : [...current.filter(item => item.id !== check.id), check]);
       setReceipts(current => [...current.filter(item => item.id !== check.id), check]);
       setIntent(null); setAcknowledgeUnknown(false); onResult?.();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Deneme yanıtı alınamadı."); }
-    finally { working.current = false; setBusy(false); onBusy(false); }
+    } catch (cause) { const detail = cause instanceof Error ? cause.message : "Deneme yanıtı alınamadı."; setError(detail); record.steps.push({ action: "Uygulama: sonuç", status: null, code: "application_test_error", detail }); }
+    finally { if (debugging) setDebugRecord({ ...record, steps: [...record.steps] }); working.current = false; setBusy(false); onBusy(false); }
   }
   async function refresh() {
     const id = intent?.connectionId ?? connection?.id;
@@ -127,15 +136,16 @@ export function ConnectionChatTester({ connection, models, aliases = {}, needsSa
       {!checks.some(check => check.kind === "chat") ? <p className="hint">Yanıt veya hata kodu burada görünecek.</p> : null}
     </div>
     <label>Test mesajı<textarea aria-label="Test mesajı" rows={3} maxLength={1200} value={message} disabled={busy || disabled || readingFiles || Boolean(intent)} onChange={event => { setMessage(event.target.value); setError(null); }} /></label>
-    {debugging ? <section className="connection-test-files" aria-label="Test dosyaları"><label>Test Dosyası Ekle<input aria-label="Test dosyası ekle" type="file" multiple accept="image/png,image/jpeg,image/webp,application/pdf,audio/wav,audio/mpeg,.wav,.mp3" disabled={busy || disabled || readingFiles || Boolean(intent)} onChange={event => void chooseFiles(event.currentTarget)} /></label>
+    {debugging ? <section className="connection-test-files" aria-label="Test dosyaları"><strong>Test Dosyası Ekle</strong><div className="file-picker-actions"><button type="button" className="secondary-button file-picker-button" title="Bu test için görsel, ses veya PDF dosyası seçer. İptal etmek pencereyi kapatmaz." disabled={busy || disabled || readingFiles || Boolean(intent)} onClick={() => fileInput.current?.click()}>Dosya Seç</button><span className="hint">{files.length ? `${files.length} dosya seçili` : "Henüz dosya seçilmedi"}</span></div><input ref={fileInput} hidden aria-label="Test dosyası ekle" type="file" multiple accept="image/png,image/jpeg,image/webp,application/pdf,audio/wav,audio/mpeg,.wav,.mp3" disabled={busy || disabled || readingFiles || Boolean(intent)} onChange={event => void chooseFiles(event.currentTarget)} />
       <p className="hint">En fazla 3 dosya; dosya başına 1 MiB, toplam 2 MiB. Ses için WAV/MP3. Yalnız bu testin dosyaları gönderilir.</p>
       {files.map((file, index) => <div key={index} className="connection-test-file"><span>{file.name} · {file.mimeType}</span><button type="button" className="secondary-button" aria-label={`${file.name} dosyasını kaldır`} disabled={busy || readingFiles || Boolean(intent)} onClick={() => setFiles(current => current.filter((_, i) => i !== index))}>Kaldır</button></div>)}
     </section> : null}
     {pending ? <label className="checkbox-label"><input type="checkbox" checked={acknowledgeUnknown} disabled={busy || disabled} onChange={event => setAcknowledgeUnknown(event.target.checked)} /><span>Önceki denemenin uzak sonucu bilinmiyor; yeni denemenin ayrıca ücretlenebileceğini kabul ediyorum.</span></label> : null}
-    <div className="connection-chat-actions"><button type="button" disabled={busy || disabled || readingFiles || !selected || !message.trim() || pending && !acknowledgeUnknown || Boolean(intent)} onClick={() => void send()}>{busy ? "Yanıt Bekleniyor…" : needsSave ? "Kaydet Ve Test Et" : "Mesajı Gönder"}</button>
-      {connection || intent ? <button type="button" className="secondary-button" disabled={busy || disabled} onClick={() => void refresh()}>Sonucu Kontrol Et</button> : null}</div>
+    <div className="connection-chat-actions"><button type="button" title="Yazdığınız mesajı ve seçtiğiniz dosyaları bir kez seçili modele gönderir. Ek sistem talimatı göndermez; API ücretlenebilir." disabled={busy || disabled || readingFiles || !selected || !message.trim() || pending && !acknowledgeUnknown || Boolean(intent)} onClick={() => void send()}>{busy ? "Yanıt Bekleniyor…" : needsSave ? "Kaydet Ve Test Et" : "Mesajı Gönder"}</button>
+      {connection || intent ? <button type="button" title="Uygulamada kaydedilmiş işlem durumunu okur. Modele yeniden istek göndermez ve yeni API ücreti oluşturmaz. Geçici yanıt sunucuda saklanmadığı için sonradan geri getirilemez." className="secondary-button" disabled={busy || disabled} onClick={() => void refresh()}>Sonucu Kontrol Et</button> : null}</div>
     {needsSave ? <p className="hint">Bu işlem önce bağlantıyı şifreleyerek kaydeder veya değişikliklerini günceller, ardından mesajı gönderir.</p> : null}
     {error ? <p className="alert error" role="alert">{error}{intent ? " Yeni çağrı göndermeden Sonucu Kontrol Et ile kaydı okuyun." : ""}</p> : null}
     <p className="hint">Mesaj, dosya ve yanıtlar geçicidir; pencereyi kapatınca veya sayfayı yenileyince temizlenir. Sohbet geçmişiniz eklenmez. 512 çıktı tokenı ve 45 saniye istenir. Çift gönderimi önleyen içeriksiz işlem durumu saklanır.</p>
+    {debugging ? <ConnectionDebugTrace record={debugRecord} /> : null}
   </section>;
 }

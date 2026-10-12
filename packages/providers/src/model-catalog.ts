@@ -1,5 +1,6 @@
 import type { CatalogModelDetail, ModelCatalogCheck, SaveProviderConnectionRequest } from "@deliberation-ai/contracts";
 import { NVIDIA_HOSTED_BASE_URL } from "@deliberation-ai/contracts";
+import { connectionTraceUrl } from "./connection-test-trace";
 
 export type { CatalogModelDetail, ModelCatalogCheck } from "@deliberation-ai/contracts";
 
@@ -160,7 +161,7 @@ export async function checkProviderConnectionModels(
       const model = entry as Record<string, unknown>;
       if (connection.provider === "google") {
         const actions = model.supportedActions ?? model.supportedGenerationMethods;
-        if (Array.isArray(actions) && !actions.includes("generateContent")) continue;
+        if (!Array.isArray(actions) || !actions.includes("generateContent")) continue;
       }
       const rawId = connection.provider === "google" ? model.name : model.id;
       if (typeof rawId !== "string") continue;
@@ -183,6 +184,7 @@ export async function checkProviderConnectionModels(
       models: ids,
       ...(details.length ? { details } : {}),
       checkedAt: new Date().toISOString(),
+      sourceUrl: connectionTraceUrl(parsedUrl.toString()),
       truncated: eligibleCount > MAX_MODELS || record.has_more === true || typeof record.nextPageToken === "string" || (typeof record.total_count === "number" && record.total_count > entries.length),
     };
   } catch {

@@ -11,6 +11,27 @@ const success: ConnectionCheckExecution = { status: "succeeded", failure: null, 
   inputTokens: 10, outputTokens: 20, httpStatus: null };
 const failed: ConnectionCheckExecution = { ...success, status: "failed", failure: "rejected" };
 
+test("current debug transfer is returned once, never stored, and its profile is bound to replay", async () => {
+  const initial = await saveProviderConnection({ ...settings, label: `Trace fixture ${randomUUID()}` });
+  const message = "PRIVATE DEBUG REQUEST", reply = "PRIVATE DEBUG RESPONSE";
+  const now = new Date().toISOString();
+  const trace = { version: "connection-test-trace-v1" as const, provider: "openai-compatible" as const, startedAt: now, finishedAt: now, elapsedMs: 10,
+    request: { method: "POST" as const, url: "http://127.0.0.1:11434/v1/chat/completions", headers: { authorization: "[REDACTED]" }, body: message, wireBytes: 30, binaryDataOmitted: false },
+    response: { status: 200, headers: {}, body: reply, receivedBytes: 30, truncated: false }, runtime: { node: "v24.0.0", platform: "fixture", arch: "fixture", adapter: "connection-chat-v2" as const, timeoutMs: 45000, operationId: randomUUID() },
+    result: { stage: "normalization" as const, code: null, outcome: "success" as const } };
+  const execute = vi.fn(async () => ({ ...success, reply, trace }));
+  try {
+    const preview = (await reviewConnectionGenerationCheck(initial.id, "local-check", message, [], true, true))!;
+    const request = { action: "send", requestId: randomUUID(), model: preview.model, message, transient: true, debug: true, fingerprint: preview.fingerprint, acknowledge: true };
+    expect((await runConnectionChatCheck(initial.id, request, execute))?.trace).toEqual(trace);
+    const stored = (await reviewConnectionGenerationCheck(initial.id))!.observations.generationChecks[0]!;
+    expect(JSON.stringify(stored)).not.toMatch(/PRIVATE|trace|authorization/u);
+    expect(await runConnectionChatCheck(initial.id, request, execute)).toEqual(stored);
+    await expect(runConnectionChatCheck(initial.id, { ...request, debug: false }, execute)).rejects.toBeInstanceOf(ConnectionCheckConflictError);
+    expect(execute).toHaveBeenCalledTimes(1);
+  } finally { await deleteProviderConnection(initial.id); await closeDatabase(); }
+});
+
 test("transient tests retain content-free replay receipts and bind exact files without persisting test bodies", async () => {
   const initial = await saveProviderConnection({ ...settings, label: `Transient fixture ${randomUUID()}` });
   const message = "PRIVATE TRANSIENT QUESTION", reply = "PRIVATE TRANSIENT REPLY";
@@ -34,7 +55,7 @@ test("transient tests retain content-free replay receipts and bind exact files w
 test("model aliases survive catalog/receipt writes without changing execution revision or model identifiers", async () => {
   const initial = await saveProviderConnection({ ...settings, label: `Alias fixture ${randomUUID()}`, selectedModels: ["local-check", "other"], modelAliases: { "local-check": "Kısa Ad" } });
   try {
-    const saved = await saveProviderConnection({ ...initial, apiKey: "", modelAliases: { "local-check": "Yeni Ad" }, expectedRevision: initial.revision });
+    const saved = await saveProviderConnection({ ...initial, defaultModel: "", apiKey: "", modelAliases: { "local-check": "Yeni Ad" }, expectedRevision: initial.revision });
     expect(saved.revision).toBe(initial.revision); expect(saved.modelAliases).toEqual({ "local-check": "Yeni Ad" });
     await saveProviderConnectionCatalogCheck(saved.id, saved.revision, { status: "available", verification: "catalog_only", models: ["local-check"], truncated: false });
     const review = (await reviewConnectionGenerationCheck(saved.id))!;
@@ -79,10 +100,11 @@ test("fences concurrent/lost-response submissions and preserves historical resul
     expect((await runConnectionGenerationCheck(initial.id, request, execute))?.status).toBe("submitted");
     await expect(deleteProviderConnection(initial.id)).rejects.toThrow("doğrulanmamış");
     await expect(runConnectionGenerationCheck(initial.id, { ...request, requestId: randomUUID(), acknowledgeUnknown: true }, execute)).rejects.toBeInstanceOf(ConnectionCheckConflictError);
-    const updated = await saveProviderConnection({ ...settings, id: initial.id, label: initial.label, defaultModel: "local-other" });
-    await saveProviderConnectionCatalogCheck(initial.id.toUpperCase(), updated.revision, { status: "available", verification: "catalog_only", models: ["local-other"], truncated: false });
+    await expect(saveProviderConnection({ ...settings, id: initial.id, label: initial.label, defaultModel: "local-other" })).rejects.toMatchObject({ impact: { eligible: false } });
     release();
     expect((await first)?.status).toBe("succeeded");
+    const updated = await saveProviderConnection({ ...settings, id: initial.id, label: initial.label, defaultModel: "local-other" });
+    await saveProviderConnectionCatalogCheck(initial.id.toUpperCase(), updated.revision, { status: "available", verification: "catalog_only", models: ["local-other"], truncated: false });
     expect((await runConnectionGenerationCheck(initial.id, request, execute))?.revision).toBe(1);
     expect(execute).toHaveBeenCalledTimes(1);
     await expect(runConnectionGenerationCheck(initial.id, { ...request, model: "different" }, execute)).rejects.toBeInstanceOf(ConnectionCheckConflictError);

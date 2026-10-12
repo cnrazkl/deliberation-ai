@@ -6,6 +6,8 @@ import {
   ProviderConnectionSecretRequiredError,
   ProviderConnectionCheckPendingError,
   ProviderConnectionRevisionConflictError,
+  ProviderConnectionImpactError,
+  previewProviderConnectionDeletion,
   saveProviderConnection,
 } from "@deliberation-ai/persistence";
 import { rejectCrossOriginMutation } from "../../../lib/request-security";
@@ -14,19 +16,20 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function sessionGET(): Promise<Response> {
-  return Response.json({ connections: await listProviderConnections() });
+  return Response.json({ connections: await listProviderConnections() }, { headers: { "Cache-Control": "no-store" } });
 }
 
 async function sessionPOST(request: Request): Promise<Response> {
   const rejected = rejectCrossOriginMutation(request);
   if (rejected) return rejected;
-  const parsed = saveProviderConnectionSchema.safeParse(await request.json());
+  const parsed = saveProviderConnectionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return Response.json({ error: "Sağlayıcı bağlantı bilgileri geçersiz." }, { status: 400 });
   }
   try {
     return Response.json(await saveProviderConnection(parsed.data));
   } catch (error) {
+    if (error instanceof ProviderConnectionImpactError) return Response.json({ error: error.message, code: "connection_impact_required", impact: error.impact }, { status: 409, headers: { "Cache-Control": "no-store" } });
     if (error instanceof ProviderConnectionRevisionConflictError) return Response.json({ error: error.message }, { status: 409 });
     if (error instanceof ProviderConnectionSecretRequiredError) {
       return Response.json({ error: error.message }, { status: 400 });
@@ -40,8 +43,13 @@ async function sessionDELETE(request: Request): Promise<Response> {
   if (rejected) return rejected;
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "Bağlantı kimliği gerekli." }, { status: 400 });
-  try { return Response.json({ deleted: await deleteProviderConnection(id) }); }
+  if (!new URL(request.url).searchParams.get("impactFingerprint")) {
+    const impact = await previewProviderConnectionDeletion(id);
+    return impact ? Response.json({ error: "Bağlı kayıtları inceleyip silmeyi onaylayın.", code: "connection_impact_required", impact }, { status: 409, headers: { "Cache-Control": "no-store" } }) : Response.json({ deleted: false });
+  }
+  try { return Response.json({ deleted: await deleteProviderConnection(id, new URL(request.url).searchParams.get("impactFingerprint") ?? undefined) }); }
   catch (error) {
+    if (error instanceof ProviderConnectionImpactError) return Response.json({ error: error.message, code: "connection_impact_required", impact: error.impact }, { status: 409, headers: { "Cache-Control": "no-store" } });
     if (error instanceof ProviderConnectionCheckPendingError) return Response.json({ error: error.message }, { status: 409 });
     throw error;
   }

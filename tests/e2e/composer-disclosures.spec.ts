@@ -1,3 +1,4 @@
+import { revealChatTab } from "./workspace-navigation";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./authenticated-test";
 
@@ -18,8 +19,9 @@ for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1
     await page.setViewportSize({ width, height: 975 });
     await page.goto("/");
     await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
-    const headers = page.locator("summary.disclosure-summary");
-    await expect(headers).toHaveCount(7);
+    await revealChatTab(page, "Bağlam Ve Kontroller");
+    const headers = page.locator("#chat-panel-controls summary.disclosure-summary");
+    await expect(headers).toHaveCount(4);
     for (const expanded of [false, true]) {
       const issues = await headers.evaluateAll((summaries, expanded) => {
         const issues: string[] = [];
@@ -66,8 +68,10 @@ test("keyboard and whole-row expansion retain drafts and do not enable settings"
   await page.goto("/");
   const question = "Renk paletlerini hangi ölçütlerle karşılaştırmalıyım?";
   await page.getByLabel("Sorunuz", { exact: true }).fill(question);
+  await revealChatTab(page, "Bağlam Ve Kontroller", false);
   const prompt = page.locator("details.composer-disclosure").filter({ has: page.locator(".prompt-revision-editor") });
   const summary = prompt.locator(":scope > summary");
+  await page.keyboard.press("Tab");
   await summary.focus();
   await expect(summary).toBeFocused();
   expect(await summary.evaluate(element => element.matches(":focus-visible") && parseFloat(getComputedStyle(element).outlineWidth) >= 2)).toBe(true);
@@ -93,10 +97,10 @@ test("keyboard and whole-row expansion retain drafts and do not enable settings"
   await summary.press("Enter");
   await expect(prompt.getByLabel("Yapılandırılmış aday istem")).toHaveValue(candidate);
   await expect(prompt.getByRole("radio", { name: "Düzenlenebilir adayı kullan" })).toBeChecked();
-  await page.locator(".knowledge-panel > summary").press("Space");
+  await revealChatTab(page, "Kaynaklar Ve Dosyalar", false); await page.locator(".knowledge-panel > summary").press("Space");
   await expect(page.locator(".knowledge-panel")).toHaveAttribute("open", "");
   await expect(prompt).toHaveAttribute("open", "");
-  await limitSummary.press("Enter");
+  await revealChatTab(page, "Bağlam Ve Kontroller", false); await limitSummary.press("Enter");
   await expect(limits.getByRole("checkbox")).toBeChecked();
   await expect(limits.getByLabel("En fazla API çağrısı")).toHaveValue("5");
   await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(question);
@@ -106,8 +110,10 @@ test("keyboard and whole-row expansion retain drafts and do not enable settings"
 test("high-risk assessment and blocking guidance stay visible", async ({ page }) => {
   await offlineConnection(page); await page.goto("/");
   await page.getByLabel("Sorunuz", { exact: true }).fill("Tedavi için hangi ilacı seçmeliyim ve nasıl bir doz kullanmalıyım?");
-  await expect(page.locator(".question-card > .risk-assessment")).toBeVisible();
-  await expect(page.locator(".question-card > .risk-assessment")).toContainText("Yüksek risk");
-  await expect(page.locator(".question-card > .inline-warning").filter({ hasText: "Yüksek risk profili" })).toBeVisible();
+  await revealChatTab(page, "Bağlam Ve Kontroller");
+  await expect(page.getByLabel("Risk ön değerlendirmesi")).toBeVisible();
+  await expect(page.getByLabel("Risk ön değerlendirmesi")).toContainText("Yüksek risk");
+  await revealChatTab(page, "Soru", false);
+  await expect(page.locator(".question-card .inline-warning").filter({ hasText: "Yüksek risk profili" })).toBeVisible();
   await expect(page.locator('.question-card button[type="submit"]')).toBeDisabled();
 });

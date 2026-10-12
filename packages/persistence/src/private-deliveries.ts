@@ -9,6 +9,7 @@ import { getDatabase } from "./database";
 import { decryptText } from "./crypto";
 import { getOwnerId } from "./owner";
 import { providerConnections } from "./schema";
+import { lockProviderBindings } from "./provider-connection-impact";
 import { getBoss, PRIVATE_DELIVERY_QUEUE } from "./queue";
 import { lockConversationMembership, ConversationSizeError, type ConversationTransaction } from "./conversation-membership";
 import { boundedPrivateBody, privateDeliveryPending, readPrivateBranch, writePrivateDeliveryBody, PrivateBranchConflictError } from "./private-branches";
@@ -34,6 +35,7 @@ async function connection(tx: ConversationTransaction, id: string | undefined, l
   return value;
 }
 async function preview(tx: ConversationTransaction, id: string, lock = false, settings: { maxOutputTokens?: number } = {}) {
+  if (lock) await lockProviderBindings(tx);
   const branch = await readPrivateBranch(tx, id, lock); if (!branch) return undefined;
   const body = branch.value.body; const deliveries = body.deliveries ?? []; const member = body.seed.member;
   const input = renderPrivateDelivery(body, settings); const risk = assessPrivateDelivery(body, input);
@@ -45,7 +47,7 @@ async function preview(tx: ConversationTransaction, id: string, lock = false, se
   if (privateDeliveryPending(body)) blocks.push("pending");
   if (!supportedProvider(member.provider) || (target && target.provider !== member.provider)) blocks.push("unsupported_provider");
   if (member.reasoningLevel !== "default" || member.webSearchMode !== "off") blocks.push("unsupported_settings");
-  if (!target || !privateBaseUrl(target)) blocks.push("missing_connection");
+  if (!target || !privateBaseUrl(target) || !(target.selectedModels ?? (target.defaultModel ? [target.defaultModel] : [])).includes(member.model)) blocks.push("missing_connection");
   if (risk.effectiveProfile === "high") blocks.push("high_risk");
   const used = deliveries.filter((item) => item.originBranchId === id).length;
   // Reserve enough encrypted-body plaintext capacity for a maximally escaped

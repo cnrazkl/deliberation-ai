@@ -1,3 +1,4 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { expect, test } from "./authenticated-test";
 import { workspaceView } from "./workspace-navigation";
 import { openConnectionPanel } from "./connection-model-selection";
@@ -32,7 +33,7 @@ test("connection creation reports encrypted success in place and failures never 
     await expect(page.locator(".primary-connections .connection-save-notice")).toHaveCount(0);
     await expect(form.getByLabel("Bağlantı adı", { exact: true })).toHaveValue("Failed save check");
     await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Preserve this draft when saving a connection.");
-  } finally { if (savedId) await request.delete(`/api/provider-connections?id=${savedId}`); }
+  } finally { if (savedId) await deleteGeneratedConnection(request, `/api/provider-connections?id=${savedId}`); }
 });
 
 for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1440]) {
@@ -57,7 +58,7 @@ for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1
       await expect(page.locator(".appearance-card")).toHaveCount(0);
       await expect(page.locator(".sidebar-footer select[aria-label='Tema']")).toHaveCount(1);
       const card = page.locator(".connection-card").filter({ hasText: "Layout check" });
-      const dialog = await openConnectionPanel(page, card, "Test ve Geçmiş");
+      const dialog = await openConnectionPanel(page, card, "Test Ve Hata Ayıklama");
       const panel = dialog.locator(".connection-generation-panel").filter({ visible: true });
       await expect(panel.getByRole("region", { name: "Model test ve hata ayıklama alanı" })).toBeVisible();
       await expect(panel.getByRole("button", { name: "Üretim testi ve model geçmişi" })).toHaveCount(0);
@@ -74,6 +75,6 @@ for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       expect(generationRequests).toBe(0);
       if (width === 960) { await panel.scrollIntoViewIfNeeded(); await page.screenshot({ path: testInfo.outputPath(`connections-${theme}.png`) }); }
-    } finally { if (savedId) await request.delete(`/api/provider-connections?id=${savedId}`); }
+    } finally { if (savedId) await deleteGeneratedConnection(request, `/api/provider-connections?id=${savedId}`); }
   });
 }

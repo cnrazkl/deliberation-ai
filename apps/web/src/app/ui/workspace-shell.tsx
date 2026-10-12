@@ -3,7 +3,7 @@
 import { useRef, useSyncExternalStore, type ReactNode } from "react";
 import { BrandHomeLink } from "./brand-home-link";
 
-export type WorkspaceView = "chat" | "schedules" | "settings";
+export type WorkspaceView = "chat" | "councils" | "schedules" | "settings";
 type Theme = "system" | "light" | "dark";
 const themeKey = "deliberation-theme";
 function themeSnapshot(): Theme {
@@ -32,10 +32,10 @@ export function ThemeSelect() {
     </select>
   </label>;
 }
-const labels: Record<WorkspaceView, string> = { chat: "Sohbet", schedules: "Zamanlayıcı", settings: "Ayarlar" };
+const labels: Record<WorkspaceView, string> = { chat: "Sohbet", councils: "Konseyler", schedules: "Zamanlayıcı", settings: "Ayarlar" };
 function WorkspaceIcon({ view }: { view: WorkspaceView }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {view === "chat" ? <path d="M20 11.5a8 8 0 0 1-8 8H5l-3 2v-10a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z" /> : view === "schedules" ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></> : <><path d="M4 7h16M4 17h16" /><circle cx="8" cy="7" r="3" fill="var(--sidebar)" /><circle cx="16" cy="17" r="3" fill="var(--sidebar)" /></>}
+    {view === "chat" ? <path d="M20 11.5a8 8 0 0 1-8 8H5l-3 2v-10a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z" /> : view === "councils" ? <><circle cx="9" cy="7" r="3" /><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-3-5" /></> : view === "schedules" ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></> : <><path d="M4 7h16M4 17h16" /><circle cx="8" cy="7" r="3" fill="var(--sidebar)" /><circle cx="16" cy="17" r="3" fill="var(--sidebar)" /></>}
   </svg>;
 }
 export function WorkspaceShell({ view, onViewChange, sidebarOpen, onSidebarOpenChange: setSidebarOpen, onNewChat, newChatDisabled, attentionCount, sidebar, children }: {

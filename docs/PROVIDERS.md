@@ -1,11 +1,18 @@
 # Providers
 
-The connection mini-chat uses a separate two-message plain-text probe (512 requested
+Catalog observations display source URL, timestamp and partial/verification state.
+Google requires an advertised `generateContent` action; catalog presence still does
+not certify project/key generation access. A 404 alone cannot establish retirement.
+[Sources and limits](WORKSPACE_DIAGNOSTICS.md).
+
+
+The connection mini-chat uses a separate single-user-message, unprimed plain-text probe (512 requested
 output tokens, 45 seconds, no tools/schema or history). All four families reuse bounded
 redirect-refusing text transport. Provider-default reasoning may consume the requested
 budget; truncated or over-cap replies are marked. It proves only this text request,
 not structured council output support. Safe HTTP codes and allowlisted DNS/connect/
-TLS/reset/deadline diagnostics are returned without raw error bodies. Network failures
+TLS/reset/deadline diagnostics are returned without raw error bodies in normal result fields. Opt-in current-test debug DTOs
+include bounded, redacted request/response bodies and headers; traces are never stored. Network failures
 retain unknown outcomes and never retry automatically. Worker provider access requires
 the owned outbound access network; an internal-only Docker network cannot reach APIs.
 
@@ -19,7 +26,7 @@ model-specific rejection is left to the provider and displayed with safe diagnos
 New transient probe status/error codes are retained without message/reply/file bodies.
 HTTP errors and embedded HTTP-200 errors are normalized inside the adapter. Known
 provider error categories and generated explanations cross the boundary; raw error
-bodies that could reflect credentials/input do not. Private/synthesis transport keeps
+bodies cross only in the opt-in ephemeral trace after credential/opaque-state redaction. Private/synthesis transport keeps
 its existing contracts. Network generation remains opt-in and outside normal CI.
 [OpenRouter inputs](https://openrouter.ai/docs/guides/overview/multimodal/audio),
 [PDF engine](https://openrouter.ai/docs/guides/overview/multimodal/pdfs),

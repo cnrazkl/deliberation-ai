@@ -12,10 +12,10 @@ type Row = typeof providerConnections.$inferSelect;
 export class ConnectionCheckConflictError extends Error {
   constructor(readonly reason: "stale" | "identity" | "pending" | "acknowledgement" | "capacity") { super("Bağlantı denemesi onayı veya durumu değişti."); }
 }
-function fingerprint(row: Row, model: string, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false) {
+function fingerprint(row: Row, model: string, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false, debug = false) {
   return createHash("sha256").update(JSON.stringify({ id: row.id, revision: row.revision, provider: row.provider,
     baseUrl: row.baseUrl, endpointPreset: row.endpointPreset, reasoningProtocol: row.reasoningProtocol,
-    structuredOutputMode: row.structuredOutputMode, model, prompt: message === undefined ? generationCheckPrompt() : connectionChatPrompt(message),
+    structuredOutputMode: row.structuredOutputMode, model, prompt: message === undefined ? generationCheckPrompt() : connectionChatPrompt(message), ...(debug ? { debug: true } : {}),
     ...(transient || attachments.length ? { transient, attachments: attachments.map(file => ({ name: file.name, mimeType: file.mimeType, sha256: createHash("sha256").update(Buffer.from(file.data, "base64")).digest("hex") })) } : {}) })).digest("hex");
 }
 export async function getConnectionCheckHistory(id: string) {
@@ -24,14 +24,14 @@ export async function getConnectionCheckHistory(id: string) {
   )).limit(1);
   return row ? readProviderObservations(row) : undefined;
 }
-export async function reviewConnectionGenerationCheck(id: string, model?: string, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false) {
+export async function reviewConnectionGenerationCheck(id: string, model?: string, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false, debug = false) {
   const [row] = await getDatabase().select().from(providerConnections).where(and(
     eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, id),
   )).limit(1);
   if (!row) return undefined;
   validateConnectionTestAttachments(attachments);
   const selected = generationCheckRequestSchema.shape.model.parse(model ?? row.defaultModel);
-  return { connectionId: row.id, revision: row.revision, model: selected, fingerprint: fingerprint(row, selected, message, attachments, transient),
+  return { connectionId: row.id, revision: row.revision, model: selected, fingerprint: fingerprint(row, selected, message, attachments, transient, debug),
     ...(message === undefined ? generationCheckPrompt() : connectionChatPrompt(message)), observations: readProviderObservations(row) };
 }
 
@@ -42,13 +42,13 @@ export async function runConnectionGenerationCheck(id: string, input: unknown, e
   return runCheck(id, request, execute);
 }
 export async function runConnectionChatCheck(id: string, input: unknown,
-  execute: (target: SaveProviderConnectionRequest, id: string, message: string, attachments: ConnectionTestAttachment[]) => Promise<ConnectionCheckExecution> = executeBoundedConnectionChat) {
+  execute: (target: SaveProviderConnectionRequest, id: string, message: string, attachments: ConnectionTestAttachment[], debug: boolean) => Promise<ConnectionCheckExecution> = executeBoundedConnectionChat) {
   const request = connectionChatSendSchema.parse(input);
   validateConnectionTestAttachments(request.attachments);
-  return runCheck(id, request, (target, operationId) => execute(target, operationId, request.message, request.attachments), request.message, request.attachments, request.transient);
+  return runCheck(id, request, (target, operationId) => execute(target, operationId, request.message, request.attachments, request.debug), request.message, request.attachments, request.transient, request.debug);
 }
-async function runCheck(id: string, request: ReturnType<typeof generationCheckRequestSchema.parse>, execute: Executor, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false): Promise<GenerationObservation | undefined> {
-  const inputDigest = transient || attachments.length ? createHash("sha256").update(JSON.stringify([message, attachments])).digest("hex") : undefined;
+async function runCheck(id: string, request: ReturnType<typeof generationCheckRequestSchema.parse>, execute: Executor, message?: string, attachments: ConnectionTestAttachment[] = [], transient = false, debug = false): Promise<GenerationObservation | undefined> {
+  const inputDigest = transient || attachments.length || debug ? createHash("sha256").update(JSON.stringify(debug ? [message, attachments, true] : [message, attachments])).digest("hex") : undefined;
   const claim = await getDatabase().transaction(async (tx) => {
     const [row] = await tx.select().from(providerConnections).where(and(
       eq(providerConnections.ownerId, getOwnerId()), eq(providerConnections.id, id),
@@ -60,7 +60,7 @@ async function runCheck(id: string, request: ReturnType<typeof generationCheckRe
       if (previous.fingerprint !== request.fingerprint || previous.model !== request.model || previous.inputDigest !== inputDigest || Boolean(previous.transient) !== transient || !transient && previous.message !== message) throw new ConnectionCheckConflictError("identity");
       return { check: previous, target: null };
     }
-    if (fingerprint(row, request.model, message, attachments, transient) !== request.fingerprint) throw new ConnectionCheckConflictError("stale");
+    if (fingerprint(row, request.model, message, attachments, transient, debug) !== request.fingerprint) throw new ConnectionCheckConflictError("stale");
     if (observations.generationChecks.length >= MAX_GENERATION_CHECKS) throw new ConnectionCheckConflictError("capacity");
     const pending = observations.generationChecks.filter((check) => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt);
     if (pending.some((check) => Date.now() - Date.parse(check.startedAt) < GENERATION_CHECK_TIMEOUT_MS + 5_000)) throw new ConnectionCheckConflictError("pending");
@@ -101,10 +101,11 @@ async function runCheck(id: string, request: ReturnType<typeof generationCheckRe
     const index = observations.generationChecks.findIndex((check) => check.id === completed.id);
     if (index < 0) throw new ConnectionCheckConflictError("identity");
     completed.acknowledgedAt = observations.generationChecks[index]!.acknowledgedAt;
+    const { trace: _trace, ...content } = completed;
     if (transient) {
-      const { message: _message, reply: _reply, errorDetail: _detail, ...receipt } = completed;
+      const { message: _message, reply: _reply, errorDetail: _detail, ...receipt } = content;
       observations.generationChecks[index] = receipt;
-    } else observations.generationChecks[index] = completed;
+    } else observations.generationChecks[index] = content;
     await tx.update(providerConnections).set({ catalogSnapshotCiphertext: encryptProviderObservations(row.id, observations) }).where(eq(providerConnections.id, row.id));
     return completed;
   });

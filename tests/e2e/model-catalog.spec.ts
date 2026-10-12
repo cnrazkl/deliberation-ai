@@ -1,3 +1,4 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { withOwner, closeDatabase } from "@deliberation-ai/persistence";
 import { revealCouncilControls, workspaceView } from "./workspace-navigation";
 import { createServer } from "node:http";
@@ -19,7 +20,7 @@ test("saved catalog supports multiple models, preserves drafts and keeps connect
       const saved = await request.post("/api/provider-connections", { data: { ...settings, label, defaultModel: "local-model-a" } });
       expect(saved.ok()).toBe(true); ids.push((await saved.json()).id);
     }
-    await page.goto("/"); await revealCouncilControls(page); await page.getByLabel("Sorunuz", { exact: true }).fill("Keep this draft and the selected model.");
+    await page.goto("/"); await page.getByLabel("Sorunuz", { exact: true }).fill("Keep this draft and the selected model.");
     await workspaceView(page, "Ayarlar");
     expect(calls).toEqual([]);
     const card = page.locator(".connection-card").filter({ hasText: "E2E catalog" });
@@ -44,7 +45,7 @@ test("saved catalog supports multiple models, preserves drafts and keeps connect
     await expect(editor.getByLabel("Bağlantı adı", { exact: true })).toHaveValue("E2E editor");
     await expect(editor.getByLabel("API anahtarı", { exact: true })).toHaveValue("");
     await panel.getByRole("button", { name: "Vazgeç", exact: true }).click();
-    await workspaceView(page, "Sohbet"); await page.getByLabel("Üye 1 bağlantısı").selectOption(ids[0]!);
+    await workspaceView(page, "Konseyler"); await page.getByLabel("Üye 1 bağlantısı").selectOption(ids[0]!);
     await page.getByLabel("Üye 1 modeli").selectOption("local-model-a");
     const model = page.getByLabel("Üye 1 modeli");
     await expect(model).toHaveJSProperty("tagName", "SELECT");
@@ -56,9 +57,9 @@ test("saved catalog supports multiple models, preserves drafts and keeps connect
     await panel.getByRole("checkbox", { name: "local-model-a", exact: true }).uncheck();
     await panel.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click();
     await expect(choices.getByRole("status")).toContainText("Model seçimleri ve takma adlar kaydedildi");
-    await workspaceView(page, "Sohbet"); await expect(model).toHaveValue("local-model-a");
+    await workspaceView(page, "Konseyler"); await expect(model).toHaveValue("local-model-a");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep this draft and the selected model.");
-    await expect(model.locator("option")).toHaveText(["Bağlantıdan bir model seçin", "local-model-a · Bu sohbetin mevcut modeli", "local-model-b"]);
+    await expect(model.locator("option")).toHaveText(["Bağlantıdan bir model seçin", "local-model-a · Seçimlerden Kaldırılmış", "local-model-b"]);
     await model.selectOption("local-model-b"); await page.getByLabel("Üye 2 bağlantısı").selectOption(ids[1]!);
     await expect(page.getByLabel("Üye 2 modeli").locator("option")).toHaveText(["Bağlantıdan bir model seçin", "local-model-a"]);
     await page.reload(); await revealCouncilControls(page); await page.getByLabel("Üye 1 bağlantısı").selectOption(ids[0]!);
@@ -80,7 +81,7 @@ test("saved catalog supports multiple models, preserves drafts and keeps connect
     expect((await request.post(`/api/provider-connections/${ids[0]}/models`, { headers: { origin: "https://untrusted.example" } })).status()).toBe(403);
     expect(calls).toHaveLength(1);
   } finally {
-    for (const id of ids) await request.delete(`/api/provider-connections?id=${id}`);
+    for (const id of ids) await deleteGeneratedConnection(request, `/api/provider-connections?id=${id}`);
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); await closeDatabase();
   }
 }));

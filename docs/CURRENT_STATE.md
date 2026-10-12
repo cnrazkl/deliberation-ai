@@ -1,6 +1,56 @@
 # Current state
 
-Updated: 11 October 2026 (model aliases and transient multimodal connection tests deployed and verified)
+Updated: 12 October 2026 (workspace diagnostics and council separation deployed)
+
+## Workspace diagnostics and council separation - deployed and verified
+
+Connection tests send the exact user message and explicit files with no system
+priming or previous conversation. Debugging shows only the current test's redacted
+wire request/response, HTTP headers/status, transfer/runtime/normalization details
+and browser/BFF steps, with JSON export. Trace content is never stored or logged.
+Historical content-free identities remain solely for replay and unresolved-operation
+protection. File buttons are styled; native file cancellation and selection drags
+across the modal edge preserve the dialog. Genuine backdrop clicks and Escape close it.
+
+Connection edits/model removals/deletion review owner-local dependencies under an
+admission lock. Active/unknown affected work blocks mutations; new templates/runs/
+schedules/preflights/private sends reject unavailable selected models. Frozen history
+is preserved. Konseyler manages creation/edit/copy/delete separately; chat selects a
+valid saved council. Four persistent chat tabs preserve drafts and expose results.
+Saved members adopt server normalization without overwriting edits made during the
+save; question clarification no longer blocks creating/editing/selecting a council.
+Catalog source/time and generation-access limits are visible; button titles explain
+actions, including receipt refresh without another provider request.
+[Contract and bounds](WORKSPACE_DIAGNOSTICS.md).
+
+502 units and 294 isolated PostgreSQL cases pass. All 122 browser scenarios are
+verified: the full run passed 121; the copy test was corrected to await its actual
+save response, then all five pool cases passed on a fresh isolated rerun. The
+earlier 62 focused browser checks also pass; no behavioral failures remain open.
+Workspace types, zero-warning web lint, script types, Linux persistence/worker/web
+types, lint and production build pass. `pnpm audit` reports no known vulnerabilities;
+staged content and full Git history pass Gitleaks. Native PostgreSQL was restored
+to its initial stopped state after isolated checks.
+
+Actual final LAN verification uses a generated account and five loopback calls: exact
+single-user quick payload; image/WAV/PDF delivery; HTTP 400 with full safe diagnostic
+body and binary/key-redacted current JSON export; status refresh without resend;
+invalid-signature refusal; cancel/drag preservation; dependency cancellation and
+confirmation; UI council creation/save and immediate chat availability;
+server-side removed-model refusal; repair in Konseyler; persistent
+drafts/tabs; light/dark 320/1110px screenshots inspected, zero page errors. No paid
+external generation. Generated account/connection/receipts erased and fixture stopped.
+
+Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-workspace-diagnostics-ready`,
+manifest `sha256:c1326e18547f4d676ac29d2892482c017fa1ee550ab5784a1ca30c7466d5851b`,
+exported tree `0fd1d1d72c2151676f7a80df9fc481c3951757d5`. Subsequent source changes are
+browser-test navigation and verification documentation only. Deployment completed
+2026-10-12T00:22:45Z, unchanged `192.168.1.112:33184`.
+Private dump inventory verified; no production migration/restore. Foreign container
+inventory/lifecycle and owned database baseline match. Worker catalog GET is 200;
+application services run with zero restarts. Observation `month-workspace-audit-20261012`
+starts 2026-10-12T00:25:48.834Z, due 2026-11-11T00:25:48.834Z; first sample healthy.
+Monthly/human-quality gates remain open. Earlier rollout artifacts below are historical.
 
 ## Connection aliases and transient multimodal tests — deployed and verified
 
@@ -24,7 +74,7 @@ screenshots inspected and zero page errors. Five loopback synthetic calls, no pa
 external generation; generated account/connection/receipts erased and fixture server stopped.
 Native PostgreSQL is stopped again, matching its initial state.
 
-Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-connection-debug`,
+Historical web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-connection-debug`,
 manifest `sha256:649a2ba68dd08d90977fe338c46d8165dd1bc36bc9adecbf86dd2dd6e6005099`,
 exported tree `08b529f2d069c26a8777685f872637ff360ff2c8`. Final source differs only in
 post-verification documentation. Deployment completed 2026-10-11T19:12:27Z at unchanged

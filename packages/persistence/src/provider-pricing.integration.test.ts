@@ -11,7 +11,7 @@ import { cancelDurableRun, enqueueDurableRun } from "./run-repository";
 import { loadProviderConnectionSecret, saveProviderConnection, deleteProviderConnection } from "./provider-connections";
 import { listProviderPrices, pricingFingerprint, recordProviderPrice } from "./provider-pricing";
 import { claimProviderOperationSubmission, getRunProviderUsage, prepareProviderOperation, resolveProviderOperation, updateProviderOperation } from "./provider-operations";
-import { providerOperations, providerPriceSnapshots, runs } from "./schema";
+import { providerOperations, providerPriceSnapshots, runs, providerConnections } from "./schema";
 
 const runIds: string[] = [];
 const connectionIds: string[] = [];
@@ -88,8 +88,10 @@ test("binds price at submission, preserves the first calculation, and uses a new
 });
 test("does not reuse prices after a connection revision, for an unmatched member, or after expiry", async () => {
   const data = await fixture();
-  await saveProviderConnection({ id: data.connection.id, provider: "openai-compatible", label: data.connection.label, apiKey: "",
-    defaultModel: "offline-pricing", baseUrl: "http://127.0.0.1:2/v1", endpointPreset: "litellm", reasoningProtocol: "none", structuredOutputMode: "json-object" });
+  await expect(saveProviderConnection({ id: data.connection.id, provider: "openai-compatible", label: data.connection.label, apiKey: "",
+    defaultModel: "offline-pricing", baseUrl: "http://127.0.0.1:2/v1", endpointPreset: "litellm", reasoningProtocol: "none", structuredOutputMode: "json-object" })).rejects.toMatchObject({ impact: { eligible: false } });
+  // Simulate out-of-band revision drift; ordinary edits are fenced while queued.
+  await getDatabase().update(providerConnections).set({ revision: data.connection.revision + 1, baseUrl: "http://127.0.0.1:2/v1" }).where(eq(providerConnections.id, data.connection.id));
   const edited = await operation(data);
   await claimProviderOperationSubmission(edited.id, undefined, data.binding);
   await finish(edited.id);

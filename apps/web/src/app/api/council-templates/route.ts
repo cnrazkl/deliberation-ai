@@ -2,6 +2,7 @@ import { withLocalSession } from "../../../lib/local-auth";
 import { saveCouncilTemplateSchema } from "@deliberation-ai/contracts";
 import {
   CouncilTemplateConflictError,
+  ProviderMemberUnavailableError,
   listCouncilTemplates,
   saveCouncilTemplate,
 } from "@deliberation-ai/persistence";
@@ -30,6 +31,7 @@ async function sessionPOST(request: Request): Promise<Response> {
   try {
     return Response.json(await saveCouncilTemplate(parsed.data));
   } catch (reason) {
+    if (reason instanceof ProviderMemberUnavailableError) return Response.json({ error: reason.message, code: "council_model_unavailable" }, { status: 422 });
     if (reason instanceof CouncilTemplateConflictError) {
       return Response.json({ error: "Şablon değişmiş, silinmiş veya bu ad farklı bir şablonda kullanılıyor. Listeyi yenileyin ya da farklı bir ad seçin." }, { status: 409 });
     }

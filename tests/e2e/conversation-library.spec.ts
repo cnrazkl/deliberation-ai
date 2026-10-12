@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls } from "./workspace-navigation";
+import { revealCouncilControls, revealChatTab } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, testOwnerId } from "./authenticated-test";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -30,11 +30,14 @@ test("discovers saved conversations, paginates and opens a result without changi
     await library.getByRole("button", { name: "Daha eski konuşmaları göster" }).click();
     await expect(library.locator(`[data-conversation-id="${conversationIds.at(-1)}"]`)).toBeVisible();
     const draft = `Konuşmalar arasında korunacak taslak ${randomUUID()}`;
+    await revealChatTab(page, "Soru");
     await page.getByLabel("Sorunuz", { exact: true }).fill(draft);
+    await revealCouncilControls(page);
     const selectedConnection = await page.getByRole("combobox", { name: "Üye 1 bağlantısı", exact: true }).inputValue();
     await library.locator(`[data-conversation-id="${view.conversationId}"]`).getByRole("button", { name: "Konuşmayı aç", exact: true }).click();
     await expect(page.getByRole("region", { name: "Konuşma kaydı", exact: true })).toContainText(view.conversationId);
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);
+    await revealCouncilControls(page);
     await expect(page.getByRole("combobox", { name: "Üye 1 bağlantısı", exact: true })).toHaveValue(selectedConnection);
     expect(dispatches).toBe(0);
     await library.getByRole("button", { name: "Konuşma listesini yenile" }).click();
@@ -75,6 +78,7 @@ test("retrying the list preserves the draft and a refreshed first page rejects a
     await page.goto("/"); await revealCouncilControls(page);
     const library = page.getByRole("region", { name: "Kayıtlı konuşmalar", exact: true });
     await expect(library.getByRole("alert")).toHaveText("Liste geçici olarak erişilemiyor.");
+    await revealChatTab(page, "Soru");
     await page.getByLabel("Sorunuz", { exact: true }).fill("Liste yenilenirken korunacak taslak");
     listStage = "current";
     await library.getByRole("button", { name: "Konuşma listesini yenile" }).click();

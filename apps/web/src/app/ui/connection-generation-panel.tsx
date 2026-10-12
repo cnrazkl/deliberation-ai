@@ -34,12 +34,12 @@ export function ConnectionGenerationPanel({ connection, onBusy }: {
   return <section className="connection-generation-panel" aria-label={`${connection.label} üretim kontrolü`}>
     <ConnectionChatTester connection={connection} models={connection.selectedModels ?? (connection.defaultModel ? [connection.defaultModel] : [])}
       aliases={connection.modelAliases ?? {}} needsSave={false} disabled={busy} debugging onSave={async () => connection} onBusy={onBusy} onResult={() => setGeneration(current => current + 1)} />
-    <section className="connection-test-history" aria-label="Test işlem geçmişi">
-      <div className="connection-catalog-heading"><div><h3>İşlem Durumu Ve Model Geçmişi</h3><p className="hint">Yeni testlerin mesaj, dosya ve yanıtları kaydedilmez. Burada çağrı durumu, hata kodu ve katalog gözlemleri tutulur.</p></div>
-        <button type="button" className="secondary-button" disabled={busy} onClick={() => setGeneration(current => current + 1)}>Kayıtları Yenile</button></div>
+    {history?.generationChecks.some(check => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt) || error ? <section className="connection-test-history" aria-label="Bekleyen test işlemleri">
+      <div className="connection-catalog-heading"><div><h3>Sonucu Belirsiz İşlemler</h3><p className="hint">Yalnız kapanmamış işlemler gösterilir. Uzak sonuç bilinmediği için yeniden göndermeden önce değerlendirin.</p></div>
+        <button type="button" title="Bekleyen işlemlerin uygulamadaki durumunu okur; yeni model çağrısı yapmaz." className="secondary-button" disabled={busy} onClick={() => setGeneration(current => current + 1)}>Durumu Yenile</button></div>
       {error ? <p className="alert error" role="alert">{error}</p> : null}
       {history ? <>
-        <ul className="connection-test-receipts">{history.generationChecks.slice().reverse().map(check => <li key={check.id}>
+        <ul className="connection-test-receipts">{history.generationChecks.filter(check => ["submitted", "outcome_unknown"].includes(check.status) && !check.acknowledgedAt).slice().reverse().map(check => <li key={check.id}>
           <strong>{connection.modelAliases?.[check.model] ?? check.model}</strong>
           <p>{new Date(check.startedAt).toLocaleString("tr-TR")} · {statusText[check.status]} · sürüm {check.revision}</p>
           {check.errorCode || check.httpStatus || check.providerErrorCode ? <code>{check.errorCode ?? check.failure}{check.httpStatus ? ` · HTTP ${check.httpStatus}` : ""}{check.providerErrorCode ? ` · Sağlayıcı: ${check.providerErrorCode}` : ""}</code> : null}
@@ -50,10 +50,7 @@ export function ConnectionGenerationPanel({ connection, onBusy }: {
             <button type="button" className="secondary-button" disabled={busy || closeId !== check.id} onClick={() => void closeUnknown(check)}>Belirsizliği Kapat (API Çağrısı Yapmaz)</button>
           </div> : null}
         </li>)}</ul>
-        {!history.generationChecks.length ? <p className="hint">Henüz bir test işlemi yok.</p> : null}
-        <h4>Katalog Gözlemleri</h4>
-        <ul>{history.catalogHistory.slice().reverse().map((entry, index) => <li key={index}>{entry.check.checkedAt ? new Date(entry.check.checkedAt).toLocaleString("tr-TR") : "Zaman bilinmiyor"} · sürüm {entry.revision} · {entry.check.status} · {entry.check.models.length} model</li>)}</ul>
       </> : null}
-    </section>
+    </section> : null}
   </section>;
 }

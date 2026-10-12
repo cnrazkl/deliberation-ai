@@ -1,5 +1,6 @@
+import { deleteGeneratedConnection } from "./connection-cleanup";
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls, workspaceView } from "./workspace-navigation";
+import { revealCouncilControls, revealChatTab, saveCouncilForChat, workspaceView } from "./workspace-navigation";
 import { addConnectionModels, openConnectionPanel } from "./connection-model-selection";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import {
@@ -38,7 +39,7 @@ test.afterEach(async ({ request }) => {
   if (response.ok()) {
     const body = await response.json() as { connections: Array<{ id: string; label: string }> };
     for (const connection of body.connections.filter(({ label }) => createdConnectionLabels.includes(label))) {
-      await request.delete(`/api/provider-connections?id=${encodeURIComponent(connection.id)}`);
+      await deleteGeneratedConnection(request, `/api/provider-connections?id=${encodeURIComponent(connection.id)}`);
     }
   }
   createdConnectionLabels = [];
@@ -109,7 +110,7 @@ test("shows opt-in self-revision proposals beside unchanged initial claims", asy
 }));
 
 test("runs a durable council and exposes a partial member failure", async ({ page, request }) => withOwner(testOwnerId(), async () => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
   let failNextRun = false;
   const submittedRunIds: string[] = [];
   await page.route("**/api/runs", async (route) => {
@@ -180,13 +181,16 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   expect((await stalePreflight.json() as { error: string }).error).toContain("Önizleme değişti");
 
   await page.goto("/"); await revealCouncilControls(page);
+  await revealChatTab(page, "Soru");
   await expect(
     page.getByRole("heading", { name: "Birlikte düşünelim." }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Yerel deneme" })).toHaveCount(0);
   const initialQuestion = await page.getByRole("textbox", { name: "Sorunuz", exact: true }).inputValue();
   await page.getByRole("textbox", { name: "Sorunuz", exact: true }).fill("");
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   await expect(page.locator(".token-preview")).toContainText("Sorunuz ve ekleriniz: 0 token");
+  await revealChatTab(page, "Soru");
   await page.getByRole("textbox", { name: "Sorunuz", exact: true }).fill(initialQuestion);
 
   const connectionSuffix = Date.now();
@@ -226,6 +230,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(openRouterCard).toContainText("Hazırda");
 
   await workspaceView(page, "Sohbet");
+  await revealChatTab(page, "Kaynaklar Ve Dosyalar");
   const tinyPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "base64");
   const attachmentInput = page.getByLabel("Görev ekleri (isteğe bağlı)");
   await attachmentInput.setInputFiles({ name: "e2e-diagram.png", mimeType: "image/png", buffer: tinyPng });
@@ -237,6 +242,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.locator(".attachment-list")).toContainText("karar.pdf");
   await expect(page.locator(".attachment-list span")).toHaveCount(2);
   await expect(page.getByLabel("Üye 1 görev eklerini alsın")).toBeChecked();
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   await expect(page.getByText(/Konseyin ilk turu/)).toBeVisible();
   await expect(page.locator(".token-preview")).toContainText("görseller ≈");
   await expect(page.locator(".token-preview")).toContainText("PDF metni ≈");
@@ -246,8 +252,11 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   const firstEstimate = await page.locator(".token-preview strong").first().innerText();
   const questionField = page.getByLabel("Sorunuz");
   const originalQuestion = await questionField.inputValue();
+  await revealChatTab(page, "Soru");
   await questionField.fill(`${originalQuestion} Ayrıca başarısızlık koşullarını ve alternatif planları ayrıntılı değerlendir.`);
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   await expect(page.locator(".token-preview strong").first()).not.toHaveText(firstEstimate);
+  await revealChatTab(page, "Soru");
   await questionField.fill(originalQuestion);
 
   const firstConnectionCard = page.locator(".connection-card").filter({ hasText: firstConnection });
@@ -257,7 +266,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await connectionPanel.getByRole("button", { name: "Model Seçimini Kaydet", exact: true }).click();
   await expect(connectionPanel.locator(".connection-selected-models").filter({ visible: true })).toContainText("e2e-model-a-updated");
 
-  await workspaceView(page, "Sohbet");
+  await revealCouncilControls(page);
   await page.getByLabel("Üye 1 bağlantısı").selectOption({ label: `${secondConnection} · OpenAI` });
   await expect(page.getByLabel("Üye 1 modeli")).toHaveValue("e2e-model-b");
   await page.getByLabel("Üye 1 modeli").selectOption("gpt-5-pro");
@@ -265,9 +274,9 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page.getByLabel("Üye 1 modeli").selectOption("gpt-5.6-sol");
   await page.getByLabel("Üye 1 düşünme seviyesi").selectOption("max");
   await page.getByLabel("Üye 1 web erişimi").selectOption("auto");
-  await expect(
-    page.locator(".connection-card").filter({ hasText: secondConnection }),
-  ).toContainText("Bu görevde 1 üye");
+  await workspaceView(page, "Ayarlar");
+  await expect(page.locator(".connection-card").filter({ hasText: secondConnection })).toContainText("Bu görevde 1 üye");
+  await revealCouncilControls(page);
   await page.getByLabel("Üye sayısı").selectOption("3");
   await page.getByLabel("Üye 3 adı").fill("Kanıt Uzmanı");
   await page.getByLabel("Üye 3 rolü").fill("Kaynak ve kanıt denetçisi");
@@ -287,10 +296,12 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page.getByLabel("Sorunuz").fill(
     "Tarayıcıdan başlatılan konsey çalışması kalıcı kuyrukta doğru şekilde sonuçlanıyor mu?",
   );
+  await revealCouncilControls(page);
   await page.getByLabel("Değerlendirme profili").selectOption("high");
   await expect(page.getByLabel("Red-team karşılaştırmasını etkinleştir")).toBeDisabled();
   await expect(page.getByLabel("Çapraz inceleme turu")).toHaveValue("1");
   await expect(page.getByLabel("Çapraz inceleme turu").locator('option[value="0"]')).toHaveAttribute("disabled", "");
+  await saveCouncilForChat(page);
   const scheduleName = `E2E zamanlama ${connectionSuffix}`;
   const scheduleRegion = page.getByRole("region", { name: "Yerel zamanlamalar" });
   await workspaceView(page, "Zamanlayıcı");
@@ -347,6 +358,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(mcpRegion).not.toContainText(mcpName);
 
   await workspaceView(page, "Sohbet");
+  await revealChatTab(page, "Soru");
   await page.getByRole("button", { name: "Konseyi çalıştır" }).click();
   await expect(page.getByText("Konsey tamamlandı", { exact: true })).toBeVisible({ timeout: 10_000 });
   await expect(page.locator(".status-card")).toContainText("Değerlendirme profili: Yüksek risk");
@@ -457,6 +469,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await scheduleDeletion.getByRole("button", { name: "Zamanlama içeriğini kalıcı olarak sil" }).click();
   await expect(scheduleCard).toHaveCount(0);
   await workspaceView(page, "Sohbet");
+  await revealChatTab(page, "Sonuçlar");
   const evidenceRegion = page.getByRole("region", { name: "Kaynak bağlantılı kanıtlar" });
   await page.getByLabel("Kaynak başlığı").fill("E2E doğrulama kaynağı");
   await page.getByLabel("Kaynak bağlantısı").fill("https://example.test/e2e-evidence");
@@ -501,6 +514,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   );
   const sharedMemoryText = "Karar vermeden önce sorunun kapsamını ve geçerli koşulları doğrula.";
   await page.locator(".report-card.shared .memory-button").first().click();
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   const memoryRegion = page.getByRole("region", { name: "Ortak konuşma belleği" });
   const selectedMemory = memoryRegion.locator(".memory-entry")
     .filter({ hasText: sharedMemoryText })
@@ -511,6 +525,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   const savedMemory = memoryRegion.locator(`.memory-entry[data-memory-id="${selectedMemoryId}"]`);
   await expect(savedMemory).toBeVisible();
   await expect(savedMemory.locator('input[type="checkbox"]')).toBeChecked();
+  await revealChatTab(page, "Sonuçlar");
   await sharedEvidenceState.selectOption("unsupported");
   await decisionRegion.getByRole("button", { name: "TypeSafe bağlantısını kaldır" }).click();
   await expect(decisionRegion.getByLabel("TypeSafe API anahtarı")).toBeVisible();
@@ -518,6 +533,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(evidenceCard).toHaveCount(0);
 
   failNextRun = true;
+  await revealChatTab(page, "Soru");
   await page.getByRole("button", { name: "Konseyi çalıştır" }).click();
   await expect(page.getByText("Kısmi sonuç", { exact: true })).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText("Bu çalışma kullanıcı tarafından seçilen 1 bellek kaydını kullandı.")).toBeVisible();
@@ -527,7 +543,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.getByRole("region", { name: "Model ayrıntıları" }).getByText("Analist B", { exact: true })).toBeVisible();
   await expect(page.getByText("Deneme üyesi planlanan hata senaryosunu tetikledi.")).toBeVisible();
 
-  await workspaceView(page, "Sohbet");
+  await revealCouncilControls(page);
   await page.getByRole("button", { name: `${templateName} şablonunu silmeyi incele` }).click();
   const templateDeletion = page.getByRole("region", { name: "Şablon silme önizlemesi" });
   await templateDeletion.getByRole("checkbox").check();
@@ -537,9 +553,15 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await workspaceView(page, "Ayarlar");
   for (const label of [firstConnection, secondConnection, localConnection, openRouterConnection]) {
     await page.locator(".connection-card").filter({ hasText: label }).getByRole("button", { name: "Sil", exact: true }).click();
+    const impact = page.getByRole("dialog", { name: "Bağlı Kayıtları İnceleyin", exact: true });
+    await expect(async () => {
+      if (await impact.isVisible()) await impact.getByRole("button", { name: "Eminim, Bağlantıyı Sil", exact: true }).click();
+      await expect(page.locator(".connection-card").filter({ hasText: label })).toHaveCount(0);
+    }).toPass();
     await expect(page.locator(".connection-card").filter({ hasText: label })).toHaveCount(0);
   }
   await workspaceView(page, "Sohbet");
+  await revealChatTab(page, "Bağlam Ve Kontroller");
   await savedMemory.getByRole("button", { name: "Bellekten kaldır" }).click();
   await expect(savedMemory).toHaveCount(0);
 
@@ -596,6 +618,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await retryCard.getByRole("button", { name: "Yeni denemeye izin ver" }).click();
   await expect(retryCard).toHaveCount(0);
   await workspaceView(page, "Sohbet");
+  await revealChatTab(page, "Sonuçlar");
   await expect(page.getByText("Konsey tamamlandı", { exact: true })).toBeVisible({ timeout: 10_000 });
 
   expect((await request.get("/api/runs?before=invalid-cursor")).status()).toBe(400);

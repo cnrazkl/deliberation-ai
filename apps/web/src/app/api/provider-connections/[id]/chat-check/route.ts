@@ -1,4 +1,4 @@
-import { connectionChatReviewSchema, connectionChatSendSchema } from "@deliberation-ai/contracts";
+import { connectionChatReviewSchema, connectionChatSendSchema, type GenerationObservation } from "@deliberation-ai/contracts";
 import { ConnectionCheckConflictError, getConnectionCheckHistory, reviewConnectionGenerationCheck, runConnectionChatCheck } from "@deliberation-ai/persistence";
 import { NormalizedProviderError } from "@deliberation-ai/providers";
 import { withLocalSession } from "../../../../../lib/local-auth";
@@ -6,11 +6,15 @@ import { privateBranchOrigin, privateBranchRequest } from "../../../../../lib/pr
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "no-store" };
+function contentFreeReceipt(check: GenerationObservation) {
+  const receipt = { ...check }; delete receipt.message; delete receipt.reply; delete receipt.errorDetail; delete receipt.trace;
+  return { ...receipt, ...(receipt.kind ? { transient: true } : {}) };
+}
 async function sessionGET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu.test(id)) return Response.json({ error: "Bağlantı kimliği geçersiz." }, { status: 400, headers });
   const observations = await getConnectionCheckHistory(id);
-  return observations ? Response.json({ observations }, { headers }) : Response.json({ error: "Bağlantı bulunamadı." }, { status: 404, headers });
+  return observations ? Response.json({ observations: { ...observations, generationChecks: observations.generationChecks.map(contentFreeReceipt) } }, { headers }) : Response.json({ error: "Bağlantı bulunamadı." }, { status: 404, headers });
 }
 async function sessionPOST(request: Request, context: { params: Promise<{ id: string }> }) {
   const rejected = privateBranchOrigin(request); if (rejected) return rejected;
@@ -20,7 +24,14 @@ async function sessionPOST(request: Request, context: { params: Promise<{ id: st
   if ("response" in parsed) return parsed.response;
   try {
     const input = parsed.data;
-    const result = input.action === "review" ? await reviewConnectionGenerationCheck(id, input.model, input.message, input.attachments, input.transient) : await runConnectionChatCheck(id, input);
+    if (input.action === "review") {
+      const reviewed = await reviewConnectionGenerationCheck(id, input.model, input.message, input.attachments, input.transient, input.debug);
+      if (!reviewed) return Response.json({ error: "Bağlantı bulunamadı.", code: "connection_not_found" }, { status: 404, headers });
+      const { observations: _observations, ...preview } = reviewed;
+      void _observations;
+      return Response.json(preview, { headers });
+    }
+    const result = await runConnectionChatCheck(id, input);
     return result ? Response.json(result, { headers }) : Response.json({ error: "Bağlantı bulunamadı.", code: "connection_not_found" }, { status: 404, headers });
   } catch (error) {
     if (error instanceof NormalizedProviderError && error.code === "test_file_invalid") return Response.json({ error: error.message, code: error.code }, { status: 422, headers });

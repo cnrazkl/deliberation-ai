@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls } from "./workspace-navigation";
+import { revealChatTab } from "./workspace-navigation";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { getDatabase, preflightDrafts, closeDatabase } from "@deliberation-ai/persistence";
@@ -19,12 +19,12 @@ test("restores a pending clarification after reload and previews both owner choi
   const directPreview = await request.post(`/api/preflight-drafts/${draftId}/preview`, { data: { choice: "original" } });
   expect(directPreview.status()).toBe(200);
   try {
-    await page.goto("/"); await revealCouncilControls(page);
+    await page.goto("/"); await revealChatTab(page, "Sonuçlar");
     const panel = page.getByRole("region", { name: "Yanıt bekleyen ön değerlendirmeler" });
     await expect(panel).toBeVisible();
     await panel.getByRole("button", { name: question }).click();
     await expect(panel).toContainText("Hangi ülke veya eyaletin hukuku geçerli?");
-    await page.reload();
+    await page.reload(); await revealChatTab(page, "Sonuçlar");
     await panel.getByRole("button", { name: question }).click();
     await panel.getByRole("textbox", { name: "Eksik bilgilere yanıt" }).fill("Türkiye'de, 1 Eylül 2026 tarihinde.");
     await panel.getByRole("button", { name: "Yanıt ve istem önizlemesini göster" }).click();

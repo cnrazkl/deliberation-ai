@@ -893,6 +893,7 @@ export const saveProviderConnectionSchema = z.object({
   selectedModels: selectedConnectionModelsSchema.optional(),
   modelAliases: connectionModelAliasesSchema.optional(),
   expectedRevision: z.number().int().positive().optional(),
+  impactFingerprint: z.string().regex(/^[a-f0-9]{64}$/u).optional(),
   baseUrl: z.string().trim().url().max(2_048).optional(),
   endpointPreset: endpointPresetSchema.default("custom"),
   reasoningProtocol: reasoningProtocolSchema.default("none"),
@@ -967,6 +968,7 @@ export const modelCatalogCheckSchema = z.strictObject({
   details: z.array(catalogModelDetailSchema).max(300).optional(),
   checkedAt: z.iso.datetime().optional(),
   truncated: z.boolean(),
+  sourceUrl: z.string().url().max(2048).optional(),
 });
 
 export type ModelCatalogCheck = z.infer<typeof modelCatalogCheckSchema>;
@@ -978,7 +980,20 @@ export const generationCheckRequestSchema = z.strictObject({
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/u), acknowledge: z.literal(true),
   acknowledgeUnknown: z.boolean().default(false),
 });
-export const connectionChatMessageSchema = z.string().trim().min(1).max(1200);
+export const connectionChatMessageSchema = z.string().min(1).max(1200).refine(message => message.trim().length > 0);
+const connectionTraceHeadersSchema = z.record(z.string().max(120), z.string().max(4096)).refine(headers => Object.keys(headers).length <= 64);
+export const connectionTestTraceSchema = z.strictObject({
+  version: z.literal("connection-test-trace-v1"), provider: remoteProviderSchema,
+  startedAt: z.iso.datetime(), finishedAt: z.iso.datetime(), elapsedMs: z.number().int().nonnegative(),
+  request: z.strictObject({ method: z.literal("POST"), url: z.string().max(2048), headers: connectionTraceHeadersSchema,
+    body: z.string().max(32768), wireBytes: z.number().int().nonnegative(), binaryDataOmitted: z.boolean() }),
+  response: z.strictObject({ status: z.number().int().min(100).max(599).nullable(), headers: connectionTraceHeadersSchema,
+    body: z.string().max(131072).nullable(), receivedBytes: z.number().int().nonnegative(), truncated: z.boolean() }),
+  runtime: z.strictObject({ node: z.string().max(80), platform: z.string().max(80), arch: z.string().max(80),
+    adapter: z.literal("connection-chat-v2"), timeoutMs: z.number().int().positive(), operationId: z.string().max(120) }),
+  result: z.strictObject({ stage: z.enum(["transport", "response", "normalization"]), code: z.string().max(80).nullable(), outcome: z.enum(["success", "known_failure", "unknown"]) }),
+});
+export type ConnectionTestTrace = z.infer<typeof connectionTestTraceSchema>;
 export const CONNECTION_TEST_FILE_BYTES = 1_048_576;
 export const connectionTestAttachmentSchema = z.strictObject({
   name: z.string().trim().min(1).max(120),
@@ -992,10 +1007,12 @@ export type ConnectionTestAttachment = z.infer<typeof connectionTestAttachmentSc
 export const connectionChatReviewSchema = z.strictObject({
   action: z.literal("review"), model: generationCheckRequestSchema.shape.model, message: connectionChatMessageSchema,
   transient: z.boolean().default(false), attachments: connectionTestAttachmentsSchema,
+  debug: z.boolean().default(false),
 });
 export const connectionChatSendSchema = generationCheckRequestSchema.extend({
   action: z.literal("send"), message: connectionChatMessageSchema,
   transient: z.boolean().default(false), attachments: connectionTestAttachmentsSchema,
+  debug: z.boolean().default(false),
 });
 export const generationObservationSchema = z.strictObject({
   version: z.literal("connection-generation-v1"),
@@ -1020,6 +1037,7 @@ export const generationObservationSchema = z.strictObject({
   errorCode: z.string().regex(/^[a-z0-9_]{1,80}$/u).nullable().optional(),
   errorDetail: z.string().max(500).optional(),
   providerErrorCode: z.string().regex(/^[a-z0-9_]{1,80}$/u).optional(),
+  trace: connectionTestTraceSchema.optional(),
 }).superRefine((value, context) => {
   if (!value.transient && Boolean(value.kind) !== Boolean(value.message) || value.reply !== undefined && (value.kind !== "chat" || value.status !== "succeeded")) {
     context.addIssue({ code: "custom", message: "Invalid connection chat receipt." });
