@@ -1,5 +1,10 @@
 # Tasks
 
+- [x] Owner-requested council name/field/button spacing correction, scoped to
+  the council save editor. Help remains unchanged. Linux types/lint/build and
+  actual light/dark 320/1578px visual inspection pass; no page errors, overflow
+  or provider calls. Deployment/cleanup/baselines are recorded in CURRENT_STATE.md.
+
 - [x] Owner-requested Müzakere terminology for the workspace and related copy;
   Help is frozen until the owner explicitly requests its update and is unchanged.
   Types/lint, six existing export checks, Linux build and generated-only live

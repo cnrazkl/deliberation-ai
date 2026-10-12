@@ -1386,7 +1386,12 @@ input[type="file"]::file-selector-button:hover { background: var(--surface-subtl
 .council-preview-models { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
 .council-preview-models span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; border-radius: 8px; padding: 5px 8px; background: var(--accent-soft); }
 .council-preview-actions, .council-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.council-preview-actions button { flex: 1; }.council-editor-save { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 20px; }.council-editor-actions { margin-top: 12px; }
+.council-preview-actions button { flex: 1; }
+.council-editor-save { display: grid; gap: 16px; border-top: 1px solid var(--line); margin-top: 20px; padding-top: 20px; }
+.council-editor-save > label { display: grid; gap: 8px; width: min(100%, 560px); min-width: 0; font-size: 13px; font-weight: 650; }
+.council-editor-save input { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--muted); border-radius: 10px; padding: 10px 12px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; }
+.council-editor-actions { align-items: center; gap: 12px; }
+.council-editor-save > p { margin: 0; }
 .sidebar-history .run-history-list .history-title { border: 0; background: transparent; color: var(--ink); font-weight: 500; text-transform: none; text-align: left; font-size: 13px; line-height: 1.5; padding: 4px 0; width: 100%; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .sidebar-history .run-history-list article.compact-history-item { flex-wrap: nowrap; align-items: center; gap: 8px; }
 .sidebar-history .run-history-list article.compact-history-item .history-title { flex: 1; width: auto; }

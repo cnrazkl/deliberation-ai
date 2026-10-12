@@ -1,6 +1,27 @@
 # Current state
 
-Updated: 12 October 2026 (Müzakere workspace terminology deployed)
+Updated: 12 October 2026 (council name field spacing deployed)
+
+## Council name field spacing - deployed and verified
+
+The council save section places its label above a responsive, up-to-560px input,
+with 8px between label/field and 16px before a separate wrapping action row.
+Only scoped council-editor CSS changes; Help remains unchanged. Linux persistence,
+worker/web types, zero-warning web lint and production build pass. Generated-only
+live visual inspection at 320/1578px in both palettes confirms the label above the
+input, 16px field/button separation, responsive field width, wrapping actions and
+no horizontal overflow. Screenshots inspected; no page errors or model calls.
+Temporary preview account/connection/template erased. Native PostgreSQL stayed stopped.
+
+Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-council-spacing`,
+manifest `sha256:4da26c2867fb6f1eb367ecb8f2bb3d0c39a6774cca76262594ef0b4d2a8ce332`,
+exported tree `d1820461ed3d85431a10e0f5828361715dbc1ff8`. Subsequent changes are
+verification documentation only. Deployment completed 2026-10-12T02:29:08Z at
+unchanged `192.168.1.112:33184`; private dump inventory verified, no migration/restore.
+Foreign container and owned database lifecycles match the pre-deployment baseline;
+web/worker/observer have zero restarts. Observation `month-council-spacing-20261012`
+starts 2026-10-12T02:29:22.617Z, due 2026-11-11T02:29:22.617Z; first sample healthy.
+Earlier releases below are historical; monthly/human quality gates remain open.
 
 ## Müzakere terminology - deployed and verified
 
@@ -15,7 +36,7 @@ model requests. The first live harness selected a covered backdrop; the correcte
 sidebar-close selector passes. Temporary accounts and dependent fixtures are erased.
 Help source/menu/test paths have no diff. Native PostgreSQL stayed stopped.
 
-Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-muzakere`,
+Historical web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-muzakere`,
 manifest `sha256:e84c753a2146d133117713808a179824db50499b600a034fcab8e436b80fdfd2`,
 exported tree `7e3793b838812fbca7f82152f7a5d3a61baebe97`. Subsequent changes are
 verification documentation only. Deployment completed 2026-10-12T02:13:26Z at

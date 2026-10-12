@@ -15,7 +15,9 @@ general workspace changes must not include Help content work.
 The **Konseyler** sidebar menu owns council creation, editing, copying and deletion.
 Its compact **Konsey Havuzu** cards preview models and rounds, with **Düzenle / Sil**
 actions. Editing loads the configuration below the cards; **Konsey Adı**, save/update
-and **Yeni Konsey Oluştur** actions sit under that configuration. Deleting a council
+and **Yeni Konsey Oluştur** actions sit under that configuration. The council name
+label sits above its responsive input with a clear gap; action buttons occupy a
+separate, wrapping row below the field. Deleting a council
 selected in chat explicitly warns that the saved selection will be cleared.
 The chat composer exposes **Konsey Havuzu** only to select a saved council from
 **Kayıtlı Konsey**. Unsaved or unavailable configurations cannot start new work.
