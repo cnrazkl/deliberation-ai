@@ -530,3 +530,4 @@ export { summarizeConversationCouncilUsage, type CouncilUsageRecord } from "./co
 export * from "./knowledge";
 export * from "./knowledge-packet";
 export * from "./synthesis";
+export { unresolvedProviderOperations } from "./provider-operation-state";

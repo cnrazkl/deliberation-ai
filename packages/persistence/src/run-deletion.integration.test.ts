@@ -12,6 +12,7 @@ import { LOCAL_OWNER_ID } from "./owner";
 import { enqueueDurableRun, executeDurableRun, findDurableRunById, loadRunContinuation } from "./run-repository";
 import { deleteRunBody, loadRunDeletion, previewRunDeletion, RunDeletionBlockedError, RunDeletionStaleError } from "./run-deletion";
 import { exportConversation } from "./conversations";
+import { loadConversationCouncilUsage } from "./conversation-council-usage";
 import { previewConversationDeletion, deleteEmptyConversation } from "./conversation-deletion";
 import { previewPrivateBranchSeed, createPrivateBranch } from "./private-branches";
 import { deletePrivateBranch, previewPrivateBranchDeletion } from "./private-branch-deletion";
@@ -55,6 +56,24 @@ async function receipt(id: string) {
     resultMetadataCiphertext: encryptJson({ tokenDetails: { version: "provider-token-details-v1", inputTokenKind: "inclusive", outputTokenKind: "inclusive", cachedInputTokens: 4 } }, `provider-operation:${op}:metadata`), finishedAt: new Date() });
   return op;
 }
+test("a consumed retry grant survives standalone deletion, export and usage projection", async () => {
+  const f = await fixture(); const first = randomUUID(); const later = randomUUID();
+  const common = { runId: f.id, memberId: "member-a", round: 0 as const, provider: "fake", model: "offline-model", requestFingerprint: "fixture" };
+  await getDatabase().insert(s.providerOperations).values([
+    { ...common, id: first, attempt: 1, status: "retry_authorized" },
+    { ...common, id: later, attempt: 2, status: "succeeded", inputTokens: 10, outputTokens: 2 },
+  ]);
+  const before = (await loadConversationCouncilUsage(f.conversationId))!;
+  const preview = (await previewRunDeletion(f.id))!;
+  const audit = (await deleteRunBody(f.id, preview.fingerprint!))!;
+  expect(audit.version).toBe("run-deletion-audit-v2");
+  expect(await loadRunDeletion(f.id)).toEqual(audit);
+  expect(await deleteRunBody(f.id, preview.fingerprint!)).toEqual(audit);
+  expect((await exportConversation(f.conversationId))!.runDeletions).toEqual([audit]);
+  const after = (await loadConversationCouncilUsage(f.conversationId))!;
+  expect({ ...after, checkedAt: before.checkedAt, deletedRuns: 0 }).toEqual(before);
+  expect(audit.receipts.find(item => item.operationId === first)).toMatchObject({ status: "retry_authorized", inputTokens: null, outputTokens: null });
+});
 test("reviewed run deletion removes the known content closure, preserves usage/membership/billing and replays one tombstone", async () => {
   const f = await fixture(); const op = await receipt(f.id);
   const bill = randomUUID(); const preflight = randomUUID(); const schedule = randomUUID(); retained.push(bill, preflight, schedule);

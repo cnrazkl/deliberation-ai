@@ -111,7 +111,8 @@ test("model removal reviews dependencies, invalidates chat selection and is repa
     await expect(pool.getByLabel("Kayıtlı Konsey").locator(`option[value="${template.id}"]`)).toHaveJSProperty("disabled", true); await expect(page.getByRole("button", { name: "Konseyi çalıştır", exact: true })).toBeDisabled();
     const rejected = await request.post("/api/runs", { data: { idempotencyKey: randomUUID(), question: "Compare two ways to organize notes briefly.", members, reviewRounds: 0, providerMode: "remote" } }); expect(rejected.status()).toBe(422); expect((await rejected.json()).code).toBe("council_model_unavailable");
     await workspaceView(page, "Konseyler"); await page.getByLabel("Üye 1 modeli", { exact: true }).selectOption("model-b"); await page.getByLabel("Üye 2 modeli", { exact: true }).selectOption("model-b");
-    await pool.getByRole("button", { name: "Değişiklikleri Kaydet", exact: true }).click(); await expect(pool.getByRole("status")).toContainText("kaydedildi");
+    const editor = page.getByRole("region", { name: "Konsey kaydı", exact: true });
+    await editor.getByRole("button", { name: "Değişiklikleri Kaydet", exact: true }).click(); await expect(editor.getByRole("status")).toContainText("kaydedildi");
     const saved = (await (await request.get("/api/council-templates")).json()).templates.find((item: { id: string }) => item.id === template.id); expect(saved.members.every((member: { model: string }) => member.model === "model-b")).toBe(true);
     await workspaceView(page, "Sohbet"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Compare two ways to organize notes briefly.");
     for (const name of ["Kaynaklar Ve Dosyalar", "Bağlam Ve Kontroller", "Soru"]) await page.getByRole("tab", { name, exact: true }).click();

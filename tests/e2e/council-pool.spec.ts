@@ -28,11 +28,11 @@ test("saved council pool restores models and rounds, preserves the question and 
     await expect(page.getByLabel("Üye 2 modeli", { exact: true })).toHaveValue("second-fixture");
     await expect(page.getByLabel("Çapraz inceleme turu")).toHaveValue("0");
     await page.getByLabel("Çapraz inceleme turu").selectOption("2");
-    await expect(pool.getByLabel("Kayıtlı Konsey")).toHaveValue(""); await expect(pool).toContainText("Yeni Konsey Taslağı");
-    await pool.getByLabel("Şablon adı").fill(`${name} edited`);
-    await pool.getByRole("button", { name: "Yeni Konsey Olarak Kaydet", exact: true }).click();
-    await expect(pool.getByRole("status")).toContainText(`${name} edited konsey havuzuna kaydedildi.`);
-    await expect(pool.getByLabel("Şablon adı")).toHaveValue(`${name} edited`);
+    const editor = page.getByRole("region", { name: "Konsey kaydı", exact: true });
+    await editor.getByLabel("Şablon adı").fill(`${name} edited`);
+    await editor.getByRole("button", { name: "Yeni Konsey Oluştur", exact: true }).click();
+    await expect(editor.getByRole("status")).toContainText(`${name} edited konsey havuzuna kaydedildi.`);
+    await expect(editor.getByLabel("Şablon adı")).toHaveValue(`${name} edited`);
     const list = (await (await request.get("/api/council-templates")).json()).templates;
     const edited = list.find((value: { name: string }) => value.name === `${name} edited`); ids.push(edited.id);
     expect(edited.settings).toEqual({ reviewRounds: 2, selfRevisionEnabled: false }); expect(dispatched).toBe(0);

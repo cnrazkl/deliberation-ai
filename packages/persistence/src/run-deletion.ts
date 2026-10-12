@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, getTableName, sql } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { runDeletionAuditSchema, type RunDeletionAudit } from "@deliberation-ai/contracts";
+import { unresolvedProviderOperations } from "@deliberation-ai/domain";
 import { getDatabase } from "./database";
 import { decryptJson, encryptJson } from "./crypto";
 import { getOwnerId } from "./owner";
@@ -15,7 +16,6 @@ import { RUN_COUNCIL_QUEUE } from "./queue";
 
 const MAX_ROWS = 1_000; const MAX_BYTES = 64 * 1024 * 1024; const MAX_AUDIT_BYTES = 512 * 1024;
 const terminal = new Set(["completed", "partially_completed", "failed", "cancelled"]);
-const pending = new Set(["prepared", "submitted", "outcome_unknown", "retry_authorized"]);
 // Explicit reviewed closure: new cascade tables must be added deliberately.
 const contentTables = [s.runs, s.modelRuns, s.claims, s.claimOccurrences, s.memoryEntries, s.evidenceSources,
   s.researchCaptures, s.decisionAssessments, s.decisionOperations, s.providerOperations, s.runEvents];
@@ -213,7 +213,7 @@ export async function inspectRunDeletion(tx: ConversationTransaction, id: string
   }
   const operations = reasons.includes("inspection_limit") ? [] : await tx.select().from(s.providerOperations).where(eq(s.providerOperations.runId, id)).orderBy(asc(s.providerOperations.id)).limit(501);
   if (operations.length > 500) reasons.push("inspection_limit");
-  if (operations.some((item) => pending.has(item.status))) reasons.push("pending_operations");
+  if (unresolvedProviderOperations(operations).length) reasons.push("pending_operations");
   const preflight = await tx.select({ id: s.preflightDrafts.id }).from(s.preflightDrafts).where(eq(s.preflightDrafts.runId, id)).orderBy(asc(s.preflightDrafts.id)).limit(MAX_ROWS + 1);
   const schedules = await tx.select({ id: s.localSchedules.id }).from(s.localSchedules).where(eq(s.localSchedules.lastRunId, id)).orderBy(asc(s.localSchedules.id)).limit(MAX_ROWS + 1);
   const billing = await tx.select({ id: s.providerBillingRecords.id }).from(s.providerBillingRecords).where(eq(s.providerBillingRecords.runId, id)).orderBy(asc(s.providerBillingRecords.id)).limit(MAX_ROWS + 1);
@@ -246,7 +246,8 @@ export async function applyRunDeletion(tx: ConversationTransaction, value: NonNu
     const id = value.row.id;
     if (!value.preview.eligible) throw new RunDeletionBlockedError();
     if (value.preview.fingerprint !== fingerprint) throw new RunDeletionStaleError();
-    const audit: RunDeletionAudit = runDeletionAuditSchema.parse({ version: "run-deletion-audit-v1", runId: id, conversationId: value.preview.conversationId,
+    const audit: RunDeletionAudit = runDeletionAuditSchema.parse({ version: value.operations.some(item => item.status === "retry_authorized")
+      ? "run-deletion-audit-v2" : "run-deletion-audit-v1", runId: id, conversationId: value.preview.conversationId,
       creationIntentHash: hash(value.row.idempotencyKey), fingerprint, deletedAt: new Date().toISOString(), status: value.row.status,
       receipts: value.operations.map((item) => ({ operationId: item.id, memberId: item.memberId, provider: item.provider, model: item.model,
         round: item.round, attempt: item.attempt, status: item.status, startedAt: item.startedAt.toISOString(), finishedAt: item.finishedAt?.toISOString() ?? null,

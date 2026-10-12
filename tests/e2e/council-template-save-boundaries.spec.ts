@@ -30,7 +30,7 @@ test("lost template save responses retry without overwriting drafts or resurrect
     await question.fill("Generated template save question stays unchanged"); await revealCouncilControls(page);
     const field = page.getByRole("textbox", { name: "Şablon adı", exact: true });
     await field.fill(name);
-    const save = page.getByRole("button", { name: "Konseyi Kaydet", exact: true });
+    const save = page.getByRole("button", { name: "Yeni Konsey Oluştur", exact: true });
     await expect(save).toBeEnabled();
     await save.click();
     await expect(field).toHaveValue(name);
@@ -39,7 +39,7 @@ test("lost template save responses retry without overwriting drafts or resurrect
     const before = await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, id!));
     await save.click();
     await expect(field).toHaveValue(name);
-    await expect(page.getByRole("button", { name: `${name} · Düzenle 2 üye`, exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: `${name} konseyini düzenle`, exact: true })).toBeVisible();
     expect(await getDatabase().select().from(councilTemplates).where(eq(councilTemplates.id, id!))).toEqual(before);
     const conflict = await request.post("/api/council-templates", { data: { ...input, description: "Different draft" } });
     expect(conflict.status()).toBe(409);

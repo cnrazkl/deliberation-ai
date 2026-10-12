@@ -135,7 +135,7 @@ export function PrivateBranchesPanel({ conversationId, initialBranch, onClose }:
         <button type="button" className="secondary-button" disabled={busy || Boolean(deletionId) || loading || !text.trim() || branch.messageCount >= 64 || branch.body.deliveries?.some((item) => ["prepared", "submitted", "outcome_unknown"].includes(item.status))} onClick={() => void mutate("append")}>Taslağı dala kaydet</button>
         <button type="button" className="secondary-button" disabled={busy || Boolean(deletionId) || loading || branch.body.deliveries?.some((item) => ["prepared", "submitted", "outcome_unknown"].includes(item.status))} onClick={() => void mutate("fork")}>Bu noktadan yeni özel dal aç</button>
         <button type="button" className="secondary-button" disabled={busy || Boolean(deletionId)} onClick={() => void download()}>Özel dalı indir (JSON)</button>
-        <button type="button" disabled={busy || loading || Boolean(deletionId)} onClick={() => setDeletionId(branch.id)}>Dal içeriğini silmeyi incele</button>
+        <button type="button" disabled={busy || loading || Boolean(deletionId)} onClick={() => setDeletionId(branch.id)}>Sil</button>
       </div>
       <PrivateDeliveryPanel key={`${branch.id}:${branch.revision}:${branch.body.deliveryVersion ?? 0}`} branch={branch} disabled={busy || Boolean(deletionId) || loading || detailLoading}
         maxOutputTokens={outputCaps[branch.id] ?? 1_024}

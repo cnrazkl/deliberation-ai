@@ -1,5 +1,15 @@
 # Tasks
 
+- [x] Owner-requested compact council pool, lower creation controls, Sil labels,
+  compact/clickable history, direct private draft access and actionable conversation
+  deletion. Consumed retry grants no longer act as current pending work and retain
+  original status/unknown usage in readable v2 audits. 506 units, 26 affected isolated
+  PostgreSQL cases, all 16 affected browser scenarios (main run plus development-server
+  crash rerun), types/lint/Linux build and generated-only LAN checks pass. The owner's
+  reported conversation is eligible in a read-only check, with its data unchanged.
+  Deployment, cleanup, database/service baselines and reader rollback boundaries are
+  tracked in CURRENT_STATE.md and RUN_DELETION.md.
+
 - [x] Owner-requested 12 October workspace/test fixes: exact input, current audit,
   safe modal/file interaction, dependencies, council management and chat tabs.
   502 units, 294 isolated PostgreSQL cases, all 122 browser scenarios (full run plus

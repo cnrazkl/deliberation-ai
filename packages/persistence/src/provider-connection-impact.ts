@@ -77,7 +77,8 @@ export async function inspectConnectionImpact(tx: ConversationTransaction, row: 
       add("Sohbet Çalışması", run.id, conversation ? `Konuşma ${conversation.conversationId.slice(0, 8)} · çalışma ${run.id.slice(0, 8)}` : `Çalışma ${run.id.slice(0, 8)}`, members, run.status, ["queued", "running"].includes(run.status), [run.membersCiphertext, run.updatedAt]);
     }
     const pendingOps = await tx.select({ id: providerOperations.id, runId: providerOperations.runId, memberId: providerOperations.memberId, model: providerOperations.model, status: providerOperations.status }).from(providerOperations).innerJoin(runs, eq(runs.id, providerOperations.runId))
-      .where(and(eq(runs.ownerId, getOwnerId()), inArray(providerOperations.status, ["prepared", "submitted", "outcome_unknown", "retry_authorized"]))).limit(1001);
+      .where(and(eq(runs.ownerId, getOwnerId()), inArray(providerOperations.status, ["prepared", "submitted", "outcome_unknown", "retry_authorized"]),
+        sql`not (${providerOperations.status}='retry_authorized' and exists(select 1 from provider_operations newer where newer.run_id=${providerOperations.runId} and newer.member_id=${providerOperations.memberId} and newer.round=${providerOperations.round} and newer.attempt>${providerOperations.attempt}))`)).limit(1001);
     if (pendingOps.length > 1000) throw new Error("Operation bounds exceeded");
     for (const operation of pendingOps) if (affectedRunMembers.get(operation.runId)?.includes(operation.memberId)) {
       impact.references.push({ kind: "Sağlayıcı İşlemi", id: operation.id, label: `İşlem ${operation.id.slice(0, 8)}`, models: [operation.model], status: operation.status, blocking: true }); evidence.push(operation);

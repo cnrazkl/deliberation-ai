@@ -134,7 +134,7 @@ export function PreflightDraftsPanel({ refreshKey, focusDraftId, onStarted }: { 
         onChoiceChange={(value) => { setPromptChoice(value); setPrepared(undefined); }} /> : null}
       <div className="form-row">
         <button type="button" disabled={busy || !baseQuestion || (choice === "answer" && !answer.trim()) || (promptChoice === "candidate" && !revisionAudit.canSelectCandidate)} onClick={() => void preview()}>Yanıt ve istem önizlemesini göster</button>
-        <button type="button" className="secondary-button" disabled={busy} onClick={() => setDeletionId(selected.id)}>Taslak silmeyi incele</button>
+        <button type="button" className="secondary-button" disabled={busy} onClick={() => setDeletionId(selected.id)}>Sil</button>
       </div>
       {prepared ? <div className="token-preview">
         <h3>Gönderilecek soru ve ilk tur</h3>

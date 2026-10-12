@@ -24,12 +24,10 @@ export async function revealChatTab(page: Page, tab: "Soru" | "Kaynaklar Ve Dosy
 }
 export async function saveCouncilForChat(page: Page, name = `Browser council ${Date.now()}`) {
   await revealCouncilControls(page);
-  const pool = page.getByRole("region", { name: "Konsey Havuzu", exact: true });
-  await pool.getByLabel("Şablon adı", { exact: true }).fill(name);
-  const copy = pool.getByRole("button", { name: "Yeni Konsey Olarak Kaydet", exact: true });
-  if (await copy.count()) await copy.click();
-  else await pool.getByRole("button", { name: "Konseyi Kaydet", exact: true }).click();
-  await pool.getByRole("status").filter({ hasText: "kaydedildi" }).waitFor();
+  const editor = page.getByRole("region", { name: "Konsey kaydı", exact: true });
+  await editor.getByLabel("Şablon adı", { exact: true }).fill(name);
+  await editor.getByRole("button", { name: "Yeni Konsey Oluştur", exact: true }).click();
+  await editor.getByRole("status").filter({ hasText: "kaydedildi" }).waitFor();
   await revealChatTab(page, "Soru");
 }
 /** Offline form tests use synthetic metadata and must not persist a nonexistent connection. */
@@ -42,8 +40,5 @@ export async function mockCouncilStorage(page: Page) {
   });
 }
 export async function revealConversationOptions(page: Page) {
-  await page.locator(".conversation-options").first().waitFor({ state: "visible" });
-  for (const details of await page.locator(".conversation-options").all()) {
-    if (await details.getAttribute("open") === null) await details.locator("summary").click();
-  }
+  await page.getByRole("button", { name: "Özel dal taslaklarını göster", exact: true }).first().waitFor({ state: "visible" });
 }

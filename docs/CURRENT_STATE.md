@@ -1,6 +1,49 @@
 # Current state
 
-Updated: 12 October 2026 (workspace diagnostics and council separation deployed)
+Updated: 12 October 2026 (compact council/history and deletion correction deployed)
+
+## Compact council/history and actionable deletion - deployed and verified
+
+Compact council cards own preview/edit/delete; creation/update/copy actions are below
+configuration. Selected-council deletion warns and preserves the member/question
+draft. Recent runs are clickable compact rows; deletion opens a main modal. Private
+drafts are directly accessible without a sidebar disclosure. Delete actions say Sil.
+
+The reported owner's failed run contains old retry grants consumed by later discarded
+attempts. They incorrectly blocked deletion. Current inspection now distinguishes
+consumed grants from actual pending work without changing historical rows/usage.
+Blocked previews expose concrete operations and explicit local closing controls.
+Historical consumed grants retain their original status and unknown usage in strict
+v2 deletion audits; existing v1 readers remain supported. After writing v2, rollback
+or restore binaries must understand v2. Failed terminal runs without reports offer
+explicit question recovery into a fresh draft; no provider request starts on opening.
+
+506 units, 26 affected isolated PostgreSQL cases, workspace/script types, zero-warning
+web lint and Linux persistence/worker/web types/lint/production build pass. All 16
+affected browser scenarios pass across the main run (13) and a fresh rerun (3) after
+the local Turbopack development server crashed; no application failure remains.
+Dependency compatibility tests, production dependency audit and staged/full-history
+secret scans pass. Native PostgreSQL is restored to its initial stopped state.
+
+Generated-only actual LAN verification passes: council preview/edit/create, selected
+deletion warning, lower editor controls, question draft preservation, direct private
+draft access, clickable recent history/results, failed-question recovery, consumed
+grant deletion and concrete unknown-call closure/deletion. v1/v2 receipt reading
+preserves null usage. Light/dark 320/1578px screenshots inspected; zero page errors
+or provider generation. Generated account and all dependent fixtures erased.
+Read-only verification of the reported owner's conversation now returns eligible,
+no blockers and no pending operations; its actual data was not deleted or changed.
+
+Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-council-library-ready`,
+manifest `sha256:80125d3b10528e85dcd96ee5969c938626d5646894cb65408ec09cb359531dd5`,
+exported tree `404b0a61323ff30df3c3c09945f85ab48bea5e5e`. Subsequent source changes are
+verification documentation only. Deployment completed 2026-10-12T02:00:38Z at
+unchanged `192.168.1.112:33184`; private pre-deployment dump inventory verified,
+no production migration/restore. Foreign container inventory/lifecycle and owned
+database baseline match. Worker public catalog GET is 200; web/worker/observer run
+with zero restarts. Observation `month-council-library-ready-20261012` starts
+2026-10-12T02:00:51.833Z, due 2026-11-11T02:00:51.833Z; first sample healthy.
+Monthly observation/human quality gates remain open. Earlier releases below are historical.
 
 ## Workspace diagnostics and council separation - deployed and verified
 
@@ -41,7 +84,7 @@ server-side removed-model refusal; repair in Konseyler; persistent
 drafts/tabs; light/dark 320/1110px screenshots inspected, zero page errors. No paid
 external generation. Generated account/connection/receipts erased and fixture stopped.
 
-Active web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-workspace-diagnostics-ready`,
+Historical web/worker/observer image: `deliberationai-rehearsal:60374dd507ec-workspace-diagnostics-ready`,
 manifest `sha256:c1326e18547f4d676ac29d2892482c017fa1ee550ab5784a1ca30c7466d5851b`,
 exported tree `0fd1d1d72c2151676f7a80df9fc481c3951757d5`. Subsequent source changes are
 browser-test navigation and verification documentation only. Deployment completed

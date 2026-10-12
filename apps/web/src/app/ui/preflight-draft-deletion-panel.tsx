@@ -46,7 +46,7 @@ export function PreflightDraftDeletionPanel({ draftId, onCancel, onDeleted, onBu
       {preview.blockedReasons.map((reason) => <p key={reason}>{reason === "schema_changed" ? "Kayıt yapısı değişmiş; silme politikası yeniden incelenmeli." : "Kayıt durumu veya sahipliği doğrulanamadı."}</p>)}
       {preview.eligible && <>
         <label><input type="checkbox" checked={reviewed} disabled={busy} onChange={(event) => setReviewed(event.target.checked)} /> Taslak içeriğini silmek ve belirtilen kayıtları saklamak istiyorum.</label>
-        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Taslak içeriğini kalıcı olarak sil</button>
+        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Sil</button>
       </>}
     </> : !error ? <p>Silme önizlemesi yükleniyor…</p> : null}
     {error && <p role="alert">{error}</p>}

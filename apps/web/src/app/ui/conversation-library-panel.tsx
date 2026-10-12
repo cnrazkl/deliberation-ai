@@ -83,7 +83,7 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun, onReviewDeleti
     {loading ? <p className="hint">Konuşmalar yükleniyor…</p> : <div className="run-history-list">
       {page.conversations.length === 0 && !error && <p className="hint">Henüz kayıtlı konuşma yok.</p>}
       {page.conversations.map((item) => <article key={item.conversationId} data-conversation-id={item.conversationId} className={item.latestAvailableRun?.runId === activeRunId ? "active" : ""}>
-        <div><strong>{item.latestAvailableRun?.question ?? "Bu konuşmanın çalışma içerikleri artık erişilebilir değil"}</strong>
+        <div><button type="button" className="history-title" disabled={!item.latestAvailableRun || Boolean(opening)} data-open-history title={item.latestAvailableRun?.question} onClick={() => item.latestAvailableRun && void open(item.latestAvailableRun.runId)}>{item.latestAvailableRun?.question ?? "Bu konuşmanın çalışma içerikleri artık erişilebilir değil"}</button>
           <small>{new Date(item.createdAt).toLocaleString("tr-TR")} · {item.recordedRunCount} çalışma · {item.unavailableRunCount} erişilemeyen içerik</small>
           {item.origin === "legacy-reconstructed" && <small>Eski kayıtlar mevcut bağlantılarından birleştirildi; eksik geçmiş bulunabilir.</small>}
         </div>
@@ -91,11 +91,9 @@ export function ConversationLibraryPanel({ refreshKey, onOpenRun, onReviewDeleti
           data-open-history onClick={() => item.latestAvailableRun && void open(item.latestAvailableRun.runId)}>
           {opening === item.latestAvailableRun?.runId ? "Açılıyor…" : item.latestAvailableRun ? "Konuşmayı aç" : "İçerik erişilemiyor"}
         </button>
+        <button className="secondary-button private-history-button" type="button" disabled={Boolean(opening)} data-open-history onClick={() => onOpenPrivate(item.conversationId)}>Özel dal taslaklarını göster</button>
         <button className="secondary-button" type="button" disabled={Boolean(opening)}
-          aria-haspopup="dialog" onClick={() => onReviewDeletion(item.conversationId)}>Konuşmayı Sil</button>
-        <details className="conversation-options"><summary aria-label="Konuşma seçenekleri">Diğer işlemler</summary>
-        <button className="secondary-button" type="button" disabled={Boolean(opening)} data-open-history onClick={() => onOpenPrivate(item.conversationId)}>Özel dal taslaklarını göster</button>
-        </details>
+          aria-label="Konuşmayı Sil" aria-haspopup="dialog" onClick={() => onReviewDeletion(item.conversationId)}>Sil</button>
       </article>)}
     </div>}
     {!loading && page.nextCursor && <button className="secondary-button" type="button" disabled={olderLoading} onClick={() => void older()}>{olderLoading ? "Yükleniyor…" : "Daha eski konuşmaları göster"}</button>}

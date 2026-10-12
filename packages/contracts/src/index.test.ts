@@ -6,6 +6,7 @@ import {
   modelCatalogCheckSchema,
   providerOutputSchema,
   resolveProviderOperationSchema,
+  runDeletionAuditSchema,
   saveProviderConnectionSchema,
   saveEvidenceSourceSchema,
   updateEvidenceSourceSchema,
@@ -17,6 +18,21 @@ import {
 } from "./index";
 
 describe("external contracts", () => {
+  it("reads old deletion audits and only archives retry permissions superseded in the same member round", () => {
+    const receipt = { operationId: "00000000-0000-4000-8000-000000000001", memberId: "member-a", provider: "fake", model: "fixture",
+      round: 0, attempt: 1, status: "retry_authorized", startedAt: "2026-10-12T00:00:00.000Z", finishedAt: null,
+      inputTokens: null, outputTokens: null, tokenDetails: null, priceSnapshotId: null };
+    const later = { ...receipt, operationId: "00000000-0000-4000-8000-000000000002", attempt: 2, status: "discarded" };
+    const audit = { version: "run-deletion-audit-v2", runId: receipt.operationId, conversationId: later.operationId,
+      creationIntentHash: "a".repeat(64), fingerprint: "b".repeat(64), deletedAt: receipt.startedAt, status: "failed", receipts: [receipt, later] };
+    expect(runDeletionAuditSchema.safeParse(audit).success).toBe(true);
+    expect(runDeletionAuditSchema.safeParse({ ...audit, version: "run-deletion-audit-v1", receipts: [later] }).success).toBe(true);
+    expect(runDeletionAuditSchema.safeParse({ ...audit, version: "run-deletion-audit-v1" }).success).toBe(false);
+    for (const receipts of [[receipt], [receipt, { ...later, round: 1 }], [receipt, { ...later, memberId: "member-b" }],
+      [receipt, { ...later, status: "outcome_unknown" }]]) {
+      expect(runDeletionAuditSchema.safeParse({ ...audit, receipts }).success).toBe(false);
+    }
+  });
   it("bounds persisted catalog observations and rejects unknown provider fields", () => {
     const check = { status: "available", verification: "catalog_only", models: ["local-model"], truncated: false, checkedAt: "2026-09-27T00:00:00.000Z" };
     expect(modelCatalogCheckSchema.safeParse(check).success).toBe(true);

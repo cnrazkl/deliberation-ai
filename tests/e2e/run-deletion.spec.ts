@@ -36,15 +36,15 @@ test("reviews run deletion, preserves the draft, rejects stale state and manuall
     await expect(card).toBeVisible(); await page.getByLabel("Sorunuz", { exact: true }).fill("Owner draft preserved after run deletion");
     await card.getByRole("button", { name: "Çalışmayı aç", exact: true }).click();
     await expect(page.locator("#council-result")).toBeVisible();
-    await card.getByRole("button", { name: "Çalışma silmeyi incele" }).click();
-    const preview = history.getByRole("region", { name: "Çalışma içeriği silme önizlemesi" });
+    await card.getByRole("button", { name: "Çalışmayı Sil" }).click();
+    const preview = page.getByRole("region", { name: "Çalışma içeriği silme önizlemesi" });
     await expect(preview.getByRole("checkbox")).toBeVisible();
-    await expect(preview.getByRole("button", { name: "Çalışma içeriğini kalıcı olarak sil" })).toBeDisabled();
+    await expect(preview.getByRole("button", { name: "Sil", exact: true })).toBeDisabled();
     await preview.getByRole("button", { name: "Silmeden vazgeç" }).click(); expect((await request.get(`/api/runs/${id}`)).status()).toBe(200);
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Owner draft preserved after run deletion");
-    await card.getByRole("button", { name: "Çalışma silmeyi incele" }).click(); await preview.getByRole("checkbox").check();
+    await card.getByRole("button", { name: "Çalışmayı Sil" }).click(); await preview.getByRole("checkbox").check();
     await getDatabase().update(providerOperations).set({ inputTokens: 1 }).where(eq(providerOperations.id, op));
-    await preview.getByRole("button", { name: "Çalışma içeriğini kalıcı olarak sil" }).click();
+    await preview.getByRole("button", { name: "Sil", exact: true }).click();
     await expect(preview.getByRole("alert")).toContainText("Çalışma değişti");
     expect((await request.get(`/api/runs/${id}`)).status()).toBe(200);
     await preview.getByRole("button", { name: "Silme önizlemesini yenile" }).click(); await preview.getByRole("checkbox").check();
@@ -53,8 +53,8 @@ test("reviews run deletion, preserves the draft, rejects stale state and manuall
       if (route.request().method() === "POST" && lose) { lose = false; await route.fetch(); await route.abort("failed"); }
       else await route.continue();
     });
-    await preview.getByRole("button", { name: "Çalışma içeriğini kalıcı olarak sil" }).click(); await expect(preview.getByRole("alert")).toBeVisible();
-    await preview.getByRole("button", { name: "Çalışma içeriğini kalıcı olarak sil" }).click();
+    await preview.getByRole("button", { name: "Sil", exact: true }).click(); await expect(preview.getByRole("alert")).toBeVisible();
+    await preview.getByRole("button", { name: "Sil", exact: true }).click();
     await expect(card).toHaveCount(0); await expect(page.locator("#council-result")).toHaveCount(0);
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Owner draft preserved after run deletion");
     const auditResponse = await request.get(`/api/runs/${id}/deletion-receipt`); expect(auditResponse.status()).toBe(200);
@@ -94,10 +94,10 @@ test("run deletion preview blocks copied context and running work without genera
     const active = await (await request.get(`/api/runs/${child}/deletion`)).json(); expect(active.blockedReasons).toContain("active_run");
     await page.goto("/"); const history = page.locator("details.run-history"); const card = history.locator(`[data-run-id="${source}"]`);
     await expect(card).toBeVisible(); await page.getByLabel("Sorunuz", { exact: true }).fill("Draft kept for blocked deletion");
-    await card.getByRole("button", { name: "Çalışma silmeyi incele" }).click();
-    const preview = history.getByRole("region", { name: "Çalışma içeriği silme önizlemesi" });
+    await card.getByRole("button", { name: "Çalışmayı Sil" }).click();
+    const preview = page.getByRole("region", { name: "Çalışma içeriği silme önizlemesi" });
     await expect(preview).toContainText("kopyaları var"); await expect(preview).toContainText(child);
-    await expect(preview.getByRole("button", { name: "Çalışma içeriğini kalıcı olarak sil" })).toHaveCount(0);
+    await expect(preview.getByRole("button", { name: "Sil", exact: true })).toHaveCount(0);
     await preview.getByRole("button", { name: "Silmeden vazgeç" }).click();
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Draft kept for blocked deletion");
     expect((await request.get(`/api/runs/${source}`)).status()).toBe(200); expect(generations).toBe(0);

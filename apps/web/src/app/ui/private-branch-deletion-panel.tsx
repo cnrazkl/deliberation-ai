@@ -53,7 +53,7 @@ export function PrivateBranchDeletionPanel({ branchId, onDeleted, onCancel, onBu
       {preview.copiedBranchIds.length > 0 && <ul>{preview.copiedBranchIds.map((id) => <li key={id}>{id}</li>)}</ul>}
       {preview.eligible && <>
         <label><input type="checkbox" checked={reviewed} disabled={busy} onChange={(event) => setReviewed(event.target.checked)} /> Dal içeriğini silmek ve belirtilen kullanım kayıtları ile dış kopyaları korumak istiyorum.</label>
-        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Özel dal içeriğini kalıcı olarak sil</button>
+        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Sil</button>
       </>}
     </>}
     {!preview && !error && <p>Silme önizlemesi yükleniyor…</p>}

@@ -12,13 +12,15 @@ export function DeletionDialog({ title, busy, onCancel, children }: {
     if (!element) return;
     const trigger = document.activeElement;
     const overflow = document.body.style.overflow;
+    const anchor = document.documentElement.style.overflowAnchor;
     const { scrollX, scrollY } = window;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflowAnchor = "none";
     element.showModal();
     element.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
     window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
     return () => {
-      element.close(); document.body.style.overflow = overflow;
+      element.close(); document.body.style.overflow = overflow; document.documentElement.style.overflowAnchor = anchor;
       if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus({ preventScroll: true });
       window.scrollTo({ left: scrollX, top: scrollY, behavior: "instant" });
     };

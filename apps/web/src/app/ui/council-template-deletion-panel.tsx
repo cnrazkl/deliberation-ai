@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import type { CouncilTemplateDeletionPreview } from "@deliberation-ai/persistence";
 import { DeletionDialog } from "./deletion-dialog";
 
-export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, onBusy }: {
-  templateId: string; onCancel: () => void; onDeleted: () => void; onBusy: (value: boolean) => void;
+export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, onBusy, selectedInChat = false }: {
+  templateId: string; onCancel: () => void; onDeleted: () => void; onBusy: (value: boolean) => void; selectedInChat?: boolean;
 }) {
   const [preview, setPreview] = useState<CouncilTemplateDeletionPreview>();
   const [reviewed, setReviewed] = useState(false); const [busy, setBusy] = useState(false);
@@ -36,14 +36,15 @@ export function CouncilTemplateDeletionPanel({ templateId, onCancel, onDeleted, 
   }
   return <DeletionDialog title="Konsey Şablonunu Sil" busy={busy} onCancel={onCancel}><section aria-label="Şablon silme önizlemesi">
     <h3>Şablon silme önizlemesi</h3><p>Şablon kimliği: {templateId}</p>
-    <p>Yalnız bu kayıtlı şablonun adı, açıklaması ve üye ayarları kaldırılır. Seçili konseyiniz ve taslak sorunuz korunur.</p>
+    <p>Yalnız bu kayıtlı şablonun adı, açıklaması ve üye ayarları kaldırılır. Taslak sorunuz ve üye ayarlarınız korunur.</p>
+    {selectedInChat && <p className="inline-warning">Bu konsey şu anda sohbette seçili. Silerseniz kayıtlı konsey seçimi kalkar; yeni gönderim için başka bir konsey seçmeniz gerekir.</p>}
     <p>Önceki çalışmalar ve zamanlamalar kendi kopyalarını saklar; kuyruktaki işler durmaz. Yedekler ve dışa aktarılan dosyalar silinmez. Oluşturma isteğinin kimliği/özeti ve şifreli silme kaydı saklanır.</p>
     {preview ? <>
       <p>{preview.name} · {preview.memberCount} üye</p>
       {preview.blockedReasons.length > 0 && <p>Kayıt yapısı değişmiş; silme politikası yeniden incelenmeli.</p>}
       {preview.eligible && <>
         <label><input type="checkbox" checked={reviewed} disabled={busy} onChange={(event) => setReviewed(event.target.checked)} /> Şablon içeriğini silmek, bağımsız kopyaları saklamak istiyorum.</label>
-        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Şablon içeriğini kalıcı olarak sil</button>
+        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Sil</button>
       </>}
     </> : !error ? <p>Silme önizlemesi yükleniyor…</p> : null}
     {error && <p role="alert">{error}</p>}

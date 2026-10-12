@@ -8,6 +8,9 @@ import { LocalDiagnosticsPanel } from "./local-diagnostics-panel";
 import { PrivateOutputDefaultPanel } from "./private-output-default-panel";
 import { CouncilTemplateDeletionPanel } from "./council-template-deletion-panel";
 import { CouncilPool } from "./council-pool";
+import { CouncilLibrary, CouncilEditorActions } from "./council-library";
+import { RunDeletionPanel } from "./run-deletion-panel";
+import { DeletionDialog } from "./deletion-dialog";
 import { ConnectionImpactDialog } from "./connection-impact-dialog";
 import { WorkspaceTabs } from "./workspace-tabs";
 import type { ConnectionImpact } from "@deliberation-ai/persistence";
@@ -330,7 +333,7 @@ type OperatorProviderOperation = {
   attempt: number;
   provider: string;
   model: string;
-  status: "outcome_unknown" | "submitted";
+  status: "outcome_unknown" | "submitted" | "retry_authorized";
   errorCode: string | null;
   startedAt: string;
   runStatus: string;
@@ -378,6 +381,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   }
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [libraryDeletionId, setLibraryDeletionId] = useState<string>();
+  const [runDeletionId, setRunDeletionId] = useState<string>();
+  const [deletingRunBusy, setDeletingRunBusy] = useState(false);
   const [privateConversationId, setPrivateConversationId] = useState<string>();
   const [question, setQuestion] = useState(starterQuestion);
   const [continuationContext, setContinuationContext] = useState<FrozenContinuation>();
@@ -1721,7 +1726,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   function newChat() {
     setChatTab("question");
     cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined;
-    setLibraryDeletionId(undefined); setPrivateConversationId(undefined);
+    setLibraryDeletionId(undefined); setRunDeletionId(undefined); setPrivateConversationId(undefined);
     setRun(undefined); setError(undefined); setQuestion(""); setPromptCandidate(""); setPromptChoice("original");
     setContinuationContext(undefined); setCompactionDraft(undefined); setContinuationReviewed(false);
     setAttachments([]); setAttachmentDimensions([]); setAttachmentError(undefined);
@@ -1736,19 +1741,20 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       <ConversationLibraryPanel refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
         onReviewDeletion={setLibraryDeletionId}
         onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); setChatTab("results"); }} />
-      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onDeletedRun={(id) => {
-        if (activeRunIdRef.current === id) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
-        setHistoryRefreshKey((value) => value + 1);
-      }} />
+      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onReviewDeletion={setRunDeletionId} deletionPending={Boolean(runDeletionId)} />
 
     </>}>
-      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)}
+      {runDeletionId && <DeletionDialog title="Çalışmayı Sil" busy={deletingRunBusy} onCancel={() => { if (!deletingRunBusy) setRunDeletionId(undefined); }}><RunDeletionPanel key={runDeletionId} runId={runDeletionId} onBusy={setDeletingRunBusy} onCancel={() => { if (!deletingRunBusy) setRunDeletionId(undefined); }} onDeleted={() => {
+        if (activeRunIdRef.current === runDeletionId) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
+        setRunDeletionId(undefined); setHistoryRefreshKey(value => value + 1);
+      }} /></DeletionDialog>}
+      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)} onOperationsChanged={() => { void refreshOperatorOperations(); }}
         onDeleted={(ids) => {
           if (activeRunIdRef.current && ids.includes(activeRunIdRef.current)) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
           if (privateConversationId === libraryDeletionId) setPrivateConversationId(undefined);
           setLibraryDeletionId(undefined); setHistoryRefreshKey(value => value + 1);
         }} />}
-      {deletingTemplateId && <CouncilTemplateDeletionPanel key={deletingTemplateId} templateId={deletingTemplateId}
+      {deletingTemplateId && <CouncilTemplateDeletionPanel key={deletingTemplateId} templateId={deletingTemplateId} selectedInChat={deletingTemplateId === selectedTemplateId}
         onCancel={() => setDeletingTemplateId(undefined)} onDeleted={onTemplateDeleted} onBusy={setDeletingTemplateBusy} />}
       <section className="workspace workspace-view" hidden={view !== "settings"} aria-label="Ayarlar alanı">
         <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
@@ -1866,10 +1872,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                   </button>
                   <button
                     type="button"
-                    disabled={resolvingOperationId === operation.id}
-                    onClick={() => void resolveOperation(operation, "authorize_retry")}
+                    disabled={resolvingOperationId === operation.id || operation.status === "retry_authorized"}
+                    onClick={() => { if (operation.status !== "retry_authorized") void resolveOperation(operation, "authorize_retry"); }}
                   >
-                    Yeni denemeye izin ver
+                    {operation.status === "retry_authorized" ? "Yeniden Deneme İzni Bekliyor" : "Yeni denemeye izin ver"}
                   </button>
                 </div>
               </article>
@@ -1896,12 +1902,10 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       </section>
       <section className="workspace workspace-view" hidden={view !== "councils"} aria-label="Konsey yönetimi">
         <p className="section-intro">Konseyleri oluşturun, üyelerini düzenleyin ve sohbetten yeniden kullanmak için kaydedin.</p>
-        <button type="button" className="secondary-button" title="Mevcut üyelerle yeni bir konsey taslağı açar; kaydetmeden mevcut konseyi değiştirmez." disabled={pending || savingTemplate} onClick={() => { setSelectedTemplateId(""); setTemplateName(""); setTemplateNotice(undefined); }}>Yeni Konsey</button>
-        <CouncilPool management invalidIds={invalidTemplateIds} onCopy={() => void saveTemplate(false)} templates={templates.filter(template => template.members.every(member => member.provider !== "fake"))}
-          selectedId={selectedTemplateId} selectedName={selectedTemplate?.name} modified={templateModified} members={members} reviewRounds={reviewRounds}
-          name={templateName} disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation}
-          canSave={memberConfigurationValid} saving={savingTemplate} notice={templateModified ? undefined : templateNotice} error={templateError}
-          onSelect={selectTemplate} onNameChange={setTemplateName} onSave={() => void saveTemplate()} />
+        <CouncilLibrary templates={templates.filter(template => template.members.every(member => member.provider !== "fake"))} selectedId={selectedTemplateId} invalidIds={invalidTemplateIds}
+          disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation} onDelete={setDeletingTemplateId}
+          modelLabel={member => { const connection = connections.find(item => item.id === member.connectionId); return connection?.modelAliases?.[member.model] || member.model; }}
+          onEdit={id => { selectTemplate(id); if (configRef.current) { configRef.current.open = true; configRef.current.scrollIntoView({ block: "start", behavior: "smooth" }); } }} />
       <details open ref={configRef} className="settings-card council-config" role="region" aria-label="Konsey yapılandırması"><DisclosureSummary title="Konsey yapılandırması" description="Modeller, görevler ve inceleme turları" icon="council" status={`${members.length} üye · ${reviewRounds} inceleme turu`} />
         <div className="config-heading">
           <div>
@@ -2144,24 +2148,9 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             </label>
             {selfRevisionEnabled && reviewRounds > 0 ? <small>İlk yanıtlar korunur; öneriler otomatik olarak doğru kabul edilmez. Ek bağlam ve çıktı tokenları oluşabilir.</small> : null}
           </div>
-        <p className="hint">Üyeleri ve tur ayarlarını düzenledikten sonra yukarıdan kaydedin. Sohbette yalnız kayıtlı konseyler seçilir.</p>
-        {templates.some((template) => template.members.every((member) => member.provider !== "fake")) ? (
-          <div className="template-list">
-            {templates.filter((template) => template.members.every((member) => member.provider !== "fake")).map((template) => (
-              <div key={template.id}>
-                <button
-                  className="template-button" title="Bu kayıtlı konseyin üyelerini ve tur ayarlarını düzenlemek üzere yükler; model çağrısı yapmaz."
-                  type="button"
-                  disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation}
-                  onClick={() => selectTemplate(template.id)}
-                >
-                  {template.name} · Düzenle <small>{template.memberCount} üye</small>
-                </button>
-                <button className="secondary-button" type="button" disabled={savingTemplate || deletingTemplateBusy} title="Şablon silme kapsamını ve korunacak tarihsel kopyaları gösterir." aria-label={`${template.name} şablonunu silmeyi incele`} onClick={() => setDeletingTemplateId(template.id)}>Silmeyi incele</button>
-              </div>
-            ))}
-          </div>
-        ) : <p className="hint">Henüz kayıtlı yerel şablon yok.</p>}
+        <CouncilEditorActions name={templateName} selected={Boolean(selectedTemplateId)} disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation} canSave={memberConfigurationValid} saving={savingTemplate}
+          notice={templateModified ? undefined : templateNotice} error={templateError} onName={setTemplateName} onSave={() => void saveTemplate()} onCreate={() => void saveTemplate(false)}
+          onNew={() => { setSelectedTemplateId(""); setTemplateName(""); setTemplateNotice(undefined); }} />
       </details>
 
       </section>
@@ -2387,6 +2376,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
               ) : null}
               {report && ["completed", "partially_completed"].includes(run.status) ? <button type="button" className="secondary-button" disabled={pending || loadingContinuation} onClick={() => void selectContinuation()}>{loadingContinuation ? "Bağlam hazırlanıyor…" : "Bu rapordan yeni soruyla devam et"}</button> : null}
               {report && ["completed", "partially_completed"].includes(run.status) ? <button type="button" className="secondary-button" disabled={pending || loadingContinuation} onClick={() => void selectContinuation("compaction")}>Geçmişi kısaltarak yeni soruyla devam et</button> : null}
+              {!report && terminalStatuses.has(run.status) ? <button type="button" className="secondary-button" disabled={pending || loadingContinuation} title="Kaydedilmiş soruyu temiz bir sohbet taslağına alır; model çağrısı yapmaz." onClick={() => { const savedQuestion = run.question; newChat(); setQuestion(savedQuestion); }}>Soruyu Yeniden Hazırla</button> : null}
             </div>
             {report ? <small>İndirilen dosya şifresizdir; soru, rapor ve ham model yanıtlarını içerir. API anahtarları ve ek dosyalarının ham içerikleri dahil değildir.</small> : null}
             <small>

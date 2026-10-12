@@ -434,7 +434,7 @@ button:disabled { cursor: not-allowed; }
 .connection-dialog { width: min(760px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 1px solid var(--line); border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow-float); overflow: hidden; }
 .connection-dialog[open] { display: flex; flex-direction: column; }
 .connection-dialog::backdrop { background: rgba(5, 15, 32, .68); backdrop-filter: blur(5px); }
-.deletion-dialog { width: min(560px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow-float); overflow: auto; overscroll-behavior: contain; }
+.deletion-dialog { position: fixed; inset: 0; width: min(560px, calc(100vw - 32px)); max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); color: var(--ink); box-shadow: var(--shadow-float); overflow: auto; overscroll-behavior: contain; overflow-anchor: none; }
 .deletion-dialog::backdrop { background: rgba(5, 15, 32, .6); backdrop-filter: blur(4px); }
 .deletion-dialog-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 24px; border-bottom: 1px solid var(--line); }
 .deletion-dialog-header h2 { margin: 0; font-size: 21px; }
@@ -1376,3 +1376,20 @@ input[type="file"]::file-selector-button:hover { background: var(--surface-subtl
 .connection-impact-list li { display: grid; gap: 6px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; overflow-wrap: anywhere; }
 .connection-impact-list small { color: var(--muted); }
 .workspace[hidden], .question-card[hidden], [role="tabpanel"][hidden] { display: none; }
+.council-library { margin-bottom: 24px; }
+.council-library-heading, .council-preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.council-library-heading { margin-bottom: 14px; }
+.council-library-heading h2, .council-preview-heading h3 { margin: 0; }
+.council-library-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.council-preview-card { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+.council-preview-heading { flex-wrap: wrap; }.council-preview-heading h3 { font-size: 16px; overflow-wrap: anywhere; }
+.council-preview-models { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.council-preview-models span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; border-radius: 8px; padding: 5px 8px; background: var(--accent-soft); }
+.council-preview-actions, .council-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.council-preview-actions button { flex: 1; }.council-editor-save { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 20px; }.council-editor-actions { margin-top: 12px; }
+.sidebar-history .run-history-list .history-title { border: 0; background: transparent; color: var(--ink); font-weight: 500; text-transform: none; text-align: left; font-size: 13px; line-height: 1.5; padding: 4px 0; width: 100%; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.sidebar-history .run-history-list article.compact-history-item { flex-wrap: nowrap; align-items: center; gap: 8px; }
+.sidebar-history .run-history-list article.compact-history-item .history-title { flex: 1; width: auto; }
+.sidebar-history .run-history-list article > div small { display: none; }
+.sidebar-history .private-history-button { order: 3; flex-basis: 100%; text-align: left; }
+.deletion-pending-operations article { display: grid; gap: 5px; border-top: 1px solid var(--line); padding: 12px 0; }.deletion-pending-operations small { overflow-wrap: anywhere; }.deletion-pending-operations article button { justify-self: start; }

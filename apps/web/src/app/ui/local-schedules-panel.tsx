@@ -145,7 +145,7 @@ export function LocalSchedulesPanel({ question, members, reviewRounds, selfRevis
             <span className={schedule.status}>{schedule.status === "active" ? "Etkin" : "Duraklatıldı"}</span>
             <div className="schedule-actions">
               <button type="button" className="secondary-button" disabled={pending || (schedule.providerMode === "fake" && schedule.status === "paused")} onClick={() => void setStatus(schedule.id, schedule.status === "active" ? "paused" : "active")}>{schedule.status === "active" ? "Duraklat" : "Etkinleştir"}</button>
-              <button type="button" className="secondary-button danger-button" disabled={pending} onClick={() => setDeletionId(schedule.id)}>Zamanlama silmeyi incele</button>
+              <button type="button" className="secondary-button danger-button" disabled={pending} onClick={() => setDeletionId(schedule.id)}>Sil</button>
             </div>
           </article>
           {deletionId === schedule.id && <LocalScheduleDeletionPanel key={schedule.id} scheduleId={schedule.id} onBusy={setPending} onCancel={() => setDeletionId(undefined)} onDeleted={handleDeleted} />}

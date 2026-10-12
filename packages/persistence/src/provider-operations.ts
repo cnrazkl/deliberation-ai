@@ -453,7 +453,8 @@ export async function listProviderOperationsNeedingAction(): Promise<
       and(
         eq(runs.ownerId, getOwnerId()),
         or(eq(providerOperations.status, "outcome_unknown"),
-          and(eq(providerOperations.status, "submitted"), inArray(runs.status, ["completed", "partially_completed", "failed", "cancelled"]))),
+          and(inArray(providerOperations.status, ["submitted", "retry_authorized"]), inArray(runs.status, ["completed", "partially_completed", "failed", "cancelled"]),
+            sql`not (${providerOperations.status}='retry_authorized' and exists(select 1 from provider_operations newer where newer.run_id=${providerOperations.runId} and newer.member_id=${providerOperations.memberId} and newer.round=${providerOperations.round} and newer.attempt>${providerOperations.attempt}))`)),
       ),
     )
     .orderBy(asc(providerOperations.startedAt));
@@ -489,11 +490,21 @@ export async function resolveProviderOperation(
     if (!run) return undefined;
     const [operation] = await tx.select().from(providerOperations).where(eq(providerOperations.id, operationId)).for("update").limit(1);
     if (!operation) return undefined;
-    if (operation.status !== "outcome_unknown" && !(operation.status === "submitted" &&
+    const unusedRetry = action === "discard" && operation.status === "retry_authorized" &&
+      ["completed", "partially_completed", "failed", "cancelled"].includes(run.status);
+    if (operation.status !== "outcome_unknown" && !unusedRetry && !(operation.status === "submitted" &&
       ["completed", "partially_completed", "failed", "cancelled"].includes(run.status))) {
       throw new ProviderOperationResolutionError(
         "Sağlayıcı operasyonu artık operatör kararı beklemiyor.",
       );
+    }
+
+    if (unusedRetry) {
+      const key = createHash("sha256").update(`deliberation-ai-run:${run.id}`).digest().readBigInt64BE(0).toString();
+      const lease = await tx.execute<{ acquired: boolean }>(sql`select pg_try_advisory_xact_lock(${key}::bigint) as acquired`);
+      const [newer] = await tx.select({ id: providerOperations.id }).from(providerOperations).where(and(
+        eq(providerOperations.runId, run.id), eq(providerOperations.memberId, operation.memberId), eq(providerOperations.round, operation.round), gt(providerOperations.attempt, operation.attempt))).limit(1);
+      if (!lease.rows[0]?.acquired || newer) throw new ProviderOperationResolutionError("Yeniden deneme izni kullanılıyor veya daha yeni bir deneme var. Durumu yenileyin.");
     }
 
     if (action === "authorize_retry" && run.executionLimitsCiphertext) {

@@ -50,7 +50,7 @@ export function RunDeletionPanel({ runId, onCancel, onDeleted, onBusy }: {
       {!!preview.privateBranchIds.length && <p>Özel dallar: {preview.privateBranchIds.join(", ")}</p>}
       {preview.eligible && <>
         <label><input type="checkbox" disabled={busy} checked={reviewed} onChange={(event) => setReviewed(event.target.checked)} /> Çalışma içeriğini silmek ve belirtilen kayıtları saklamak istiyorum.</label>
-        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Çalışma içeriğini kalıcı olarak sil</button>
+        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Sil</button>
       </>}
     </>}
     {!preview && !error && <p>Silme önizlemesi yükleniyor…</p>}

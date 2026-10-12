@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { unresolvedProviderOperations } from "@deliberation-ai/domain";
 import { and, asc, eq, inArray, sql, getTableName } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { getDatabase } from "./database";
@@ -46,6 +47,8 @@ export type ConversationContentDeletionPreview = {
   contentCounts: Record<string, number>; receiptCount: number; retainedInputCount: number; retainedBillingCount: number;
   dependencies: { kind: "run" | "private" | "conversation" | "publication"; id: string }[];
   blockedReasons: ConversationContentDeletionBlock[];
+  pendingOperations: { id: string; runId: string; memberId: string; model: string; status: string; errorCode: string | null; canDiscard: boolean }[];
+  activeRuns: { id: string; status: string }[];
 };
 
 async function inspect(tx: ConversationTransaction, id: string) {
@@ -149,13 +152,17 @@ async function inspect(tx: ConversationTransaction, id: string) {
   const preview: ConversationContentDeletionPreview = { version: "conversation-content-deletion-v1", conversationId: id, eligible, fingerprint,
     runIds: runValues.map(value => value.row.id), privateBranchIds: branchIds, membershipCount: members.length, knowledgeRecordCount,
     contentCounts, receiptCount, retainedInputCount, retainedBillingCount,
-    dependencies: retainedDependencies.slice(0, MAX_TARGETS), blockedReasons: [...reasons] };
+    dependencies: retainedDependencies.slice(0, MAX_TARGETS), blockedReasons: [...reasons],
+    pendingOperations: runValues.flatMap(value => unresolvedProviderOperations(value.operations).map(operation => ({
+      id: operation.id, runId: operation.runId, memberId: operation.memberId, model: operation.model, status: operation.status, errorCode: operation.errorCode,
+      canDiscard: ["completed", "partially_completed", "failed", "cancelled"].includes(value.row.status) && ["outcome_unknown", "submitted", "retry_authorized"].includes(operation.status),
+    }))).slice(0, MAX_TARGETS), activeRuns: runValues.filter(value => ["queued", "running"].includes(value.row.status)).map(value => ({ id: value.row.id, status: value.row.status })) };
   return { preview, runValues, branchValues };
 
   function emptyPreview(): ConversationContentDeletionPreview {
     return { version: "conversation-content-deletion-v1", conversationId: id, eligible: false, fingerprint: null, runIds: [], privateBranchIds: [],
       membershipCount: members.length, knowledgeRecordCount: 0, contentCounts: {}, receiptCount: 0, retainedInputCount: 0, retainedBillingCount: 0,
-      dependencies: [], blockedReasons: [...reasons] };
+      dependencies: [], blockedReasons: [...reasons], pendingOperations: [], activeRuns: [] };
   }
 }
 

@@ -12,16 +12,18 @@ all owned bodies in one conversation, with one atomic confirmation and explicitl
 retained independent copies. The standalone workflow below retains its existing
 copy blockers and acknowledgement. [Aggregate contract](CONVERSATION_CLEANUP.md).
 
-In **Son çalışmalar**, choose **Çalışma silmeyi incele**. The read-only preview identifies
+In **Son çalışmalar**, choose **Sil**. A main-area modal's read-only preview identifies
 the exact run, affected record counts, retained records and blockers. Review the checkbox,
-then separately choose **Çalışma içeriğini kalıcı olarak sil**. Opening/cancelling or
+then separately choose **Sil**. Opening/cancelling or
 refreshing removes nothing and sends no model request. History navigation is disabled
 during review. Confirmation removes the active report view if that run is open; the
 owner's question draft and model choices remain. Local unsaved context/selections are
 separate ephemeral copies, not a storage-erasure boundary.
 
 Only completed, partially completed, failed or cancelled runs are candidates. Pending
-prepared/submitted/outcome_unknown/retry_authorized provider operations block removal.
+prepared/submitted/outcome_unknown and unused retry_authorized provider operations block removal.
+A retry grant superseded by a later attempt for the same run/member/round is historical;
+it does not block deletion. A later attempt never hides an older unknown/submitted call.
 A live council execution fence also blocks apply even after an acknowledged unknown
 closure. All decision-assessment aggregates are outside this version, including terminal
 ones: their execution path has no equivalent session fence. Deletion does not discard,
@@ -45,6 +47,15 @@ attempt, status, timestamps, nullable observed input/output counts, validated to
 details and optional price snapshot ID. It excludes question/report/raw/result/error
 text, attachments, citations, credentials and raw creation keys. Metadata is not
 anonymous information; observed usage is not an invoice, refund or spending budget.
+
+Audits without historical retry grants retain `run-deletion-audit-v1`. When grants are
+present the writer uses strict `run-deletion-audit-v2`, preserving their original
+`retry_authorized` status and nullable usage. Every such grant must have a higher attempt
+in the same member/round; all other receipts must be terminal. Current audit read,
+export, usage and backup authentication accept both versions. No DDL or historical
+row rewrite is needed. Once v2 is written, rollback/restore readers must support v2;
+older application binaries cannot authenticate these audits and are not a compatible
+data-reading rollback target. A schema version does not infer a remote result or cost.
 
 Conversation identity/memberships remain and project the removed body as unavailable.
 An owned conversation export adds `runDeletions` beside active runs/private branches

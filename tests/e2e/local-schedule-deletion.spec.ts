@@ -31,15 +31,15 @@ test("deduplicates a lost schedule creation, reviews deletion and recovers a los
     const card=panel.locator("article").filter({hasText:name});await expect(card).toHaveCount(1);
     expect(ids).toHaveLength(1);expect(requests[0]!.requestId).toBe(requests[1]!.requestId);
     const id=ids[0]!;expect((await request.post("/api/local-schedules",{data:{...requests[0],requestId:undefined}})).status()).toBe(422);
-    await card.getByRole("button",{name:"Zamanlama silmeyi incele"}).click();
-    const review=panel.getByRole("region",{name:"Zamanlama silme önizlemesi"});const confirm=review.getByRole("button",{name:"Zamanlama içeriğini kalıcı olarak sil"});
+    await card.getByRole("button",{name: "Sil", exact: true }).click();
+    const review=panel.getByRole("region",{name:"Zamanlama silme önizlemesi"});const confirm=review.getByRole("button",{name: "Sil", exact: true });
     await expect(confirm).toBeDisabled();await expect(review).toContainText("Önceden kuyruğa alınmış çalışmalar durmaz");
     await review.getByRole("button",{name:"Silme incelemesini kapat"}).click();await expect(question).toHaveValue("Generated schedule browser comparison question");
     // Keep the generated fixture safely in the future while checking active-state refusal.
     await getDatabase().update(localSchedules).set({status:"active"}).where(eq(localSchedules.id,id));
     const active=await(await request.get(`/api/local-schedules/${id}/deletion`)).json();expect(active.blockedReasons).toContain("active_schedule");
     await request.patch(`/api/local-schedules?id=${id}`,{data:{status:"paused"}});
-    await card.getByRole("button",{name:"Zamanlama silmeyi incele"}).click();await expect(confirm).toBeVisible();
+    await card.getByRole("button",{name: "Sil", exact: true }).click();await expect(confirm).toBeVisible();
     const old=await(await request.get(`/api/local-schedules/${id}/deletion`)).json();const confirmation={scheduleId:id,fingerprint:old.fingerprint,confirmContentDeletion:true,acknowledgeRetainedRuns:true};
     expect((await request.post(`/api/local-schedules/${id}/deletion`,{data:confirmation,headers:{origin:"https://foreign.example"}})).status()).toBe(403);
     expect((await request.post(`/api/local-schedules/${id}/deletion`,{data:{...confirmation,scheduleId:randomUUID()}})).status()).toBe(422);

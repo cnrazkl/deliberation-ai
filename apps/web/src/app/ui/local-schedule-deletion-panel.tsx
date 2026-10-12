@@ -46,7 +46,7 @@ export function LocalScheduleDeletionPanel({ scheduleId, onCancel, onDeleted, on
       {preview.blockedReasons.map((reason) => <p key={reason}>{reason === "active_schedule" ? "Önce zamanlamayı duraklatıp silme önizlemesini yeniden açın." : reason === "schema_changed" ? "Kayıt yapısı değişmiş; silme politikası yeniden incelenmeli." : "Kayıt durumu veya sahipliği doğrulanamadı."}</p>)}
       {preview.eligible && <>
         <label><input type="checkbox" checked={reviewed} disabled={busy} onChange={(event) => setReviewed(event.target.checked)} /> Zamanlama içeriğini silmek ve önceki çalışmaları saklamak istiyorum.</label>
-        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Zamanlama içeriğini kalıcı olarak sil</button>
+        <button type="button" disabled={!reviewed || busy} onClick={() => void remove()}>Sil</button>
       </>}
     </> : !error ? <p>Silme önizlemesi yükleniyor…</p> : null}
     {error && <p role="alert">{error}</p>}

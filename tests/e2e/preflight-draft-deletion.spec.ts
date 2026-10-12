@@ -21,15 +21,15 @@ test("reviews draft deletion, preserves unsaved inputs on cancel, rejects stale 
     const pending = page.getByRole("region", { name: "Yanıt bekleyen ön değerlendirmeler" });
     await pending.getByRole("button", { name: new RegExp(draft.id.slice(0, 8)) }).click();
     await pending.getByLabel("Eksik bilgilere yanıt").fill("Keep this unsaved clarification on cancel");
-    await pending.getByRole("button", { name: "Taslak silmeyi incele" }).click();
+    await pending.getByRole("button", { name: "Sil", exact: true }).click();
     const review = pending.getByRole("region", { name: "Ön kontrol taslağı silme önizlemesi" });
-    const confirm = review.getByRole("button", { name: "Taslak içeriğini kalıcı olarak sil" });
+    const confirm = review.getByRole("button", { name: "Sil", exact: true });
     await expect(confirm).toBeDisabled();
     await expect(review).toContainText("yedekler");
     await review.getByRole("button", { name: "Silme incelemesini kapat" }).click();
     await expect(pending.getByLabel("Eksik bilgilere yanıt")).toHaveValue("Keep this unsaved clarification on cancel");
     expect((await getDatabase().select().from(preflightDrafts).where(eq(preflightDrafts.id, draft.id)))[0]!.requestCiphertext).not.toBeNull();
-    await pending.getByRole("button", { name: "Taslak silmeyi incele" }).click();
+    await pending.getByRole("button", { name: "Sil", exact: true }).click();
     const preview = await request.get(`/api/preflight-drafts/${draft.id}/deletion`);
     expect(preview.headers()["cache-control"]).toBe("no-store");
     const oldReview = await preview.json();

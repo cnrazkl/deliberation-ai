@@ -12,7 +12,8 @@ import { enqueueDurableRun, executeDurableRun, findDurableRunById, loadRunContin
 import { previewPrivateBranchSeed, createPrivateBranch } from "./private-branches";
 import { previewConversationContentDeletion, deleteConversationContent } from "./conversation-content-deletion";
 import { ConversationDeletionBlockedError, ConversationDeletionStaleError } from "./conversation-deletion";
-import { RunDeletionBlockedError } from "./run-deletion";
+import { RunDeletionBlockedError, loadRunDeletion } from "./run-deletion";
+import { resolveProviderOperation } from "./provider-operations";
 
 const runIds: string[] = [], conversationIds: string[] = [], publications: string[] = [];
 afterEach(async () => {
@@ -149,4 +150,37 @@ test("oversized target and local knowledge scopes block before mutation", async 
   expect((await previewConversationContentDeletion(source.conversationId))!.blockedReasons).toContain("inspection_limit");
   await expect(deleteConversationContent(source.conversationId, preview.fingerprint!)).rejects.toBeInstanceOf(ConversationDeletionBlockedError);
   expect(await findDurableRunById(source.id)).toBeDefined();
+});
+test("consumed retry permissions do not block conversation deletion, while an unknown call still does", async () => {
+  const source = await fixture();
+  const original = { id: randomUUID(), runId: source.id, memberId: defaultFakeCouncilMembers[0]!.id, round: 0 as const, attempt: 1, provider: "fake", model: "offline-model", requestFingerprint: "fixture" };
+  await getDatabase().insert(s.providerOperations).values({ ...original, status: "retry_authorized" });
+  await getDatabase().insert(s.providerOperations).values({ id: randomUUID(), runId: source.id, memberId: original!.memberId, round: original!.round,
+    attempt: original!.attempt + 1, provider: original!.provider, model: original!.model, status: "discarded", requestFingerprint: original!.requestFingerprint });
+  expect(await previewConversationContentDeletion(source.conversationId)).toMatchObject({ eligible: true, pendingOperations: [] });
+  await getDatabase().update(s.providerOperations).set({ status: "outcome_unknown", errorCode: "remote_outcome_unknown" }).where(eq(s.providerOperations.id, original!.id));
+  const blocked = (await previewConversationContentDeletion(source.conversationId))!;
+  expect(blocked.blockedReasons).toContain("pending_operations");
+  expect(blocked.pendingOperations).toEqual([expect.objectContaining({ id: original!.id, model: original!.model, errorCode: "remote_outcome_unknown", canDiscard: true })]);
+  await resolveProviderOperation(original!.id, "discard");
+  const ready = (await previewConversationContentDeletion(source.conversationId))!;
+  await deleteConversationContent(source.conversationId, ready.fingerprint!);
+  expect(await previewConversationContentDeletion(source.conversationId)).toBeUndefined();
+});
+test("deletion preserves consumed retry grants and unknown usage in a readable v2 audit", async () => {
+  const source = await fixture(); const first = randomUUID(); const later = randomUUID();
+  const common = { runId: source.id, memberId: "member-a", round: 0 as const, provider: "fake", model: "offline-model", requestFingerprint: "fixture" };
+  await getDatabase().insert(s.providerOperations).values([
+    { ...common, id: first, attempt: 1, status: "retry_authorized" },
+    { ...common, id: later, attempt: 2, status: "discarded" },
+  ]);
+  const ready = (await previewConversationContentDeletion(source.conversationId))!;
+  await deleteConversationContent(source.conversationId, ready.fingerprint!);
+  expect(await previewConversationContentDeletion(source.conversationId)).toBeUndefined();
+  const audit = (await loadRunDeletion(source.id))!;
+  expect(audit.version).toBe("run-deletion-audit-v2");
+  expect(audit.receipts).toEqual(expect.arrayContaining([
+    expect.objectContaining({ operationId: first, status: "retry_authorized", inputTokens: null, outputTokens: null }),
+    expect.objectContaining({ operationId: later, status: "discarded", inputTokens: null, outputTokens: null }),
+  ]));
 });

@@ -3,6 +3,10 @@
 ## Saved council pool
 
 The **Konseyler** sidebar menu owns council creation, editing, copying and deletion.
+Its compact **Konsey Havuzu** cards preview models and rounds, with **Düzenle / Sil**
+actions. Editing loads the configuration below the cards; **Konsey Adı**, save/update
+and **Yeni Konsey Oluştur** actions sit under that configuration. Deleting a council
+selected in chat explicitly warns that the saved selection will be cleared.
 The chat composer exposes **Konsey Havuzu** only to select a saved council from
 **Kayıtlı Konsey**. Unsaved or unavailable configurations cannot start new work.
 Selection applies every ordered member's connection, model, role, reasoning, web and
@@ -17,7 +21,16 @@ Legacy member-only templates apply one review round and no self-revision. Missin
 changed connections must be corrected in council configuration before execution.
 Saving reports success/error inside the pool, preserves unchanged retry identities,
 and cannot silently overwrite a conflicting saved name. Reviewed deletion remains in
-the council configuration; deletion leaves the current member draft and frozen runs.
+the pool cards; deletion leaves the current member draft and frozen runs.
+
+Recent runs use clickable compact history rows; date/status details are in their
+tooltips. Opening shows the chat result and available continuation actions. Run
+failures without a report offer **Soruyu Yeniden Hazırla**, which starts a clean
+draft with that question and no provider request. Run
+deletion opens a main-area modal, never an inline sidebar preview. Conversation
+history exposes private drafts directly below its open action, without a disclosure.
+Deletion entry/confirmation buttons use **Sil** instead of **Silmeyi İncele**; explicit
+confirmation, scope, ownership and worker protections still apply.
 
 The blue/navy brand mark uses three separate, equally sized geometric dialogue
 facets pointing toward an open center. Each retains its own direction and color.
@@ -92,7 +105,7 @@ Aliases appear in council/test dropdowns beside the original identifier; executi
 frozen councils, model identity and provenance always use the original identifier.
 Council members use dropdowns of that connection's saved models; the same connection
 may supply different models to multiple members, or each member may use a different
-connection. Existing draft/template models remain selectable if preferences change.
+connection. Removed draft/template models remain visible as unavailable until repaired.
 Legacy connections expose their prior default model as an initial choice. Changing
 provider/key/endpoint invalidates transient catalog results and pending lookup.
 Reasoning stays per member; catalog presence does not prove generation or capabilities.

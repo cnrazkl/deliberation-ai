@@ -1,12 +1,12 @@
 # Single-confirmation conversation deletion
 
-Every saved conversation exposes **Konuşmayı Sil**. It opens one centered native
+Every saved conversation exposes **Sil**. It opens one centered native
 dialog with **Bu konuşmayı silmek istediğinize emin misiniz?**, affected run/private
 counts, retained-copy warnings and **Vazgeç / Evet, Konuşmayı Sil**. No checkbox or
 separate private/run/metadata approval is needed. Cancelling removes nothing.
 Conversation and council-template deletion dialogs preserve page position and return
 focus to their trigger. They are mounted once outside hidden workspace views and
-template pills. Pending report-navigation scrolling cannot move an open dialog.
+the council preview cards. Pending report-navigation scrolling cannot move an open dialog.
 
 Only this conversation's owned terminal run bodies, owned private branches,
 memberships, local knowledge selections/bindings/preparation packets and metadata
@@ -19,7 +19,7 @@ retained-copy policy applies only to complete-conversation deletion; standalone
 [run](RUN_DELETION.md) and [private](PRIVATE_BRANCH_DELETION.md) reviews keep their
 existing copy blockers.
 
-Active runs, prepared/submitted/unknown/retry-authorized provider work, private
+Active runs, prepared/submitted/unknown/unused retry-authorized provider work, private
 deliveries, live execution leases, decision-assessment boundaries, foreign ownership,
 index problems, unreadable provenance, inspection/audit capacity and unregistered
 schema/FKs/triggers still block the whole operation. The dialog explains the blocker;
@@ -27,6 +27,17 @@ there are no nested deletion actions. The command never cancels, retries, refund
 generates provider work and never removes another conversation or reusable library
 source. Independent preflight/schedule inputs, billing, MCP results, downloads and
 backups remain; old backups can restore deleted content.
+
+Consumed retry permissions are historical: if a later attempt for the same run,
+member and round exists, the earlier `retry_authorized` receipt does not independently
+block deletion. A genuine submitted/unknown call remains unresolved even if a newer
+attempt exists. Receipts and uncertain usage are preserved in strict v1/v2 deletion
+audits; v2 reader/rollback compatibility is described in [RUN_DELETION.md](RUN_DELETION.md).
+The preview returns bounded current-operation model/status/code/identity details
+and active-run identities. The dialog shows them and offers explicit local discard
+actions using the existing owned operator endpoint, without generation or retries.
+An unconsumed terminal retry permission can be discarded only while acquiring the
+worker execution lease and rechecking that no later attempt has consumed it.
 
 ## Atomic persistence and compatibility
 

@@ -7,7 +7,7 @@ import { DeletionDialog } from "./deletion-dialog";
 
 const reasons: Record<ConversationContentDeletionBlock, string> = {
   active_run: "Bu konuşmada hâlâ çalışan bir işlem var. İşlem bittikten sonra silebilirsiniz.",
-  pending_operations: "Sağlayıcı sonucu bekleyen veya belirsiz bir işlem var. Önce Ayarlar bölümündeki işlemi sonuçlandırın.",
+  pending_operations: "Sağlayıcı sonucu bekleyen veya belirsiz bir işlem var. Aşağıdaki işlem ayrıntılarını inceleyip kapatılabilir kayıtları kapatın.",
   pending_delivery: "Özel sohbette sonucu beklenen bir mesaj var. Önce bu işlemi sonuçlandırın.",
   copied_content: "Bu konuşmadan alınmış içerikler başka kayıtlarda kullanılıyor.",
   copied_branches: "Bu özel sohbetten alınmış içerikler başka bir özel sohbette kullanılıyor.",
@@ -23,8 +23,8 @@ const reasons: Record<ConversationContentDeletionBlock, string> = {
 };
 const dependencyNames = { conversation: "Bağlı konuşma", run: "İçeriği kullanan çalışma", private: "İçeriği kullanan özel sohbet", publication: "Kütüphaneye kaydedilmiş kanıt" };
 
-export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel }: {
-  conversationId: string; onDeleted: (runIds: string[]) => void; onCancel: () => void;
+export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel, onOperationsChanged }: {
+  conversationId: string; onDeleted: (runIds: string[]) => void; onCancel: () => void; onOperationsChanged?: () => void;
 }) {
   const [preview, setPreview] = useState<ConversationContentDeletionPreview>();
   const [error, setError] = useState<string>();
@@ -45,6 +45,18 @@ export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel 
     return () => { alive.current = false; controller.abort(); };
   }, [conversationId, refresh]);
   function reload() { setPreview(undefined); setError(undefined); setRefresh(value => value + 1); }
+  async function closeOperations(ids: string[]) {
+    if (submitting.current) return;
+    submitting.current = true; setBusy(true); setError(undefined);
+    try {
+      for (const id of ids) {
+        const response = await ownerFetch(`/api/provider-operations/${id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "discard" }) });
+        if (!response.ok) { const result = await response.json(); throw new Error(result.error ?? "İşlem kapatılamadı. Durumu yenileyin."); }
+      }
+      onOperationsChanged?.(); reload();
+    } catch (cause) { if (alive.current) setError(cause instanceof Error ? cause.message : "İşlem kapatılamadı. Durumu yenileyin."); }
+    finally { submitting.current = false; if (alive.current) setBusy(false); }
+  }
   async function remove() {
     if (!preview?.eligible || !preview.fingerprint || submitting.current) return;
     submitting.current = true; setBusy(true); setError(undefined);
@@ -65,7 +77,16 @@ export function ConversationDeletionPanel({ conversationId, onDeleted, onCancel 
         <p>{preview.eligible ? `Konuşma, ${preview.runIds.length} çalışma ve ${preview.privateBranchIds.length} özel sohbet ile birlikte kalıcı olarak silinecek. Bu işlem geri alınamaz.` : "Silme koşulları kontrol edildi. Aşağıdaki durum çözülmeden konuşma silinemez."}</p>
         {preview.knowledgeRecordCount > 0 && <p>Bu konuşmanın kaynak seçimleri ve hazırlanmış bağlamları da silinir. Kütüphanedeki dosyalar korunur.</p>}
         {preview.blockedReasons.length > 0 && <div className="deletion-blockers" role="status"><strong>Şu Anda Silinemiyor</strong>
-          <ul>{preview.blockedReasons.map(reason => <li key={reason}>{reasons[reason]}</li>)}</ul>
+          <ul>{preview.blockedReasons.map(reason => <li key={reason}>{reasons[reason] ?? `Silme engeli: ${reason}`}</li>)}</ul>
+          {(preview.activeRuns ?? []).map(item => <p key={item.id}>Çalışma {item.id.slice(0, 8)} · {item.status === "queued" ? "Sırada" : "Çalışıyor"}. İşlemin bitmesini bekleyin veya Sohbet ekranından iptal edin.</p>)}
+          {(preview.pendingOperations ?? []).length > 0 && <div className="deletion-pending-operations">
+            <p>Silme engeli oluşturan işlemler aşağıda. Kapatma yeni API çağrısı yapmaz; önceki çağrının sonucunu veya ücretini doğrulamaz ve ücret iadesi sağlamaz.</p>
+            {(preview.pendingOperations ?? []).map(item => <article key={item.id}><strong>{item.model}</strong><small>{item.memberId} · Çalışma {item.runId.slice(0, 8)} · İşlem {item.id.slice(0, 8)}</small>
+              <p>{item.status === "retry_authorized" ? "Kullanılmamış yeniden deneme izni" : item.status === "outcome_unknown" ? "Sağlayıcının sonucu bilinmiyor" : item.status === "submitted" ? "Sağlayıcı yanıtı alınamamış" : "Gönderim hazırlığı bekliyor"}{item.errorCode ? ` · ${item.errorCode}` : ""}</p>
+              {item.canDiscard && <button type="button" className="secondary-button" disabled={busy} title="Yalnız bu yerel işlemi başarısız sayıp kapatır; API isteğini tekrarlamaz." onClick={() => void closeOperations([item.id])}>İşlemi Kapat</button>}
+            </article>)}
+            {(preview.pendingOperations ?? []).filter(item => item.canDiscard).length > 1 && <button type="button" className="secondary-button" disabled={busy} onClick={() => void closeOperations(preview.pendingOperations.filter(item => item.canDiscard).map(item => item.id))}>Kapatılabilir İşlemleri Kapat</button>}
+          </div>}
         </div>}
         {preview.dependencies.length > 0 && <div className="deletion-blockers"><strong>Bağlı Kayıtlar Korunacak</strong>
           <p>Bu konuşmadan kopyalanmış içerikler aşağıdaki kayıtlarda bulunuyor. Yalnız bu konuşma silinir; diğer kayıtlardaki bağımsız kopyalar kalır.</p>

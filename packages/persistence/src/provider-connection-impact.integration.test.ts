@@ -65,3 +65,15 @@ test("queued binding creation and model removal serialize without losing active 
   finally { release(); }
   await create; expect(await removal).toBeInstanceOf(ProviderConnectionImpactError);
 }));
+test("a consumed retry grant does not block connection changes after its later attempt closes", async () => fixture(async (connection, members) => {
+  const runId = randomUUID(), operation = randomUUID();
+  await getDatabase().insert(runs).values({ id: runId, ownerId: (await import("./owner")).getOwnerId(), idempotencyKey: randomUUID(), requestHash: "fixture", snapshotId: randomUUID(), question: "[encrypted]", status: "failed", membersCiphertext: encryptJson(members, `run:${runId}:members`) });
+  await getDatabase().insert(providerOperations).values([
+    { id: operation, runId, memberId: members[0]!.id, provider: "openai-compatible", model: "model-a", status: "retry_authorized", attempt: 1, requestFingerprint: "fixture" },
+    { id: randomUUID(), runId, memberId: members[0]!.id, provider: "openai-compatible", model: "model-a", status: "discarded", attempt: 2, requestFingerprint: "fixture" },
+  ]);
+  const impact = (await previewProviderConnectionDeletion(connection.id))!;
+  expect(impact.eligible).toBe(true); expect(impact.references.some(item => item.kind === "Sağlayıcı İşlemi")).toBe(false);
+  await getDatabase().update(providerOperations).set({ status: "outcome_unknown" }).where(eq(providerOperations.id, operation));
+  expect((await previewProviderConnectionDeletion(connection.id))!.eligible).toBe(false);
+}));

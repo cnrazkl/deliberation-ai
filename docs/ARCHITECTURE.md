@@ -21,13 +21,18 @@ Conversation deletion needs one explicit button confirmation; template review ke
 its existing checkbox/fingerprint and retry semantics inside the same dialog wrapper.
 See [the complete closure and limits](CONVERSATION_CLEANUP.md).
 
-CouncilPool serves the chat selector and separate Konseyler management view.
+CouncilPool serves the chat selector; Konseyler owns the separate management view.
+CouncilLibrary provides compact preview/edit/delete cards; CouncilEditorActions owns
+creation/update/copy controls below member configuration. RunHistoryPanel delegates
+deletion to the workbench's main-area dialog. ConversationLibraryPanel exposes
+private drafts directly; clickable history titles open existing chat results.
 WorkspaceTabs hides mounted chat panels without losing drafts.
 CouncilWorkbench retains owned template loading, durable save intent, active identity
 and exact draft comparison. Selection copies members and stored round/self-revision
 settings into existing state; normal preview fingerprints and dispatch are unchanged.
-Pool controls are disabled during run submission, save/deletion, continuation loading
-and awaiting-context resolution. No selection triggers provider work.
+Pool controls are disabled during run submission, save/deletion and continuation
+loading. Question clarification does not block council management or selection.
+No selection triggers provider work.
 
 Council-template persistence accepts an optional strict settings object and authenticates
 new complete content as `council-template-content-v2` inside the existing members

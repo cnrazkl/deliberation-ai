@@ -389,3 +389,11 @@ Schedule template removal requires read-only bounded review, paused status, exac
 ## DA-122 reviewed local source packets
 
 The strict knowledge BFF accepts only explicit owned local operations, caps streamed JSON/base64 intake and returns no-store results. Reviewed packets require current exact grants, selection revision, active-version inventory and 15-minute freshness; enqueue repeats authorization under the owner lock. Each new round-0 submission rechecks scope. Backups authenticate source-linked quotations and historical packet ownership. Revocation is prospective, and run deletion preserves independent preparations/library versions. [Contract](KNOWLEDGE_PACKETS.md).
+
+## Council history and deletion - 12 October 2026
+
+Conversation deletion exposes only owned, bounded operation identities, models,
+statuses and safe error codes. Local discard is explicit and uses the existing
+same-origin operator endpoint. Closing unused terminal retry grants requires a
+nonblocking execution lease and verifies no newer attempt exists. Historical retry
+grants do not bypass guards for actual pending/unknown calls; audit/usage remain.

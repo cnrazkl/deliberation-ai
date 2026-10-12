@@ -285,10 +285,10 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.getByLabel("Üye 4 konsey görevi")).toHaveValue("red-team");
   const templateName = `E2E dört üye ${Date.now()}`;
   await page.getByLabel("Şablon adı").fill(templateName);
-  await page.getByRole("button", { name: "Konseyi Kaydet" }).click();
-  await expect(page.locator(".template-button").filter({ hasText: templateName })).toBeVisible();
+  await page.getByRole("button", { name: "Yeni Konsey Oluştur" }).click();
+  await expect(page.getByRole("button", { name: `${templateName} konseyini düzenle`, exact: true })).toBeVisible();
   await page.getByLabel("Üye sayısı").selectOption("2");
-  await page.locator(".template-button").filter({ hasText: templateName }).click();
+  await page.getByRole("button", { name: `${templateName} konseyini düzenle`, exact: true }).click();
   await expect(page.getByLabel("Üye sayısı")).toHaveValue("4");
   await expect(page.getByLabel("Üye 3 adı")).toHaveValue("Kanıt Uzmanı");
 
@@ -458,15 +458,15 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await researchRegion.getByRole("button", { name: "Kaynağı getir ve mühürle" }).click();
   await expect(researchRegion).toContainText("güvenli olmayan bir ağ adresine çözümlendi");
   await workspaceView(page, "Zamanlayıcı");
-  await scheduleCard.getByRole("button", { name: "Zamanlama silmeyi incele" }).click();
+  await scheduleCard.getByRole("button", { name: "Sil", exact: true }).click();
   const scheduleDeletion = scheduleRegion.getByRole("region", { name: "Zamanlama silme önizlemesi" });
   await scheduleDeletion.getByRole("checkbox").check();
-  await scheduleDeletion.getByRole("button", { name: "Zamanlama içeriğini kalıcı olarak sil" }).click();
+  await scheduleDeletion.getByRole("button", { name: "Sil", exact: true }).click();
   await expect(scheduleRegion).toContainText("E2E zamanlama silme hatası");
   await expect(scheduleCard).toBeVisible();
   await scheduleDeletion.getByRole("button", { name: "Silme önizlemesini yenile" }).click();
   await scheduleDeletion.getByRole("checkbox").check();
-  await scheduleDeletion.getByRole("button", { name: "Zamanlama içeriğini kalıcı olarak sil" }).click();
+  await scheduleDeletion.getByRole("button", { name: "Sil", exact: true }).click();
   await expect(scheduleCard).toHaveCount(0);
   await workspaceView(page, "Sohbet");
   await revealChatTab(page, "Sonuçlar");
@@ -544,11 +544,11 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.getByText("Deneme üyesi planlanan hata senaryosunu tetikledi.")).toBeVisible();
 
   await revealCouncilControls(page);
-  await page.getByRole("button", { name: `${templateName} şablonunu silmeyi incele` }).click();
+  await page.getByRole("button", { name: `${templateName} konseyini sil` }).click();
   const templateDeletion = page.getByRole("region", { name: "Şablon silme önizlemesi" });
   await templateDeletion.getByRole("checkbox").check();
-  await templateDeletion.getByRole("button", { name: "Şablon içeriğini kalıcı olarak sil" }).click();
-  await expect(page.locator(".template-button").filter({ hasText: templateName })).toHaveCount(0);
+  await templateDeletion.getByRole("button", { name: "Sil", exact: true }).click();
+  await expect(page.getByRole("button", { name: `${templateName} konseyini düzenle`, exact: true })).toHaveCount(0);
 
   await workspaceView(page, "Ayarlar");
   for (const label of [firstConnection, secondConnection, localConnection, openRouterConnection]) {

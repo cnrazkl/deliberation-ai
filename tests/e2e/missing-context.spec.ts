@@ -35,10 +35,10 @@ test("restores a pending clarification after reload and previews both owner choi
     await expect(panel.getByRole("button", { name: "Bu önizlemeyle konseyi çalıştır" })).toHaveCount(0);
     await panel.getByRole("button", { name: "Yanıt ve istem önizlemesini göster" }).click();
     await expect(panel).toContainText("Bu önizlemeyle konseyi çalıştır");
-    await panel.getByRole("button", { name: "Taslak silmeyi incele" }).click();
+    await panel.getByRole("button", { name: "Sil", exact: true }).click();
     const deletion = panel.getByRole("region", { name: "Ön kontrol taslağı silme önizlemesi" });
     await deletion.getByRole("checkbox").check();
-    await deletion.getByRole("button", { name: "Taslak içeriğini kalıcı olarak sil" }).click();
+    await deletion.getByRole("button", { name: "Sil", exact: true }).click();
     await expect(panel.getByRole("button", { name: question })).toHaveCount(0);
     expect((await request.get(`/api/preflight-drafts/${draftId}`)).status()).toBe(404);
   } finally {

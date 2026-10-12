@@ -159,3 +159,11 @@ Due schedules carry exact row fingerprints and microsecond occurrence timestamps
 ## DA-122 reviewed local source packets
 
 Preparation is an explicit local atomic operation, separate from council execution. Enqueue freezes the reviewed packet and current prompt/risk fingerprints. Each new round-0 submission rechecks current grant/selection under the owner lock; revoke cannot recall an already submitted call. First rounds receive identical excerpts independently; reviews never resend original sources. Continuations do not inherit packets automatically. [Contract](KNOWLEDGE_PACKETS.md).
+
+## Historical retry permissions - 12 October 2026
+
+Consumed retry grants remain historical receipts; pending-work inspection uses the
+latest attempt per run/member/round to distinguish an old grant from current work.
+Older submitted/unknown calls still need an explicit operator decision. Discarding
+an unused terminal grant requires the nonblocking worker lease and no later attempt;
+it neither enqueues a retry nor changes nullable usage to zero.

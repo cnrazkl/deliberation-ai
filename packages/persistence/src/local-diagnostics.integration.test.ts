@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
+import { Client } from "pg";
 import { expect, test } from "vitest";
 import { getPool, closeDatabase } from "./database";
 import { openWorkerHeartbeat, readLocalDiagnostics } from "./local-diagnostics";
@@ -58,4 +60,19 @@ test("terminal submitted receipts remain visible and need an explicit operator d
     expect((await pool.query("SELECT reserved_output_tokens FROM provider_operations WHERE id=$1", [terminalOperation])).rows[0]?.reserved_output_tokens).toBe(128);
     expect((await readLocalDiagnostics()).unresolvedProviderAttempts).toBe(before);
   } finally { await pool.query("DELETE FROM runs WHERE id=ANY($1::uuid[])", [[terminal, active, foreign]]); await closeDatabase(); }
+});
+test("an unused terminal retry permission can be closed explicitly, with owner and worker-lease guards", async () => {
+  const pool = getPool(), run = randomUUID(), operation = randomUUID();
+  const lease = new Client({ connectionString: process.env.DATABASE_URL }); await lease.connect();
+  const key = createHash("sha256").update(`deliberation-ai-run:${run}`).digest().readBigInt64BE(0).toString();
+  try {
+    await pool.query("INSERT INTO runs(id,owner_id,idempotency_key,request_hash,question,status,snapshot_id) VALUES($1::uuid,$2,$1::text,'offline','Offline retry permission fixture','failed',$1::uuid)", [run, LOCAL_OWNER_ID]);
+    await pool.query("INSERT INTO provider_operations(id,run_id,member_id,provider,model,status,request_fingerprint) VALUES($1,$2,'fixture','offline','offline','retry_authorized','offline')", [operation, run]);
+    expect((await listProviderOperationsNeedingAction()).some(item => item.id === operation)).toBe(true);
+    await lease.query("SELECT pg_advisory_lock($1::bigint)", [key]);
+    await expect(resolveProviderOperation(operation, "discard")).rejects.toBeInstanceOf(ProviderOperationResolutionError);
+    await lease.query("SELECT pg_advisory_unlock($1::bigint)", [key]);
+    expect((await resolveProviderOperation(operation, "discard"))?.operation.status).toBe("discarded");
+    expect((await listProviderOperationsNeedingAction()).some(item => item.id === operation)).toBe(false);
+  } finally { await lease.end(); await pool.query("DELETE FROM runs WHERE id=$1", [run]); await closeDatabase(); }
 });
