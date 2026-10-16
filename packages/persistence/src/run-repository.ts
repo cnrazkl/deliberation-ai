@@ -603,7 +603,8 @@ export async function enqueueSelectedMemberRerun(input: {
     }
     const unresolved = await tx.select({ id: providerOperations.id }).from(providerOperations)
       .where(and(eq(providerOperations.runId, source.id), inArray(providerOperations.status,
-        ["prepared", "submitted", "outcome_unknown", "retry_authorized"]))).limit(1);
+        ["prepared", "submitted", "outcome_unknown", "retry_authorized"]),
+        sql`not (${providerOperations.status}='retry_authorized' and exists(select 1 from provider_operations newer where newer.run_id=${providerOperations.runId} and newer.member_id=${providerOperations.memberId} and newer.round=${providerOperations.round} and newer.attempt>${providerOperations.attempt}))`)).limit(1);
     if (unresolved.length > 0) throw new FollowUpUnavailableError("Kaynak çalışmada sonucu belirsiz bir sağlayıcı çağrısı var.");
     const members = reportMembers(source);
     const executionLimits = source.executionLimitsCiphertext

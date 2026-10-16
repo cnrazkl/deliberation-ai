@@ -22,43 +22,20 @@ jobs:
         run: pnpm audit --audit-level=moderate
       - name: Install reviewed dependency graph
         run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Verify all offline regressions
+        run: pnpm test
+      - name: Check strict workspace types and lint
+        run: |
+          pnpm typecheck
+          pnpm lint
       - name: Verify frozen knowledge preparation
         run: |
-          pnpm exec vitest run packages/evaluation/src/knowledge-evaluation.test.ts
-          pnpm exec vitest run packages/evaluation/src/knowledge-benchmark.test.ts
-          pnpm exec vitest run packages/evaluation/src/knowledge-format-review.test.ts
-          pnpm exec vitest run packages/evaluation/src/knowledge-format-adjudication.test.ts
-          pnpm exec vitest run packages/evaluation/src/knowledge-review-attestation.test.ts
           pnpm knowledge:status
           pnpm knowledge:review-status
-      - name: Verify scoped knowledge boundary
-        run: pnpm exec vitest run packages/application/src/knowledge.test.ts packages/application/src/knowledge-packet.test.ts packages/contracts/src/evidence-candidates.test.ts packages/contracts/src/evidence-publications.test.ts apps/web/src/lib/markdown-export.test.ts
-      - name: Verify local source integrity and frozen extraction
-        run: |
-          pnpm exec vitest run packages/domain/src/knowledge.test.ts packages/retrieval/src/knowledge-files.test.ts
-          pnpm knowledge:extraction:verify
+      - name: Verify frozen source extraction
+        run: pnpm knowledge:extraction:verify
       - name: Check lint dependency compatibility
         run: pnpm test:lint-dependencies
-      - name: Verify offline NVIDIA hosted boundary
-        run: pnpm exec vitest run packages/providers/src/nvidia-provider.test.ts
-      - name: Verify offline reviewed connection generation boundary
-        run: pnpm exec vitest run packages/providers/src/generation-check.test.ts packages/application/src/connection-check.test.ts
-      - name: Verify offline reviewed synthesis and private transport regression
-        run: pnpm exec vitest run packages/application/src/synthesis.test.ts packages/providers/src/synthesis.test.ts packages/providers/src/private-text.test.ts packages/persistence/scripts/synthesis-journal.test.ts
-      - name: Verify offline hosted shadow and frozen study planning
-        run: pnpm exec vitest run packages/application/src/contradiction-hosted.test.ts packages/evaluation/src/study-execution.test.ts
-      - name: Verify knowledge query limits
-        run: pnpm exec vitest run packages/contracts/src/knowledge-query.test.ts
-      - name: Verify offline worker migration history gate
-        run: pnpm exec vitest run packages/persistence/src/migration-compatibility.test.ts
-      - name: Verify offline local diagnostics warnings
-        run: pnpm exec vitest run apps/web/src/lib/local-diagnostics-alerts.test.ts
-      - name: Verify offline account guards and password isolation
-        run: pnpm exec vitest run apps/web/src/lib/local-auth.test.ts packages/persistence/src/local-password.test.ts
-      - name: Verify offline recovery inventory boundaries
-        run: pnpm exec vitest run packages/persistence/scripts/backup-recovery-inventory.test.ts packages/persistence/scripts/backup-queue-inventory.test.ts packages/persistence/scripts/backup-queue-targets.test.ts
-      - name: Verify offline local recovery and selected copy cleanup
-        run: pnpm exec vitest run packages/persistence/scripts/recovery-integrity.test.ts packages/persistence/scripts/local-copy-cleanup.test.ts packages/persistence/scripts/local-runtime.test.ts packages/persistence/scripts/windows-session-runtime.test.ts packages/persistence/src/operational-diagnostics.test.ts
       - name: Scan Git history for secrets
         shell: bash
         run: |

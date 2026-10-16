@@ -23,8 +23,9 @@ test("actual worker exits before queue or heartbeat writes with an incompatible 
       if (mode === "behind") await pool.query("DELETE FROM drizzle.__drizzle_migrations WHERE created_at = $1", [last]);
       else await pool.query("INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)", ["synthetic-future", last + 1]);
       const root = resolve(import.meta.dirname, "../../..");
-      const child = spawnSync(process.platform === "win32" ? process.env.ComSpec ?? "cmd.exe" : "pnpm",
-        process.platform === "win32" ? ["/d", "/s", "/c", "pnpm exec tsx apps/worker/src/index.ts"] : ["exec", "tsx", "apps/worker/src/index.ts"],
+      // Spawn the worker itself so startup timing excludes package-manager/shell
+      // overhead and a timeout terminates the process being tested.
+      const child = spawnSync(process.execPath, ["--import", "tsx", "apps/worker/src/index.ts"],
         { cwd: root, env: process.env, windowsHide: true, encoding: "utf8", timeout: 10_000 });
       expect(child.error).toBeUndefined();
       expect(child.status).toBe(1);

@@ -65,6 +65,7 @@ import { ConversationDeletionPanel } from "./conversation-deletion-panel";
 import { PrivateBranchesPanel } from "./private-branches-panel";
 import { ConversationLibraryPanel } from "./conversation-library-panel";
 import { RunUsagePanel } from "./run-usage-panel";
+import { ProviderCitationLink } from "./provider-citation-link";
 import { ContinuationArchiveDetails, ContinuationCompactionEditor } from "./continuation-compaction-editor";
 import { RiskAssessmentSummary } from "./risk-assessment-summary";
 import { defaultExecutionLimits, executionLimitError, ExecutionLimitsEditor } from "./execution-limits-editor";
@@ -2799,9 +2800,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                       <div className="provider-citations">
                         <strong>Modelin web kaynakları</strong>
                         {member.citations.map((citation) => (
-                          <a key={citation.url} href={citation.url} target="_blank" rel="noreferrer">
-                            {citation.title ?? citation.url}
-                          </a>
+                          <ProviderCitationLink key={citation.url} citation={citation} />
                         ))}
                       </div>
                     ) : null}
@@ -2854,9 +2853,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                           <div className="provider-citations">
                             <strong>İnceleme sırasında kullanılan web kaynakları</strong>
                             {review.citations.map((citation) => (
-                              <a key={citation.url} href={citation.url} target="_blank" rel="noreferrer">
-                                {citation.title ?? citation.url}
-                              </a>
+                              <ProviderCitationLink key={citation.url} citation={citation} />
                             ))}
                           </div>
                         ) : null}

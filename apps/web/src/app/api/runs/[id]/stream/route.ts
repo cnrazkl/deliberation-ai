@@ -1,5 +1,5 @@
-import { withLocalSession } from "../../../../../lib/local-auth";
-import { listDurableRunEvents } from "@deliberation-ai/persistence";
+import { localSessionToken, withLocalSession } from "../../../../../lib/local-auth";
+import { getOwnerId, listDurableRunEvents, readLocalSession, withLiveOwner } from "@deliberation-ai/persistence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,11 +20,13 @@ function wait(durationMs: number, signal: AbortSignal): Promise<void> {
       resolve();
       return;
     }
-    const timer = setTimeout(resolve, durationMs);
-    signal.addEventListener("abort", () => {
+    const done = () => {
       clearTimeout(timer);
+      signal.removeEventListener("abort", done);
       resolve();
-    }, { once: true });
+    };
+    const timer = setTimeout(done, durationMs);
+    signal.addEventListener("abort", done, { once: true });
   });
 }
 
@@ -40,6 +42,10 @@ async function sessionGET(
 
   const initial = await listDurableRunEvents(id, initialCursor);
   if (!initial) return Response.json({ error: "Çalışma bulunamadı." }, { status: 404 });
+  const owner = getOwnerId();
+  const token = localSessionToken(request);
+  const cancellation = new AbortController();
+  const signal = AbortSignal.any([request.signal, cancellation.signal]);
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -48,7 +54,23 @@ async function sessionGET(
         let replay = initial;
         let lastWriteAt = 0;
 
-        for (let attempt = 0; attempt < 240 && !request.signal.aborted; attempt += 1) {
+        for (let attempt = 0; attempt < 240 && !signal.aborted; attempt += 1) {
+          // A slow consumer must not accumulate repeated full run/report bodies.
+          if (controller.desiredSize === null) break;
+          if (controller.desiredSize <= 0) { await wait(250, signal); continue; }
+          // The HTTP guard's lease ends when this streaming Response is returned.
+          // Reauthorize every poll before loading or emitting any newer run data.
+          const current = await withLiveOwner(owner, async () => {
+            const session = await readLocalSession(token);
+            if (!session || session.user.role !== "user" || session.scope.ownerId !== owner) return false;
+            if (attempt > 0) {
+              const next = await listDurableRunEvents(id, after);
+              if (!next) return false;
+              replay = next;
+            }
+            return true;
+          });
+          if (!current || signal.aborted) break;
           const lastEvent = replay.events.at(-1);
           if (lastEvent) after = lastEvent.sequence;
           const terminal = terminalStatuses.has(replay.run.status);
@@ -64,16 +86,15 @@ async function sessionGET(
           }
 
           if (terminal) break;
-          await wait(250, request.signal);
-          if (request.signal.aborted) break;
-          replay = (await listDurableRunEvents(id, after)) ?? replay;
+          await wait(250, signal);
         }
 
-        if (!request.signal.aborted) controller.close();
+        if (!signal.aborted) controller.close();
       })().catch(() => {
-        if (!request.signal.aborted) controller.close();
+        if (!signal.aborted) controller.close();
       });
     },
+    cancel() { cancellation.abort(); },
   });
 
   return new Response(stream, {

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { spawnSync } from "node:child_process";
 import { extractPdfText, extractReadableText, isBrowserResourceAllowed, isPublicAddress, RetrievalError, retrievePublicDocument, retrieveRenderedPublicDocument } from "./index";
 
 function createTextPdf(text: string): Buffer {
@@ -65,6 +66,32 @@ describe("research retrieval network boundary", () => {
     expect(result.content).not.toContain("doBadThing");
     expect(result.content).not.toContain("secret");
   });
+
+  test("invalid numeric HTML references become replacement characters without aborting capture", () => {
+    const result = extractReadableText("<title>&#x110000;</title><p>A&#0;&#xD800;&#999999999999999999999999;&#128512;B</p>", "text/html", "fallback");
+    expect(result.title).toBe("\ufffd");
+    expect(result.content).toContain("A\ufffd\ufffd\ufffd😀B");
+  });
+
+  test("nested and unclosed hidden markup stays out of extracted text", () => {
+    const nested = extractReadableText("<p>Before</p><svg><svg>hidden inner</svg>hidden outer</svg><template><template>hidden</template>hidden</template><script>const tag = '<svg>';</script><p>After</p>", "text/html", "fallback");
+    expect(nested.content).toBe("Before\nAfter");
+    expect(extractReadableText("<p>Before</p><script>hidden<script>hidden", "text/html", "fallback").content).toBe("Before");
+  });
+
+  test("adversarial markup below the byte cap cannot monopolize the extraction process", () => {
+    const script = `const { extractReadableText } = await import(${JSON.stringify(new URL("./index.ts", import.meta.url).href)});
+      for (const body of ["<script>".repeat(131072), "<title>".repeat(131072), "<".repeat(1048575)]) {
+        try { extractReadableText(body, "text/html", "fixture"); }
+        catch (error) { if (error.code !== "empty_content") throw error; }
+      }
+      process.stdout.write("completed");`;
+    const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "--eval", script],
+      { encoding: "utf8", timeout: 5_000, windowsHide: true });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe("completed");
+  }, 10_000);
 
   test("extracts bounded selectable text from a PDF byte snapshot", async () => {
     const result = await extractPdfText(createTextPdf("DeliberationAI PDF source"), "fallback.test");

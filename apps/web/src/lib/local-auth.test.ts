@@ -74,3 +74,21 @@ test("duplicate cookies and oversized authentication streams are rejected", asyn
   expect(localSessionToken(new Request("http://localhost", { headers: { cookie: "deliberation-session=a; deliberation-session=b" } }))).toBeUndefined();
   await expect(authJson(new Request("http://localhost", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ data: "x".repeat(3000) }) }))).rejects.toThrow("çok büyük");
 });
+
+test("application body limits run after session authorization and prevent oversized JSON mutations", async () => {
+  vi.stubEnv("APP_ORIGIN", "http://127.0.0.1:3000");
+  try {
+    const pull = vi.fn(), cancel = vi.fn(), persist = vi.fn();
+    const headers = { "X-Deliberation-Owner": "user:alice", "Content-Length": String(21 * 1_048_576) };
+    const request = () => new Request("http://127.0.0.1:3000/api/runs", { method: "POST", headers,
+      body: new ReadableStream({ pull, cancel }, { highWaterMark: 0 }), duplex: "half" } as RequestInit);
+    const handler = vi.fn(async (bounded: Request) => { persist(await bounded.json()); return Response.json({ ok: true }); });
+    readSession.mockResolvedValue(null);
+    expect((await withLocalSession(handler)(request())).status).toBe(401);
+    expect(pull).not.toHaveBeenCalled(); expect(cancel).not.toHaveBeenCalled();
+    readSession.mockResolvedValue({ user: { id: "alice", role: "user" }, scope: { id: "alice", ownerId: "user:alice" } });
+    const response = await withLocalSession(handler)(request());
+    expect(response.status).toBe(413); expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(handler).not.toHaveBeenCalled(); expect(persist).not.toHaveBeenCalled(); expect(pull).not.toHaveBeenCalled(); expect(cancel).toHaveBeenCalledOnce();
+  } finally { vi.unstubAllEnvs(); }
+});

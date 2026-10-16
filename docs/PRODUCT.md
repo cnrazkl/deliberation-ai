@@ -1,5 +1,12 @@
 # Product
 
+Run progress streams stop after logout/session revocation or an owner-scope change.
+Oversized authenticated request bodies return HTTP 413, with existing smaller
+operation/file limits retained. A successful newer attempt no longer leaves an
+old consumed retry grant blocking selected-member follow-up; current uncertain
+attempts still block. Unsafe historical citation addresses remain readable as text.
+[16 October security and logic corrections](SECURITY_LOGIC_AUDIT_2026_10_16.md).
+
 ## Workspace terminology
 
 The Turkish interface calls a chat/conversation **Müzakere**: **Yeni Müzakere**,

@@ -1,6 +1,33 @@
 # Current state
 
-Updated: 12 October 2026 (council name field spacing deployed)
+Updated: 16 October 2026 (security and logic audit verified locally)
+
+## Security and logic audit - verified locally
+
+Council/MCP redirects are refused; rendered retrieval covers popup HTTP requests
+and blocks WebSockets. Authenticated intake has a streamed 20 MiB ceiling while
+retaining stricter route limits. SSE revalidates live session/owner scope and bounds
+slow-consumer queues. Receipt helpers enforce parent ownership; decision preparation,
+cancellation and submission serialize, leaving actual submitted outcomes intact.
+Consumed retry grants no longer block valid member follow-up. New citation links
+require credential-free HTTP(S), while unsafe historical references stay visible
+as text. Malformed HTML extraction avoids quadratic scans and invalid-scalar errors.
+No schema, council round, frozen prompt, Help content or feature-flag change.
+
+Final validation passes 537 unit cases including the opt-in real Chromium trap,
+all 300 isolated PostgreSQL cases and all 125 browser scenarios. Workspace types,
+zero-warning lint, production build, seven lint-dependency cases, four frozen
+extraction fixtures and knowledge status commands pass. Dependency audit reports
+zero advisories; full-history/staged secret scans are publication gates. CI now
+runs every offline unit regression plus types/lint. The worker migration test
+launches Node directly to remove shell/package-manager timing and process ambiguity.
+
+Tests used generated databases/local provider fixtures, with no paid request,
+owner-history deletion, real-database migration or remote deployment. The isolated
+test server stopped and native PostgreSQL returned to its initial stopped state.
+Five other matching disposable database names were observed and retained without
+assuming authority to remove them. Existing deployment records below remain historical.
+[Findings, verification details and limits](SECURITY_LOGIC_AUDIT_2026_10_16.md).
 
 ## Council name field spacing - deployed and verified
 

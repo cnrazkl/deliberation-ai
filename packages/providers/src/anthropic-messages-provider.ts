@@ -98,6 +98,7 @@ export class AnthropicMessagesProvider implements TextProvider {
           `${(this.#options.baseUrl ?? "https://api.anthropic.com").replace(/\/$/, "")}/v1/messages`,
           {
             method: "POST",
+            redirect: "error",
             headers: {
               "content-type": "application/json",
               "x-api-key": this.#options.apiKey,

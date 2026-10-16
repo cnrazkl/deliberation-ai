@@ -1,5 +1,6 @@
 import {
   completeDecisionAssessment,
+  claimDecisionOperationSubmission,
   failDecisionAssessment,
   loadDecisionConnectionSecret,
   loadDecisionOperationResult,
@@ -54,7 +55,7 @@ export async function executeWorkerDecisionAssessment(
     return "failed";
   }
 
-  await updateDecisionOperation(operation.id, { status: "submitted" });
+  if (!await claimDecisionOperationSubmission(operation.id)) return "cancelled";
   try {
     const result = await evaluator.evaluate(work.input);
     await updateDecisionOperation(operation.id, { status: "succeeded", result });

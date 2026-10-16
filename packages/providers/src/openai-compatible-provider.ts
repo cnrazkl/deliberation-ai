@@ -153,7 +153,7 @@ export class OpenAICompatibleProvider implements TextProvider {
           `${this.#options.baseUrl.replace(/\/$/, "")}/chat/completions`,
           {
             method: "POST",
-            ...(this.#options.endpointPreset === "nvidia" ? { redirect: "error" as const } : {}),
+            redirect: "error",
             headers: {
               "content-type": "application/json",
               ...(this.#options.apiKey

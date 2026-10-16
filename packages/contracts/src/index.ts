@@ -277,7 +277,12 @@ export const appendPrivateDraftSchema = z.object({ requestId: z.string().uuid(),
 export type AppendPrivateDraft = z.infer<typeof appendPrivateDraftSchema>;
 
 export const providerCitationSchema = z.object({
-  url: z.string().url().max(2_048),
+  url: z.string().url().max(2_048).refine((value) => {
+    try {
+      const url = new URL(value);
+      return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password;
+    } catch { return false; }
+  }, "Kaynak bağlantısı kimlik bilgisi içermeyen HTTP veya HTTPS adresi olmalı."),
   title: z.string().trim().min(1).max(300).optional(),
 });
 export type ProviderCitation = z.infer<typeof providerCitationSchema>;

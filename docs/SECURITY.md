@@ -1,5 +1,16 @@
 # Security
 
+The 16 October source audit closes council/MCP redirect forwarding, rendered-page
+popup/WebSocket bypasses, unbounded authenticated request streams and stale SSE
+authorization. Shared request intake has a streamed 20 MiB ceiling, retaining
+stricter route limits. SSE polls revalidate live ordinary-user/session/owner scope.
+Provider and decision receipt helpers enforce the owned parent; decision dispatch
+uses an atomic admission claim competing with cancellation. Provider citations
+accept credential-free HTTP(S), with unsafe historical links rendered as text.
+Slow SSE readers cannot accumulate repeated snapshots. HTML text extraction avoids
+quadratic malformed-tag scans and replaces invalid numeric Unicode references.
+[Findings, regression evidence and limits](SECURITY_LOGIC_AUDIT_2026_10_16.md).
+
 Current-test diagnostics are optional authenticated response DTOs, never log records.
 Adapters redact configured keys, credential headers/query fields, cookies and opaque
 state, replacing binary inputs with size/SHA-256 before returning bounded wire bodies.

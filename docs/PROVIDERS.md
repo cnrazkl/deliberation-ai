@@ -1,5 +1,12 @@
 # Providers
 
+Council transports explicitly reject HTTP redirects for native Anthropic, Gemini,
+OpenAI Responses and OpenAI-compatible requests. Prompts and credential headers
+cannot be forwarded to a server-selected second destination. Redirect failures
+retain conservative unknown-outcome/no-automatic-retry behavior. Extracted citation
+URLs require credential-free HTTP(S); unsafe historical references stay inspectable
+as text. [16 October audit and local HTTP regressions](SECURITY_LOGIC_AUDIT_2026_10_16.md).
+
 Catalog observations display source URL, timestamp and partial/verification state.
 Google requires an advertised `generateContent` action; catalog presence still does
 not certify project/key generation access. A 404 alone cannot establish retirement.

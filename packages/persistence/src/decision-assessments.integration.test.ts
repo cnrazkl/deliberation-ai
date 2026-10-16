@@ -10,11 +10,13 @@ import { closeDatabase, getDatabase } from "./database";
 import { saveDecisionConnection, deleteDecisionConnection } from "./decision-connections";
 import {
   cancelDecisionAssessment,
+  claimDecisionOperationSubmission,
   completeDecisionAssessment,
   createDecisionAssessment,
   failDecisionAssessment,
   listDecisionAssessments,
   listDecisionOperationsNeedingAction,
+  loadDecisionOperationResult,
   prepareDecisionOperation,
   resolveDecisionOperation,
   startDecisionAssessment,
@@ -35,6 +37,7 @@ import {
   decisionOperations,
   runs,
 } from "./schema";
+import { withOwner } from "./owner";
 
 let createdRunId: string | undefined;
 let createdConnectionId: string | undefined;
@@ -125,7 +128,18 @@ test("keeps Jev shadow assessments encrypted, replayable, cancellable, and isola
     model: "jev-1.13.0",
     requestFingerprint: work!.requestFingerprint,
   });
-  await updateDecisionOperation(operation.id, { status: "submitted" });
+  const concurrentPreparations = await Promise.all(Array.from({ length: 4 }, () => prepareDecisionOperation({
+    assessmentId: assessment.id, provider: "typesafe", model: "jev-1.13.0", requestFingerprint: work!.requestFingerprint,
+  })));
+  expect(new Set(concurrentPreparations.map(item => item.id))).toEqual(new Set([operation.id]));
+  await withOwner("foreign-decision-fixture", async () => {
+    await expect(prepareDecisionOperation({ assessmentId: assessment.id, provider: "typesafe", model: "jev-1.13.0",
+      requestFingerprint: work!.requestFingerprint })).rejects.toThrow("not found");
+    expect(await claimDecisionOperationSubmission(operation.id)).toBe(false);
+    await expect(updateDecisionOperation(operation.id, { status: "discarded" })).rejects.toThrow("not found");
+  });
+  const submissions = await Promise.all(Array.from({ length: 4 }, () => claimDecisionOperationSubmission(operation.id)));
+  expect(submissions.filter(Boolean)).toHaveLength(1);
   const result: DecisionAssessmentResult = {
     label: "supports",
     probabilities: {
@@ -141,6 +155,11 @@ test("keeps Jev shadow assessments encrypted, replayable, cancellable, and isola
     outputTokens: 20,
   };
   await updateDecisionOperation(operation.id, { status: "succeeded", result });
+  expect(await loadDecisionOperationResult(operation.id)).toEqual(result);
+  await withOwner("foreign-decision-fixture", async () => {
+    expect(await loadDecisionOperationResult(operation.id)).toBeUndefined();
+    await expect(updateDecisionOperation(operation.id, { status: "discarded" })).rejects.toThrow("not found");
+  });
   expect(await completeDecisionAssessment(assessment.id, result)).toBe(true);
   const [storedOperation] = await getDatabase()
     .select()
@@ -175,6 +194,34 @@ test("keeps Jev shadow assessments encrypted, replayable, cancellable, and isola
   });
   expect(await cancelDecisionAssessment(cancellable.id)).toBe(true);
   expect(await startDecisionAssessment(cancellable.id)).toBeUndefined();
+  await expect(prepareDecisionOperation({ assessmentId: cancellable.id, provider: "typesafe", model: "jev-1.13.0",
+    requestFingerprint: "cancelled-fixture" })).rejects.toThrow("gönderime uygun değil");
+
+  const cancelledBeforeSubmission = await createDecisionAssessment({
+    runId: queuedRun.runId, claimId: claim!.claimId, sourceId: source!.id,
+    connectionId: connection.id, model: "jev-1.13.0", mode: "shadow", confirmExternalShare: true,
+  });
+  const cancelledWork = await startDecisionAssessment(cancelledBeforeSubmission.id);
+  const cancelledOperation = await prepareDecisionOperation({ assessmentId: cancelledBeforeSubmission.id,
+    provider: "typesafe", model: "jev-1.13.0", requestFingerprint: cancelledWork!.requestFingerprint });
+  expect(await cancelDecisionAssessment(cancelledBeforeSubmission.id)).toBe(true);
+  expect(await claimDecisionOperationSubmission(cancelledOperation.id)).toBe(false);
+  await expect(updateDecisionOperation(cancelledOperation.id, { status: "submitted" })).rejects.toThrow("gönderime uygun değil");
+  const [cancelledReceipt] = await getDatabase().select().from(decisionOperations).where(eq(decisionOperations.id, cancelledOperation.id));
+  expect(cancelledReceipt).toMatchObject({ status: "failed", errorCode: "assessment_cancelled_before_submission" });
+
+  const alreadySubmitted = await createDecisionAssessment({
+    runId: queuedRun.runId, claimId: claim!.claimId, sourceId: source!.id,
+    connectionId: connection.id, model: "jev-1.13.0", mode: "shadow", confirmExternalShare: true,
+  });
+  const submittedWork = await startDecisionAssessment(alreadySubmitted.id);
+  const submittedOperation = await prepareDecisionOperation({ assessmentId: alreadySubmitted.id,
+    provider: "typesafe", model: "jev-1.13.0", requestFingerprint: submittedWork!.requestFingerprint });
+  expect(await claimDecisionOperationSubmission(submittedOperation.id)).toBe(true);
+  expect(await cancelDecisionAssessment(alreadySubmitted.id)).toBe(true);
+  const [submittedReceipt] = await getDatabase().select().from(decisionOperations).where(eq(decisionOperations.id, submittedOperation.id));
+  expect(submittedReceipt).toMatchObject({ status: "submitted", errorCode: null });
+  await updateDecisionOperation(submittedOperation.id, { status: "failed", errorCode: "offline_cancelled_response" });
 
   const uncertain = await createDecisionAssessment({
     runId: queuedRun.runId,

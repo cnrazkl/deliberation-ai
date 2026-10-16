@@ -133,10 +133,43 @@ async function resolvePublicTarget(hostname: string): Promise<{ address: string;
 function decodeEntities(value: string): string {
   const named: Record<string, string> = { amp: "&", apos: "'", gt: ">", lt: "<", nbsp: " ", quot: '"' };
   return value.replace(/&(?:#(\d+)|#x([\da-f]+)|([a-z]+));/gi, (match, decimal, hex, name) => {
-    if (decimal) return String.fromCodePoint(Number(decimal));
-    if (hex) return String.fromCodePoint(Number.parseInt(hex, 16));
+    if (decimal || hex) {
+      const scalar = decimal ? Number(decimal) : Number.parseInt(hex, 16);
+      return Number.isInteger(scalar) && scalar > 0 && scalar <= 0x10ffff && !(scalar >= 0xd800 && scalar <= 0xdfff)
+        ? String.fromCodePoint(scalar) : "\ufffd";
+    }
     return named[String(name).toLowerCase()] ?? match;
   });
+}
+
+function stripHiddenHtml(body: string): string {
+  const tags = /<(\/?)(script|style|noscript|svg|template)\b[^<>]*>/gi;
+  const stack: string[] = [];
+  const output: string[] = [];
+  let copiedThrough = 0;
+  let tag: RegExpExecArray | null;
+  while ((tag = tags.exec(body))) {
+    const closing = Boolean(tag[1]);
+    const name = tag[2]!.toLowerCase();
+    if (!closing) {
+      if (stack.length === 0) output.push(body.slice(copiedThrough, tag.index));
+      if (name === "script" || name === "style") {
+        // Raw script/style text may contain apparent nested tags. Seek its end once;
+        // never restart an unclosed-block search at every apparent opening tag.
+        const end = new RegExp(`</${name}\\b[^<>]*>`, "gi");
+        end.lastIndex = tags.lastIndex;
+        if (!end.exec(body)) return output.join("") + " ";
+        tags.lastIndex = end.lastIndex;
+        if (stack.length === 0) { output.push(" "); copiedThrough = tags.lastIndex; }
+      } else if (name !== "svg" || !/\/\s*>$/.test(tag[0])) stack.push(name);
+      else if (stack.length === 0) { output.push(" "); copiedThrough = tags.lastIndex; }
+    } else if (stack.at(-1) === name) {
+      stack.pop();
+      if (stack.length === 0) { output.push(" "); copiedThrough = tags.lastIndex; }
+    }
+  }
+  if (stack.length === 0) output.push(body.slice(copiedThrough));
+  return output.join("");
 }
 
 export function extractReadableText(body: string, contentType: string, fallbackTitle: string): { title: string; content: string } {
@@ -148,11 +181,14 @@ export function extractReadableText(body: string, contentType: string, fallbackT
     if (!content) throw new RetrievalError("empty_content", "Kaynakta kullanılabilir metin bulunamadı.");
     return { title: fallbackTitle, content };
   }
-  const titleMatch = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(body);
-  const stripped = body
-    .replace(/<(script|style|noscript|svg|template)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/section|\/article)\b[^>]*>/gi, "\n")
-    .replace(/<[^>]+>/g, " ");
+  const titleOpen = /<title\b[^<>]*>/i.exec(body);
+  const titleClose = /<\/title\s*>/gi;
+  titleClose.lastIndex = titleOpen ? titleOpen.index + titleOpen[0].length : body.length;
+  const titleEnd = titleClose.exec(body);
+  const rawTitle = titleOpen && titleEnd ? body.slice(titleOpen.index + titleOpen[0].length, titleEnd.index) : "";
+  const stripped = stripHiddenHtml(body)
+    .replace(/<(br|\/p|\/div|\/li|\/h[1-6]|\/tr|\/section|\/article)\b[^<>]*>/gi, "\n")
+    .replace(/<[^<>]+>/g, " ");
   const content = decodeEntities(stripped)
     .replace(/[\t\f\v ]+/g, " ")
     .replace(/ *\n */g, "\n")
@@ -160,7 +196,7 @@ export function extractReadableText(body: string, contentType: string, fallbackT
     .trim()
     .slice(0, MAX_CAPTURE_CHARACTERS);
   if (!content) throw new RetrievalError("empty_content", "Kaynakta kullanılabilir metin bulunamadı.");
-  const title = decodeEntities(titleMatch?.[1]?.replace(/<[^>]+>/g, " ") ?? "")
+  const title = decodeEntities(rawTitle.replace(/<[^<>]+>/g, " "))
     .replace(/\s+/g, " ").trim().slice(0, 160) || fallbackTitle;
   return { title, content };
 }
@@ -374,19 +410,21 @@ export async function retrieveRenderedPublicDocument(input: string): Promise<Ret
     permissions: [],
     serviceWorkers: "block",
   });
-  const page = await context.newPage();
   let requestCount = 0;
   let downloadedBytes = 0;
   let initialResource: RetrievedResource | undefined;
 
-  page.on("dialog", (dialog) => void dialog.dismiss());
-  await page.route("**/*", async (route) => {
+  // Context routes also cover the first request of popups and newly opened pages.
+  // HTTP routes do not intercept WebSocket handshakes, so deny those separately.
+  await context.routeWebSocket("**/*", (socket) => socket.close());
+  await context.route("**/*", async (route) => {
     const request = route.request();
     if (!request.url().startsWith("http://") && !request.url().startsWith("https://")) {
       await route.abort("blockedbyclient");
       return;
     }
-    if (request.method() !== "GET" || requestCount >= MAX_BROWSER_REQUESTS) {
+    if (request.method() !== "GET" || ["eventsource", "font", "image", "media", "manifest", "websocket"].includes(request.resourceType())
+      || requestCount >= MAX_BROWSER_REQUESTS) {
       await route.abort("blockedbyclient");
       return;
     }
@@ -416,6 +454,8 @@ export async function retrieveRenderedPublicDocument(input: string): Promise<Ret
     }
   });
 
+  const page = await context.newPage();
+  page.on("dialog", (dialog) => void dialog.dismiss());
   try {
     await page.goto(requested.toString(), {
       timeout: BROWSER_RENDER_TIMEOUT_MS,

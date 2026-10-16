@@ -112,6 +112,7 @@ export class GeminiGenerateContentProvider implements TextProvider {
           `${base}/models/${encodeURIComponent(this.#options.model)}:generateContent`,
           {
             method: "POST",
+            redirect: "error",
             headers: {
               "content-type": "application/json",
               "x-goog-api-key": this.#options.apiKey,

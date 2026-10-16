@@ -236,6 +236,12 @@ function receipt(row: typeof providerOperations.$inferSelect): ProviderOperation
   };
 }
 
+// Operation identifiers are not an authorization boundary. Worker helpers must
+// retain the same account scope as the public run repository.
+function ownedProviderOperation() {
+  return sql`exists (select 1 from ${runs} where ${runs.id} = ${providerOperations.runId} and ${runs.ownerId} = ${getOwnerId()})`;
+}
+
 export function fingerprintProviderRequest(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
@@ -381,7 +387,8 @@ export async function updateProviderOperation(
     ...publicUpdate
   } = update;
   return getDatabase().transaction(async (tx) => {
-    const [existing] = await tx.select().from(providerOperations).where(eq(providerOperations.id, id)).for("update").limit(1);
+    const [existing] = await tx.select().from(providerOperations)
+      .where(and(eq(providerOperations.id, id), ownedProviderOperation())).for("update").limit(1);
     if (!existing) throw new Error("Provider operation receipt was not found.");
     let costEstimateCiphertext = existing.costEstimateCiphertext;
     // Freeze the first outcome's valuation. Later counter changes must not silently rewrite history.
@@ -436,7 +443,7 @@ export async function loadProviderOperationFailureRawText(id: string): Promise<s
   const [row] = await getDatabase()
     .select({ status: providerOperations.status, rawTextCiphertext: providerOperations.rawTextCiphertext })
     .from(providerOperations)
-    .where(eq(providerOperations.id, id))
+    .where(and(eq(providerOperations.id, id), ownedProviderOperation()))
     .limit(1);
   if (row?.status !== "failed" || !row.rawTextCiphertext) return undefined;
   return decryptText(row.rawTextCiphertext, `provider-operation:${id}:raw`);
@@ -605,7 +612,7 @@ export async function loadProviderOperationResult(id: string): Promise<
   const [row] = await getDatabase()
     .select()
     .from(providerOperations)
-    .where(eq(providerOperations.id, id))
+    .where(and(eq(providerOperations.id, id), ownedProviderOperation()))
     .limit(1);
   if (
     !row ||

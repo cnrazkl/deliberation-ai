@@ -24,7 +24,9 @@ The Security checks workflow audits dependency vulnerabilities, installs the fro
 without lifecycle scripts, runs lint-dependency compatibility tests and scans full Git history
 with Gitleaks on each push or pull request. It also checks frozen knowledge preparation
 and offline scoped knowledge/Markdown/source integrity tests plus frozen parser
-extraction snapshots. Checks are not a complete application-security
+extraction snapshots. All offline unit tests, strict workspace type checks and lint
+now run in that workflow, including transport/session security regressions.
+Checks are not a complete application-security
 assessment and do not establish functional or model-quality acceptance.
 
 ## Private local state

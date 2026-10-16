@@ -1,6 +1,7 @@
 import { LOCAL_SESSION_COOKIE, LOCAL_SESSION_SECONDS, readLocalSession, withOwner, LOCAL_OWNER_ID,
   LocalAuthError, withLiveOwner } from "@deliberation-ai/persistence";
 import { verifyRuntimeReadToken } from "../../../../packages/persistence/src/runtime-read-auth";
+import { withBoundedApplicationBody } from "./request-security";
 
 export function localSessionToken(request: Request): string | undefined {
   const cookies = (request.headers.get("cookie") ?? "").split(";").map(value => value.trim()).filter(value => value.startsWith(`${LOCAL_SESSION_COOKIE}=`));
@@ -68,12 +69,13 @@ export function withLocalSession<Args extends unknown[]>(handler: (...args: Args
     if ((expected && expected !== session.scope.ownerId) || (!expected && !["GET", "HEAD", "OPTIONS"].includes(request.method)))
       return Response.json({ error: "Hesap alanı değişti. Sayfayı yenileyin." }, { status: 409, headers: { "Cache-Control": "no-store" } });
     try {
-      const response = await withLiveOwner(session.scope.ownerId, async () => {
+      const response = await withBoundedApplicationBody(request, bounded => withLiveOwner(session.scope.ownerId, async () => {
         const live = await readLocalSession(localSessionToken(request));
         if (!live || live.user.id !== session.user.id || live.scope.id !== session.scope.id)
           throw new LocalAuthError("Hesap veya oturum değişti. Sayfayı yenileyin.", 409);
+        args[0] = bounded;
         return handler(...args);
-      });
+      }));
       response.headers.set("Cache-Control", "no-store");
       return response;
     } catch (error) {

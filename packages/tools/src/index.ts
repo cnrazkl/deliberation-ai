@@ -43,8 +43,13 @@ type SessionFactory = (url: URL) => Promise<ClientSession>;
 
 async function defaultSessionFactory(url: URL): Promise<ClientSession> {
   const client = new Client({ name: "deliberation-ai", version: "0.1.0" });
-  const transport = new StreamableHTTPClientTransport(url);
-  await client.connect(transport);
+  const transport = new StreamableHTTPClientTransport(url, { requestInit: { redirect: "error" } });
+  try {
+    await client.connect(transport);
+  } catch (error) {
+    await client.close().catch(() => undefined);
+    throw error;
+  }
   return { client, close: () => client.close() };
 }
 

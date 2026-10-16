@@ -1,5 +1,15 @@
 # Tasks
 
+- [x] Owner-requested repository security and logic audit: council/MCP redirect
+  denial, context-wide rendered retrieval/WebSocket guards, bounded authenticated
+  intake, live-session SSE authorization/backpressure, receipt owner isolation,
+  atomic decision cancellation/submission, consumed-retry follow-up correction,
+  safe citation links and bounded malformed-HTML extraction. Final 537 unit,
+  300 isolated PostgreSQL and 125 browser cases pass, alongside types/lint/build,
+  dependency audit, frozen extraction and lint-dependency checks. CI covers all
+  offline unit regressions and types/lint. No paid generation or remote deployment;
+  native PostgreSQL is stopped again. [Audit and limits](SECURITY_LOGIC_AUDIT_2026_10_16.md).
+
 - [x] Owner-requested council name/field/button spacing correction, scoped to
   the council save editor. Help remains unchanged. Linux types/lint/build and
   actual light/dark 320/1578px visual inspection pass; no page errors, overflow

@@ -1,5 +1,16 @@
 # Architecture
 
+The shared session guard applies a non-buffering 20 MiB request-stream ceiling
+after authentication; operation-specific readers retain their lower limits.
+Run SSE polling reacquires a short owner lifecycle lease and revalidates the live
+session before loading newer data. Provider/decision receipt helpers authorize
+through their parent owner. Decision cancellation/preparation/submission share an
+assessment-row serialization boundary. Rendered retrieval routes all context pages
+and separately denies WebSockets. Council and MCP transports deny redirects.
+HTML hidden-block/title extraction advances through input without restarting
+unclosed-block searches. Invalid numeric Unicode scalars use replacement characters.
+[16 October audit](SECURITY_LOGIC_AUDIT_2026_10_16.md).
+
 Connection mutation review and new-work admission share the owner transaction lock
 `provider-bindings-v1`. Owned bounded dependency evidence is fingerprinted before
 confirmation; removed selected models cannot enter new runs/templates/schedules/private

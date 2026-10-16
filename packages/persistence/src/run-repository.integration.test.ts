@@ -672,6 +672,21 @@ test("selected-member follow-up preserves source and bills only one new initial 
   };
   const sourceFinished = await executeDurableRun(source.runId, offlineExecutor);
   expect(sourceFinished?.status).toBe("completed");
+  // A consumed retry grant remains in the ledger, while its newer attempt
+  // carries the current result. It must not permanently disable follow-ups.
+  const [originalAttempt] = await getDatabase().select().from(providerOperations).where(and(
+    eq(providerOperations.runId, source.runId), eq(providerOperations.memberId, members[0]!.id), eq(providerOperations.round, 0)));
+  const originalResult = (await loadProviderOperationResult(originalAttempt!.id))!;
+  await updateProviderOperation(originalAttempt!.id, { status: "retry_authorized" });
+  const retry = await prepareProviderOperation({ runId: source.runId, memberId: originalAttempt!.memberId,
+    provider: originalAttempt!.provider, model: originalAttempt!.model, requestFingerprint: originalAttempt!.requestFingerprint });
+  expect(retry.attempt).toBe(2);
+  await updateProviderOperation(retry.id, { status: "outcome_unknown", errorCode: "offline_unknown" });
+  await expect(enqueueSelectedMemberRerun({ sourceRunId: source.runId, memberId: members[1]!.id, idempotencyKey: randomUUID() }))
+    .rejects.toBeInstanceOf(FollowUpUnavailableError);
+  await updateProviderOperation(retry.id, { status: "succeeded", rawText: originalResult.rawText,
+    parsedOutput: originalResult.parsed, remoteResponseId: originalResult.metadata.remoteResponseId,
+    metadata: originalResult.metadata });
   const key = randomUUID();
   const children = await Promise.all(Array.from({ length: 4 }, () =>
     enqueueSelectedMemberRerun({ sourceRunId: source.runId, memberId: members[1]!.id, idempotencyKey: key })));

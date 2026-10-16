@@ -359,17 +359,19 @@ export async function failDecisionAssessment(
 }
 
 export async function cancelDecisionAssessment(assessmentId: string): Promise<boolean> {
-  const [row] = await getDatabase()
-    .update(decisionAssessments)
-    .set({ status: "cancelled", updatedAt: new Date(), finishedAt: new Date() })
-    .where(
-      and(
-        eq(decisionAssessments.ownerId, getOwnerId()),
-        eq(decisionAssessments.id, assessmentId),
-        sql`${decisionAssessments.status} in ('queued', 'running')`,
-      ),
-    )
-    .returning({ jobId: decisionAssessments.queueJobId });
+  const row = await getDatabase().transaction(async (tx) => {
+    const [cancelled] = await tx.update(decisionAssessments)
+      .set({ status: "cancelled", updatedAt: new Date(), finishedAt: new Date() })
+      .where(and(eq(decisionAssessments.ownerId, getOwnerId()), eq(decisionAssessments.id, assessmentId),
+        sql`${decisionAssessments.status} in ('queued', 'running')`))
+      .returning({ jobId: decisionAssessments.queueJobId });
+    if (!cancelled) return undefined;
+    // The assessment lock excludes admission. Prepared receipts are known never
+    // submitted; submitted receipts keep their actual eventual/unknown outcome.
+    await tx.update(decisionOperations).set({ status: "failed", errorCode: "assessment_cancelled_before_submission", finishedAt: new Date() })
+      .where(and(eq(decisionOperations.assessmentId, assessmentId), eq(decisionOperations.status, "prepared")));
+    return cancelled;
+  });
   if (!row) return false;
   if (row.jobId) {
     const boss = await getBoss();
@@ -386,6 +388,13 @@ export async function prepareDecisionOperation(input: {
   batchId?: string;
 }): Promise<DecisionOperationReceipt> {
   return getDatabase().transaction(async (tx) => {
+    // Serialize attempt allocation with cancellation/submission and never trust
+    // an assessment id supplied outside the currently bound owner context.
+    const [assessment] = await tx.select({ status: decisionAssessments.status }).from(decisionAssessments)
+      .where(and(eq(decisionAssessments.id, input.assessmentId), eq(decisionAssessments.ownerId, getOwnerId())))
+      .for("update").limit(1);
+    if (!assessment) throw new Error("Decision assessment was not found.");
+    if (assessment.status !== "running") throw new DecisionOperationResolutionError("Karar değerlendirmesi artık gönderime uygun değil.");
     const batchId = input.batchId ?? "single";
     const [existing] = await tx
       .select()
@@ -422,6 +431,27 @@ export async function prepareDecisionOperation(input: {
   });
 }
 
+function ownedDecisionOperation() {
+  return sql`exists (select 1 from ${decisionAssessments} where ${decisionAssessments.id} = ${decisionOperations.assessmentId} and ${decisionAssessments.ownerId} = ${getOwnerId()})`;
+}
+
+/** Cancellation and dispatch compete for the same assessment -> operation locks. */
+export async function claimDecisionOperationSubmission(id: string): Promise<boolean> {
+  return getDatabase().transaction(async (tx) => {
+    const [candidate] = await tx.select({ assessmentId: decisionOperations.assessmentId }).from(decisionOperations)
+      .where(eq(decisionOperations.id, id)).limit(1);
+    if (!candidate) return false;
+    const [assessment] = await tx.select({ status: decisionAssessments.status }).from(decisionAssessments)
+      .where(and(eq(decisionAssessments.id, candidate.assessmentId), eq(decisionAssessments.ownerId, getOwnerId())))
+      .for("update").limit(1);
+    if (!assessment || assessment.status !== "running") return false;
+    const [submitted] = await tx.update(decisionOperations).set({ status: "submitted" })
+      .where(and(eq(decisionOperations.id, id), eq(decisionOperations.status, "prepared")))
+      .returning({ id: decisionOperations.id });
+    return submitted !== undefined;
+  });
+}
+
 export async function updateDecisionOperation(
   id: string,
   update: {
@@ -433,6 +463,13 @@ export async function updateDecisionOperation(
   const parsedResult = update.result
     ? decisionAssessmentResultSchema.parse(update.result)
     : undefined;
+  if (update.status === "submitted") {
+    if (!await claimDecisionOperationSubmission(id)) throw new DecisionOperationResolutionError("Karar çağrısı artık gönderime uygun değil.");
+    const [submitted] = await getDatabase().select().from(decisionOperations)
+      .where(and(eq(decisionOperations.id, id), ownedDecisionOperation())).limit(1);
+    if (!submitted) throw new Error("Decision operation was not found.");
+    return mapOperation(submitted);
+  }
   const [row] = await getDatabase()
     .update(decisionOperations)
     .set({
@@ -455,7 +492,7 @@ export async function updateDecisionOperation(
         ? new Date()
         : undefined,
     })
-    .where(eq(decisionOperations.id, id))
+    .where(and(eq(decisionOperations.id, id), ownedDecisionOperation()))
     .returning();
   if (!row) throw new Error("Decision operation was not found.");
   return mapOperation(row);
@@ -467,7 +504,7 @@ export async function loadDecisionOperationResult(
   const [row] = await getDatabase()
     .select()
     .from(decisionOperations)
-    .where(eq(decisionOperations.id, id))
+    .where(and(eq(decisionOperations.id, id), ownedDecisionOperation()))
     .limit(1);
   if (!row || row.status !== "succeeded" || !row.resultCiphertext) return undefined;
   return decisionAssessmentResultSchema.parse(

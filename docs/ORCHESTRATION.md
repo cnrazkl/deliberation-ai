@@ -1,5 +1,14 @@
 # Orchestration
 
+Decision dispatch now requires an atomic prepared-to-submitted claim while its
+owned assessment is running. Preparation, cancellation and submission serialize
+on the assessment row; cancellation fails only never-submitted prepared receipts
+with `assessment_cancelled_before_submission`, retaining submitted outcomes. The
+decision feature remains default-off. Selected-member follow-up ignores consumed
+historical retry grants only when a newer same-member/round attempt exists; any
+newer unresolved attempt still blocks. No council round or prompt contract changes.
+[16 October regression evidence](SECURITY_LOGIC_AUDIT_2026_10_16.md).
+
 New local-bound run/rerun, schedule creation/resume and preflight admission validate
 that each exact model remains selected on its owned connection under the same owner
 transaction lock as connection mutations. Affected queued/running or uncertain work

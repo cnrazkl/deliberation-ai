@@ -58,6 +58,7 @@ export class OpenAIResponsesProvider implements TextProvider {
       new OpenAI({
         apiKey: options.apiKey,
         maxRetries: 0,
+        fetchOptions: { redirect: "error" },
         ...(options.timeoutMs !== undefined ? { timeout: options.timeoutMs } : {}),
         ...(options.fetch ? { fetch: options.fetch } : {}),
         ...(options.baseUrl ? { baseURL: options.baseUrl } : {}),
