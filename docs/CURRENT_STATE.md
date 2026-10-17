@@ -2,7 +2,7 @@
 
 Updated: 17 October 2026 (council editor and explicit conversation archive)
 
-## Council editor and explicit archive - verified locally
+## Council editor and explicit archive - deployed and verified
 
 Konseyler keeps its saved council cards above a permanently visible configuration
 section; editing scrolls to that form. The risk option reads **Standart**, with its
@@ -26,8 +26,39 @@ databases use generated records and local fixtures, without paid calls. A final 
 visual rerun also passes. The test server stopped, generated databases were removed
 by their runners, and native PostgreSQL returned to its initial stopped state.
 Staged/full-history secret scans pass.
-No existing-owner database migration or LAN deployment has been performed; deployment
-entries below describe earlier releases.
+The owner now requires every completed application increment to be deployed and
+verified at `http://192.168.1.112:33184/`; AGENTS.md and GIT_WORKFLOW.md retain this
+rule. Windows development may continue without changing the other local application.
+
+The existing isolated homelab project was updated at `2026-10-17T02:22:33Z`.
+Active web/worker/observer image: `deliberationai-rehearsal:archive-3c81ca9`, identity
+`sha256:33612bd68545ed2fb2b64827ca15b973239a48e7ff624775c3207f5250584eff`,
+source commit `3c81ca9a9c452d4dacd625001654fd045bb8688f`, tree
+`7855986b39636f899b4507d00252eff537fc2f85`. This also delivers the preceding
+`601a2f5` security/logic corrections. The fresh Linux image passes workspace types
+and production build. Later Git changes only document delivery and the required target.
+
+Before migration, the owned application database was privately backed up, restored
+into a separate disposable database and audited: 18 rows / 28 encrypted values in
+three populated encrypted families. The temporary database was removed. Migration
+`0057_rainy_xorn` adds the archive flag; the applied inventory is now 58 migrations,
+with existing conversations initially unarchived. The preserved key and database
+volume were reused only within this already isolated DeliberationAI project.
+
+Actual LAN verification uses a disposable ordinary account, connection, council and
+seeded conversation, with no provider generation. The permanent editor, Standart,
+archive/restore, persisted archive after reload and preserved question draft pass.
+Light/dark screenshots at 320/1578px were inspected; no horizontal overflow or page
+errors. Generated account and dependent fixtures were erased and absence verified.
+HTTP diagnostics show a ready database, one ready worker and zero queued/running
+runs. All three replaced services have zero restarts. Foreign container IDs,
+start times/PIDs/restarts/images and the owned database lifecycle match the baseline.
+The Windows application/database infrastructure was not started or changed for this
+LAN deployment. Previous deployment records below describe historical releases.
+
+Observation `month-archive-20261017` starts `2026-10-17T02:22:48.548Z`, due
+`2026-11-16T02:22:48.548Z`; its first two samples are healthy. The full monthly
+observation and human quality gates remain open.
 
 ## Security and logic audit - verified locally
 

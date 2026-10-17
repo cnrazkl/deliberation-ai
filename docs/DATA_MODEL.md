@@ -211,4 +211,5 @@ conversation content. New and existing rows begin active. Listing filters before
 pagination; immutable creation-time/UUID cursors remain valid after archive moves.
 The metadata-deletion schema inventory includes this column. Upgrade before running
 this application version; old binaries with exact deletion inventories can reject
-metadata deletion after migration. No live database migration is implied by source delivery.
+metadata deletion after migration. Migration 0057 is applied to the isolated homelab
+installation; deployment/backup evidence is in CURRENT_STATE.md.

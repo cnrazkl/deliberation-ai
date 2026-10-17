@@ -5,8 +5,11 @@
   preference migration and list filtering are implemented; individual run history
   stays in the results tab. Types/lint/build, 536 offline units and 301 isolated
   PostgreSQL cases and all 29 affected browser scenarios pass (main run plus corrected
-  reruns). Light/dark 320/1440px views were inspected. Deployment and existing-owner
-  migration are separate from this source increment; see CURRENT_STATE.md.
+  reruns). The owner-required homelab delivery is now complete: Linux build, verified
+  backup/restore/encryption audit, migration 0057 and generated-only actual LAN
+  editor/archive/restore checks at 320/1578px in both themes pass. Fixtures erased,
+  foreign services and database lifecycle preserved. Delivery target is retained
+  in AGENTS.md/GIT_WORKFLOW.md; image and evidence are in CURRENT_STATE.md.
 
 - [x] Owner-requested repository security and logic audit: council/MCP redirect
   denial, context-wide rendered retrieval/WebSocket guards, bounded authenticated

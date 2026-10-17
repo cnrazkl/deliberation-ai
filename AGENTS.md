@@ -28,3 +28,13 @@ Use strict TypeScript. Keep domain code independent from Next.js, databases, and
 ## Git publication
 
 Follow docs/GIT_WORKFLOW.md. The owner requests committing and pushing completed reviewed increments. Keep secrets and local data excluded; preserve unrelated changes, verify remote divergence, and never force push or fabricate historical contribution dates.
+
+## Delivery target
+
+The owner uses DeliberationAI at `http://192.168.1.112:33184/` on homelab.
+Develop and test locally as needed, then deploy the final reviewed increment to
+that existing isolated DeliberationAI installation and verify the live URL before
+reporting delivery complete. Follow `docs/GIT_WORKFLOW.md` for deployment checks.
+The Windows computer also hosts development of another application: preserve its
+services, ports, databases, volumes and files. Never treat local validation or a
+Git push alone as delivery to the owner.

@@ -35,3 +35,25 @@ assessment and do not establish functional or model-quality acceptance.
 artifacts are excluded. `.env.example` contains placeholders only. Database backups do
 not include the separately managed encryption key. GitHub holds source history, not a
 replacement backup of local application data.
+
+## Required homelab delivery
+
+The owner's final application target is `http://192.168.1.112:33184/`.
+Local development/testing is allowed, but each completed application increment
+must also be deployed to that existing isolated DeliberationAI installation and
+verified there. Source publication alone does not update the running application.
+
+Inspect the live Compose identity, active work, migration version and resource
+baselines first. Build a reviewed credential-free source archive as a new image.
+Back up the owned application database before applying required migrations, then
+replace only the owned web/worker/observer services. Check actual HTTP and owned
+runtime readiness, exercise changed behavior with disposable accounts, remove those
+fixtures, and verify foreign-container and owned-database lifecycle baselines.
+Record the deployed image, source tree, migrations and live verification in
+`CURRENT_STATE.md`; retain private backup/rollback artifacts outside Git.
+
+The Windows computer is also used for another application on the same underlying
+infrastructure. Do not deploy DeliberationAI over it or change its services, ports,
+databases or files. On homelab retain the existing dedicated DeliberationAI Compose
+project, network and volumes; never operate on foreign services or use global cleanup.
+Public hosting remains a separate authorization.
