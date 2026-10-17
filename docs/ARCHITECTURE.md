@@ -1,5 +1,12 @@
 # Architecture
 
+ConversationLibraryPanel renders separate active and archived, server-paginated lists.
+The authenticated same-origin/owner-bound conversations PATCH accepts only a UUID
+and boolean archive state; persistence updates only the owned row, idempotently.
+Both lists refresh after a successful change. Council configuration is a permanent
+section below CouncilLibrary. RunHistoryPanel lives in the results tab, preserving
+individual historical run access/deletion outside the sidebar archive.
+
 The shared session guard applies a non-buffering 20 MiB request-stream ceiling
 after authentication; operation-specific readers retain their lower limits.
 Run SSE polling reacquires a short owner lifecycle lease and revalidates the live

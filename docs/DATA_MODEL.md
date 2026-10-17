@@ -202,3 +202,13 @@ Migration 0052 adds nullable runs.knowledge_packet_ciphertext and knowledge_prep
 Conversation deletion previews add bounded `pendingOperations` and `activeRuns`
 diagnostic projections. No DDL or data rewrite is needed. Consumed retry-authorized
 rows retain their original status and counters as historical provenance.
+
+## Conversation archive preference
+
+Migration `0057_rainy_xorn` adds `conversations.archived boolean NOT NULL DEFAULT false`.
+It is owner-scoped display metadata, independent of run status/retention and encrypted
+conversation content. New and existing rows begin active. Listing filters before
+pagination; immutable creation-time/UUID cursors remain valid after archive moves.
+The metadata-deletion schema inventory includes this column. Upgrade before running
+this application version; old binaries with exact deletion inventories can reject
+metadata deletion after migration. No live database migration is implied by source delivery.

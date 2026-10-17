@@ -41,7 +41,7 @@ export async function supportsMetadataDeletion(tx: ConversationTransaction): Pro
       message_count: "integer", owner_id: "text", parent_branch_id: "uuid", request_hash: "text", request_id: "uuid", revision: "integer",
       source_member_id: "text", source_run_id: "uuid", updated_at: "timestamp with time zone" },
     conversation_runs: { conversation_id: "uuid", created_at: "timestamp with time zone", kind: "text", owner_id: "text", run_id: "uuid", source_run_id: "uuid" },
-    conversations: { anchor_run_id: "uuid", created_at: "timestamp with time zone", id: "uuid", origin: "text", owner_id: "text" },
+    conversations: { archived: "boolean", anchor_run_id: "uuid", created_at: "timestamp with time zone", id: "uuid", origin: "text", owner_id: "text" },
   };
   const expectedColumns = Object.entries(expected).flatMap(([table, fields]) => Object.entries(fields)
     .sort(([left], [right]) => left.localeCompare(right)).map(([column, type]) => ({ table, column, type })));

@@ -30,7 +30,7 @@ type LibraryRow = {
 };
 
 /** Read only metadata and one question per visible conversation; never load report/archive bodies. */
-export async function listConversations(beforeConversationId?: string): Promise<ConversationLibraryPage | undefined> {
+export async function listConversations(beforeConversationId?: string, archived = false): Promise<ConversationLibraryPage | undefined> {
   return getDatabase().transaction(async (tx) => {
     if (beforeConversationId) {
       const [cursor] = await tx.select({ id: conversations.id }).from(conversations)
@@ -52,7 +52,7 @@ export async function listConversations(beforeConversationId?: string): Promise<
         latest.id as "runId", latest.question, latest.question_ciphertext as "questionCiphertext", latest.status
       from (
         select id, created_at, origin from conversations c
-        where c.owner_id = ${getOwnerId()} ${before}
+        where c.owner_id = ${getOwnerId()} and c.archived = ${archived} ${before}
         order by c.created_at desc, c.id desc limit ${CONVERSATION_LIBRARY_PAGE_SIZE + 1}
       ) c
       cross join lateral (
@@ -82,4 +82,12 @@ export async function listConversations(beforeConversationId?: string): Promise<
       nextCursor: result.rows.length > CONVERSATION_LIBRARY_PAGE_SIZE ? pageRows.at(-1)!.id : null,
     };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+
+/** Idempotent owner-scoped visibility change; never alters runs or their content. */
+export async function setConversationArchived(id: string, archived: boolean): Promise<boolean> {
+  const rows = await getDatabase().update(conversations).set({ archived })
+    .where(and(eq(conversations.id, id), eq(conversations.ownerId, getOwnerId())))
+    .returning({ id: conversations.id });
+  return rows.length === 1;
 }

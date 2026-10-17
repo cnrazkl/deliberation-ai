@@ -168,11 +168,12 @@ for (const { width, height } of [{ width: 1225, height: 918 }, { width: 390, hei
       expect(position.headerTop).toBe(0); expect(position.sidebarTop).toBe(position.headerBottom);
       expect(position.sidebarBottom).toBe(position.viewport);
     }
-    for (const name of ["Listeyi yenile", "Müzakere listesini yenile"]) {
+    await sidebar.locator("summary").filter({ hasText: /^Arşiv$/ }).click();
+    for (const name of ["Arşivi yenile", "Müzakere listesini yenile"]) {
       const refresh = sidebar.getByRole("button", { name, exact: true });
       await expect(refresh).toHaveText(""); await expect(refresh.locator("svg")).toHaveAttribute("aria-hidden", "true");
       await expect(refresh).toBeEnabled();
-      const request = page.waitForRequest((item) => new URL(item.url()).pathname === (name === "Listeyi yenile" ? "/api/runs" : "/api/conversations") && item.method() === "GET");
+      const request = page.waitForRequest((item) => new URL(item.url()).pathname === "/api/conversations" && item.method() === "GET");
       await refresh.click(); await request; await expect(refresh).toBeEnabled();
     }
     await page.screenshot({ path: `test-results/pinned-navigation-${width}.png` });

@@ -3,9 +3,9 @@ import { afterAll, expect, test } from "vitest";
 import { inArray, sql } from "drizzle-orm";
 import { getDatabase, closeDatabase } from "./database";
 import { conversations, conversationRuns, runs } from "./schema";
-import { LOCAL_OWNER_ID } from "./owner";
+import { getOwnerId, LOCAL_OWNER_ID, withOwner } from "./owner";
 import { encryptText } from "./crypto";
-import { listConversations } from "./conversation-library";
+import { listConversations, setConversationArchived } from "./conversation-library";
 import { ConversationPendingError } from "./conversation-membership";
 import { listDurableRuns } from "./run-repository";
 
@@ -93,3 +93,19 @@ test("saved-run history does not skip records sharing sub-millisecond timestamps
   expect(observed.filter((id) => expected.includes(id)).sort()).toEqual([...expected].sort());
   expect(new Set(observed).size).toBe(observed.length);
 });
+
+test("archive is explicit, idempotent, owner scoped and reversible without altering content", async () => withOwner(`archive-owner-${randomUUID()}`, async () => {
+  const id = await conversation(getOwnerId(), "2500-01-01 00:00:00+00");
+  const runId = await member(id, true, getOwnerId());
+  const foreign = await conversation(`archive-other-${randomUUID()}`);
+  expect((await listConversations(undefined, true))!.conversations.some(item => item.conversationId === id)).toBe(false);
+  expect(await setConversationArchived(foreign, true)).toBe(false);
+  expect(await setConversationArchived(randomUUID(), true)).toBe(false);
+  expect(await setConversationArchived(id, true)).toBe(true);
+  expect(await setConversationArchived(id, true)).toBe(true);
+  expect((await listConversations())!.conversations.some(item => item.conversationId === id)).toBe(false);
+  expect((await listConversations(undefined, true))!.conversations.find(item => item.conversationId === id)?.latestAvailableRun?.runId).toBe(runId);
+  expect(await setConversationArchived(id, false)).toBe(true);
+  expect((await listConversations())!.conversations.some(item => item.conversationId === id)).toBe(true);
+  expect((await listConversations(undefined, true))!.conversations.some(item => item.conversationId === id)).toBe(false);
+}));

@@ -113,7 +113,7 @@ export function RunHistoryPanel({ activeRunId, refreshKey, onOpenRun, onReviewDe
 
   return (
     <details className="run-history settings-card" open>
-      <summary>Son çalışmalar</summary>
+      <summary>Çalışma geçmişi</summary>
       <button className="secondary-button history-refresh" type="button" aria-label="Listeyi yenile" title="Listeyi yenile" disabled={loading || deletionPending} onClick={reload}><RefreshIcon /></button>
       {loading ? <p className="hint">Geçmiş yükleniyor…</p> : page.runs.length === 0 ? <p className="hint">Henüz kayıtlı çalışma yok.</p> : (
         <div className="run-history-list">

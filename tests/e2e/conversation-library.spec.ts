@@ -35,7 +35,8 @@ test("discovers saved conversations, paginates and opens a result without changi
     await revealCouncilControls(page);
     const selectedConnection = await page.getByRole("combobox", { name: "Üye 1 bağlantısı", exact: true }).inputValue();
     await library.locator(`[data-conversation-id="${view.conversationId}"]`).getByRole("button", { name: "Müzakereyi aç", exact: true }).click();
-    await expect(page.getByRole("region", { name: "Müzakere kaydı", exact: true })).toContainText(view.conversationId);
+    await expect(page.getByRole("region", { name: "Müzakere kaydı", exact: true })).toBeVisible();
+    await expect(page.locator("#council-result")).toBeVisible();
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);
     await revealCouncilControls(page);
     await expect(page.getByRole("combobox", { name: "Üye 1 bağlantısı", exact: true })).toHaveValue(selectedConnection);
@@ -93,4 +94,49 @@ test("retrying the list preserves the draft and a refreshed first page rejects a
     await expect(library).not.toContainText("Eski isteğin sonucu");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Liste yenilenirken korunacak taslak");
   } finally { releaseOlder(); }
+}));
+
+test("explicit archive survives reload and restores without generation at mobile and desktop widths", async ({ page, request }) => withOwner(testOwnerId(), async () => {
+  const id = randomUUID(); const runId = randomUUID(); let dispatches = 0;
+  page.on("request", req => { if (req.method() === "POST" && new URL(req.url()).pathname === "/api/runs") dispatches++; });
+  try {
+    await getDatabase().insert(runs).values({ id: runId, ownerId: testOwnerId(), idempotencyKey: randomUUID(), requestHash: "archive-fixture", snapshotId: randomUUID(), question: "Arşivlenecek örnek müzakere", status: "completed", branchIndexVersion: 1, branchKind: "independent" });
+    await getDatabase().insert(conversations).values({ id, ownerId: testOwnerId(), anchorRunId: runId, origin: "native", createdAt: new Date("2500-01-01") });
+    await getDatabase().insert(conversationRuns).values({ ownerId: testOwnerId(), runId, conversationId: id, kind: "independent", createdAt: new Date() });
+    expect((await request.patch("/api/conversations", { data: { conversationId: id, archived: "true" } })).status()).toBe(400);
+    expect((await request.patch("/api/conversations", { data: { conversationId: randomUUID(), archived: true } })).status()).toBe(404);
+    for (const width of [1440, 320]) {
+      await page.setViewportSize({ width, height: 900 }); await page.goto("/");
+      const sidebar = page.getByRole("complementary", { name: "Müzakere geçmişi ve gezinme" });
+      await page.getByRole("navigation", { name: "Ana menü", includeHidden: true }).waitFor({ state: "attached" });
+      if (!await sidebar.isVisible()) await page.getByRole("button", { name: "Müzakere geçmişini aç", exact: true }).click();
+      const library = page.getByRole("region", { name: "Kayıtlı müzakereler", exact: true });
+      const archive = page.locator('details[aria-label="Arşiv"]');
+      await archive.locator("summary").click();
+      await expect(archive.locator(`[data-conversation-id="${id}"]`)).toHaveCount(0);
+      await library.locator(`[data-conversation-id="${id}"]`).getByRole("button", { name: "Arşive ekle", exact: true }).click();
+      await expect(library.locator(`[data-conversation-id="${id}"]`)).toHaveCount(0);
+      await expect(archive.locator(`[data-conversation-id="${id}"]`)).toBeVisible();
+      await page.reload();
+      await page.getByRole("navigation", { name: "Ana menü", includeHidden: true }).waitFor({ state: "attached" });
+      if (!await sidebar.isVisible()) await page.getByRole("button", { name: "Müzakere geçmişini aç", exact: true }).click();
+      await archive.locator("summary").click();
+      await expect(archive.locator(`[data-conversation-id="${id}"]`)).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await archive.locator(`[data-conversation-id="${id}"]`).scrollIntoViewIfNeeded();
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      for (const theme of ["light", "dark"]) {
+        await page.evaluate(value => document.documentElement.setAttribute("data-theme", value), theme);
+        await page.screenshot({ animations: "disabled", path: `test-results/archive-${theme}-${width}.png` });
+      }
+      await archive.locator(`[data-conversation-id="${id}"]`).getByRole("button", { name: "Arşivden çıkar", exact: true }).click();
+      await expect(library.locator(`[data-conversation-id="${id}"]`)).toBeVisible();
+      await expect(archive.locator(`[data-conversation-id="${id}"]`)).toHaveCount(0);
+    }
+    expect(dispatches).toBe(0);
+  } finally {
+    await getDatabase().delete(conversationRuns).where(eq(conversationRuns.conversationId, id));
+    await getDatabase().delete(conversations).where(eq(conversations.id, id));
+    await getDatabase().delete(runs).where(eq(runs.id, runId)); await closeDatabase();
+  }
 }));

@@ -360,7 +360,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   view: WorkspaceView; onViewChange: (view: WorkspaceView) => void;
   sidebarOpen: boolean; onSidebarOpenChange: (open: boolean) => void;
 }) {
-  const configRef = useRef<HTMLDetailsElement>(null);
+  const configRef = useRef<HTMLElement>(null);
   const [chatTab, setChatTab] = useState("question");
   const [connectionImpact, setConnectionImpact] = useState<ConnectionImpact | null>(null);
   const impactDecision = useRef<((approved: boolean) => void) | null>(null);
@@ -1740,9 +1740,11 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     <>
     <WorkspaceShell view={view} onViewChange={setView} sidebarOpen={sidebarOpen} onSidebarOpenChange={onSidebarOpenChange} onNewChat={newChat} newChatDisabled={pending || loadingContinuation} attentionCount={operatorOperations.length} sidebar={<>
       <ConversationLibraryPanel refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
-        onReviewDeletion={setLibraryDeletionId}
+        onReviewDeletion={setLibraryDeletionId} onArchiveChange={() => setHistoryRefreshKey(value => value + 1)}
         onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); setChatTab("results"); }} />
-      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onReviewDeletion={setRunDeletionId} deletionPending={Boolean(runDeletionId)} />
+      <ConversationLibraryPanel archived refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
+        onReviewDeletion={setLibraryDeletionId} onArchiveChange={() => setHistoryRefreshKey(value => value + 1)}
+        onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); setChatTab("results"); }} />
 
     </>}>
       {runDeletionId && <DeletionDialog title="Çalışmayı Sil" busy={deletingRunBusy} onCancel={() => { if (!deletingRunBusy) setRunDeletionId(undefined); }}><RunDeletionPanel key={runDeletionId} runId={runDeletionId} onBusy={setDeletingRunBusy} onCancel={() => { if (!deletingRunBusy) setRunDeletionId(undefined); }} onDeleted={() => {
@@ -1906,8 +1908,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         <CouncilLibrary templates={templates.filter(template => template.members.every(member => member.provider !== "fake"))} selectedId={selectedTemplateId} invalidIds={invalidTemplateIds}
           disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation} onDelete={setDeletingTemplateId}
           modelLabel={member => { const connection = connections.find(item => item.id === member.connectionId); return connection?.modelAliases?.[member.model] || member.model; }}
-          onEdit={id => { selectTemplate(id); if (configRef.current) { configRef.current.open = true; configRef.current.scrollIntoView({ block: "start", behavior: "smooth" }); } }} />
-      <details open ref={configRef} className="settings-card council-config" role="region" aria-label="Konsey yapılandırması"><DisclosureSummary title="Konsey yapılandırması" description="Modeller, görevler ve inceleme turları" icon="council" status={`${members.length} üye · ${reviewRounds} inceleme turu`} />
+          onEdit={id => { selectTemplate(id); if (configRef.current) { configRef.current.scrollIntoView({ block: "start", behavior: "smooth" }); } }} />
+      <section ref={configRef} className="settings-card council-config" aria-label="Konsey yapılandırması">
         <div className="config-heading">
           <div>
             <strong>Konsey yapılandırması</strong>
@@ -1927,7 +1929,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         <div className="risk-profile-control">
           <label>Değerlendirme profili
             <select aria-label="Değerlendirme profili" value={selectedRiskProfile} onChange={(event) => selectRiskProfile(event.target.value as RiskProfile)}>
-              <option value="standard">Otomatik (en az standart)</option>
+              <option value="standard">Standart</option>
               <option value="high">Yüksek risk</option>
             </select>
           </label>
@@ -2152,7 +2154,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         <CouncilEditorActions name={templateName} selected={Boolean(selectedTemplateId)} disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation} canSave={memberConfigurationValid} saving={savingTemplate}
           notice={templateModified ? undefined : templateNotice} error={templateError} onName={setTemplateName} onSave={() => void saveTemplate()} onCreate={() => void saveTemplate(false)}
           onNew={() => { setSelectedTemplateId(""); setTemplateName(""); setTemplateNotice(undefined); }} />
-      </details>
+      </section>
 
       </section>
       <section className="workspace workspace-view" hidden={view !== "chat"} aria-label="Konsey çalışma alanı">
@@ -2346,6 +2348,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
 
       {error ? <div className="alert error" role="alert">{error}</div> : null}
       <div role="tabpanel" id="chat-panel-results" aria-labelledby="chat-tab-results" hidden={chatTab !== "results"}>
+      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onReviewDeletion={setRunDeletionId} deletionPending={Boolean(runDeletionId)} />
       {!run && !privateConversationId ? <p className="empty">Henüz açık bir çalışma sonucu yok. Kayıtlı bir müzakereyi açın veya Soru sekmesinden konsey çalıştırın.</p> : null}
       {privateConversationId && <PrivateBranchesPanel key={privateConversationId} conversationId={privateConversationId} onClose={() => setPrivateConversationId(undefined)} />}
       <PreflightDraftsPanel refreshKey={draftRefreshKey} focusDraftId={focusDraftId} onStarted={(created) => {

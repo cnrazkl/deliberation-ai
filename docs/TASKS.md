@@ -1,5 +1,13 @@
 # Tasks
 
+- [x] Owner-requested always-visible council configuration below saved templates,
+  shorter Standart risk label and explicit conversation archive/restore. Owner-scoped
+  preference migration and list filtering are implemented; individual run history
+  stays in the results tab. Types/lint/build, 536 offline units and 301 isolated
+  PostgreSQL cases and all 29 affected browser scenarios pass (main run plus corrected
+  reruns). Light/dark 320/1440px views were inspected. Deployment and existing-owner
+  migration are separate from this source increment; see CURRENT_STATE.md.
+
 - [x] Owner-requested repository security and logic audit: council/MCP redirect
   denial, context-wide rendered retrieval/WebSocket guards, bounded authenticated
   intake, live-session SSE authorization/backpressure, receipt owner isolation,

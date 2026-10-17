@@ -1,3 +1,4 @@
+import { revealChatTab } from "./workspace-navigation";
 import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
 import {expect, test, testOwnerId } from "./authenticated-test";
@@ -44,9 +45,12 @@ test("saved history refresh rejects an older response and preserves the draft", 
   });
   try {
     await page.goto("/");
+    await revealChatTab(page, "Sonuçlar");
     const history = page.locator("details.run-history");
     await expect(history.getByRole("alert")).toHaveText("Çalışma geçmişi yüklenemedi.");
+    await revealChatTab(page, "Soru");
     await page.getByLabel("Sorunuz", { exact: true }).fill("Çalışma listesi yenilenirken korunacak taslak");
+    await revealChatTab(page, "Sonuçlar");
     listStage = "current";
     await history.getByRole("button", { name: "Listeyi yenile", exact: true }).click();
     await expect(history.locator('[data-run-id="' + currentId + '"]')).toBeVisible();

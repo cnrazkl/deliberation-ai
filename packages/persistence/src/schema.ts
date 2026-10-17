@@ -46,6 +46,7 @@ export const localLoginAttempts = pgTable("local_login_attempts", {
 });
 
 export const conversations = pgTable("conversations", {
+  archived: boolean("archived").notNull().default(false),
   id: uuid("id").primaryKey().defaultRandom(),
   ownerId: text("owner_id").notNull(),
   anchorRunId: uuid("anchor_run_id").notNull(),

@@ -1,6 +1,33 @@
 # Current state
 
-Updated: 16 October 2026 (security and logic audit verified locally)
+Updated: 17 October 2026 (council editor and explicit conversation archive)
+
+## Council editor and explicit archive - verified locally
+
+Konseyler keeps its saved council cards above a permanently visible configuration
+section; editing scrolls to that form. The risk option reads **Standart**, with its
+existing automatic escalation unchanged. The sidebar **Arşiv** disclosure contains
+only conversations explicitly moved from **Kayıtlı müzakereler** using **Arşive ekle**.
+**Arşivden çıkar** restores the active entry. The entire conversation retains its
+archive preference across reloads and future runs; no content is deleted or generated.
+Individual run access and reviewed deletion remain in **Sonuçlar → Çalışma geçmişi**.
+
+Migration `0057_rainy_xorn` adds the default-false archive preference. Listing filters
+before pagination, and idempotent updates require the current owner and a strict
+UUID/boolean body. The metadata-deletion inventory recognizes the new column.
+Old binaries with exact inventories may refuse conversation deletion after upgrade.
+
+536 offline unit cases pass (one unrelated opt-in Chromium case skipped), all 301
+isolated PostgreSQL cases pass, and workspace types, zero-warning lint and production
+build pass. All 29 affected browser scenarios pass (26 in the broader run plus
+corrected navigation/timing reruns of eight scenarios). Light/dark council and archive
+screenshots at 320/1440px have been inspected without horizontal overflow. Test
+databases use generated records and local fixtures, without paid calls. A final six-case
+visual rerun also passes. The test server stopped, generated databases were removed
+by their runners, and native PostgreSQL returned to its initial stopped state.
+Staged/full-history secret scans pass.
+No existing-owner database migration or LAN deployment has been performed; deployment
+entries below describe earlier releases.
 
 ## Security and logic audit - verified locally
 

@@ -1,3 +1,4 @@
+import { revealChatTab } from "./workspace-navigation";
 import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
 import { expect, test, testOwnerId } from "./authenticated-test";
@@ -24,6 +25,7 @@ test("candidate inbox preserves originals, retries lost replies and separates re
     await getDatabase().insert(conversations).values({ id: conversationId, ownerId: testOwnerId(), anchorRunId: id, origin: "native" });
     await getDatabase().insert(conversationRuns).values({ ownerId: testOwnerId(), conversationId, runId: id, kind: "independent", createdAt: sql`'2400-01-08'::timestamptz` });
     await page.goto("/");
+    await revealChatTab(page, "Sonuçlar");
     const card = page.locator(`details.run-history [data-run-id="${id}"]`);
     await expect(card).toBeVisible(); await card.getByRole("button", { name: "Çalışmayı aç", exact: true }).click();
     const panel = page.getByRole("region", { name: "Kaynak aday kutusu", exact: true });
@@ -104,7 +106,7 @@ test("candidate inbox preserves originals, retries lost replies and separates re
     expect(generations).toBe(0);
     await panel.scrollIntoViewIfNeeded(); await page.screenshot({ path: ".local/da123-inbox.png" });
     const downloading = page.waitForEvent("download"); await panel.getByRole("button", { name: "Adayları indir (JSON)", exact: true }).click(); expect((await downloading).suggestedFilename()).toContain(id);
-    await page.reload(); await page.locator(`details.run-history [data-run-id="${id}"]`).getByRole("button", { name: "Çalışmayı aç", exact: true }).click(); await expect(panel.locator("article")).toHaveCount(2);
+    await page.reload(); await revealChatTab(page, "Sonuçlar"); await page.locator(`details.run-history [data-run-id="${id}"]`).getByRole("button", { name: "Çalışmayı aç", exact: true }).click(); await expect(panel.locator("article")).toHaveCount(2);
     await page.setViewportSize({ width: 390, height: 844 }); await panel.scrollIntoViewIfNeeded();
     await panel.getByText("Modelin özgün pasajı ve atıf kaydı", { exact: true }).click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

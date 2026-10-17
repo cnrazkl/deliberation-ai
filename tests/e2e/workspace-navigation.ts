@@ -10,13 +10,9 @@ export async function workspaceView(page: Page, name: "Müzakere" | "Konseyler" 
   await nav.getByRole("button", { name, exact: true }).click();
 }
 
-// Existing behavioral tests explicitly reveal controls now collapsed by default.
+// Navigate to the always-visible council editor.
 export async function revealCouncilControls(page: Page) {
   await workspaceView(page, "Konseyler");
-  const disclosures = [page.locator(".council-config")];
-  for (const details of disclosures) {
-    if (await details.count() && await details.getAttribute("open") === null) await details.locator(":scope > summary").click();
-  }
 }
 export async function revealChatTab(page: Page, tab: "Soru" | "Kaynaklar Ve Dosyalar" | "Bağlam Ve Kontroller" | "Sonuçlar", expand = true) {
   await workspaceView(page, "Müzakere"); await page.getByRole("tab", { name: tab, exact: true }).click();

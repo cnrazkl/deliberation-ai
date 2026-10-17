@@ -65,6 +65,7 @@ test("shows the selected three-round limit and the saved later-round review trai
     const response = await request.get(`/api/runs/${runId}`);
     return (await response.json() as { status: string }).status;
   }, { timeout: 20_000 }).toBe("completed");
+  await revealChatTab(page, "Sonuçlar");
   await page.locator(".run-history").getByRole("button", { name: "Listeyi yenile" }).click();
   const entry = page.locator(`.run-history [data-run-id="${runId}"]`);
   await entry.getByRole("button", { name: "Çalışmayı aç" }).click();
@@ -99,6 +100,7 @@ test("shows opt-in self-revision proposals beside unchanged initial claims", asy
   const { runId } = await created.json() as { runId: string };
   await expect.poll(async () => (await (await request.get(`/api/runs/${runId}`)).json() as { status: string }).status,
     { timeout: 20_000 }).toBe("completed");
+  await revealChatTab(page, "Sonuçlar");
   await page.locator(".run-history").getByRole("button", { name: "Listeyi yenile" }).click();
   await page.locator(`.run-history [data-run-id="${runId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
   const review = page.getByRole("region", { name: "Çapraz incelemeler" });
@@ -624,6 +626,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   expect((await request.get("/api/runs?before=invalid-cursor")).status()).toBe(400);
   await page.reload();
   const currentQuestion = await page.getByLabel("Sorunuz").inputValue();
+  await revealChatTab(page, "Sonuçlar");
   const savedRun = page.locator(`.run-history-list article[data-run-id="${submittedRunIds[0]}"]`);
   await expect(savedRun).toBeVisible();
   await savedRun.getByRole("button", { name: "Çalışmayı aç" }).click();

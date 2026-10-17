@@ -990,7 +990,8 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .sidebar-history .run-history-list button { min-height: 36px; font-size: 12px; border: 1px solid var(--line); color: var(--ink); padding: 7px 10px; }
 .sidebar-history .run-history-list button:hover { color: var(--accent); background: var(--accent-soft); }
 .sidebar-history .hint { font-size: 12px; line-height: 1.7; padding-inline: 6px; }
-.sidebar-history .run-history > summary { font-size: 13px; font-weight: 650; min-height: 44px; }
+.sidebar-history .conversation-library > summary { font-size: 13px; font-weight: 650; min-height: 44px; align-content: center; }
+.sidebar-history .conversation-library[open] > summary { margin-bottom: 8px; }
 .sidebar-history .run-history { position: relative; }
 .sidebar-history .run-history > summary { padding-right: 48px; align-content: center; }
 .sidebar-history .run-history > .history-refresh { position: absolute; right: 0; top: 0; }

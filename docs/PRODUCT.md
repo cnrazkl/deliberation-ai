@@ -17,11 +17,21 @@ saved content and prompt contracts retain their identities and behavior.
 The owner has frozen the Help menu/content until an explicit request to update it;
 general workspace changes must not include Help content work.
 
+## Explicit conversation archive
+
+The sidebar **Arşiv** disclosure lists only conversations explicitly moved with
+**Arşive ekle** from **Kayıtlı müzakereler**. Archived conversations leave the active
+list; **Arşivden çıkar** restores them. This owner-scoped preference survives reload
+and applies to the entire conversation, including future runs. Existing conversations
+start unarchived. Archiving never deletes content or triggers generation. Individual
+run inspection/deletion remains available under **Sonuçlar → Çalışma geçmişi**.
+
 ## Saved council pool
 
 The **Konseyler** sidebar menu owns council creation, editing, copying and deletion.
 Its compact **Konsey Havuzu** cards preview models and rounds, with **Düzenle / Sil**
-actions. Editing loads the configuration below the cards; **Konsey Adı**, save/update
+actions. The configuration form is always visible below the cards, without a disclosure.
+Editing loads it in place; **Konsey Adı**, save/update
 and **Yeni Konsey Oluştur** actions sit under that configuration. The council name
 label sits above its responsive input with a clear gap; action buttons occupy a
 separate, wrapping row below the field. Deleting a council
@@ -42,7 +52,9 @@ Saving reports success/error inside the pool, preserves unchanged retry identiti
 and cannot silently overwrite a conflicting saved name. Reviewed deletion remains in
 the pool cards; deletion leaves the current member draft and frozen runs.
 
-Recent runs use clickable compact history rows; date/status details are in their
+The **Standart** risk option retains automatic escalation for detected high risk.
+
+Recent runs in the results tab use clickable compact history rows; date/status details are in their
 tooltips. Opening shows the chat result and available continuation actions. Run
 failures without a report offer **Soruyu Yeniden Hazırla**, which starts a clean
 draft with that question and no provider request. Run
@@ -196,7 +208,7 @@ share clear styling across themes and screen sizes. Changing views preserves dra
 and makes no provider request. Root can filter the already loaded user list by username
 or display name; user cards separate connection/edit actions from reviewed deletion.
 
-Optional composer sections and council configuration use readable full-row disclosure
+Optional composer sections use readable full-row disclosure
 headers with short descriptions, decorative icons and a rotating chevron. Counts and
 quota status have separate text badges; opening a section does not enable its setting.
 Native details/summary preserves Enter/Space activation, visible keyboard focus and

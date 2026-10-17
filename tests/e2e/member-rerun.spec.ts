@@ -63,6 +63,7 @@ test("reruns only the selected member against a local mock endpoint", async ({ p
       reservedOutputTokens: 2_048, remainingCalls: 0, remainingOutputTokens: 0 });
 
     await page.goto("/"); await revealCouncilControls(page);
+    await revealChatTab(page, "Sonuçlar");
     await page.locator(`[data-run-id="${sourceRunId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await expect(page.getByRole("region", { name: "Gönderim rezervasyonu" })).toContainText("2 çağrı için 2.048 yanıt tokenı ayrıldı.");
     await expect(page.getByRole("region", { name: "Token maliyet tahmini", exact: true })).toContainText("0.000132000000 USD");

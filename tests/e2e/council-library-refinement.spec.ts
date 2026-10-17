@@ -1,3 +1,4 @@
+import { revealChatTab } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { eq, inArray } from "drizzle-orm";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
@@ -13,6 +14,17 @@ test("compact council cards edit and warn on selected deletion; creation stays b
   try {
     await page.goto("/"); await page.getByRole("region", { name: "Konsey Havuzu", exact: true }).getByLabel("Kayıtlı Konsey").selectOption(template.id);
     await workspaceView(page, "Konseyler");
+    const configuration = page.getByRole("region", { name: "Konsey yapılandırması", exact: true });
+    await expect(configuration).toBeVisible();
+    await expect(configuration.locator(":scope > summary")).toHaveCount(0);
+    await expect(configuration.getByLabel("Değerlendirme profili").locator('option:checked')).toHaveText("Standart");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    for (const theme of ["light", "dark"]) for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(value => document.documentElement.setAttribute("data-theme", value), theme);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      await page.screenshot({ animations: "disabled", path: `test-results/council-open-${theme}-${width}.png`, fullPage: true });
+    }
     const card = page.locator(`[data-template-id="${template.id}"]`); await expect(card).toContainText("Müzakerede Seçili");
     await expect(page.locator(".template-list")).toHaveCount(0);
     await card.getByRole("button", { name: `${template.name} konseyini düzenle`, exact: true }).click();
@@ -40,13 +52,13 @@ for (const pending of [false, true]) test(`conversation deletion ${pending ? "sh
       { id: operationId, runId, memberId: "member-a", provider: "fake", model: "offline-debug-model", status: pending ? "outcome_unknown" : "retry_authorized", attempt: 1, requestFingerprint: "fixture", errorCode: "remote_outcome_unknown" },
       { id: randomUUID(), runId, memberId: "member-a", provider: "fake", model: "offline-debug-model", status: "discarded", attempt: 2, requestFingerprint: "fixture" },
     ]);
-    await page.goto("/"); const history = page.locator(`.run-history-list [data-run-id="${runId}"]`); await expect(history).toBeVisible();
+    await page.goto("/"); await revealChatTab(page, "Sonuçlar"); const history = page.locator(`.run-history-list [data-run-id="${runId}"]`); await expect(history).toBeVisible();
     await expect(history.locator("small")).toHaveCount(0); await history.getByRole("button", { name: "Çalışmayı aç", exact: true }).click(); await expect(page.locator("#council-result")).toBeVisible();
     await history.getByRole("button", { name: "Çalışmayı Sil", exact: true }).click(); await expect(page.locator(".sidebar-history [aria-label='Çalışma içeriği silme önizlemesi']")).toHaveCount(0);
     await page.getByRole("dialog", { name: "Çalışmayı Sil" }).getByRole("button", { name: "Silmeden vazgeç" }).click();
     const card = page.locator(`[data-conversation-id="${conversationId}"]`); await expect(card.locator(".conversation-options")).toHaveCount(0); await expect(card.getByRole("button", { name: "Özel dal taslaklarını göster", exact: true })).toBeVisible();
     await card.getByRole("button", { name: "Müzakereyi Sil", exact: true }).click(); const dialog = page.getByRole("dialog", { name: "Müzakereyi Sil", exact: true });
-    if (pending) { await expect(dialog).toContainText("offline-debug-model"); await expect(dialog).toContainText("remote_outcome_unknown"); await expect(dialog.getByRole("button", { name: "Evet, Müzakereyi Sil", exact: true })).toBeDisabled(); await dialog.getByRole("button", { name: "İşlemi Kapat", exact: true }).click(); }
+    if (pending) { await expect(dialog).toContainText("offline-debug-model"); await expect(dialog).toContainText("remote_outcome_unknown"); await expect(dialog.getByRole("button", { name: "Evet, Müzakereyi Sil", exact: true })).toBeDisabled(); const closed = page.waitForResponse(response => response.url().endsWith(`/api/provider-operations/${operationId}/resolve`) && response.request().method() === "POST"); await dialog.getByRole("button", { name: "İşlemi Kapat", exact: true }).click(); expect((await closed).ok()).toBe(true); }
     await expect(dialog.getByRole("button", { name: "Evet, Müzakereyi Sil", exact: true })).toBeEnabled(); await dialog.getByRole("button", { name: "Evet, Müzakereyi Sil", exact: true }).click();
     await expect(card).toHaveCount(0); expect((await request.get(`/api/runs/${runId}`)).status()).toBe(404); expect(generation).toBe(0);
   } finally { await getDatabase().delete(runDeletions).where(eq(runDeletions.id, runId)); await getDatabase().delete(conversationRuns).where(eq(conversationRuns.conversationId, conversationId)); await getDatabase().delete(conversations).where(eq(conversations.id, conversationId)); await getDatabase().delete(runs).where(inArray(runs.id, [runId])); await closeDatabase(); }

@@ -43,6 +43,7 @@ test("reviews full history, starts a fresh council against a local mock and expo
     const context = await (await request.get(`/api/runs/${sourceId}/continuation`)).json() as FrozenContinuation;
     expect(sent).toHaveLength(2);
     await page.goto("/"); await revealCouncilControls(page);
+    await revealChatTab(page, "Sonuçlar");
     await page.locator(`[data-run-id="${sourceId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await page.getByRole("button", { name: "Bu rapordan yeni soruyla devam et", exact: true }).click();
     const history = page.getByRole("region", { name: "Yeni çalışmanın geçmiş bağlamı" });
@@ -193,6 +194,7 @@ test("reviews a manual summary and omissions, invalidates approval on edits and 
     expect(packetResponse.ok()).toBe(true);
     const packet = await packetResponse.json() as ContinuationCompactionPacket;
     await page.goto("/"); await revealCouncilControls(page);
+    await revealChatTab(page, "Sonuçlar");
     await page.locator(`[data-run-id="${sourceId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await page.getByRole("button", { name: "Geçmişi kısaltarak yeni soruyla devam et", exact: true }).click();
     const editor = page.getByRole("region", { name: "Geçmişi elle kısaltma", exact: true });
