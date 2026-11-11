@@ -1,5 +1,12 @@
 # Tasks
 
+- [x] Owner-requested unified Müzakere preparation, including inline council and
+  provider setup, and seven accessible output tabs. Drafts survive tab changes.
+  Linux build, types/lint, 536 offline units and all 127 browser scenarios pass
+  across the initial run and corrected reruns. The isolated homelab is deployed
+  and live verified at 320px and 1578px in light and dark themes. The existing
+  dependency audit findings are recorded with the deployment in CURRENT_STATE.md.
+
 - [x] Owner-requested always-visible council configuration below saved templates,
   shorter Standart risk label and explicit conversation archive/restore. Owner-scoped
   preference migration and list filtering are implemented; individual run history

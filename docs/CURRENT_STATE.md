@@ -2,16 +2,44 @@
 
 Updated: 11 November 2026 (unified conversation workspace)
 
-## Unified conversation workspace
+## Unified conversation workspace - deployed and verified
 
 Question, sources and attachments, context and controls, inline council editing,
 provider setup and clarification drafts share the Müzakere workspace. Outputs use
 seven keyboard-accessible tabs for report, model answers, cross-reviews, evidence,
 assessment, usage and history. The preparation draft remains available across the
 output tabs. The workspace continues to use the existing run and history APIs.
-Deployment and live acceptance are pending for this source tree.
 
-## Council editor and explicit archive - deployed and verified
+The isolated homelab at `http://192.168.1.112:33184/` was updated at
+`2026-11-11T13:14:24Z`. Web, worker and observer run
+`deliberationai-rehearsal:chat-a9f1e4b88009` with image identity
+`sha256:391d6170bd60c7412e1cf3c6943421906932d1cd77e382fcfd2bb3c32568bad3`,
+source commit `30263c41aded01e79317929f01c8a8a91444605f` and tree
+`a9f1e4b88009b9de5a27f60ec7d8e646b4d723f3`. A prior homelab reboot had left the
+owned containers stopped. The existing installation was brought back online
+before cutover. A private pre-cutover database dump passed inventory and checksum
+verification. The migration inventory remains 58. The owned database lifecycle and
+all pre-existing foreign containers matched the cutover baseline. Other Compose
+projects added containers after cutover while live acceptance was in progress.
+
+The production build, workspace types, zero-warning lint, staged/full-history
+secret scans and 536 offline unit cases pass. One opt-in Chromium unit case was
+skipped. All 127 distinct browser scenarios pass across the initial suite and
+corrected focused reruns. The local verification server and its isolated database
+stopped after testing. Actual LAN browser verification uses a generated ordinary
+account and seeded report. All seven tabs, keyboard navigation, preserved draft,
+the inline council and provider dialog, and the raw model answer pass at 320px
+and 1578px in both themes, with no horizontal overflow or page errors. There were
+zero generation requests. The generated account and fixtures were erased.
+Live diagnostics return HTTP 200, a ready database, one ready worker and zero
+queued or running runs. The three deployed services have zero restarts.
+
+GitHub Security checks run `43027229231` stopped at the dependency audit. The
+same audit reproduced locally against the dependency lockfile carried forward
+from the previous source commit, including two critical and three high advisories.
+This increment's production dependencies use that existing lockfile.
+
+## Previous release - council editor and explicit archive
 
 Konseyler keeps its saved council cards above a permanently visible configuration
 section; editing scrolls to that form. The risk option reads **Standart**, with its
