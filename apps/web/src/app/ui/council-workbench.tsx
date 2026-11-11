@@ -361,7 +361,23 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   sidebarOpen: boolean; onSidebarOpenChange: (open: boolean) => void;
 }) {
   const configRef = useRef<HTMLElement>(null);
-  const [chatTab, setChatTab] = useState("question");
+  const [outputTab, setOutputTab] = useState("report");
+  const [inlineCouncilOpen, setInlineCouncilOpen] = useState(false);
+  const inlineCouncilRef = useRef<HTMLDetailsElement>(null);
+  const outputRef = useRef<HTMLElement>(null);
+  const clarificationRef = useRef<HTMLDivElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+  function showOutput(tab = "report") {
+    setOutputTab(tab);
+    window.requestAnimationFrame(() => outputRef.current?.scrollIntoView({ block: "start" }));
+  }
+  function showCouncilEditor() {
+    setInlineCouncilOpen(true);
+    window.requestAnimationFrame(() => inlineCouncilRef.current?.scrollIntoView({ block: "start" }));
+  }
+  function showComposer() {
+    window.requestAnimationFrame(() => document.getElementById("question")?.focus());
+  }
   const [connectionImpact, setConnectionImpact] = useState<ConnectionImpact | null>(null);
   const impactDecision = useRef<((approved: boolean) => void) | null>(null);
   function decideImpact(approved: boolean) { impactDecision.current?.(approved); impactDecision.current = null; setConnectionImpact(null); }
@@ -1056,7 +1072,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       if (response.status === 202) {
         const body = await response.json() as { preflightDraft: { id: string } };
         submissionAttemptsRef.current.complete("council", attempt.idempotencyKey);
-        setFocusDraftId(body.preflightDraft.id); setChatTab("results");
+        setFocusDraftId(body.preflightDraft.id);
+        window.requestAnimationFrame(() => clarificationRef.current?.scrollIntoView({ block: "start" }));
         setDraftRefreshKey((value) => value + 1);
         return;
       }
@@ -1068,7 +1085,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         return;
       }
       activeRunIdRef.current = created.runId;
-      setRun(created); setChatTab("results");
+      setRun(created); showOutput();
       setHistoryRefreshKey((value) => value + 1);
       if (!terminalStatuses.has(created.status)) await watchRun(created.runId);
     } catch (reason) {
@@ -1083,9 +1100,9 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     }
   }
 
-  async function openSavedRun(runId: string): Promise<void> {
+  async function openSavedRun(runId: string, output = "report"): Promise<void> {
     setView("chat");
-    setChatTab("results");
+    showOutput(output);
     cancelActiveWatchRef.current?.();
     activeRunIdRef.current = runId;
     setError(undefined);
@@ -1099,7 +1116,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     if (activeRunIdRef.current !== runId) return;
     setRun(loaded);
     window.requestAnimationFrame(() => {
-      if (!document.querySelector("dialog[open]")) document.getElementById("council-result")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      if (!document.querySelector("dialog[open]")) outputRef.current?.scrollIntoView({ block: "start" });
     });
     if (!terminalStatuses.has(loaded.status)) {
       void watchRun(runId).catch((reason: unknown) => {
@@ -1112,7 +1129,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
 
   async function selectContinuation(mode: "full" | "compaction" = "full"): Promise<void> {
     if (!run || loadingContinuation || pending) return;
-    setChatTab("question"); setLoadingContinuation(true);
+    showComposer(); setLoadingContinuation(true);
     setError(undefined);
     try {
       const response = await ownerFetch(`/api/runs/${run.runId}/continuation${mode === "compaction" ? "?mode=compaction" : ""}`, { cache: "no-store" });
@@ -1156,7 +1173,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       if (activeRunIdRef.current !== sourceRunId) return;
       cancelActiveWatchRef.current?.();
       activeRunIdRef.current = created.runId;
-      setRun(created); setChatTab("results");
+      setRun(created); showOutput();
       setHistoryRefreshKey((value) => value + 1);
       if (!terminalStatuses.has(created.status)) await watchRun(created.runId);
     } catch (reason) {
@@ -1725,7 +1742,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
   );
 
   function newChat() {
-    setChatTab("question");
+    setOutputTab("report");
+    setInlineCouncilOpen(false);
     cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined;
     setLibraryDeletionId(undefined); setRunDeletionId(undefined); setPrivateConversationId(undefined);
     setRun(undefined); setError(undefined); setQuestion(""); setPromptCandidate(""); setPromptChoice("original");
@@ -1733,183 +1751,18 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
     setAttachments([]); setAttachmentDimensions([]); setAttachmentError(undefined);
     setSelectedMemoryEntryIds([]); setSelectedToolResultIds([]); setView("chat");
     setKnowledgePacket(null); setKnowledgeBlocked(false); setKnowledgePanelGeneration((value) => value + 1);
-    window.requestAnimationFrame(() => document.getElementById("question")?.focus());
+    showComposer();
   }
 
-  return (
-    <>
-    <WorkspaceShell view={view} onViewChange={setView} sidebarOpen={sidebarOpen} onSidebarOpenChange={onSidebarOpenChange} onNewChat={newChat} newChatDisabled={pending || loadingContinuation} attentionCount={operatorOperations.length} sidebar={<>
-      <ConversationLibraryPanel refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
-        onReviewDeletion={setLibraryDeletionId} onArchiveChange={() => setHistoryRefreshKey(value => value + 1)}
-        onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); setChatTab("results"); }} />
-      <ConversationLibraryPanel archived refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
-        onReviewDeletion={setLibraryDeletionId} onArchiveChange={() => setHistoryRefreshKey(value => value + 1)}
-        onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); setChatTab("results"); }} />
-
-    </>}>
-      {runDeletionId && <DeletionDialog title="Çalışmayı Sil" busy={deletingRunBusy} onCancel={() => { if (!deletingRunBusy) setRunDeletionId(undefined); }}><RunDeletionPanel key={runDeletionId} runId={runDeletionId} onBusy={setDeletingRunBusy} onCancel={() => { if (!deletingRunBusy) setRunDeletionId(undefined); }} onDeleted={() => {
-        if (activeRunIdRef.current === runDeletionId) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
-        setRunDeletionId(undefined); setHistoryRefreshKey(value => value + 1);
-      }} /></DeletionDialog>}
-      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)} onOperationsChanged={() => { void refreshOperatorOperations(); }}
-        onDeleted={(ids) => {
-          if (activeRunIdRef.current && ids.includes(activeRunIdRef.current)) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
-          if (privateConversationId === libraryDeletionId) setPrivateConversationId(undefined);
-          setLibraryDeletionId(undefined); setHistoryRefreshKey(value => value + 1);
-        }} />}
-      {deletingTemplateId && <CouncilTemplateDeletionPanel key={deletingTemplateId} templateId={deletingTemplateId} selectedInChat={deletingTemplateId === selectedTemplateId}
-        onCancel={() => setDeletingTemplateId(undefined)} onDeleted={onTemplateDeleted} onBusy={setDeletingTemplateBusy} />}
-      <section className="workspace workspace-view" hidden={view !== "settings"} aria-label="Ayarlar alanı">
-        <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
-      <section className="primary-connections api-connections" aria-labelledby="api-connections-title">
-        <div className="api-connections-heading">
-          <div className="settings-section-heading"><span className="eyebrow">MODELLERİNİZ</span><h2 id="api-connections-title">API Bağlantıları <span className="connection-count">{connections.length}</span></h2><p>Bağlantılarınızı yönetin, müzakerenizde kullanacağınız modelleri seçin.</p></div>
-          <button className="primary-button" type="button" aria-haspopup="dialog" title="Sağlayıcı bilgileri, API anahtarı ve model seçimleri için yeni bağlantı penceresi açar." onClick={newConnection} disabled={savingConnection || Boolean(removingConnectionId)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni Bağlantı Ekle
-          </button>
-        </div>
-        {connectionNotice ? <p className="connection-save-notice" role="status">{connectionNotice}</p> : null}
-        {connectionError && !connectionDialog ? <p className="alert error" role="alert">{connectionError}</p> : null}
-        {connections.length ? <div className="connection-list connection-grid" aria-label="Kayıtlı sağlayıcı bağlantıları">
-          {connections.map(connection => {
-            const chosen = connectionModels(connection), useCount = members.filter(member => member.connectionId === connection.id).length;
-            const providerName = connection.endpointPreset === "custom" ? providerLabels[connection.provider] : endpointPresets[connection.endpointPreset].label;
-            return <article className="connection-card connection-tile" key={connection.id} aria-label={`${connection.label} sağlayıcı bağlantısı`}>
-              <header><span className="connection-provider-icon" aria-hidden="true">{providerName.slice(0, 2).toLocaleUpperCase("tr")}</span><div><h3 title={connection.label}>{connection.label}</h3><p>{providerName}</p></div></header>
-              <div className="connection-tile-meta"><span>{chosen.length} model seçili</span><span className={`connection-usage ${useCount ? "active" : "idle"}`}>{useCount ? `Bu görevde ${useCount} üye` : "Hazırda"}</span></div>
-              <div className="connection-model-snippets">{chosen.length ? <>{chosen.slice(0, 2).map(model => <span key={model} title={model}>{model}</span>)}{chosen.length > 2 ? <small>+{chosen.length - 2} model</small> : null}</> : <p>Müzakerede kullanmak için model seçin.</p>}</div>
-              <button type="button" title="Bu bağlantıda kullanacağınız modelleri ve isteğe bağlı takma adlarını seçer." className="secondary-button connection-models-action" aria-haspopup="dialog" disabled={savingConnection || Boolean(removingConnectionId)} onClick={() => { editConnection(connection); setConnectionTab("models"); }}>Modelleri Seç <span aria-hidden="true">→</span></button>
-              <div className="connection-tile-actions">
-                <button type="button" className="secondary-button" aria-haspopup="dialog" disabled={savingConnection || Boolean(removingConnectionId)} title="Bağlantı ayarlarını düzenler; hızlı ve ayrıntılı test alanlarını açar." onClick={() => editConnection(connection)}>Düzenle</button>
-                <button type="button" className="secondary-button danger-button" disabled={savingConnection || Boolean(checkingConnectionId) || Boolean(removingConnectionId)} title="Bağlı kayıtları gösterir; onay verirseniz bağlantıyı ve anahtarını kaldırır." onClick={() => void removeConnection(connection.id)}>{removingConnectionId === connection.id ? "Siliniyor…" : "Sil"}</button>
-              </div>
-            </article>;
-          })}
-        </div> : <div className="connection-empty"><span className="connection-provider-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 3v4m6-4v4M7 7h10v3a5 5 0 0 1-10 0V7Zm5 8v6" /></svg></span><h3>İlk bağlantınızı ekleyin</h3><p>API anahtarınızı bir kez kaydedin, kullanacağınız modelleri seçin.</p></div>}
-        <details className="connection-help"><summary>Bağlantılar Nasıl Kullanılır?</summary>
-        <div className="connection-guide" aria-label="Bağlantı kullanım adımları">
-          <div><strong>1</strong><span>Sağlayıcıyı veya OpenRouter, LiteLLM, Ollama gibi uç noktayı bir kez kaydedin.</span></div>
-          <div><strong>2</strong><span>Konsey üyesinde bu bağlantıyı seçin; görev modelini ve düşünme seviyesini istediğiniz zaman değiştirin.</span></div>
-          <div><strong>3</strong><span>Kullanmadığınız bağlantılar hazırda bekler ve siz bir üyeye seçmedikçe istek göndermez.</span></div>
-        </div>
-        <p className="hint">OpenAI, Claude ve Gemini yerel adaptörleri; Kimi, Qwen, vLLM, Ollama, LiteLLM, OpenRouter ve özel uç noktalar OpenAI uyumlu adaptörü kullanır. Model listesi yalnızca düğmeye basınca sorgulanır; üretim, ücretlendirme ve düşünme seviyesi desteğini doğrulamaz.</p>
-        </details>
-      </section>
-      <ConnectionDialog open={Boolean(connectionDialog) && view === "settings"} title={dialogConnection?.label ?? "Yeni Bağlantı Ekle"}
-        description={dialogConnection ? "Bağlantı bilgilerinizi, müzakere modellerinizi ve mevcut testin ayrıntılarını buradan yönetin." : "Sağlayıcınızı seçin, API anahtarınızı ekleyin ve kullanacağınız modelleri belirleyin."}
-        busy={savingConnection || connectionChatBusy || Boolean(checkingConnectionId)} onClose={cancelConnectionEdit}>
-        {dialogConnection ? <div className="connection-tabs" role="tablist" aria-label="Bağlantı ayarları" onKeyDown={event => {
-          if (connectionChatBusy || savingConnection) return;
-          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-          event.preventDefault(); const index = connectionTabs.findIndex(tab => tab.id === connectionTab);
-          const next = event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : 2)) % 3;
-          setConnectionTab(connectionTabs[next]!.id); event.currentTarget.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
-        }}>{connectionTabs.map(tab => <button type="button" role="tab" key={tab.id} id={`connection-tab-${tab.id}`} aria-selected={connectionTab === tab.id}
-          aria-controls={`connection-pane-${tab.id}`} disabled={connectionChatBusy || savingConnection} tabIndex={connectionTab === tab.id ? 0 : -1} onClick={() => setConnectionTab(tab.id)}>{tab.label}</button>)}</div> : null}
-        <div id="connection-pane-details" role={dialogConnection ? "tabpanel" : undefined} aria-labelledby={dialogConnection ? "connection-tab-details" : undefined} hidden={Boolean(dialogConnection) && connectionTab !== "details"}>
-          {connectionDialog && (!dialogConnection || connectionTab === "details") ? connectionForm : null}
-          {connectionDialog ? <ConnectionChatTester key="dialog-chat"
-            connection={dialogConnection} models={connectionSelectedModels} aliases={connectionModelAliases} needsSave={connectionDirty}
-            disabled={savingConnection || Boolean(checkingConnectionId)} onSave={() => saveConnection(undefined, true)} onBusy={setConnectionChatBusy} /> : null}
-        </div>
-        <div id="connection-pane-models" role="tabpanel" aria-labelledby="connection-tab-models" hidden={!dialogConnection || connectionTab !== "models"}>
-          {connections.map(connection => {
-            const catalog = catalogChecks[connection.id];
-            return <div className="connection-model-workspace" key={connection.id} hidden={connectionDialog !== connection.id}>
-              <div className="connection-catalog-heading"><div><h3>Müzakere Modelleri</h3><p>Bu bağlantıda kullanmak istediğiniz modelleri seçip kaydedin.</p></div><button className="secondary-button" type="button" disabled={savingConnection || Boolean(checkingConnectionId)} title="Sağlayıcının model kataloğunu sorgular. Yanıt üretmez; katalog erişimi model çağrısını garanti etmez." onClick={() => void checkConnectionModels(connection.id)}>{checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}</button></div>
-              {catalog ? <p role="status" className="hint">{catalog.status === "available" ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."}` : catalog.status === "auth_failed" ? "Katalog isteği kimlik/yetki hatasıyla reddedildi." : catalog.status === "unsupported" ? "Bu uç noktada model listeleme desteklenmiyor veya yanıt biçimi bilinmiyor." : "Model listesine erişilemedi. Uç nokta, ağ ve sunucu durumunu kontrol edin."}</p> : null}
-              {catalog?.checkedAt ? <small className="hint">Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small> : null}
-              {catalog?.sourceUrl ? <p className="hint">Katalog kaynağı: <code>{catalog.sourceUrl}</code></p> : null}
-              <p className="hint">Liste sağlayıcının model kataloğundan alınır; hazır veya sabit bir model listesi kullanılmaz. Katalogda görünmek, bu API anahtarının modele çağrı erişimini veya dosya desteğini doğrulamaz. HTTP 404 model, API sürümü, uç nokta veya proje erişimiyle ilgili olabilir. Test Ve Hata Ayıklama sekmesinde gerçek yanıtı inceleyebilirsiniz.</p>
-              <SavedConnectionModels models={catalog?.models ?? []} selectedModels={connectionModels(connection)} aliases={connection.modelAliases ?? {}} label={connection.label} onSave={(models, aliases) => saveConnectionModels(connection, models, aliases)} />
-              {connectionError ? <p className="alert error" role="alert">{connectionError}</p> : null}
-            </div>;
-          })}
-        </div>
-        <div id="connection-pane-test" role="tabpanel" aria-labelledby="connection-tab-test" hidden={!dialogConnection || connectionTab !== "test"}>
-          {dialogConnection ? <ConnectionGenerationPanel key={dialogConnection.id} connection={dialogConnection} onBusy={setConnectionChatBusy} /> : null}
-        </div>
-      </ConnectionDialog>
-
-      <div className="settings-section-heading"><span className="eyebrow">TERCİHLER VE ARAÇLAR</span><h2>Çalışma ortamınız</h2></div>
-      <PrivateOutputDefaultPanel />
-      <LocalToolsPanel
-        selectedResultIds={selectedToolResultIds}
-        onSelectionChange={setSelectedToolResultIds}
-        retrieveRelevant={retrieveToolContext}
-        onRetrieveRelevantChange={setRetrieveToolContext}
-      />
-
-      {operatorOperations.length > 0 ? (
-        <section className="operator-card" aria-label="Operatör kararı bekleyen işlemler">
-          <div className="operator-heading">
-            <div>
-              <span>OPERATÖR KARARI</span>
-              <strong>{operatorOperations.length} belirsiz sağlayıcı işlemi</strong>
-            </div>
-            <button className="secondary-button" type="button" onClick={() => void refreshOperatorOperations()}>
-              Yenile
-            </button>
-          </div>
-          <p>
-            Sağlayıcının isteği tamamlayıp tamamlamadığı bilinmiyor. Yeni deneme aynı isteğin
-            ikinci kez ücretlenmesine veya yinelenmesine yol açabilir; sistem otomatik karar vermez.
-          </p>
-          <div className="operator-list">
-            {operatorOperations.map((operation) => (
-              <article key={operation.id}>
-                <div>
-                  <strong>{operation.memberId}</strong>
-                  <small>{operation.provider} · {operation.model} · tur {operation.round} · deneme {operation.attempt}</small>
-                  <small>Çalışma {operation.runId.slice(0, 8)} · {operation.errorCode ?? "sonuç bilinmiyor"}</small>
-                  {operation.errorCode === "provider_dns_failure" ? <p className="hint">Sunucu sağlayıcının adresini çözemedi. DNS ve internet erişimini kontrol edin.</p> : operation.errorCode === "provider_timeout" ? <p className="hint">Sağlayıcıdan süre içinde tam yanıt alınamadı; uzak sonuç ve ücret bilinmiyor.</p> : operation.errorCode === "remote_outcome_unknown" ? <p className="hint">Sunucu kesin sonuç alamadı. Bu kod tek başına kredi veya API limiti hatası anlamına gelmez.</p> : null}
-                </div>
-                <div className="operator-actions">
-                  <button
-                    className="secondary-button danger-button"
-                    type="button"
-                    disabled={resolvingOperationId === operation.id}
-                    onClick={() => void resolveOperation(operation, "discard")}
-                  >
-                    Başarısız say ve kapat
-                  </button>
-                  <button
-                    type="button"
-                    disabled={resolvingOperationId === operation.id || operation.status === "retry_authorized"}
-                    onClick={() => { if (operation.status !== "retry_authorized") void resolveOperation(operation, "authorize_retry"); }}
-                  >
-                    {operation.status === "retry_authorized" ? "Yeniden Deneme İzni Bekliyor" : "Yeni denemeye izin ver"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-        <LocalDiagnosticsPanel />
-      </section>
-      <section className="workspace workspace-view" hidden={view !== "schedules"} aria-label="Zamanlayıcı alanı">
-        <p className="view-intro">Müzakerede hazırladığınız soru ve konsey ile tekrar eden çalışmalar oluşturun.</p>
-        <div className="schedule-draft-summary"><strong>Zamanlanacak soru</strong><p>{question || "Önce Müzakere bölümünde bir soru yazın."}</p><button type="button" className="secondary-button" onClick={() => setView("chat")}>Soruyu ve konseyi düzenle</button></div>
-      <LocalSchedulesPanel onOpenRun={openSavedRun}
-        creationBlockedReason={knowledgePacket || knowledgeBlocked ? "Kaynak paketli çalışmalar henüz zamanlanamaz. Kaynak paketini açıkça kaldırın." : continuationSource ? "Geçmiş rapor içeren devam çalışmaları henüz zamanlanamaz. Önce geçmiş bağlamı kaldırın." : undefined}
-        question={question}
-        members={members}
-        reviewRounds={reviewRounds}
-        selfRevisionEnabled={selfRevisionEnabled && reviewRounds > 0}
-        riskProfile={effectiveRiskProfile}
-        {...(executionLimits ? { executionLimits } : {})}
-      />
-
-      </section>
-      <section className="workspace workspace-view" hidden={view !== "councils"} aria-label="Konsey yönetimi">
+  const councilManagement = (
+    <section className="council-management" aria-label="Konsey yönetimi">
         <p className="section-intro">Konseyleri oluşturun, üyelerini düzenleyin ve müzakereden yeniden kullanmak için kaydedin.</p>
-        <CouncilLibrary templates={templates.filter(template => template.members.every(member => member.provider !== "fake"))} selectedId={selectedTemplateId} invalidIds={invalidTemplateIds}
+        <CouncilLibrary label={view === "councils" ? "Konsey Havuzu" : "Kayıtlı konseyler"} templates={templates.filter(template => template.members.every(member => member.provider !== "fake"))} selectedId={selectedTemplateId} invalidIds={invalidTemplateIds}
           disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation} onDelete={setDeletingTemplateId}
           modelLabel={member => { const connection = connections.find(item => item.id === member.connectionId); return connection?.modelAliases?.[member.model] || member.model; }}
           onEdit={id => { selectTemplate(id); if (configRef.current) { configRef.current.scrollIntoView({ block: "start", behavior: "smooth" }); } }} />
       <section ref={configRef} className="settings-card council-config" aria-label="Konsey yapılandırması">
+        <div className="chat-connection-action"><button type="button" className="secondary-button" aria-haspopup="dialog" disabled={savingConnection} onClick={newConnection}>Bağlantı ekle</button></div>
         <div className="config-heading">
           <div>
             <strong>Konsey yapılandırması</strong>
@@ -2030,6 +1883,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                       ))}
                     </select>
                   </label>
+                  {selectedConnection && <button className="secondary-button member-model-settings" type="button" aria-haspopup="dialog" disabled={savingConnection} onClick={() => { editConnection(selectedConnection); setConnectionTab("models"); }}>Üye {index + 1} bağlantısının modellerini düzenle</button>}
                   <label>
                     Bu görevde model
                     <select
@@ -2051,7 +1905,7 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                       {savedModels.map(id => <option key={id} value={id}>{selectedConnection?.modelAliases?.[id] ? `${selectedConnection.modelAliases[id]} · ${id}` : id}</option>)}
                     </select>
                     <small>
-                      {savedModels.length ? "Ayarlarda bu bağlantı için seçtiğiniz modeller. Aynı bağlantıyı birden fazla üyede kullanabilirsiniz." : "Ayarlar → API bağlantılarınız bölümünde bu bağlantının modellerini seçin."}
+                      {savedModels.length ? "Bu bağlantı için kaydettiğiniz modeller. Aynı bağlantıyı birden fazla üyede kullanabilirsiniz." : "Ayarlar → API bağlantılarınız bölümünde bu bağlantının modellerini seçin."}
                     </small>
                     {selectedModelDetail ? (
                       <small>Katalog bildirimi · {catalogMetadataText(selectedModelDetail)}</small>
@@ -2157,17 +2011,185 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
       </section>
 
       </section>
+  );
+
+  return (
+    <>
+    <WorkspaceShell view={view} onViewChange={setView} sidebarOpen={sidebarOpen} onSidebarOpenChange={onSidebarOpenChange} onNewChat={newChat} newChatDisabled={pending || loadingContinuation} attentionCount={operatorOperations.length} sidebar={<>
+      <ConversationLibraryPanel refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
+        onReviewDeletion={setLibraryDeletionId} onArchiveChange={() => setHistoryRefreshKey(value => value + 1)}
+        onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); showOutput("history"); }} />
+      <ConversationLibraryPanel archived refreshKey={historyRefreshKey} activeRunId={run?.runId} onOpenRun={openSavedRun}
+        onReviewDeletion={setLibraryDeletionId} onArchiveChange={() => setHistoryRefreshKey(value => value + 1)}
+        onOpenPrivate={(id) => { setPrivateConversationId(id); setView("chat"); showOutput("history"); }} />
+
+    </>}>
+      {runDeletionId && <DeletionDialog title="Çalışmayı Sil" busy={deletingRunBusy} onCancel={() => { if (!deletingRunBusy) setRunDeletionId(undefined); }}><RunDeletionPanel key={runDeletionId} runId={runDeletionId} onBusy={setDeletingRunBusy} onCancel={() => { if (!deletingRunBusy) setRunDeletionId(undefined); }} onDeleted={() => {
+        if (activeRunIdRef.current === runDeletionId) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
+        setRunDeletionId(undefined); setHistoryRefreshKey(value => value + 1);
+      }} /></DeletionDialog>}
+      {libraryDeletionId && <ConversationDeletionPanel key={libraryDeletionId} conversationId={libraryDeletionId} onCancel={() => setLibraryDeletionId(undefined)} onOperationsChanged={() => { void refreshOperatorOperations(); }}
+        onDeleted={(ids) => {
+          if (activeRunIdRef.current && ids.includes(activeRunIdRef.current)) { cancelActiveWatchRef.current?.(); activeRunIdRef.current = undefined; setRun(undefined); }
+          if (privateConversationId === libraryDeletionId) setPrivateConversationId(undefined);
+          setLibraryDeletionId(undefined); setHistoryRefreshKey(value => value + 1);
+        }} />}
+      {deletingTemplateId && <CouncilTemplateDeletionPanel key={deletingTemplateId} templateId={deletingTemplateId} selectedInChat={deletingTemplateId === selectedTemplateId}
+        onCancel={() => setDeletingTemplateId(undefined)} onDeleted={onTemplateDeleted} onBusy={setDeletingTemplateBusy} />}
+      <ConnectionDialog open={Boolean(connectionDialog)} title={dialogConnection?.label ?? "Yeni Bağlantı Ekle"}
+        description={dialogConnection ? "Bağlantı bilgilerinizi, müzakere modellerinizi ve mevcut testin ayrıntılarını buradan yönetin." : "Sağlayıcınızı seçin, API anahtarınızı ekleyin ve kullanacağınız modelleri belirleyin."}
+        busy={savingConnection || connectionChatBusy || Boolean(checkingConnectionId)} onClose={cancelConnectionEdit}>
+        {dialogConnection ? <div className="connection-tabs" role="tablist" aria-label="Bağlantı ayarları" onKeyDown={event => {
+          if (connectionChatBusy || savingConnection) return;
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+          event.preventDefault(); const index = connectionTabs.findIndex(tab => tab.id === connectionTab);
+          const next = event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : 2)) % 3;
+          setConnectionTab(connectionTabs[next]!.id); event.currentTarget.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
+        }}>{connectionTabs.map(tab => <button type="button" role="tab" key={tab.id} id={`connection-tab-${tab.id}`} aria-selected={connectionTab === tab.id}
+          aria-controls={`connection-pane-${tab.id}`} disabled={connectionChatBusy || savingConnection} tabIndex={connectionTab === tab.id ? 0 : -1} onClick={() => setConnectionTab(tab.id)}>{tab.label}</button>)}</div> : null}
+        <div id="connection-pane-details" role={dialogConnection ? "tabpanel" : undefined} aria-labelledby={dialogConnection ? "connection-tab-details" : undefined} hidden={Boolean(dialogConnection) && connectionTab !== "details"}>
+          {connectionDialog && (!dialogConnection || connectionTab === "details") ? connectionForm : null}
+          {connectionDialog ? <ConnectionChatTester key="dialog-chat"
+            connection={dialogConnection} models={connectionSelectedModels} aliases={connectionModelAliases} needsSave={connectionDirty}
+            disabled={savingConnection || Boolean(checkingConnectionId)} onSave={() => saveConnection(undefined, true)} onBusy={setConnectionChatBusy} /> : null}
+        </div>
+        <div id="connection-pane-models" role="tabpanel" aria-labelledby="connection-tab-models" hidden={!dialogConnection || connectionTab !== "models"}>
+          {connections.map(connection => {
+            const catalog = catalogChecks[connection.id];
+            return <div className="connection-model-workspace" key={connection.id} hidden={connectionDialog !== connection.id}>
+              <div className="connection-catalog-heading"><div><h3>Müzakere Modelleri</h3><p>Bu bağlantıda kullanmak istediğiniz modelleri seçip kaydedin.</p></div><button className="secondary-button" type="button" disabled={savingConnection || Boolean(checkingConnectionId)} title="Sağlayıcının model kataloğunu sorgular. Yanıt üretmez; katalog erişimi model çağrısını garanti etmez." onClick={() => void checkConnectionModels(connection.id)}>{checkingConnectionId === connection.id ? "Kontrol ediliyor…" : "Model listesini kontrol et"}</button></div>
+              {catalog ? <p role="status" className="hint">{catalog.status === "available" ? `${catalog.models.length} model kimliği listelendi${catalog.truncated ? " (liste kısmi)" : ""}. ${catalog.verification === "authenticated_catalog" ? "Kimlik doğrulamalı katalog yanıtı alındı." : "Katalog yanıtı alındı; API anahtarı doğrulanmış sayılmaz."}` : catalog.status === "auth_failed" ? "Katalog isteği kimlik/yetki hatasıyla reddedildi." : catalog.status === "unsupported" ? "Bu uç noktada model listeleme desteklenmiyor veya yanıt biçimi bilinmiyor." : "Model listesine erişilemedi. Uç nokta, ağ ve sunucu durumunu kontrol edin."}</p> : null}
+              {catalog?.checkedAt ? <small className="hint">Katalog sorgusu: {new Date(catalog.checkedAt).toLocaleString("tr-TR")}. Bilgiler canlı üretim testi değildir.</small> : null}
+              {catalog?.sourceUrl ? <p className="hint">Katalog kaynağı: <code>{catalog.sourceUrl}</code></p> : null}
+              <p className="hint">Liste sağlayıcının model kataloğundan alınır; hazır veya sabit bir model listesi kullanılmaz. Katalogda görünmek, bu API anahtarının modele çağrı erişimini veya dosya desteğini doğrulamaz. HTTP 404 model, API sürümü, uç nokta veya proje erişimiyle ilgili olabilir. Test Ve Hata Ayıklama sekmesinde gerçek yanıtı inceleyebilirsiniz.</p>
+              <SavedConnectionModels models={catalog?.models ?? []} selectedModels={connectionModels(connection)} aliases={connection.modelAliases ?? {}} label={connection.label} onSave={(models, aliases) => saveConnectionModels(connection, models, aliases)} />
+              {connectionError ? <p className="alert error" role="alert">{connectionError}</p> : null}
+            </div>;
+          })}
+        </div>
+        <div id="connection-pane-test" role="tabpanel" aria-labelledby="connection-tab-test" hidden={!dialogConnection || connectionTab !== "test"}>
+          {dialogConnection ? <ConnectionGenerationPanel key={dialogConnection.id} connection={dialogConnection} onBusy={setConnectionChatBusy} /> : null}
+        </div>
+      </ConnectionDialog>
+      <section className="workspace workspace-view" hidden={view !== "settings"} aria-label="Ayarlar alanı">
+        <p className="view-intro">Bağlantılarınızı, yerel araçlarınızı ve çalışma ortamınızı yönetin.</p>
+      <section className="primary-connections api-connections" aria-labelledby="api-connections-title">
+        <div className="api-connections-heading">
+          <div className="settings-section-heading"><span className="eyebrow">MODELLERİNİZ</span><h2 id="api-connections-title">API Bağlantıları <span className="connection-count">{connections.length}</span></h2><p>Bağlantılarınızı yönetin, müzakerenizde kullanacağınız modelleri seçin.</p></div>
+          <button className="primary-button" type="button" aria-haspopup="dialog" title="Sağlayıcı bilgileri, API anahtarı ve model seçimleri için yeni bağlantı penceresi açar." onClick={newConnection} disabled={savingConnection || Boolean(removingConnectionId)}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Yeni Bağlantı Ekle
+          </button>
+        </div>
+        {connectionNotice ? <p className="connection-save-notice" role="status">{connectionNotice}</p> : null}
+        {connectionError && !connectionDialog ? <p className="alert error" role="alert">{connectionError}</p> : null}
+        {connections.length ? <div className="connection-list connection-grid" aria-label="Kayıtlı sağlayıcı bağlantıları">
+          {connections.map(connection => {
+            const chosen = connectionModels(connection), useCount = members.filter(member => member.connectionId === connection.id).length;
+            const providerName = connection.endpointPreset === "custom" ? providerLabels[connection.provider] : endpointPresets[connection.endpointPreset].label;
+            return <article className="connection-card connection-tile" key={connection.id} aria-label={`${connection.label} sağlayıcı bağlantısı`}>
+              <header><span className="connection-provider-icon" aria-hidden="true">{providerName.slice(0, 2).toLocaleUpperCase("tr")}</span><div><h3 title={connection.label}>{connection.label}</h3><p>{providerName}</p></div></header>
+              <div className="connection-tile-meta"><span>{chosen.length} model seçili</span><span className={`connection-usage ${useCount ? "active" : "idle"}`}>{useCount ? `Bu görevde ${useCount} üye` : "Hazırda"}</span></div>
+              <div className="connection-model-snippets">{chosen.length ? <>{chosen.slice(0, 2).map(model => <span key={model} title={model}>{model}</span>)}{chosen.length > 2 ? <small>+{chosen.length - 2} model</small> : null}</> : <p>Müzakerede kullanmak için model seçin.</p>}</div>
+              <button type="button" title="Bu bağlantıda kullanacağınız modelleri ve isteğe bağlı takma adlarını seçer." className="secondary-button connection-models-action" aria-haspopup="dialog" disabled={savingConnection || Boolean(removingConnectionId)} onClick={() => { editConnection(connection); setConnectionTab("models"); }}>Modelleri Seç <span aria-hidden="true">→</span></button>
+              <div className="connection-tile-actions">
+                <button type="button" className="secondary-button" aria-haspopup="dialog" disabled={savingConnection || Boolean(removingConnectionId)} title="Bağlantı ayarlarını düzenler; hızlı ve ayrıntılı test alanlarını açar." onClick={() => editConnection(connection)}>Düzenle</button>
+                <button type="button" className="secondary-button danger-button" disabled={savingConnection || Boolean(checkingConnectionId) || Boolean(removingConnectionId)} title="Bağlı kayıtları gösterir; onay verirseniz bağlantıyı ve anahtarını kaldırır." onClick={() => void removeConnection(connection.id)}>{removingConnectionId === connection.id ? "Siliniyor…" : "Sil"}</button>
+              </div>
+            </article>;
+          })}
+        </div> : <div className="connection-empty"><span className="connection-provider-icon" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M9 3v4m6-4v4M7 7h10v3a5 5 0 0 1-10 0V7Zm5 8v6" /></svg></span><h3>İlk bağlantınızı ekleyin</h3><p>API anahtarınızı bir kez kaydedin, kullanacağınız modelleri seçin.</p></div>}
+        <details className="connection-help"><summary>Bağlantılar Nasıl Kullanılır?</summary>
+        <div className="connection-guide" aria-label="Bağlantı kullanım adımları">
+          <div><strong>1</strong><span>Sağlayıcıyı veya OpenRouter, LiteLLM, Ollama gibi uç noktayı bir kez kaydedin.</span></div>
+          <div><strong>2</strong><span>Konsey üyesinde bu bağlantıyı seçin; görev modelini ve düşünme seviyesini istediğiniz zaman değiştirin.</span></div>
+          <div><strong>3</strong><span>Kullanmadığınız bağlantılar hazırda bekler ve siz bir üyeye seçmedikçe istek göndermez.</span></div>
+        </div>
+        <p className="hint">OpenAI, Claude ve Gemini yerel adaptörleri; Kimi, Qwen, vLLM, Ollama, LiteLLM, OpenRouter ve özel uç noktalar OpenAI uyumlu adaptörü kullanır. Model listesi yalnızca düğmeye basınca sorgulanır; üretim, ücretlendirme ve düşünme seviyesi desteğini doğrulamaz.</p>
+        </details>
+      </section>
+
+
+      <div className="settings-section-heading"><span className="eyebrow">TERCİHLER VE ARAÇLAR</span><h2>Çalışma ortamınız</h2></div>
+      <PrivateOutputDefaultPanel />
+
+
+      {operatorOperations.length > 0 ? (
+        <section className="operator-card" aria-label="Operatör kararı bekleyen işlemler">
+          <div className="operator-heading">
+            <div>
+              <span>OPERATÖR KARARI</span>
+              <strong>{operatorOperations.length} belirsiz sağlayıcı işlemi</strong>
+            </div>
+            <button className="secondary-button" type="button" onClick={() => void refreshOperatorOperations()}>
+              Yenile
+            </button>
+          </div>
+          <p>
+            Sağlayıcının isteği tamamlayıp tamamlamadığı bilinmiyor. Yeni deneme aynı isteğin
+            ikinci kez ücretlenmesine veya yinelenmesine yol açabilir; sistem otomatik karar vermez.
+          </p>
+          <div className="operator-list">
+            {operatorOperations.map((operation) => (
+              <article key={operation.id}>
+                <div>
+                  <strong>{operation.memberId}</strong>
+                  <small>{operation.provider} · {operation.model} · tur {operation.round} · deneme {operation.attempt}</small>
+                  <small>Çalışma {operation.runId.slice(0, 8)} · {operation.errorCode ?? "sonuç bilinmiyor"}</small>
+                  {operation.errorCode === "provider_dns_failure" ? <p className="hint">Sunucu sağlayıcının adresini çözemedi. DNS ve internet erişimini kontrol edin.</p> : operation.errorCode === "provider_timeout" ? <p className="hint">Sağlayıcıdan süre içinde tam yanıt alınamadı; uzak sonuç ve ücret bilinmiyor.</p> : operation.errorCode === "remote_outcome_unknown" ? <p className="hint">Sunucu kesin sonuç alamadı. Bu kod tek başına kredi veya API limiti hatası anlamına gelmez.</p> : null}
+                </div>
+                <div className="operator-actions">
+                  <button
+                    className="secondary-button danger-button"
+                    type="button"
+                    disabled={resolvingOperationId === operation.id}
+                    onClick={() => void resolveOperation(operation, "discard")}
+                  >
+                    Başarısız say ve kapat
+                  </button>
+                  <button
+                    type="button"
+                    disabled={resolvingOperationId === operation.id || operation.status === "retry_authorized"}
+                    onClick={() => { if (operation.status !== "retry_authorized") void resolveOperation(operation, "authorize_retry"); }}
+                  >
+                    {operation.status === "retry_authorized" ? "Yeniden Deneme İzni Bekliyor" : "Yeni denemeye izin ver"}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+        <LocalDiagnosticsPanel />
+      </section>
+      <section className="workspace workspace-view" hidden={view !== "schedules"} aria-label="Zamanlayıcı alanı">
+        <p className="view-intro">Müzakerede hazırladığınız soru ve konsey ile tekrar eden çalışmalar oluşturun.</p>
+        <div className="schedule-draft-summary"><strong>Zamanlanacak soru</strong><p>{question || "Önce Müzakere bölümünde bir soru yazın."}</p><button type="button" className="secondary-button" onClick={() => setView("chat")}>Soruyu ve konseyi düzenle</button></div>
+      <LocalSchedulesPanel onOpenRun={openSavedRun}
+        creationBlockedReason={knowledgePacket || knowledgeBlocked ? "Kaynak paketli çalışmalar henüz zamanlanamaz. Kaynak paketini açıkça kaldırın." : continuationSource ? "Geçmiş rapor içeren devam çalışmaları henüz zamanlanamaz. Önce geçmiş bağlamı kaldırın." : undefined}
+        question={question}
+        members={members}
+        reviewRounds={reviewRounds}
+        selfRevisionEnabled={selfRevisionEnabled && reviewRounds > 0}
+        riskProfile={effectiveRiskProfile}
+        {...(executionLimits ? { executionLimits } : {})}
+      />
+
+      </section>
+      <section className="workspace workspace-view" hidden={view !== "councils"} aria-label="Konsey kütüphanesi">{view === "councils" ? councilManagement : null}</section>
       <section className="workspace workspace-view" hidden={view !== "chat"} aria-label="Konsey çalışma alanı">
-        {!connections.length ? <div className="connection-onboarding"><div><strong>İlk adım: modellerinizi bağlayın</strong><p>Başlamak için bir sağlayıcı bağlantısı ekleyin. API anahtarınızı kendi hesabınızda kaydedin.</p></div><button type="button" className="secondary-button" onClick={() => setView("settings")}>Bağlantıları ayarla <span aria-hidden="true">→</span></button></div> : null}
-      <WorkspaceTabs id="chat" label="Müzakere bölümleri" selected={chatTab} onSelect={setChatTab} tabs={[{ id: "question", label: "Soru" }, { id: "sources", label: "Kaynaklar Ve Dosyalar" }, { id: "controls", label: "Bağlam Ve Kontroller" }, { id: "results", label: "Sonuçlar" }]} />
-      <form className="question-card" hidden={chatTab === "results"} onSubmit={submit}>
-        <div role="tabpanel" id="chat-panel-question" aria-labelledby="chat-tab-question" hidden={chatTab !== "question"}>
+        {!connections.length ? <div className="connection-onboarding"><div><strong>İlk adım: modellerinizi bağlayın</strong><p>Başlamak için bir sağlayıcı bağlantısı ekleyin. API anahtarınızı kendi hesabınızda kaydedin.</p></div><button type="button" className="secondary-button" aria-haspopup="dialog" onClick={newConnection}>Bağlantı ekle <span aria-hidden="true">→</span></button></div> : null}
+      <div className="question-card chat-preparation" aria-label="Yeni müzakere hazırlığı" role="region">
+      <form id="chat-submission" className="chat-composer-form" onSubmit={submit} onKeyDown={event => {
+        if (event.key === "Enter" && event.target instanceof HTMLInputElement && ["text", "search", "number", "url"].includes(event.target.type)) event.preventDefault();
+      }}>
+        <section id="chat-panel-question" aria-label="Soru">
         <div className="composer-heading"><span className="eyebrow">SORUNUZLA BAŞLAYIN</span><h2>Konseye ne sormak istersiniz?</h2><p>Kararı veya problemi yazın. Önemli koşulları ve beklediğiniz sonucu ekleyin.</p></div>
         <CouncilPool templates={templates.filter(template => template.members.every(member => member.provider !== "fake"))}
           selectedId={selectedTemplateId} selectedName={selectedTemplate?.name} modified={templateModified} members={members} reviewRounds={reviewRounds}
           name={templateName} disabled={pending || savingTemplate || deletingTemplateBusy || loadingContinuation}
           canSave={memberConfigurationValid} saving={savingTemplate} notice={templateModified ? undefined : templateNotice} error={templateError}
-          invalidIds={invalidTemplateIds} onManage={() => setView("councils")} onSelect={selectTemplate} onNameChange={setTemplateName} onSave={() => void saveTemplate()} />
+          invalidIds={invalidTemplateIds} onManage={showCouncilEditor} onSelect={selectTemplate} onNameChange={setTemplateName} onSave={() => void saveTemplate()} />
         {compactionDraft ? <ContinuationCompactionEditor packet={compactionDraft.packet} summary={compactionDraft.summary}
           reviewed={continuationReviewed} disabled={pending || loadingContinuation}
           onSummaryChange={(summary) => { setCompactionDraft((current) => current ? { ...current, summary } : undefined); setContinuationReviewed(false); }}
@@ -2195,21 +2217,15 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           }}
           onKeyDown={(event) => {
             if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-              event.currentTarget.form?.requestSubmit();
+              event.preventDefault();
+              const button = submitButtonRef.current;
+              if (button && !button.disabled) button.form?.requestSubmit(button);
             }
           }}
           required
         />
-        <div className="form-row">
-          <div className="composer-council-summary"><strong>{members.length} üye · {reviewRounds} inceleme turu</strong><button type="button" className="secondary-button" title="Konseyler menüsünde seçili konseyin üyelerini ve tur ayarlarını düzenler." onClick={() => setView("councils")}>Konseyleri Yönet</button></div>
-          <button title="Seçili kayıtlı konsey ve incelediğiniz bağlamla yeni bir çalışma başlatır; model çağrıları ücretlenebilir." disabled={!selectedTemplate || templateModified || knowledgeBlocked || pending || loadingContinuation || (Boolean(continuationSource) && !continuationReviewed) || preparingAttachments || Boolean(limitsError) || selectedQuestion.length < 10 || (!needsContext && promptChoice === "candidate" && !revisionAudit.canSelectCandidate) || !memberConfigurationValid || !highRiskReady || (attachments.length > 0 && !members.some((member) => member.receiveAttachments === true)) || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.promptPlan || !tokenPreview.value.riskPreflight || Boolean(currentPreviewError)} type="submit">
-            {pending ? "Değerlendiriliyor…" : (tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0) ? "Açıklama sorularını aç" : "Konseyi çalıştır"}
-          </button>
-        </div>
-        {!highRiskReady ? <p className="inline-warning">Yüksek risk profili için en az bir red-team üyesi ve bir çapraz inceleme turu seçin.</p> : null}
-        <p className="hint" id="question-hint">En az 10 karakter yazın. Ctrl/⌘ + Enter ile gönderin. Seçili modellere gerçek API isteği yapılır.</p>
-        </div>
-        <div role="tabpanel" id="chat-panel-sources" aria-labelledby="chat-tab-sources" hidden={chatTab !== "sources"}><h2>Kaynaklar Ve Dosyalar</h2>        <KnowledgePanel key={knowledgePanelGeneration} runId={run?.runId} onChange={(reference, blocked) => { setKnowledgePacket(reference); setKnowledgeBlocked(blocked); }} />
+        </section>
+        <section id="chat-panel-sources" className="composer-section" aria-label="Kaynaklar ve dosyalar"><h2>Kaynaklar Ve Dosyalar</h2>        <KnowledgePanel key={knowledgePanelGeneration} runId={run?.runId} onChange={(reference, blocked) => { setKnowledgePacket(reference); setKnowledgeBlocked(blocked); }} />
         {knowledgeBlocked && <p role="status">Kaynak paketini inceleyin veya açıkça paketsiz devam etmeyi seçin.</p>}
         <details className="attachment-picker composer-disclosure"><DisclosureSummary title="Dosya ekle" description="Bu soruya PDF veya görsel ekleyin" icon="attachment" status={attachments.length > 0 ? `${attachments.length} ek` : undefined} />
         <p>Büyük (1 MiB üzeri PDF) veya tekrar kullanılan TXT/Markdown/PDF/PNG/JPEG dosyalarını Yerel bilgi kaynakları bölümüne kaydedin. Kaynak paketi seçiliyken aynı kütüphane dosyasını ayrıca tam ek olarak göndermeyin.</p>
@@ -2255,8 +2271,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             <p className="inline-warning">Ekler seçildi, fakat hiçbir üye için “Bu üyeye gönder” açık değil.</p>
           ) : null}
         </details>
-        </div>
-        <div role="tabpanel" id="chat-panel-controls" aria-labelledby="chat-tab-controls" hidden={chatTab !== "controls"}><h2>Bağlam Ve Kontroller</h2>        {originalQuestion.length >= 10 ? <details className="composer-disclosure"><DisclosureSummary title="İstemi düzenle ve karşılaştır" description="Özgün soru ve düzenlenmiş aday" icon="prompt" /><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
+        </section>
+        <section id="chat-panel-controls" className="composer-section" aria-label="Bağlam ve kontroller"><h2>Bağlam Ve Kontroller</h2>        {originalQuestion.length >= 10 ? <details className="composer-disclosure"><DisclosureSummary title="İstemi düzenle ve karşılaştır" description="Özgün soru ve düzenlenmiş aday" icon="prompt" /><PromptRevisionEditor originalQuestion={originalQuestion} candidateQuestion={promptCandidate}
           choice={promptChoice} disabled={needsContext} onCandidateChange={setPromptCandidate} onChoiceChange={setPromptChoice} /></details> : null}
         {needsContext ? <p className="hint">Önce eksik bilgi sorularını yanıtlayın; istem sürümü seçimi bu yanıttan sonra açılır.</p> : null}
         <details className="token-preview composer-disclosure"><DisclosureSummary title="Gönderilecek bağlam ve token tahmini" description="Gönderim içeriği ve tahmini giriş tokenları" icon="context" status={selectedMemoryEntryIds.length + selectedToolResultIds.length > 0 ? `${selectedMemoryEntryIds.length + selectedToolResultIds.length} seçili bağlam` : undefined} />
@@ -2287,11 +2303,11 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
           ) : <p className="hint">{compactionDraft && !continuationReviewed ? "Özeti yazıp atlanan bilgileri inceleyin; ardından gönderilecek metin ve token tahmini hazırlanır." : "Token tahmini hesaplanıyor…"}</p>}
         </details>
         {currentPreviewError ? <p className="inline-warning" role="alert">{currentPreviewError}</p> : null}
-        {!memberConfigurationValid && connections.length > 0 ? <p className="inline-warning">Konseydeki bağlantı veya model seçimlerini kontrol edin. Konseyler menüsünden seçimleri güncelleyip kaydedin.</p> : null}
+        {!memberConfigurationValid && connections.length > 0 ? <p className="inline-warning">Konseydeki bağlantı veya model seçimlerini kontrol edin. Aşağıdaki konsey yapılandırmasından seçimleri güncelleyip kaydedin.</p> : null}
         {currentRisk ? <>
           {effectiveRiskProfile === "high" ? <RiskAssessmentSummary assessment={currentRisk.assessment} /> : <details className="composer-disclosure"><DisclosureSummary title="Risk denetimi" description="Sorudaki riskler ve kontrol önerileri" icon="risk" status="Standart profil" /><RiskAssessmentSummary assessment={currentRisk.assessment} /></details>}
           {!highRiskReady ? <>
-            <button type="button" className="secondary-button" title="Konseyler menüsünü açar; gereken red-team ve tur ayarlarını burada düzenleyip kaydedebilirsiniz." onClick={() => setView("councils")}>Gerekli risk kontrollerini ekle</button>
+            <button type="button" className="secondary-button" title="Aynı sohbet penceresinde konsey yapılandırmasını açar." onClick={showCouncilEditor}>Gerekli risk kontrollerini ekle</button>
             <p className="hint">Red-team yoksa son üyenin bağlantısıyla eklenir; altı üyede son üyenin görevi değiştirilir. Göndermeden önce bağlantısını ve modelini düzenleyebilirsiniz.</p>
           </> : null}
         </> : null}
@@ -2343,30 +2359,49 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
         )}
       </details>
 
-        </div>
+        </section>
       </form>
+        {view !== "councils" && <details ref={inlineCouncilRef} className="inline-council-editor" open={inlineCouncilOpen} onToggle={event => setInlineCouncilOpen(event.currentTarget.open)}>
+          <summary>Konsey seçimi ve yapılandırma</summary>{councilManagement}
+        </details>}
+        <section className="composer-section" aria-label="Araç bağlamı">
+          <LocalToolsPanel
+            selectedResultIds={selectedToolResultIds}
+            onSelectionChange={setSelectedToolResultIds}
+            retrieveRelevant={retrieveToolContext}
+            onRetrieveRelevantChange={setRetrieveToolContext}
+          />
+        </section>
+        <div className="form-row">
+          <div className="composer-council-summary"><strong>{members.length} üye · {reviewRounds} inceleme turu</strong><button type="button" className="secondary-button" onClick={showCouncilEditor}>Konseyi düzenle</button></div>
+          <button title="Seçili kayıtlı konsey ve incelediğiniz bağlamla yeni bir çalışma başlatır; model çağrıları ücretlenebilir." disabled={!selectedTemplate || templateModified || knowledgeBlocked || pending || loadingContinuation || (Boolean(continuationSource) && !continuationReviewed) || preparingAttachments || Boolean(limitsError) || selectedQuestion.length < 10 || (!needsContext && promptChoice === "candidate" && !revisionAudit.canSelectCandidate) || !memberConfigurationValid || !highRiskReady || (attachments.length > 0 && !members.some((member) => member.receiveAttachments === true)) || tokenPreview?.key !== previewRequestKey || !tokenPreview.value.promptPlan || !tokenPreview.value.riskPreflight || Boolean(currentPreviewError)} type="submit" form="chat-submission" ref={submitButtonRef}>
+            {pending ? "Değerlendiriliyor…" : (tokenPreview?.key === previewRequestKey && (tokenPreview.value.missingContextQuestions?.length ?? 0) > 0) ? "Açıklama sorularını aç" : "Konseyi çalıştır"}
+          </button>
+        </div>
+        {!highRiskReady ? <p className="inline-warning">Yüksek risk profili için en az bir red-team üyesi ve bir çapraz inceleme turu seçin.</p> : null}
+        <p className="hint" id="question-hint">En az 10 karakter yazın. Ctrl/⌘ + Enter ile gönderin. Seçili modellere gerçek API isteği yapılır.</p>
+
+      {connectionNotice && !connectionDialog && <p role="status" className="connection-notice">{connectionNotice}</p>}
+      </div>
 
       {error ? <div className="alert error" role="alert">{error}</div> : null}
-      <div role="tabpanel" id="chat-panel-results" aria-labelledby="chat-tab-results" hidden={chatTab !== "results"}>
-      <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onReviewDeletion={setRunDeletionId} deletionPending={Boolean(runDeletionId)} />
-      {!run && !privateConversationId ? <p className="empty">Henüz açık bir çalışma sonucu yok. Kayıtlı bir müzakereyi açın veya Soru sekmesinden konsey çalıştırın.</p> : null}
-      {privateConversationId && <PrivateBranchesPanel key={privateConversationId} conversationId={privateConversationId} onClose={() => setPrivateConversationId(undefined)} />}
-      <PreflightDraftsPanel refreshKey={draftRefreshKey} focusDraftId={focusDraftId} onStarted={(created) => {
+      <div ref={clarificationRef} className="chat-clarifications">      <PreflightDraftsPanel refreshKey={draftRefreshKey} focusDraftId={focusDraftId} onStarted={(created) => {
         cancelActiveWatchRef.current?.();
         activeRunIdRef.current = created.runId;
-        setRun(created); setChatTab("results");
+        setRun(created); showOutput();
         setHistoryRefreshKey((value) => value + 1);
         if (!terminalStatuses.has(created.status)) void watchRun(created.runId).catch((reason: unknown) => {
           setError(reason instanceof Error ? reason.message : "Çalışma takibi başlatılamadı.");
         });
-      }} />
-
-
-
+      }} /></div>
+      <section ref={outputRef} id="chat-panel-results" className="chat-results" aria-label="Müzakere çıktıları">
+      <h2 className="output-heading">Müzakere çıktıları</h2>
+      <WorkspaceTabs id="output" label="Çıktı bölümleri" selected={outputTab} onSelect={setOutputTab} tabs={[
+        {id:"report",label:"Rapor"},{id:"models",label:"Model yanıtları"},{id:"reviews",label:"Çapraz incelemeler"},
+        {id:"evidence",label:"Kaynaklar ve kanıtlar"},{id:"assessment",label:"Değerlendirme"},{id:"usage",label:"Kullanım"},{id:"history",label:"Geçmiş ve dallar"}
+      ]} />
       {run ? (
         <div className="result-stack" id="council-result" aria-live="polite">
-          <RunBranchesPanel key={`${run.runId}:${historyRefreshKey}`} runId={run.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} />
-          <ConversationPanel key={`conversation:${run.runId}:${historyRefreshKey}`} runId={run.runId} onOpenRun={openSavedRun} />
           <div className={`status-card ${run.status}`}>
             <div className="status-row">
               <span>{statusLabel}</span>
@@ -2419,10 +2454,11 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
             ) : null}
           </div>
 
-          <RunUsagePanel runId={run.runId} runStatus={run.status} />
+          <div className="output-panel" role="tabpanel" id="output-panel-usage" aria-labelledby="output-tab-usage" hidden={outputTab !== "usage"}><RunUsagePanel runId={run.runId} runStatus={run.status} /></div>
 
           {report ? (
             <>
+              <div className="output-panel" role="tabpanel" id="output-panel-report" aria-labelledby="output-tab-report" hidden={outputTab !== "report"}>
               <p className="evidence-notice">
                 Ortak zemin, ayrı sayılan analiz kaynaklarının aynı metnini gösterir;
                 doğruluk kanıtı değildir. Aynı modelin farklı bağlantı veya üyelerdeki tekrarları ayrıca görünür,
@@ -2588,6 +2624,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                 </div>
               </section>
 
+              </div>
+              <div className="output-panel" role="tabpanel" id="output-panel-evidence" aria-labelledby="output-tab-evidence" hidden={outputTab !== "evidence"}>
               <ClaimContextPanel run={run} onRunUpdated={setRun} />
 
               <EvidenceCandidatePanel key={run.runId} run={run} onSourcesChanged={() => { void refreshEvidenceSources(run.runId); }} />
@@ -2767,6 +2805,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                 ) : null}
               </section>
 
+              </div>
+              <div className="output-panel" role="tabpanel" id="output-panel-assessment" aria-labelledby="output-tab-assessment" hidden={outputTab !== "assessment"}>
               <DecisionAssessmentPanel
                 runId={run.runId}
                 claims={synthesisClaims.map(({ claim }) => ({
@@ -2781,6 +2821,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                 }))}
               />
 
+              </div>
+              <div className="output-panel" role="tabpanel" id="output-panel-models" aria-labelledby="output-tab-models" hidden={outputTab !== "models"}>
               <section className="member-grid" aria-label="Model ayrıntıları">
                 {run.status === "completed" && run.providerMode === "remote" ? (
                   <p className="hint">Bir üyenin ilk yanıtını yeniden isteyebilirsiniz. Diğer ilk yanıtlar bu rapordan kopyalanır; seçili {run.reviewRounds ?? report.reviewExecution?.requestedRounds ?? 0} çapraz inceleme turu yeni birleşim üzerinde tekrar çalışır. Otomatik tekrar olmadan en fazla {1 + run.memberCount * (run.reviewRounds ?? report.reviewExecution?.requestedRounds ?? 0)} yeni sağlayıcı çağrısı yapılabilir; düşünme, web arama ve yanıt tokenları önceden kesin hesaplanamaz. Eski rapor saklanır.</p>
@@ -2819,6 +2861,8 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                 ))}
               </section>
 
+              </div>
+              <div className="output-panel" role="tabpanel" id="output-panel-reviews" aria-labelledby="output-tab-reviews" hidden={outputTab !== "reviews"}>
               {reviews.length > 0 || reviewFailures.length > 0 || report.reviewExecution ? (
                 <section className="review-section" aria-label="Çapraz incelemeler">
                   <div className="review-section-heading">
@@ -2899,12 +2943,27 @@ export function CouncilWorkbench({ view, onViewChange: setView, sidebarOpen, onS
                     ))}
                   </div>
                 </section>
-              ) : null}
+              ) : <p className="empty">Bu çalışma için çapraz inceleme kaydı yok.</p>}
+              </div>
             </>
           ) : null}
         </div>
       ) : null}
+      {!report && ["report", "models", "reviews", "evidence", "assessment"].map(tab => (
+        <div key={tab} className="output-panel" role="tabpanel" id={`output-panel-${tab}`} aria-labelledby={`output-tab-${tab}`} hidden={outputTab !== tab}>
+          <p className="empty">{run ? "Bu çalışma için henüz bir rapor yok. Çalışma durumunu yukarıdan izleyebilirsiniz." : "Henüz açık bir çalışma sonucu yok. Yukarıdan yeni müzakere başlatın veya Geçmiş ve dallar sekmesinden kayıtlı bir müzakereyi açın."}</p>
+        </div>
+      ))}
+      {!run && <div className="output-panel" role="tabpanel" id="output-panel-usage" aria-labelledby="output-tab-usage" hidden={outputTab !== "usage"}><p className="empty">Kullanım ayrıntıları için bir çalışma açın.</p></div>}
+      <div role="tabpanel" id="output-panel-history" aria-labelledby="output-tab-history" hidden={outputTab !== "history"} className="output-panel">
+        <RunHistoryPanel activeRunId={run?.runId} refreshKey={historyRefreshKey} onOpenRun={openSavedRun} onReviewDeletion={setRunDeletionId} deletionPending={Boolean(runDeletionId)} />
+        {privateConversationId && <PrivateBranchesPanel key={privateConversationId} conversationId={privateConversationId} onClose={() => setPrivateConversationId(undefined)} />}
+        {run && <>
+          <RunBranchesPanel key={`${run.runId}:${historyRefreshKey}`} runId={run.runId} refreshKey={historyRefreshKey} onOpenRun={id => openSavedRun(id, "history")} />
+          <ConversationPanel key={`conversation:${run.runId}:${historyRefreshKey}`} runId={run.runId} onOpenRun={id => openSavedRun(id, "history")} />
+        </>}
       </div>
+      </section>
       </section>
     </WorkspaceShell>
     <ConnectionImpactDialog impact={connectionImpact} draftModels={connectionImpact ? members.filter(member => member.connectionId === connectionImpact.connectionId && (connectionImpact.transportChanged || connectionImpact.removedModels.includes(member.model))).map(member => member.model) : []} onDecision={decideImpact} />

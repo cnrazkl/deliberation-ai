@@ -21,6 +21,8 @@ test("reviews template deletion, rejects stale confirmation and recovers a lost 
     });
     await page.goto("/"); const question = page.getByLabel("Sorunuz", { exact: true });
     await question.fill("Generated template deletion keeps this draft question"); await revealCouncilControls(page);
+    await page.getByLabel("Üye 1 bağlantısı", { exact: true }).selectOption(connectionId!);
+    await page.getByLabel("Üye 2 bağlantısı", { exact: true }).selectOption(connectionId!);
     await page.getByLabel("Şablon adı", { exact: true }).fill(name);
     await page.getByRole("button", { name: "Yeni Konsey Oluştur", exact: true }).click();
     const reviewButton = page.getByRole("button", { name: `${name} konseyini sil`, exact: true });

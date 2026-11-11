@@ -1,6 +1,6 @@
 import { deleteGeneratedConnection } from "./connection-cleanup";
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls, revealChatTab, saveCouncilForChat, workspaceView } from "./workspace-navigation";
+import { revealOutputTab, revealCouncilControls, revealChatTab, saveCouncilForChat, workspaceView } from "./workspace-navigation";
 import { addConnectionModels, openConnectionPanel } from "./connection-model-selection";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import {
@@ -66,9 +66,12 @@ test("shows the selected three-round limit and the saved later-round review trai
     return (await response.json() as { status: string }).status;
   }, { timeout: 20_000 }).toBe("completed");
   await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
   await page.locator(".run-history").getByRole("button", { name: "Listeyi yenile" }).click();
+    await revealOutputTab(page, "Geçmiş ve dallar");
   const entry = page.locator(`.run-history [data-run-id="${runId}"]`);
   await entry.getByRole("button", { name: "Çalışmayı aç" }).click();
+  await revealOutputTab(page, "Çapraz incelemeler");
   const review = page.getByRole("region", { name: "Çapraz incelemeler" });
   await expect(review).toContainText("6 tamamlanan inceleme");
   await expect(review).toContainText("eksiksiz tamamlanan tur: 3");
@@ -101,8 +104,11 @@ test("shows opt-in self-revision proposals beside unchanged initial claims", asy
   await expect.poll(async () => (await (await request.get(`/api/runs/${runId}`)).json() as { status: string }).status,
     { timeout: 20_000 }).toBe("completed");
   await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
   await page.locator(".run-history").getByRole("button", { name: "Listeyi yenile" }).click();
+    await revealOutputTab(page, "Geçmiş ve dallar");
   await page.locator(`.run-history [data-run-id="${runId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
+  await revealOutputTab(page, "Çapraz incelemeler");
   const review = page.getByRole("region", { name: "Çapraz incelemeler" });
   await expect(review).toContainText("Öz düzeltme önerileri · ilk iddialar korunur");
   await expect(review).toContainText("İlk iddia 1:");
@@ -337,6 +343,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(scheduleCard).toContainText("Duraklatıldı");
 
   await workspaceView(page, "Ayarlar");
+  await revealOutputTab(page, "Rapor");
   const mcpRegion = page.getByRole("region", { name: "Yerel MCP araçları" });
   const mcpName = `E2E MCP ${connectionSuffix}`;
   await mcpRegion.getByLabel("Bağlantı adı").fill(mcpName);
@@ -369,6 +376,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(reportQuality).toContainText("Mekanik iddia dökümü");
   await expect(reportQuality).toContainText("Anlamsal doğrulama yapılmadı");
   await expect(reportQuality).toContainText("dış kaynak desteği işaretli değil");
+  await revealOutputTab(page, "Kullanım");
   await expect(page.getByRole("region", { name: "Sağlayıcının bildirdiği token kullanımı" })).toContainText("Bu çalışma için sağlayıcı token sayımı bildirilmedi.");
   expect((await (await request.get(`/api/runs/${submittedRunIds[0]}`)).json() as { attachmentCount: number }).attachmentCount).toBe(2);
   expect((await request.post(`/api/runs/${submittedRunIds[0]}/export`, {
@@ -400,6 +408,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   expect(exported.requestHash).toBeUndefined();
   expect(exported.snapshotId).toBeUndefined();
   expect(exported.attachments).toBeUndefined();
+  await revealOutputTab(page, "Rapor");
   await expect(page.getByText("ORTAK ZEMİN")).toBeVisible();
   // Responsive acceptance must also cover a populated report, not only empty forms.
   const desktopViewport = page.viewportSize()!;
@@ -410,10 +419,12 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   }
   await page.setViewportSize(desktopViewport);
   await expect(page.getByText("FARKLI GÖRÜŞLER")).toBeVisible();
+  await revealOutputTab(page, "Model yanıtları");
   await expect(page.getByRole("region", { name: "Model ayrıntıları" })).toContainText("Analist A");
   await expect(page.getByRole("region", { name: "Model ayrıntıları" })).toContainText("Analist B");
   await expect(page.getByRole("region", { name: "Model ayrıntıları" })).toContainText("Kanıt Uzmanı");
   await expect(page.getByRole("region", { name: "Model ayrıntıları" })).toContainText("Red-team");
+  await revealOutputTab(page, "Çapraz incelemeler");
   await expect(page.getByRole("region", { name: "Çapraz incelemeler" })).toContainText(
     "4 tamamlanan inceleme",
   );
@@ -425,6 +436,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.getByRole("region", { name: "Çapraz incelemeler" })).toContainText(
     "koşula bağlıyor",
   );
+  await revealOutputTab(page, "Rapor");
   await expect(page.getByRole("region", { name: "Red-team karşı argümanları" })).toContainText(
     "geri dönüşü olmayan",
   );
@@ -434,12 +446,15 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(page.getByRole("region", { name: "Red-team karşı argümanları" })).toContainText(
     "RED-TEAM BASINCI",
   );
+  await revealOutputTab(page, "Çapraz incelemeler");
   await expect(page.getByRole("region", { name: "Çapraz incelemeler" })).toContainText(
     "itiraz ediyor",
   );
+  await revealOutputTab(page, "Rapor");
   await expect(page.getByText("Ortak zemin, ayrı sayılan analiz kaynaklarının")).toBeVisible();
   const sharedEvidenceState = page.locator(".report-card.shared .evidence-control select").first();
   await expect(sharedEvidenceState).toHaveValue("unsupported");
+  await revealOutputTab(page, "Kaynaklar ve kanıtlar");
   const claimContext = page.getByRole("region", { name: "İddia kapsamı ve ilişkileri" });
   await expect(claimContext).toContainText("raporda izleniyor");
   await expect(claimContext.locator(".claim-coverage")).toContainText("Her yapılandırılmış model iddiası");
@@ -472,6 +487,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(scheduleCard).toHaveCount(0);
   await workspaceView(page, "Müzakere");
   await revealChatTab(page, "Sonuçlar");
+  await revealOutputTab(page, "Kaynaklar ve kanıtlar");
   const evidenceRegion = page.getByRole("region", { name: "Kaynak bağlantılı kanıtlar" });
   await page.getByLabel("Kaynak başlığı").fill("E2E doğrulama kaynağı");
   await page.getByLabel("Kaynak bağlantısı").fill("https://example.test/e2e-evidence");
@@ -484,6 +500,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   const evidenceCard = evidenceRegion.locator(".evidence-source").filter({ hasText: "E2E doğrulama kaynağı" });
   await expect(evidenceCard).toBeVisible();
   await expect(evidenceCard).toContainText("Tarayıcı akışında mühürlenen kaynak alıntısı.");
+  await revealOutputTab(page, "Değerlendirme");
   const decisionRegion = page.getByRole("region", { name: "Jev kaynak incelemesi" });
   const decisionConnection = `E2E TypeSafe ${connectionSuffix}`;
   await decisionRegion.getByLabel("Bağlantı adı").fill(decisionConnection);
@@ -496,12 +513,14 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(
     decisionRegion.getByRole("button", { name: "Jev ile gözlem incelemesi" }),
   ).toBeDisabled();
+  await revealOutputTab(page, "Kaynaklar ve kanıtlar");
   const reviewStatus = evidenceCard.getByLabel("E2E doğrulama kaynağı inceleme durumu");
   const freshnessStatus = evidenceCard.getByLabel("E2E doğrulama kaynağı güncellik durumu");
   await reviewStatus.selectOption("verified");
   await expect(reviewStatus).toHaveValue("verified");
   await freshnessStatus.selectOption("current");
   await expect(freshnessStatus).toHaveValue("current");
+  await revealOutputTab(page, "Rapor");
   await sharedEvidenceState.selectOption("externally-verified");
   await expect(sharedEvidenceState).toHaveValue("externally-verified");
   await expect(reportQuality).not.toContainText("dış kaynak desteği işaretli değil");
@@ -529,8 +548,10 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await expect(savedMemory.locator('input[type="checkbox"]')).toBeChecked();
   await revealChatTab(page, "Sonuçlar");
   await sharedEvidenceState.selectOption("unsupported");
+  await revealOutputTab(page, "Değerlendirme");
   await decisionRegion.getByRole("button", { name: "TypeSafe bağlantısını kaldır" }).click();
   await expect(decisionRegion.getByLabel("TypeSafe API anahtarı")).toBeVisible();
+  await revealOutputTab(page, "Kaynaklar ve kanıtlar");
   await evidenceCard.getByRole("button", { name: "Kaydı sil" }).click();
   await expect(evidenceCard).toHaveCount(0);
 
@@ -539,6 +560,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page.getByRole("button", { name: "Konseyi çalıştır" }).click();
   await expect(page.getByText("Kısmi sonuç", { exact: true })).toBeVisible({ timeout: 10_000 });
   await expect(page.getByText("Bu çalışma kullanıcı tarafından seçilen 1 bellek kaydını kullandı.")).toBeVisible();
+  await revealOutputTab(page, "Model yanıtları");
   await expect(page.getByRole("region", { name: "Model ayrıntıları" })).toContainText(
     "1 geçmiş bağlam kaydı",
   );
@@ -627,6 +649,7 @@ test("runs a durable council and exposes a partial member failure", async ({ pag
   await page.reload();
   const currentQuestion = await page.getByLabel("Sorunuz").inputValue();
   await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
   const savedRun = page.locator(`.run-history-list article[data-run-id="${submittedRunIds[0]}"]`);
   await expect(savedRun).toBeVisible();
   await savedRun.getByRole("button", { name: "Çalışmayı aç" }).click();

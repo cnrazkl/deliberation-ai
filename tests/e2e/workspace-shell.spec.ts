@@ -37,6 +37,30 @@ async function fixtures(page: Page) {
   });
 }
 
+test("keeps new-chat preparation and connection setup on one screen while output tabs change", async ({ page }) => {
+  await fixtures(page);
+  let dispatches = 0;
+  page.on("request", request => { if (request.method() === "POST" && new URL(request.url()).pathname === "/api/runs") dispatches++; });
+  await page.goto("/");
+  const preparation = page.getByRole("region", { name: "Yeni müzakere hazırlığı", exact: true });
+  const draft = preparation.getByLabel("Sorunuz", { exact: true });
+  await draft.fill("Bu soru aynı sohbet penceresinde korunmalı.");
+  await expect(preparation.getByRole("region", { name: "Kaynaklar ve dosyalar", exact: true })).toBeVisible();
+  await expect(preparation.getByRole("region", { name: "Bağlam ve kontroller", exact: true })).toBeVisible();
+  await preparation.getByRole("button", { name: "Konseyi bu sohbette düzenle", exact: true }).click();
+  const editor = preparation.getByRole("region", { name: "Konsey yapılandırması", exact: true });
+  await expect(editor.getByLabel("Değerlendirme profili", { exact: true })).toBeVisible();
+  await editor.getByRole("button", { name: "Bağlantı ekle", exact: true }).click();
+  const connection = page.getByRole("dialog", { name: "Yeni Bağlantı Ekle", exact: true });
+  await expect(connection).toBeVisible();
+  await connection.getByRole("button", { name: "Bağlantı panelini kapat", exact: true }).click();
+  await page.getByRole("tab", { name: "Kullanım", exact: true }).click();
+  await expect(page.getByRole("tabpanel", { name: "Kullanım", exact: true })).toBeVisible();
+  await expect(draft).toBeVisible();
+  await expect(draft).toHaveValue("Bu soru aynı sohbet penceresinde korunmalı.");
+  expect(dispatches).toBe(0);
+});
+
 for (const { width, zoom } of [...[320, 390, 640, 820, 1024, 1440].map((width) => ({ width, zoom: 1 })), { width: 1440, zoom: 2 }]) {
   test(`expanded workspace fits ${width}px at ${zoom}x with long attachments`, async ({ page }) => withOwner(testOwnerId(), async () => {
     await page.setViewportSize({ width, height: width === 820 ? 390 : 900 });
@@ -84,7 +108,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   const chat = page.getByRole("region", { name: "Konsey çalışma alanı", exact: true });
   const sidebar = page.getByRole("complementary", { name: "Müzakere geçmişi ve gezinme" });
   await expect(chat).toBeVisible();
-  await expect(page.getByRole("region", { name: "Konsey yönetimi", exact: true })).toBeHidden();
+  await expect(page.getByRole("region", { name: "Konsey kütüphanesi", exact: true })).toBeHidden();
   await expect(page.getByRole("region", { name: "Ayarlar alanı", exact: true })).toBeHidden();
   await expect(page.getByRole("region", { name: "Zamanlayıcı alanı", exact: true })).toBeHidden();
   await expect(sidebar.getByText(question, { exact: true }).first()).toBeVisible();
@@ -92,7 +116,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   await draft.fill("Bölümler arasında korunması gereken soru taslağı");
   await workspaceView(page, "Ayarlar");
   await expect(chat).toBeHidden();
-  await expect(page.getByRole("region", { name: "Yerel MCP araçları", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Yerel MCP araçları", exact: true })).toBeHidden();
   await expect(page.locator(".diagnostics-card > summary")).toContainText("Worker");
   await sidebar.getByLabel("Tema").selectOption("dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -122,7 +146,7 @@ test("keeps history at the left, separates settings/schedules, preserves drafts 
   await sidebar.getByRole("button", { name: "＋ Yeni Müzakere", exact: true }).click();
   await expect(draft).toHaveValue("");
   await expect(draft).toBeFocused();
-  await expect(page.getByRole("region", { name: "Konsey yapılandırması", exact: true })).toHaveCount(0);
+  await expect(page.locator(".inline-council-editor")).toBeAttached();
   await page.screenshot({ path: "test-results/workspace-refresh-chat.png", fullPage: true });
   expect(writes).toBe(0);
 }));

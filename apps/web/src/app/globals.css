@@ -1377,6 +1377,27 @@ input[type="file"]::file-selector-button:hover { background: var(--surface-subtl
 .connection-impact-list li { display: grid; gap: 6px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; overflow-wrap: anywhere; }
 .connection-impact-list small { color: var(--muted); }
 .workspace[hidden], .question-card[hidden], [role="tabpanel"][hidden] { display: none; }
+
+/* Keep preparation in one conversation; reserve tabs for inspectable outputs. */
+.chat-preparation, .chat-composer-form, .composer-section, .chat-results, .output-panel { display: grid; gap: 20px; min-width: 0; }
+.chat-composer-form > section, .chat-composer-form > details { min-width: 0; }
+.chat-composer-form #question { display: block; width: 100%; min-height: 170px; margin: 12px 0 0; padding: 18px; font-size: 16px; line-height: 1.7; border: 1px solid var(--field-line); border-radius: 14px; background: var(--surface-subtle); color: var(--ink); }
+.composer-section { border-top: 1px solid var(--line); padding-top: 20px; }
+.composer-section > h2 { margin: 0; font-size: 17px; }
+.inline-council-editor { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--surface-subtle); }
+.inline-council-editor > summary { cursor: pointer; min-height: 44px; align-content: center; font-weight: 700; }
+.inline-council-editor[open] > summary { margin-bottom: 18px; }
+.council-management { display: grid; gap: 20px; min-width: 0; }
+.chat-connection-action { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+.member-model-settings { align-self: end; font-size: 12px; }
+.chat-results, .chat-clarifications, .inline-council-editor { scroll-margin-top: calc(var(--account-bar-height, 68px) + 16px); }
+.output-heading { margin: 0; font-size: 22px; }
+.chat-results > .workspace-tabs { margin: 0; }
+.output-panel > .empty { border: 1px dashed var(--line); border-radius: 14px; padding: 24px; }
+@container workspace (max-width: 600px) {
+  .chat-results .workspace-tabs button { min-width: 100px; padding: 12px 8px; font-size: 13px; }
+  .inline-council-editor { padding: 12px; }
+}
 .council-library { margin-bottom: 24px; }
 .council-library-heading, .council-preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .council-library-heading { margin-bottom: 14px; }

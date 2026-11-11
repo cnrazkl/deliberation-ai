@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealConversationOptions, workspaceView } from "./workspace-navigation";
+import { revealOutputTab, revealConversationOptions, workspaceView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import {test, expect, testOwnerId } from "./authenticated-test";
 import { eq, sql } from "drizzle-orm";
@@ -42,6 +42,7 @@ test("private drafts preserve the council draft, retry one committed message, fo
     await page.getByLabel("Sorunuz", { exact: true }).fill("Council draft must remain unchanged");
     const card = page.locator(`[data-conversation-id="${conversationId}"]`);
     await card.getByRole("button", { name: "Müzakereyi aç", exact: true }).click();
+    await revealOutputTab(page, "Model yanıtları");
     const model = page.locator("details.member-card").filter({ has: page.locator("summary").filter({ hasText: "Private selected member" }) });
     await model.locator("summary").click();
     await model.getByRole("button", { name: "Bu yanıtla özel dal taslağı aç" }).click();

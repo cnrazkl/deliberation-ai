@@ -115,5 +115,5 @@ test("high-risk assessment and blocking guidance stay visible", async ({ page })
   await expect(page.getByLabel("Risk ön değerlendirmesi")).toContainText("Yüksek risk");
   await revealChatTab(page, "Soru", false);
   await expect(page.locator(".question-card .inline-warning").filter({ hasText: "Yüksek risk profili" })).toBeVisible();
-  await expect(page.locator('.question-card button[type="submit"]')).toBeDisabled();
+  await expect(page.locator('button[form="chat-submission"]')).toBeDisabled();
 });

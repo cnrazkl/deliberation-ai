@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
 import { expect, test } from "./authenticated-test";
-import { workspaceView } from "./workspace-navigation";
+import { revealOutputTab, workspaceView } from "./workspace-navigation";
 import { openConnectionPanel } from "./connection-model-selection";
 import { deleteGeneratedConnection } from "./connection-cleanup";
 const settings = { provider: "openai-compatible", apiKey: "fixture-key-secret", endpointPreset: "litellm", reasoningProtocol: "none", structuredOutputMode: "json-object", selectedModels: ["model-a", "model-b"] };
@@ -27,9 +27,15 @@ test("chat runs the selected saved council through the worker and exposes both i
     await page.getByLabel("Sorunuz", { exact: true }).fill("Compare two ways to organize project notes briefly.");
     const start = page.getByRole("button", { name: "Konseyi çalıştır", exact: true }); await expect(start).toBeEnabled(); await start.click();
     await expect(page.getByText("Konsey tamamlandı", { exact: true })).toBeVisible({ timeout: 20000 });
-    await expect(page.getByRole("tab", { name: "Sonuçlar", exact: true })).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator("#council-result")).toContainText("model-a"); await expect(page.locator("#council-result")).toContainText("model-b"); expect(calls).toBe(2);
-    await page.getByRole("tab", { name: "Soru", exact: true }).click(); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Compare two ways to organize project notes briefly.");
+    await expect(page.getByRole("tab", { name: "Rapor", exact: true })).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("tab", { name: "Rapor", exact: true }).press("ArrowRight");
+    const replies = page.getByRole("tabpanel", { name: "Model yanıtları", exact: true });
+    await expect(replies).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Model yanıtları", exact: true })).toBeFocused();
+    await expect(page.locator("#output-panel-report")).toBeHidden();
+    await expect(replies).toContainText("model-a"); await expect(replies).toContainText("model-b"); expect(calls).toBe(2);
+    await expect(page.getByLabel("Sorunuz", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Compare two ways to organize project notes briefly.");
   } finally {
     const preview = await (await request.get(`/api/council-templates/${template.id}/deletion`)).json();
     await request.post(`/api/council-templates/${template.id}/deletion`, { data: { templateId: template.id, fingerprint: preview.fingerprint, confirmContentDeletion: true, acknowledgeRetainedCopies: true } });
@@ -91,7 +97,7 @@ test("debug displays and exports only the current unprimed request, provider res
   } finally { await deleteGeneratedConnection(request, `/api/provider-connections?id=${connection.id}`); await new Promise<void>(resolve => server.close(() => resolve())); }
 });
 
-test("model removal reviews dependencies, invalidates chat selection and is repaired in the separate council menu", async ({ page, request }) => {
+test("model removal reviews dependencies, invalidates chat selection and is repaired in the chat editor", async ({ page, request }) => {
   const connection = await (await request.post("/api/provider-connections", { data: { ...settings, label: `Dependency fixture ${randomUUID()}`, baseUrl: "http://127.0.0.1:1/v1" } })).json();
   const members = defaultFakeCouncilMembers.map(member => ({ ...member, provider: "openai-compatible", connectionId: connection.id, model: "model-a" }));
   const template = await (await request.post("/api/council-templates", { data: { requestId: randomUUID(), name: `Dependency council ${randomUUID()}`, members, settings: { reviewRounds: 0, selfRevisionEnabled: false } } })).json();
@@ -110,12 +116,12 @@ test("model removal reviews dependencies, invalidates chat selection and is repa
     await expect(models.getByRole("status")).toContainText("kaydedildi"); await page.keyboard.press("Escape"); await workspaceView(page, "Müzakere");
     await expect(pool.getByLabel("Kayıtlı Konsey").locator(`option[value="${template.id}"]`)).toHaveJSProperty("disabled", true); await expect(page.getByRole("button", { name: "Konseyi çalıştır", exact: true })).toBeDisabled();
     const rejected = await request.post("/api/runs", { data: { idempotencyKey: randomUUID(), question: "Compare two ways to organize notes briefly.", members, reviewRounds: 0, providerMode: "remote" } }); expect(rejected.status()).toBe(422); expect((await rejected.json()).code).toBe("council_model_unavailable");
-    await workspaceView(page, "Konseyler"); await page.getByLabel("Üye 1 modeli", { exact: true }).selectOption("model-b"); await page.getByLabel("Üye 2 modeli", { exact: true }).selectOption("model-b");
+    await pool.getByRole("button", { name: "Konseyi bu sohbette düzenle", exact: true }).click();
+    await page.getByLabel("Üye 1 modeli", { exact: true }).selectOption("model-b"); await page.getByLabel("Üye 2 modeli", { exact: true }).selectOption("model-b");
     const editor = page.getByRole("region", { name: "Konsey kaydı", exact: true });
     await editor.getByRole("button", { name: "Değişiklikleri Kaydet", exact: true }).click(); await expect(editor.getByRole("status")).toContainText("kaydedildi");
     const saved = (await (await request.get("/api/council-templates")).json()).templates.find((item: { id: string }) => item.id === template.id); expect(saved.members.every((member: { model: string }) => member.model === "model-b")).toBe(true);
-    await workspaceView(page, "Müzakere"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Compare two ways to organize notes briefly.");
-    for (const name of ["Kaynaklar Ve Dosyalar", "Bağlam Ve Kontroller", "Soru"]) await page.getByRole("tab", { name, exact: true }).click();
+    await revealOutputTab(page, "Kaynaklar ve kanıtlar");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Compare two ways to organize notes briefly."); await expect(page.getByRole("button", { name: "Konseyi çalıştır", exact: true })).toBeEnabled();
   } finally {
     const preview = await (await request.get(`/api/council-templates/${template.id}/deletion`)).json();

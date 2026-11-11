@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls, revealChatTab } from "./workspace-navigation";
+import { revealOutputTab, revealCouncilControls, revealChatTab } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, testOwnerId } from "./authenticated-test";
 import { eq, inArray, sql } from "drizzle-orm";
@@ -35,6 +35,7 @@ test("discovers saved conversations, paginates and opens a result without changi
     await revealCouncilControls(page);
     const selectedConnection = await page.getByRole("combobox", { name: "Üye 1 bağlantısı", exact: true }).inputValue();
     await library.locator(`[data-conversation-id="${view.conversationId}"]`).getByRole("button", { name: "Müzakereyi aç", exact: true }).click();
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await expect(page.getByRole("region", { name: "Müzakere kaydı", exact: true })).toBeVisible();
     await expect(page.locator("#council-result")).toBeVisible();
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);

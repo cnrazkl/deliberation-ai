@@ -1,4 +1,4 @@
-import { revealChatTab } from "./workspace-navigation";
+import { revealOutputTab, revealChatTab } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { eq, inArray } from "drizzle-orm";
 import { defaultFakeCouncilMembers } from "@deliberation-ai/contracts";
@@ -52,9 +52,9 @@ for (const pending of [false, true]) test(`conversation deletion ${pending ? "sh
       { id: operationId, runId, memberId: "member-a", provider: "fake", model: "offline-debug-model", status: pending ? "outcome_unknown" : "retry_authorized", attempt: 1, requestFingerprint: "fixture", errorCode: "remote_outcome_unknown" },
       { id: randomUUID(), runId, memberId: "member-a", provider: "fake", model: "offline-debug-model", status: "discarded", attempt: 2, requestFingerprint: "fixture" },
     ]);
-    await page.goto("/"); await revealChatTab(page, "Sonuçlar"); const history = page.locator(`.run-history-list [data-run-id="${runId}"]`); await expect(history).toBeVisible();
+    await page.goto("/"); await revealOutputTab(page, "Geçmiş ve dallar"); const history = page.locator(`.run-history-list [data-run-id="${runId}"]`); await expect(history).toBeVisible();
     await expect(history.locator("small")).toHaveCount(0); await history.getByRole("button", { name: "Çalışmayı aç", exact: true }).click(); await expect(page.locator("#council-result")).toBeVisible();
-    await history.getByRole("button", { name: "Çalışmayı Sil", exact: true }).click(); await expect(page.locator(".sidebar-history [aria-label='Çalışma içeriği silme önizlemesi']")).toHaveCount(0);
+    await revealOutputTab(page, "Geçmiş ve dallar"); await history.getByRole("button", { name: "Çalışmayı Sil", exact: true }).click(); await expect(page.locator(".sidebar-history [aria-label='Çalışma içeriği silme önizlemesi']")).toHaveCount(0);
     await page.getByRole("dialog", { name: "Çalışmayı Sil" }).getByRole("button", { name: "Silmeden vazgeç" }).click();
     const card = page.locator(`[data-conversation-id="${conversationId}"]`); await expect(card.locator(".conversation-options")).toHaveCount(0); await expect(card.getByRole("button", { name: "Özel dal taslaklarını göster", exact: true })).toBeVisible();
     await card.getByRole("button", { name: "Müzakereyi Sil", exact: true }).click(); const dialog = page.getByRole("dialog", { name: "Müzakereyi Sil", exact: true });

@@ -4,7 +4,7 @@ import { revealChatTab, workspaceView } from "./workspace-navigation";
 for (const theme of ["light", "dark"] as const) for (const width of [320, 960, 1440]) {
   test(`settings and council form controls have spacing at ${width}px in ${theme}`, async ({ page }, info) => {
     let mutations = 0;
-    page.on("request", request => { if (request.method() !== "GET" && !request.url().includes("/api/token-preview")) mutations += 1; });
+    page.on("request", request => { if (request.method() !== "GET" && new URL(request.url()).pathname !== "/api/runs/token-preview") mutations += 1; });
     await page.setViewportSize({ width, height: 975 });
     await page.goto("/");
     await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);

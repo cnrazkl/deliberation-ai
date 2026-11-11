@@ -43,7 +43,7 @@ for (const highRisk of [false, true]) {
     const question = page.getByLabel("Sorunuz", { exact: true });
     const draft = "Renk paletlerini hangi ölçütlerle karşılaştırmalıyım?";
     await question.fill(draft);
-    const submit = page.locator('.question-card button[type="submit"]');
+    const submit = page.locator('button[form="chat-submission"]');
     await expect(submit).toBeEnabled(); await submit.click();
     await expect(page.locator(".workspace-view > .error")).toBeVisible();
     expect(attempts).toHaveLength(1);

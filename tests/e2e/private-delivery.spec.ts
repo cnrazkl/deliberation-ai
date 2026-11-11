@@ -1,3 +1,4 @@
+import { revealOutputTab } from "./workspace-navigation";
 import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
@@ -68,11 +69,14 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
     await page.goto("/");
     const entry = page.getByRole("region", { name: "Kayıtlı müzakereler", exact: true }).locator("article").filter({ hasText: sourceId });
     await entry.getByRole("button", { name: "Müzakereyi aç", exact: true }).click();
+    await revealOutputTab(page, "Model yanıtları");
     const model = page.locator("details.member-card").filter({ has: page.locator("summary").filter({ hasText: `Private worker ${sourceId}` }) });
     await model.locator("summary").click();
     await model.getByRole("button", { name: "Bu yanıtla özel dal taslağı aç" }).click();
     await page.getByRole("region", { name: "Özel dal kaynak önizlemesi" }).getByRole("button", { name: "Özel dalı kaydet" }).click();
     const panel = page.getByRole("region", { name: "Özel dal taslakları", exact: true });
+    await expect(panel).toBeVisible();
+    await revealOutputTab(page, "Geçmiş ve dallar");
     const councilUsage = page.getByRole("group", { name: "Müzakerenin konsey kullanım özeti", exact: true });
     await councilUsage.locator("summary").click();
     await councilUsage.getByRole("button", { name: "Konsey kullanımını getir" }).click();
@@ -94,6 +98,7 @@ test(`${provider} reviewed private delivery survives a lost enqueue response, re
       await expect(councilUsage).not.toContainText("Konsey işlem kaydı: 1");
       await page.unroute(`**/api/conversations/${conversationId}/council-usage`);
     }
+    await revealOutputTab(page, "Model yanıtları");
     await panel.getByLabel("Özel yanıt çıktı sınırı").selectOption("256");
     await panel.getByLabel("Özel mesaj taslağı").fill("Explain SQL joins in this private follow-up");
     await panel.getByRole("button", { name: "Taslağı dala kaydet" }).click();

@@ -1,4 +1,4 @@
-import { revealChatTab } from "./workspace-navigation";
+import { revealOutputTab, revealChatTab } from "./workspace-navigation";
 import { withOwner } from "@deliberation-ai/persistence";
 import { randomUUID } from "node:crypto";
 import { expect, test, testOwnerId } from "./authenticated-test";
@@ -33,20 +33,21 @@ test("reviews run deletion, preserves the draft, rejects stale state and manuall
     expect((await request.post(endpoint, { data: "x".repeat(4_097), headers: { "Content-Type": "application/json" } })).status()).toBe(413);
     expect((await request.get(`/api/runs/${id}/deletion-receipt`)).status()).toBe(404);
     await page.goto("/");
-    await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
     const history = page.locator("details.run-history"); const card = history.locator(`[data-run-id="${id}"]`);
     await expect(card).toBeVisible();
     await revealChatTab(page, "Soru");
     await page.getByLabel("Sorunuz", { exact: true }).fill("Owner draft preserved after run deletion");
-    await revealChatTab(page, "Sonuçlar");
     await card.getByRole("button", { name: "Çalışmayı aç", exact: true }).click();
     await expect(page.locator("#council-result")).toBeVisible();
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await card.getByRole("button", { name: "Çalışmayı Sil" }).click();
     const preview = page.getByRole("region", { name: "Çalışma içeriği silme önizlemesi" });
     await expect(preview.getByRole("checkbox")).toBeVisible();
     await expect(preview.getByRole("button", { name: "Sil", exact: true })).toBeDisabled();
     await preview.getByRole("button", { name: "Silmeden vazgeç" }).click(); expect((await request.get(`/api/runs/${id}`)).status()).toBe(200);
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Owner draft preserved after run deletion");
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await card.getByRole("button", { name: "Çalışmayı Sil" }).click(); await preview.getByRole("checkbox").check();
     await getDatabase().update(providerOperations).set({ inputTokens: 1 }).where(eq(providerOperations.id, op));
     await preview.getByRole("button", { name: "Sil", exact: true }).click();
@@ -97,11 +98,12 @@ test("run deletion preview blocks copied context and running work without genera
       { ownerId: testOwnerId(), conversationId, runId: child, kind: "continuation-full", sourceRunId: source, createdAt: sql`'2400-01-09'::timestamptz` },
     ]);
     const active = await (await request.get(`/api/runs/${child}/deletion`)).json(); expect(active.blockedReasons).toContain("active_run");
-    await page.goto("/"); await revealChatTab(page, "Sonuçlar"); const history = page.locator("details.run-history"); const card = history.locator(`[data-run-id="${source}"]`);
+    await page.goto("/"); await revealOutputTab(page, "Geçmiş ve dallar"); const history = page.locator("details.run-history"); const card = history.locator(`[data-run-id="${source}"]`);
     await expect(card).toBeVisible();
     await revealChatTab(page, "Soru");
     await page.getByLabel("Sorunuz", { exact: true }).fill("Draft kept for blocked deletion");
     await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await card.getByRole("button", { name: "Çalışmayı Sil" }).click();
     const preview = page.getByRole("region", { name: "Çalışma içeriği silme önizlemesi" });
     await expect(preview).toContainText("kopyaları var"); await expect(preview).toContainText(child);

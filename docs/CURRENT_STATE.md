@@ -1,6 +1,15 @@
 # Current state
 
-Updated: 17 October 2026 (council editor and explicit conversation archive)
+Updated: 11 November 2026 (unified conversation workspace)
+
+## Unified conversation workspace
+
+Question, sources and attachments, context and controls, inline council editing,
+provider setup and clarification drafts share the Müzakere workspace. Outputs use
+seven keyboard-accessible tabs for report, model answers, cross-reviews, evidence,
+assessment, usage and history. The preparation draft remains available across the
+output tabs. The workspace continues to use the existing run and history APIs.
+Deployment and live acceptance are pending for this source tree.
 
 ## Council editor and explicit archive - deployed and verified
 

@@ -15,8 +15,16 @@ export async function revealCouncilControls(page: Page) {
   await workspaceView(page, "Konseyler");
 }
 export async function revealChatTab(page: Page, tab: "Soru" | "Kaynaklar Ve Dosyalar" | "Bağlam Ve Kontroller" | "Sonuçlar", expand = true) {
-  await workspaceView(page, "Müzakere"); await page.getByRole("tab", { name: tab, exact: true }).click();
-  if (expand) await page.locator('[id^="chat-panel-"]:not([hidden]) details').evaluateAll(items => items.forEach(item => { (item as HTMLDetailsElement).open = true; }));
+  if (tab === "Sonuçlar") { await revealOutputTab(page, "Rapor"); return; }
+  if (!await page.getByRole("region", { name: "Konsey çalışma alanı", exact: true }).isVisible()) await workspaceView(page, "Müzakere");
+  const id = tab === "Soru" ? "question" : tab === "Kaynaklar Ve Dosyalar" ? "sources" : "controls";
+  const section = page.locator(`#chat-panel-${id}`);
+  if (expand) await section.locator("details").evaluateAll(items => items.forEach(item => { (item as HTMLDetailsElement).open = true; }));
+  await section.scrollIntoViewIfNeeded();
+}
+export async function revealOutputTab(page: Page, name: "Rapor" | "Model yanıtları" | "Çapraz incelemeler" | "Kaynaklar ve kanıtlar" | "Değerlendirme" | "Kullanım" | "Geçmiş ve dallar") {
+  if (!await page.getByRole("region", { name: "Konsey çalışma alanı", exact: true }).isVisible()) await workspaceView(page, "Müzakere");
+  await page.getByRole("tablist", { name: "Çıktı bölümleri", exact: true }).getByRole("tab", { name, exact: true }).click();
 }
 export async function saveCouncilForChat(page: Page, name = `Browser council ${Date.now()}`) {
   await revealCouncilControls(page);

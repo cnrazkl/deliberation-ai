@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls, revealChatTab, saveCouncilForChat } from "./workspace-navigation";
+import { revealOutputTab, revealCouncilControls, revealChatTab, saveCouncilForChat } from "./workspace-navigation";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -44,6 +44,7 @@ test("reviews full history, starts a fresh council against a local mock and expo
     expect(sent).toHaveLength(2);
     await page.goto("/"); await revealCouncilControls(page);
     await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await page.locator(`[data-run-id="${sourceId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await page.getByRole("button", { name: "Bu rapordan yeni soruyla devam et", exact: true }).click();
     const history = page.getByRole("region", { name: "Yeni çalışmanın geçmiş bağlamı" });
@@ -86,23 +87,25 @@ test("reviews full history, starts a fresh council against a local mock and expo
     const invalid = await request.post("/api/runs", { data: { question, idempotencyKey: randomUUID(), providerMode: "remote", reviewRounds: 0, members, continuationSource: { runId: sourceId, expectedSha256: "0".repeat(64) } } });
     expect(invalid.status()).toBe(409);
     expect(sent).toHaveLength(4);
+    await revealOutputTab(page, "Geçmiş ve dallar");
     const branches = page.getByRole("region", { name: "Çalışma dalları", exact: true });
     await expect(branches).toContainText("Tam geçmişle devam");
     await revealChatTab(page, "Soru");
     const draft = `Gezinirken korunacak soru taslağı ${randomUUID()}`;
     await page.getByLabel("Sorunuz", { exact: true }).fill(draft);
-    await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await branches.locator(`[data-branch-run-id="${sourceId}"]`).getByRole("button", { name: "Bağlı çalışmayı aç" }).click();
     await expect(branches).toContainText("Bağımsız çalışma");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);
     await expect(page.locator("#chat-panel-question")).toContainText(sourceId);
-    await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await branches.locator(`[data-branch-run-id="${childId}"]`).getByRole("button", { name: "Bağlı çalışmayı aç" }).click();
     await expect(branches).toContainText("Tam geçmişle devam");
     await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue(draft);
     expect(sent).toHaveLength(4);
     expect((await request.get(`/api/runs/${childId}/branches?childrenBefore=invalid`)).status()).toBe(400);
     expect((await request.get(`/api/runs/${randomUUID()}/branches`)).status()).toBe(404);
+    await revealOutputTab(page, "Geçmiş ve dallar");
     const conversationPanel = page.getByRole("region", { name: "Müzakere kaydı", exact: true });
     await expect(conversationPanel).toContainText("2 çalışma");
     const conversationResponse = await request.get(`/api/runs/${childId}/conversation`);
@@ -130,6 +133,7 @@ test("reviews full history, starts a fresh council against a local mock and expo
     expect(mdFile.suggestedFilename()).toBe(`deliberationai-conversation-${conversation.conversationId}.md`);
     const mdText = await readFile((await mdFile.path())!, "utf8");
     for (const text of [sourceId, childId, "Azınlık önerisi", "# DeliberationAI müzakere geçmişi", "## Bağımsız ilk tur yanıtları", "continuationContext"]) expect(mdText).toContain(text);
+    await revealOutputTab(page, "Rapor");
     const synthesisDownload = page.waitForEvent("download");
     await page.getByRole("button", { name: "Sentezi indir (MD)", exact: true }).click();
     const synthesisFile = await synthesisDownload;
@@ -195,6 +199,7 @@ test("reviews a manual summary and omissions, invalidates approval on edits and 
     const packet = await packetResponse.json() as ContinuationCompactionPacket;
     await page.goto("/"); await revealCouncilControls(page);
     await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await page.locator(`[data-run-id="${sourceId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
     await page.getByRole("button", { name: "Geçmişi kısaltarak yeni soruyla devam et", exact: true }).click();
     const editor = page.getByRole("region", { name: "Geçmişi elle kısaltma", exact: true });

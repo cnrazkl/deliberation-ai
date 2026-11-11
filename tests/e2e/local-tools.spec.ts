@@ -32,7 +32,7 @@ test("keeps a selected MCP result when deletion fails and allows retry", async (
       : { json: { deleted: true } });
   });
 
-  await page.goto("/"); await workspaceView(page, "Ayarlar");
+  await page.goto("/"); await workspaceView(page, "Müzakere");
   const panel = page.getByRole("region", { name: "Yerel MCP araçları" });
   const card = panel.locator(".mcp-result-list article").filter({ hasText: "Yerel test sonucu" });
   await expect(card).toBeVisible();

@@ -1,5 +1,5 @@
 import { withOwner } from "@deliberation-ai/persistence";
-import { revealCouncilControls, revealChatTab, saveCouncilForChat, mockCouncilStorage, workspaceView } from "./workspace-navigation";
+import { revealOutputTab, revealCouncilControls, revealChatTab, saveCouncilForChat, mockCouncilStorage, workspaceView } from "./workspace-navigation";
 import { createServer, type Server } from "node:http";
 import {expect, test, testOwnerId } from "./authenticated-test";
 import type { ExecutionLimits } from "@deliberation-ai/contracts";
@@ -64,7 +64,9 @@ test("reruns only the selected member against a local mock endpoint", async ({ p
 
     await page.goto("/"); await revealCouncilControls(page);
     await revealChatTab(page, "Sonuçlar");
+    await revealOutputTab(page, "Geçmiş ve dallar");
     await page.locator(`[data-run-id="${sourceRunId}"]`).getByRole("button", { name: "Çalışmayı aç" }).click();
+    await revealOutputTab(page, "Kullanım");
     await expect(page.getByRole("region", { name: "Gönderim rezervasyonu" })).toContainText("2 çağrı için 2.048 yanıt tokenı ayrıldı.");
     await expect(page.getByRole("region", { name: "Token maliyet tahmini", exact: true })).toContainText("0.000132000000 USD");
     await expect(page.getByRole("region", { name: "Gözden geçirilmiş fatura kayıtları" })).toContainText("Eşleştirilmiş fatura tutarı yok");
@@ -121,6 +123,7 @@ test("reruns only the selected member against a local mock endpoint", async ({ p
     await expect(page.getByText(/Eski eşleştirme ara toplama katılmaz/)).toBeVisible();
     await expect(page.getByRole("region", { name: "Token maliyet tahmini", exact: true })).toContainText("0.000132000000 USD");
     await recordProviderPrice({ ...observation, inputUsdPerMillion: "4" });
+    await revealOutputTab(page, "Model yanıtları");
     await expect(page.getByText("en fazla 1 yeni sağlayıcı çağrısı", { exact: false })).toBeVisible();
     const firstMember = page.locator(".member-card").first();
     await firstMember.locator("summary").click();
@@ -140,6 +143,7 @@ test("reruns only the selected member against a local mock endpoint", async ({ p
     expect(sentMaxOutputTokens).toEqual([1_024, 1_024, 1_024]);
     expect(attemptKeys).toHaveLength(2);
     expect(attemptKeys[0]).toBe(attemptKeys[1]);
+    await revealOutputTab(page, "Kullanım");
     const usagePanel = page.getByRole("region", { name: "Sağlayıcının bildirdiği token kullanımı" });
     await expect(usagePanel.getByRole("region", { name: "Token maliyet tahmini", exact: true })).toContainText("0.000084000000 USD");
     await expect(usagePanel.getByRole("region", { name: "Gözden geçirilmiş fatura kayıtları" })).toContainText("Eşleştirilmiş fatura tutarı yok");

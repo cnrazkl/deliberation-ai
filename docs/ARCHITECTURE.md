@@ -44,7 +44,13 @@ CouncilLibrary provides compact preview/edit/delete cards; CouncilEditorActions 
 creation/update/copy controls below member configuration. RunHistoryPanel delegates
 deletion to the workbench's main-area dialog. ConversationLibraryPanel exposes
 private drafts directly; clickable history titles open existing chat results.
-WorkspaceTabs hides mounted chat panels without losing drafts.
+CouncilWorkbench mounts a single controlled council editor in the chat disclosure
+or the library view. The provider dialog sits above both views, so the inline
+setup opens the same editor without leaving chat. Preparation sections are
+continuous; LocalToolsPanel keeps its own form, separate from the run form.
+Clarification drafts sit beside the composer. WorkspaceTabs changes only the
+selected output panel, keeping the question, run status, and mounted report controls
+available without resetting edits. Explicit submission and frozen run contracts are unchanged.
 CouncilWorkbench retains owned template loading, durable save intent, active identity
 and exact draft comparison. Selection copies members and stored round/self-revision
 settings into existing state; normal preview fingerprints and dispatch are unchanged.

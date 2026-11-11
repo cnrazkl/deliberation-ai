@@ -24,7 +24,21 @@ The sidebar **Arşiv** disclosure lists only conversations explicitly moved with
 list; **Arşivden çıkar** restores them. This owner-scoped preference survives reload
 and applies to the entire conversation, including future runs. Existing conversations
 start unarchived. Archiving never deletes content or triggers generation. Individual
-run inspection/deletion remains available under **Sonuçlar → Çalışma geçmişi**.
+run inspection/deletion remains available under **Geçmiş ve dallar → Çalışma geçmişi**.
+
+## One conversation workspace
+
+**Yeni Müzakere** opens one preparation area for the question, council setup,
+files and knowledge sources, context and risk controls, memory, local tool results,
+and clarification drafts. An existing saved council can be selected or edited in
+the chat; new provider connections and model choices open in the existing dialog
+without leaving the draft. The **Konseyler** page still offers library management.
+
+Below preparation, **Çıktılar** separates **Rapor**, **Model yanıtları**,
+**Çapraz incelemeler**, **Kaynaklar ve kanıtlar**, **Değerlendirme**, **Kullanım**,
+and **Geçmiş ve dallar**. The current run status and continuation/export actions
+remain available across result tabs. Switching tabs leaves the question and
+the editable input/output drafts in place and does not generate model requests.
 
 ## Saved council pool
 
@@ -36,14 +50,15 @@ and **Yeni Konsey Oluştur** actions sit under that configuration. The council n
 label sits above its responsive input with a clear gap; action buttons occupy a
 separate, wrapping row below the field. Deleting a council
 selected in chat explicitly warns that the saved selection will be cleared.
-The chat composer exposes **Konsey Havuzu** only to select a saved council from
-**Kayıtlı Konsey**. Unsaved or unavailable configurations cannot start new work.
+The chat composer exposes **Konsey Havuzu** to select a saved council from
+**Kayıtlı Konsey**, with inline access to the same configuration and save actions.
+Unsaved or unavailable configurations cannot start new work.
 Selection applies every ordered member's connection, model, role, reasoning, web and
 attachment settings plus review-round count and self-revision setting. The question,
 sources, context, risk assessment and local execution quotas remain per task. Selection
 does not generate: **Konseyi Çalıştır** uses the applied configuration through the
 existing preflight and frozen-input path. Changes update the existing council or
-save a named copy in Konseyler. Saved councils survive page reload and new conversations;
+save a named copy in the chat or Konseyler. Saved councils survive page reload and new conversations;
 the active choice is a browser draft, not an automatic account default.
 
 Legacy member-only templates apply one review round and no self-revision. Missing or
@@ -200,10 +215,10 @@ disables entry/actions, and failures or successful registration appear inside th
 Account-management/password-change fields use the same visible input treatment.
 
 The signed-in workspace highlights the question composer with writing guidance,
-placeholder, character count and its existing explicit submit action; detailed council
-configuration and template management live in **Konseyler**; chat selects saved councils. API setup has
-a separate first-step callout when no connection exists and leads the settings page;
-private defaults and advanced tools follow it. Navigation, form fields and action buttons
+placeholder, character count and its existing explicit submit action. The composer
+includes council configuration, task resources and controls; its first-step API setup
+callout opens the connection dialog in place. Account settings retain connection
+administration, private defaults and operator controls. Navigation, form fields and action buttons
 share clear styling across themes and screen sizes. Changing views preserves drafts
 and makes no provider request. Root can filter the already loaded user list by username
 or display name; user cards separate connection/edit actions from reviewed deletion.

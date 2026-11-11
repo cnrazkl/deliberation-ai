@@ -1,11 +1,11 @@
 "use client";
 import type { CouncilMemberConfig } from "@deliberation-ai/contracts";
 type SavedCouncil = { id: string; name: string; members: CouncilMemberConfig[]; settings?: { reviewRounds: number } };
-export function CouncilLibrary({ templates, selectedId, invalidIds, disabled, onEdit, onDelete, modelLabel }: {
-  templates: SavedCouncil[]; selectedId: string; invalidIds: string[]; disabled: boolean;
+export function CouncilLibrary({ label = "Konsey Havuzu", templates, selectedId, invalidIds, disabled, onEdit, onDelete, modelLabel }: {
+  label?: string; templates: SavedCouncil[]; selectedId: string; invalidIds: string[]; disabled: boolean;
   onEdit: (id: string) => void; onDelete: (id: string) => void; modelLabel: (member: CouncilMemberConfig) => string;
 }) {
-  return <section className="council-library" aria-label="Konsey Havuzu">
+  return <section className="council-library" aria-label={label}>
     <div className="council-library-heading"><div><h2>Konsey Havuzu</h2><p className="hint">Kayıtlı konseylerinizi inceleyin ve yönetin.</p></div><span className="connection-count">{templates.length}</span></div>
     {!templates.length ? <p className="hint">Henüz kayıtlı konsey yok. Aşağıdaki yapılandırmayı tamamlayıp yeni konsey oluşturun.</p> : <div className="council-library-grid">
       {templates.map(template => <article key={template.id} className="council-preview-card" data-template-id={template.id}>

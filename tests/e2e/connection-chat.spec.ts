@@ -32,7 +32,7 @@ test("save-and-test creates a connection, returns plain text and preserves the c
     await chat.getByRole("button", { name: "Kaydet Ve Test Et" }).click();
     await expect(chat).toContainText("Short fixture reply"); expect(calls).toBe(1); await expect(dialog).toBeVisible();
     id = (await (await request.get("/api/provider-connections")).json()).connections.find((item: { label: string }) => item.label === label)?.id;
-    expect(id).toBeTruthy(); await page.keyboard.press("Escape");
+    expect(id).toBeTruthy(); await dialog.getByRole("button", { name: "Bağlantı panelini kapat", exact: true }).click(); await expect(dialog).toBeHidden();
     await workspaceView(page, "Müzakere"); await expect(page.getByLabel("Sorunuz", { exact: true })).toHaveValue("Keep my council draft");
     await workspaceView(page, "Ayarlar"); await openConnectionPanel(page, page.locator(".connection-card").filter({ hasText: label }));
     await expect(chat).not.toContainText("Short fixture reply"); expect(calls).toBe(1);
